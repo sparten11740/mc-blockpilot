@@ -47,7 +47,7 @@ public final class PerfCommands {
     private static final int COUNT_WAIT_TICKS = 100;
 
     public void register(CommandRegistry registry) {
-        registry.register(CommandSpec.action("perf", this::perf).group("perf")
+        registry.register(CommandSpec.action("perf", this::perf).group("performance")
             .choice("op", false, "start", "stop", "status").optionalArg("name", ArgType.WORD)
             .help("perf start [name] … perf stop: server MSPT/TPS and tick time per block-entity and entity type, "
                 + "client FPS/1% low/frame times, block-entity renderer time per type, section rebuilds, heap/GC, "

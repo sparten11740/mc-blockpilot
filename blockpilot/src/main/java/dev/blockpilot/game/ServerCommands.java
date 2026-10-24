@@ -47,16 +47,16 @@ final class ServerCommands {
     private static boolean changedTicking;
 
     void register(CommandRegistry registry) {
-        registry.register(CommandSpec.action("server", this::server).onServer().group("server")
+        registry.register(CommandSpec.action("server", this::server).onServer().group("integrated")
             .arg("command", ArgType.TEXT).option("as", "player: run as the player, at the player's position")
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
                 + "every feedback line").field("result", "the command's return value").field("success", "true/false")
             .example("server execute if block 0 -60 0 minecraft:air"));
-        registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("server")
+        registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
             .arg("target", ArgType.WORD).option("path", "NBT path inside the data, e.g. Pos or Items[0].id")
             .help("server-side data of a block entity (<pos>) or entity (e<id> or uuid); SNBT in text, JSON in json")
             .field("value", "the data").example("nbt e812 path=Pos"));
-        registry.register(CommandSpec.action("tick", this::tick).onServer().group("server")
+        registry.register(CommandSpec.action("tick", this::tick).onServer().group("integrated")
             .choice("op", false, "freeze", "unfreeze", "step", "rate", "query").optionalArg("amount", ArgType.NUMBER)
             .help("tick freeze|unfreeze|query, tick rate <tps>, tick step <n> (returns after n ticks ran); "
                 + "'tick' is the overworld game time").field("tick", "game time").field("frozen", "true/false")

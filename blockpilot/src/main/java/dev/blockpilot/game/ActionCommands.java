@@ -45,29 +45,29 @@ final class ActionCommands {
     private static final int MINE_SEARCH_RADIUS = 32;
 
     void register(CommandRegistry registry) {
-        registry.register(CommandSpec.action("face", this::face).needsWorld().group("move")
+        registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
             .arg("target", ArgType.TARGET)
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
                 + "returns what the crosshair then hits").example("face 12.5,70.2,-3.4"));
-        registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("move")
+        registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
             .arg("yaw", ArgType.NUMBER).arg("pitch", ArgType.NUMBER).optionalArg("ticks", ArgType.DURATION)
             .help("sets the camera to yaw/pitch (degrees), optionally smoothed over a duration")
             .example("turn 90 20 10t"));
-        registry.register(CommandSpec.action("move", this::move).needsWorld().group("move")
+        registry.register(CommandSpec.action("move", this::move).needsWorld().group("movement")
             .choice("dir", false, "forward", "back", "left", "right").arg("amount", ArgType.WORD)
             .help("holds a movement key for <blocks> or <Nt> ticks").example("move forward 3"));
         registry.register(CommandSpec.action("jump", (context, args) -> pulse(context, options().keyJump, 2, "jump"))
-            .needsWorld().group("move").help("one jump").example("jump"));
+            .needsWorld().group("movement").help("one jump").example("jump"));
         registry.register(CommandSpec.action("sneak", (context, args) -> toggle(context, options().keyShift,
-            args.word("state"))).needsWorld().group("move").choice("state", false, "on", "off")
+            args.word("state"))).needsWorld().group("movement").choice("state", false, "on", "off")
             .help("holds or releases sneak").example("sneak on"));
         registry.register(CommandSpec.action("sprint", (context, args) -> toggle(context, options().keySprint,
-            args.word("state"))).needsWorld().group("move").choice("state", false, "on", "off")
+            args.word("state"))).needsWorld().group("movement").choice("state", false, "on", "off")
             .help("holds or releases sprint").example("sprint on"));
-        registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("move")
+        registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("movement")
             .choice("state", false, "on", "off")
             .help("starts or stops flying where the game mode allows it (creative, spectator)").example("fly on"));
-        registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("move")
+        registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("movement")
             .arg("target", ArgType.TARGET).option("near", "stop within this many blocks")
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
             .field("took", "seconds").example("goto 120,64,-30"));
@@ -100,9 +100,9 @@ final class ActionCommands {
             .arg("item", ArgType.WORD).help("moves the item to the offhand").example("offhand shield"));
         registry.register(CommandSpec.action("equip", this::equip).needsWorld().group("inventory")
             .arg("item", ArgType.WORD).help("puts on an armor item").example("equip iron_helmet"));
-        registry.register(CommandSpec.action("chat", this::chat).needsWorld().group("chat").arg("text", ArgType.TEXT)
+        registry.register(CommandSpec.action("chat", this::chat).needsWorld().group("talk").arg("text", ArgType.TEXT)
             .help("sends a chat message").example("chat hello"));
-        registry.register(CommandSpec.action("cmd", this::command).needsWorld().group("chat")
+        registry.register(CommandSpec.action("cmd", this::command).needsWorld().group("talk")
             .arg("command", ArgType.TEXT)
             .help("sends a /command as the player; feedback arrives as ! chat events (see server for captured output)")
             .example("cmd time set day"));

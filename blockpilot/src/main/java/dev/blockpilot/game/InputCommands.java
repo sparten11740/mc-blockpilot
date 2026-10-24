@@ -26,7 +26,7 @@ import net.minecraft.world.inventory.ClickType;
 final class InputCommands {
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
-            .group("screen").help("the open GUI: type, title, size, cursor, container slots s<i>, widgets w<i> "
+            .group("gui").help("the open GUI: type, title, size, cursor, container slots s<i>, widgets w<i> "
                 + "with @x,y,w,h bounds (GUI-scaled)").example("screen"));
         registry.register(CommandSpec.action("mouse", this::mouse).group("input").arg("op", ArgType.WORD)
             .arg("a", ArgType.WORD).optionalArg("b", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
@@ -37,9 +37,9 @@ final class InputCommands {
             .arg("from", ArgType.WORD).arg("to", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
             .help("in-world: drag <button> <dx> <dy> [Nt] (hold, move, release); on a screen: "
                 + "drag <button> <x1,y1> <x2,y2> [Nt]").example("drag right 0 -120 30t"));
-        registry.register(CommandSpec.action("cursor", this::cursor).group("screen").arg("at", ArgType.WORD)
+        registry.register(CommandSpec.action("cursor", this::cursor).group("gui").arg("at", ArgType.WORD)
             .help("moves the cursor to GUI coordinates x,y on the open screen").example("cursor 120,80"));
-        registry.register(CommandSpec.action("click", this::click).group("screen").arg("at", ArgType.WORD)
+        registry.register(CommandSpec.action("click", this::click).group("gui").arg("at", ArgType.WORD)
             .optionalArg("button", ArgType.WORD)
             .help("click <x,y> [left|right|middle] on a screen; click s<index> [left|right|shift|0-8] on a "
                 + "container slot").example("click s0 shift"));
@@ -68,7 +68,7 @@ final class InputCommands {
                 minecraft.setScreen(null);
             }
             return () -> Result.ok();
-        }).group("screen").help("closes the open screen or container").example("close"));
+        }).group("gui").help("closes the open screen or container").example("close"));
     }
 
     private static Minecraft minecraft() {
