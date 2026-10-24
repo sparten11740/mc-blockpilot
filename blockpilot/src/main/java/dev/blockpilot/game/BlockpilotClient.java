@@ -11,6 +11,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
+import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Config;
@@ -80,6 +81,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
         events = new Events(engine);
+        Observations.setEventSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
         registry.addExtensions(BlockpilotApi.freeze(engine::broadcast));
         HumanInput.setListener(this::onHumanInput);
@@ -161,6 +163,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onChatReceived(Component message) {
+        Observations.message("chat", message);
         if (events != null) {
             events.chat(message);
         }

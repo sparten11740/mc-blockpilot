@@ -5,11 +5,14 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AbstractContainerScreenAccessor",
+    "GuiMixin",
     "InputConstantsMixin",
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
     "MinecraftMixin",
-    "MouseHandlerMixin"
+    "MouseHandlerMixin",
+    "ParticleEngineMixin",
+    "SoundEngineMixin"
   ],
   "injectors": {
     "defaultRequire": 1
