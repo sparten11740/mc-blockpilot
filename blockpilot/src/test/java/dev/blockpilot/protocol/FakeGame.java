@@ -9,6 +9,8 @@ final class FakeGame implements GameBridge {
     final AtomicInteger releases = new AtomicInteger();
     /** The gate's answer for commands that need a world; null lets them run. */
     String worldGate;
+    /** The game time the fake reports; tests advance it. */
+    long time;
 
     @Override
     public void runOnClient(Runnable task) {
@@ -23,6 +25,11 @@ final class FakeGame implements GameBridge {
     @Override
     public Position resolve(Position position) {
         return position.resolve(0, 64, 0);
+    }
+
+    @Override
+    public long gameTime(boolean server) {
+        return time;
     }
 
     @Override

@@ -169,6 +169,28 @@ class EngineTest {
     }
 
     @Test
+    void sampleCollectsOneRowPerRun() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> sample = engine.submit(session, null, "sample counter every 2t x3");
+        for (int index = 0; index < 10 && !sample.isDone(); index++) {
+            game.time++;
+            counter.incrementAndGet();
+            tick(1);
+        }
+        assertEquals("ok samples=3\n  t1 value=1\n  t3 value=3\n  t5 value=5", text(sample));
+    }
+
+    @Test
+    void sampleRejectsActionsAndHugeCounts() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> action = engine.submit(session, null, "sample walk a every 1t x2");
+        CompletableFuture<Reply> huge = engine.submit(session, null, "sample counter every 1t x5000");
+        tick(2);
+        assertTrue(text(action).startsWith("err syntax walk is not a read-only command"), text(action));
+        assertEquals("err too_large 1000", text(huge));
+    }
+
+    @Test
     void repeatedObservationsReportOnlyChanges() {
         Session session = engine.openSession();
         assertEquals("ok\n  a n=0", text(engine.submit(session, null, "items")));

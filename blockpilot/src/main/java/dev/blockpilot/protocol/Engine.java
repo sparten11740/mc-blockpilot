@@ -10,6 +10,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.api.Row;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -189,6 +190,124 @@ public final class Engine {
             .help("wait <Nt|Ns> | wait idle | wait <query> until <field><op><value> [and …] "
                 + "[stable=<Nt>] [every=<Nt>] [timeout=<duration>]; ops == != < <= > >=, or ok")
             .example("wait block ~1,0,0 until id==air timeout=5s"));
+        registry.register(CommandSpec.action("sample", this::startSample).group("meta").arg("what", ArgType.TEXT)
+            .help("sample <query> every <Nt> x<n> [clock=client|server]: runs the read-only query n times (max "
+                + "1000), every N ticks, one row per run with the game tick and the query's fields")
+            .example("sample status every 1t x20"));
+    }
+
+    static final int MAX_SAMPLES = 1000;
+
+    private Action startSample(CommandContext context, Args args) throws CommandException {
+        List<RawCommand.Token> tokens = RawCommand.of("sample " + args.text("what")).tokens();
+        int every = -1;
+        for (int index = 0; index < tokens.size(); index++) {
+            if (tokens.get(index).text().equals("every")) {
+                every = index;
+                break;
+            }
+        }
+        if (every <= 0) {
+            throw new CommandException("syntax", "sample <query> every <Nt> x<n> [clock=client|server]");
+        }
+        StringBuilder query = new StringBuilder();
+        for (int index = 0; index < every; index++) {
+            query.append(index == 0 ? "" : " ").append(tokens.get(index).text());
+        }
+        RawCommand queryCommand = RawCommand.of(query.toString());
+        CommandRegistry.Entry entry = registry.resolve(queryCommand.name());
+        if (entry == null || entry.spec().kind() != CommandSpec.Kind.QUERY) {
+            throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
+        }
+        Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
+        // The inner query is gated here, on the client thread; server-clock runs skip the per-run client gate.
+        String gate = game.gate(entry.spec());
+        if (gate != null) {
+            throw new CommandException(gate);
+        }
+        Duration interval = null;
+        int count = 0;
+        boolean serverClock = false;
+        for (int index = every + 1; index < tokens.size(); index++) {
+            String token = tokens.get(index).text();
+            if (token.matches("x\\d+")) {
+                count = Integer.parseInt(token.substring(1));
+            } else if (token.equals("clock=server") || token.equals("clock=client")) {
+                serverClock = token.endsWith("server");
+            } else if (Duration.parse(token) != null && interval == null) {
+                interval = Duration.parse(token);
+            } else {
+                throw new CommandException("syntax", "unexpected " + token + " in sample … every <Nt> x<n>");
+            }
+        }
+        if (interval == null || count <= 0) {
+            throw new CommandException("syntax", "sample <query> every <Nt> x<n>");
+        }
+        if (count > MAX_SAMPLES) {
+            throw new CommandException("too_large", String.valueOf(MAX_SAMPLES));
+        }
+        if (serverClock && !entry.spec().runsOnServer()) {
+            throw new CommandException("syntax", "clock=server needs a server-side query; "
+                + queryCommand.name() + " runs on the client");
+        }
+        return new Sampler(context, entry.spec(), queryArgs, Math.max(1, interval.ticks()), count,
+            serverClock || entry.spec().runsOnServer());
+    }
+
+    /** {@code sample}: runs a query every N ticks and collects one row per run. */
+    private final class Sampler implements Action, SelfTimed, ServerClocked {
+        private final CommandContext context;
+        private final CommandSpec query;
+        private final Args args;
+        private final int interval;
+        private final int count;
+        private final boolean serverClock;
+        private final List<Row> rows = new ArrayList<>();
+        private int elapsed;
+
+        Sampler(CommandContext context, CommandSpec query, Args args, int interval, int count, boolean serverClock) {
+            this.context = context;
+            this.query = query;
+            this.args = args;
+            this.interval = interval;
+            this.count = count;
+            this.serverClock = serverClock;
+        }
+
+        @Override
+        public boolean onServerClock() {
+            return serverClock;
+        }
+
+        @Override
+        public Result tick() {
+            if (elapsed++ % interval == 0) {
+                long time = game.gameTime(serverClock);
+                Fields fields = new Fields().put("tick", time, "t" + time);
+                Result result;
+                String gate = serverClock ? null : game.gate(query);
+                try {
+                    result = gate != null ? Result.error(gate) : query.queryHandler().run(context, args);
+                } catch (CommandException e) {
+                    result = e.toResult();
+                }
+                if (!result.isOk()) {
+                    fields.put("err", result.code(), "err " + result.code());
+                }
+                result.fields().list().forEach(field -> fields.put(field.name(), field.value(), field.text()));
+                if (result.rows() != null && result.fields().get("count") == null) {
+                    fields.put("count", result.rows().size(), "count=" + result.rows().size());
+                }
+                rows.add(Row.of(String.valueOf(rows.size()), fields));
+            }
+            return rows.size() >= count ? Result.ok(new Fields().put("samples", rows.size(), "samples=" + rows.size()))
+                .withRows(rows) : null;
+        }
+
+        @Override
+        public String label() {
+            return "sample";
+        }
     }
 
     private Action startWait(CommandContext context, Args args) throws CommandException {
@@ -227,6 +346,10 @@ public final class Engine {
             throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
         }
         Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
+        String gate = game.gate(entry.spec());
+        if (gate != null) {
+            throw new CommandException(gate);
+        }
         List<String> predicates = new ArrayList<>();
         Map<String, String> options = new java.util.LinkedHashMap<>();
         for (int index = until + 1; index < tokens.size(); index++) {

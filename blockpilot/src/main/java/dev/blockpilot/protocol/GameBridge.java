@@ -15,6 +15,9 @@ public interface GameBridge {
     /** Resolves a {@code ~} position against the player's block position. */
     Position resolve(Position position) throws CommandException;
 
+    /** The game time on the client level, or with {@code server} on the integrated server's overworld; -1 if none. */
+    long gameTime(boolean server);
+
     /** Lets go of every key, button and movement an agent holds. */
     void releaseInputs();
 
