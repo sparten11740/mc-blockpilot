@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.api.CommandException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickType;
@@ -101,6 +102,27 @@ final class InventoryOps {
         if (best >= 0) {
             selectSlot(best);
         }
+    }
+
+    /**
+     * Makes sure the held item can break the block at all (in creative, swords and similar can't): if it can't,
+     * selects the first hotbar slot whose item can, an empty hand being fine; fails when none can.
+     */
+    static void selectItemThatCanBreak(BlockState state, BlockPos pos) throws CommandException {
+        LocalPlayer player = player();
+        if (player.getMainHandItem().getItem().canAttackBlock(state, player.level(), pos, player)) {
+            return;
+        }
+        Inventory inventory = player.getInventory();
+        for (int slot = 0; slot < 9; slot++) {
+            ItemStack stack = inventory.items.get(slot);
+            if (stack.isEmpty() || stack.getItem().canAttackBlock(state, player.level(), pos, player)) {
+                inventory.selected = slot;
+                return;
+            }
+        }
+        throw new CommandException("no_item", "nothing on the hotbar can break " + Ids.of(state)
+            + " (in creative, swords can't)");
     }
 
     /** Parses a slot token: 0-35, head/chest/legs/feet or offhand, as the inventory menu's slot number. */

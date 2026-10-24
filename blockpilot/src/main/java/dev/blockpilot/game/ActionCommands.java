@@ -592,6 +592,7 @@ final class ActionCommands {
             }
             if (digTicks++ == 0) {
                 InventoryOps.selectBestTool(state);
+                InventoryOps.selectItemThatCanBreak(state, current);
             }
             lookAt(center);
             HitResult hit = minecraft().hitResult;
