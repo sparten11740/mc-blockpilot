@@ -61,8 +61,9 @@ def main():
             if not raw:
                 raise SystemExit("blockpilot: connection closed")
             line = raw.decode("utf-8").rstrip("\n")
-            if line == ".":
-                return "\n".join(lines)
+            if line == "." or not lines and line.startswith("{"):
+                # A script that runs "fmt json" gets that reply as one JSON line already.
+                return "\n".join(lines + ([] if line == "." else [line]))
             lines.append(line)
 
     send("auth " + token)
@@ -74,13 +75,11 @@ def main():
         send("fmt json")
         stream.readline()
     send(args.script.replace("\n", "; "))
-    if args.json:
-        reply = stream.readline().decode("utf-8").rstrip("\n")
-        print(reply)
+    reply = stream.readline().decode("utf-8").rstrip("\n") if args.json else text_reply()
+    print(reply)
+    if reply.startswith("{"):
         results = json.loads(reply)["results"]
         return 0 if all(result.get("ok") for result in results) else 1
-    reply = text_reply()
-    print(reply)
     words = [line.split() for line in reply.splitlines()]
     failed = any(w[:1] == ["err"] or (w[:1] and w[0].startswith("#") and w[1:2] == ["err"]) for w in words)
     return 1 if failed else 0
