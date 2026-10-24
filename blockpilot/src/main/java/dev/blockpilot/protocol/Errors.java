@@ -31,6 +31,8 @@ public final class Errors {
         CODES.put("unloaded", "the position is in a chunk that is not loaded");
         CODES.put("join_failed", "joining the world or server failed; the reason is attached");
         CODES.put("exists", "a world with that name already exists");
+        CODES.put("no_snapshot", "this world has no snapshot with that name (snapshot list)");
+        CODES.put("not_test_world", "only worlds made by create world can be deleted");
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
         CODES.put("busy", "a performance capture is already running (perf stop first)");
         CODES.put("no_capture", "no performance capture is running (perf start first)");

@@ -16,6 +16,7 @@ final class GameCommands {
         new InputCommands().register(registry);
         new SessionCommands().register(registry);
         new TestWorlds().register(registry);
+        new Snapshots().register(registry);
         new ServerCommands().register(registry);
         new ObservationCommands().register(registry);
         new PerfCommands().register(registry);
