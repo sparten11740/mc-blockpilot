@@ -27,3 +27,6 @@ stonecutter {
         vcsVersion = "1.21.1-neoforge"
     }
 }
+
+// The extension API on its own, published for other mods to compile against.
+include("blockpilot-api")

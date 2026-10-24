@@ -1,6 +1,7 @@
 // Builds one NeoForge node of the Stonecutter tree (versions/<minecraft>-neoforge); see stonecutter.gradle.kts.
 plugins {
     `java-library`
+    `maven-publish`
     id("net.neoforged.moddev")
 }
 
@@ -120,4 +121,15 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// mavenLocal() coordinates for other mods' dev environments: dev.blockpilot:blockpilot-neoforge:<version>+<minecraft>.
+publishing {
+    publications {
+        register<MavenPublication>("mod") {
+            artifactId = "$modId-neoforge"
+            version = "${treeProp("mod_version")}+$minecraft"
+            from(components["java"])
+        }
+    }
 }

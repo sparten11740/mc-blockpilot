@@ -1,6 +1,7 @@
 // Builds one Fabric node of the Stonecutter tree (versions/<minecraft>-fabric); see stonecutter.gradle.kts.
 plugins {
     `java-library`
+    `maven-publish`
     // Applies Fabric Loom: the remapping variant up to 1.21.x, the plain one for the unobfuscated 26.x releases.
     id("dev.kikugie.loom-back-compat")
 }
@@ -121,4 +122,15 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// mavenLocal() coordinates for other mods' dev environments: dev.blockpilot:blockpilot-fabric:<version>+<minecraft>.
+publishing {
+    publications {
+        register<MavenPublication>("mod") {
+            artifactId = "$modId-fabric"
+            version = "${treeProp("mod_version")}+$minecraft"
+            from(components["java"])
+        }
+    }
 }
