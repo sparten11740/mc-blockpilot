@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.blockpilot.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractContainerScreenAccessor",
+    "InputConstantsMixin",
+    "KeyMappingAccessor",
+    "KeyboardHandlerMixin",
+    "MinecraftMixin",
+    "MouseHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
