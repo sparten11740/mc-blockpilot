@@ -79,6 +79,10 @@ loom {
     runs {
         named("client") {
             runDirectory = layout.projectDirectory.dir("run")
+            // ./gradlew runClient -Pblockpilot.autojoin=<world> [-Pblockpilot.autocreate=flat] joins a world on launch.
+            listOf("blockpilot.autojoin", "blockpilot.autocreate").forEach { key ->
+                providers.gradleProperty(key).orNull?.let { property(key, it) }
+            }
         }
     }
 }

@@ -31,7 +31,9 @@ import java.nio.file.StandardCopyOption;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -55,6 +57,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile Events events;
     private volatile boolean enabled = true;
     private long ticks;
+    private boolean autoJoined;
 
     private BlockpilotClient() {
     }
@@ -189,6 +192,38 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         if (events != null) {
             events.screenOpened(screen);
         }
+        autoJoin(screen);
+    }
+
+    /**
+     * {@code -Dblockpilot.autojoin=<world>} joins that world once the title screen (or the first-launch onboarding
+     * screen) shows; with {@code -Dblockpilot.autocreate=flat|void|normal} a missing world is created first.
+     */
+    private void autoJoin(Screen screen) {
+        String world = System.getProperty("blockpilot.autojoin");
+        if (autoJoined || world == null || world.isBlank()
+            || !(screen instanceof TitleScreen || screen instanceof AccessibilityOnboardingScreen)) {
+            return;
+        }
+        autoJoined = true;
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.options.onboardAccessibility = false;
+        minecraft.options.save();
+        String preset = System.getProperty("blockpilot.autocreate");
+        minecraft.execute(() -> {
+            try {
+                if (TestWorlds.exists(world)) {
+                    minecraft.createWorldOpenFlows().openWorld(world, () -> minecraft.setScreen(new TitleScreen()));
+                } else if (preset != null) {
+                    TestWorlds.create(world + " " + preset);
+                } else {
+                    Blockpilot.LOGGER.warn("blockpilot.autojoin: no world {} and no blockpilot.autocreate; staying on "
+                        + "the title screen", world);
+                }
+            } catch (CommandException e) {
+                Blockpilot.LOGGER.warn("blockpilot.autojoin {} failed: {}", world, e.getMessage());
+            }
+        });
     }
 
     @Override

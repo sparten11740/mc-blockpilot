@@ -51,6 +51,11 @@ final class TestWorlds {
         return ClientPlatform.gameDir().resolve("saves");
     }
 
+    static boolean exists(String folder) {
+        return Files.isDirectory(savesDir().resolve(folder).resolve("region"))
+            || Files.exists(savesDir().resolve(folder).resolve("level.dat"));
+    }
+
     static boolean isTestWorld(String folder) {
         return Files.exists(savesDir().resolve(folder).resolve(MARKER));
     }
@@ -69,7 +74,12 @@ final class TestWorlds {
     }
 
     private Action create(CommandContext context, Args args) throws CommandException {
-        List<String> tokens = new ArrayList<>(List.of(args.text("spec").strip().split("\\s+")));
+        return create(args.text("spec"));
+    }
+
+    /** Creates and joins a world from a {@code create world} spec; also used by auto-join on launch. */
+    static Action create(String spec) throws CommandException {
+        List<String> tokens = new ArrayList<>(List.of(spec.strip().split("\\s+")));
         String name = tokens.remove(0);
         Path folder = checkedFolder(name);
         if (Files.exists(folder)) {
