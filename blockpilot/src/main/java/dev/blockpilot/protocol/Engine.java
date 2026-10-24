@@ -174,13 +174,20 @@ public final class Engine {
             .example("fmt json"));
         registry.register(CommandSpec.query("sub", (context, args) -> {
             Session session = sessions.get(context.sessionId());
+            if (args.word("state").equals("log")) {
+                String level = args.has("level") ? args.word("level") : "warn";
+                session.setLogLevel(level.equals("off") ? null : level);
+                return Result.ok();
+            }
             if (!session.canPush()) {
-                throw new CommandException("syntax", "sub only works on the line protocol");
+                throw new CommandException("syntax", "sub on|off only works on the line protocol");
             }
             session.setPushing(args.word("state").equals("on"));
             return Result.ok();
-        }).group("meta").choice("state", false, "on", "off")
-            .help("line protocol: push events as they happen instead of with the next reply").example("sub on"));
+        }).group("meta").choice("state", false, "on", "off", "log").optionalArg("level", ArgType.WORD)
+            .help("sub on|off: (line protocol) push events as they happen instead of with the next reply; "
+                + "sub log <error|warn|info|off>: log entries at or above the level arrive as ! log events "
+                + "(max 20/s)").example("sub log error"));
         registry.register(CommandSpec.query("stop", (context, args) -> {
             int stopped = stopAll("cancelled");
             return Result.ok(new Fields().put("stopped", stopped, "stopped " + stopped));

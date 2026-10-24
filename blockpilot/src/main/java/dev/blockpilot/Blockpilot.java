@@ -1,6 +1,7 @@
 package dev.blockpilot;
 
 import dev.blockpilot.game.BlockpilotClient;
+import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.platform.ClientPlatform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ public final class Blockpilot {
 
     /** Called by the loader's client entry point once the platform is installed. */
     public static void init() {
+        LogCapture.install();
         LOGGER.info("Blockpilot {} on {}", ClientPlatform.modVersion(), ClientPlatform.loaderName());
         BlockpilotClient.init();
     }

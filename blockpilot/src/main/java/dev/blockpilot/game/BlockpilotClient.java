@@ -11,6 +11,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
+import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
@@ -53,6 +54,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile Path endpointFile;
     private volatile Events events;
     private volatile boolean enabled = true;
+    private long ticks;
 
     private BlockpilotClient() {
     }
@@ -84,6 +86,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         engine = new Engine(registry, this);
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);
+        LogCapture.setSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
         registry.addExtensions(BlockpilotApi.freeze(engine::broadcast));
         HumanInput.setListener(this::onHumanInput);
@@ -146,6 +149,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
         Perf.clientTick();
+        if (++ticks % 200 == 0) {
+            // A loader or mod may reload the logging setup, which drops our appender.
+            LogCapture.install();
+        }
         Focus.setKeepActive(enabled && engine.sessionCount() > 0);
         InputState.reassert();
         events.tick();

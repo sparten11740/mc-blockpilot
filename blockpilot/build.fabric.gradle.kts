@@ -72,6 +72,7 @@ dependencies {
     testImplementation("com.google.code.gson:gson:2.10.1")
     testImplementation("io.netty:netty-handler:4.1.97.Final")
     testImplementation("org.slf4j:slf4j-api:2.0.9")
+    testImplementation("org.apache.logging.log4j:log4j-core:2.22.1")
 }
 
 loom {
