@@ -155,6 +155,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public void onServerStopping(MinecraftServer server) {
+        ServerCommands.onServerStopping(server);
+    }
+
+    @Override
     public void onChatReceived(Component message) {
         if (events != null) {
             events.chat(message);

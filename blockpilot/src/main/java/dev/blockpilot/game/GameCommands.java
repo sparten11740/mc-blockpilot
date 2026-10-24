@@ -11,5 +11,8 @@ final class GameCommands {
         new PerceptionCommands(client).register(registry);
         new ActionCommands().register(registry);
         new InputCommands().register(registry);
+        new SessionCommands().register(registry);
+        new TestWorlds().register(registry);
+        new ServerCommands().register(registry);
     }
 }

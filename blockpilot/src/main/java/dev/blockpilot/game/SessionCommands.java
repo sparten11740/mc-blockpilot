@@ -1,0 +1,197 @@
+package dev.blockpilot.game;
+
+import dev.blockpilot.api.Action;
+import dev.blockpilot.api.ArgType;
+import dev.blockpilot.api.Args;
+import dev.blockpilot.api.CommandContext;
+import dev.blockpilot.api.CommandException;
+import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Result;
+import dev.blockpilot.api.Row;
+import dev.blockpilot.protocol.CommandRegistry;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.DisconnectedScreen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.ServerList;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.storage.LevelSummary;
+
+/** Getting into and out of games: listing saves and servers, joining, leaving, respawning. */
+final class SessionCommands {
+    void register(CommandRegistry registry) {
+        registry.register(CommandSpec.query("worlds", (context, args) -> worlds()).group("session")
+            .help("singleplayer saves, most recently played first").example("worlds"));
+        registry.register(CommandSpec.query("servers", (context, args) -> servers()).group("session")
+            .help("the multiplayer server list").example("servers"));
+        registry.register(CommandSpec.action("join", this::join).group("session")
+            .choice("kind", false, "world", "server").arg("name", ArgType.TEXT)
+            .help("join world <folder> | join server <index|address>; returns once the player can act")
+            .example("join world New World"));
+        registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
+            .help("saves and quits singleplayer or disconnects, back to the title screen").example("leave"));
+        registry.register(CommandSpec.action("respawn", (context, args) -> respawn()).needsWorld().group("session")
+            .help("respawns from the death screen").example("respawn"));
+    }
+
+    private static Minecraft minecraft() {
+        return Minecraft.getInstance();
+    }
+
+    static List<LevelSummary> summaries() throws CommandException {
+        var source = minecraft().getLevelSource();
+        try {
+            return source.loadLevelSummaries(source.findLevelCandidates()).join();
+        } catch (Exception e) {
+            throw new CommandException("internal", "could not list saves: " + e.getMessage());
+        }
+    }
+
+    private Result worlds() throws CommandException {
+        List<LevelSummary> saves = new ArrayList<>(summaries());
+        saves.sort(Comparator.comparingLong(LevelSummary::getLastPlayed).reversed());
+        List<Row> rows = new ArrayList<>();
+        for (LevelSummary save : saves) {
+            Fields fields = new Fields().put("folder", save.getLevelId(), "\"" + save.getLevelId() + "\"");
+            if (!save.getLevelName().equals(save.getLevelId())) {
+                fields.put("name", save.getLevelName(), "name:\"" + save.getLevelName() + "\"");
+            }
+            fields.bare("mode", save.getGameMode().getName());
+            if (save.hasCommands()) {
+                fields.put("cheats", true, "cheats");
+            }
+            if (TestWorlds.isTestWorld(save.getLevelId())) {
+                fields.put("test", true, "test");
+            }
+            fields.hidden("last_played", save.getLastPlayed());
+            rows.add(Row.of(save.getLevelId(), fields));
+        }
+        return Result.ok().withRows(rows);
+    }
+
+    private Result servers() {
+        ServerList list = new ServerList(minecraft());
+        list.load();
+        List<Row> rows = new ArrayList<>();
+        for (int index = 0; index < list.size(); index++) {
+            ServerData server = list.get(index);
+            rows.add(Row.of(String.valueOf(index), new Fields().bare("index", index)
+                .put("name", server.name, "\"" + server.name + "\"").bare("address", server.ip)));
+        }
+        return Result.ok().withRows(rows);
+    }
+
+    private Action join(CommandContext context, Args args) throws CommandException {
+        String name = args.text("name").strip();
+        if (minecraft().level != null) {
+            disconnect();
+        }
+        if (args.word("kind").equals("world")) {
+            boolean exists = summaries().stream().anyMatch(save -> save.getLevelId().equals(name));
+            if (!exists) {
+                throw new CommandException("join_failed", "no save folder " + name + "; see worlds");
+            }
+            minecraft().createWorldOpenFlows().openWorld(name, () -> minecraft().setScreen(new TitleScreen()));
+        } else {
+            String address = name;
+            ServerList list = new ServerList(minecraft());
+            list.load();
+            ServerData data = null;
+            if (name.matches("\\d+") && Integer.parseInt(name) < list.size()) {
+                data = list.get(Integer.parseInt(name));
+                address = data.ip;
+            }
+            if (data == null) {
+                data = new ServerData(address, address, ServerData.Type.OTHER);
+            }
+            ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft(),
+                ServerAddress.parseString(address), data, false, null);
+        }
+        return new Joined(name);
+    }
+
+    /** Waits until the player is in the world and can act, or the connection fails. */
+    private record Joined(String name) implements Action {
+        @Override
+        public Result tick() throws CommandException {
+            Minecraft minecraft = minecraft();
+            if (minecraft.screen instanceof DisconnectedScreen disconnected) {
+                throw new CommandException("join_failed", describe(disconnected));
+            }
+            if (minecraft.player != null && minecraft.level != null
+                && (minecraft.screen == null || !Screens.type(minecraft.screen).equals("loading"))) {
+                return Result.ok(new Fields().put("joined", name, "joined " + name));
+            }
+            return null;
+        }
+
+        @Override
+        public String label() {
+            return "join";
+        }
+    }
+
+    /** The title and message lines of a disconnect screen. */
+    private static String describe(DisconnectedScreen screen) {
+        List<String> parts = new ArrayList<>();
+        parts.add(screen.getTitle().getString());
+        screen.children().forEach(child -> {
+            if (child instanceof AbstractWidget widget && !(widget instanceof Button)) {
+                String text = widget.getMessage().getString();
+                if (!text.isBlank()) {
+                    parts.add(text);
+                }
+            }
+        });
+        return String.join(": ", parts);
+    }
+
+    /** Leaves the current game the way the pause menu's button does (saving singleplayer worlds). */
+    static void disconnect() {
+        Minecraft minecraft = minecraft();
+        boolean local = minecraft.isLocalServer();
+        if (minecraft.level != null) {
+            minecraft.level.disconnect();
+        }
+        if (local) {
+            minecraft.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        } else {
+            minecraft.disconnect();
+        }
+        minecraft.setScreen(new TitleScreen());
+    }
+
+    private Action leave() throws CommandException {
+        if (minecraft().level == null) {
+            throw new CommandException("not_in_world");
+        }
+        disconnect();
+        return () -> minecraft().level == null ? Result.ok() : null;
+    }
+
+    private Action respawn() throws CommandException {
+        var player = minecraft().player;
+        if (!player.isDeadOrDying()) {
+            throw new CommandException("syntax", "the player is alive");
+        }
+        player.respawn();
+        return () -> {
+            var current = minecraft().player;
+            if (current != null && !current.isDeadOrDying()) {
+                minecraft().setScreen(null);
+                return Result.ok();
+            }
+            return null;
+        };
+    }
+}
