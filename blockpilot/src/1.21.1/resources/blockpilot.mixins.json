@@ -5,14 +5,23 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AbstractContainerScreenAccessor",
+    "BlockEntityRenderDispatcherMixin",
+    "BoundTickingBlockEntityMixin",
     "CameraMixin",
+    "ChunkMapAccessor",
+    "ConnectionMixin",
+    "EntityTickMixin",
+    "FrameMixin",
     "GuiMixin",
     "InputConstantsMixin",
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
     "MinecraftMixin",
     "MouseHandlerMixin",
+    "PacketDecoderMixin",
+    "PacketEncoderMixin",
     "ParticleEngineMixin",
+    "RebuildTaskMixin",
     "SoundEngineMixin"
   ],
   "injectors": {
