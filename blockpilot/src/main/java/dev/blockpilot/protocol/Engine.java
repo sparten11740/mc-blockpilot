@@ -199,7 +199,8 @@ public final class Engine {
             .field("stopped", "number of scripts cancelled").example("stop"));
         registry.register(CommandSpec.action("wait", this::startWait).group("meta").arg("what", ArgType.TEXT)
             .help("wait <Nt|Ns> | wait idle | wait <query> until <field><op><value> [and …] "
-                + "[stable=<Nt>] [every=<Nt>] [timeout=<duration>]; ops == != < <= > >=, or ok")
+                + "[stable=<Nt>] [every=<Nt>] [timeout=<duration>] [clock=server]; ops == != < <= > >=, or ok; "
+                + "server-side queries are checked at the end of server ticks and report the tick (t<n>)")
             .example("wait block ~1,0,0 until id==air timeout=5s"));
         registry.register(CommandSpec.action("sample", this::startSample).group("meta").arg("what", ArgType.TEXT)
             .help("sample <query> every <Nt> x<n> [clock=client|server]: runs the read-only query n times (max "
