@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import dev.blockpilot.game.observe.ObservationCommands;
+import dev.blockpilot.game.perf.PerfCommands;
 import dev.blockpilot.protocol.CommandRegistry;
 
 /** Registers every built-in command that needs the game. */
@@ -16,5 +17,6 @@ final class GameCommands {
         new TestWorlds().register(registry);
         new ServerCommands().register(registry);
         new ObservationCommands().register(registry);
+        new PerfCommands().register(registry);
     }
 }

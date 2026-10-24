@@ -13,6 +13,7 @@ import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.Observations;
+import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Config;
@@ -144,6 +145,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             }
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
+        Perf.clientTick();
         Focus.setKeepActive(enabled && engine.sessionCount() > 0);
         InputState.reassert();
         events.tick();
@@ -152,6 +154,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onServerTickEnd(MinecraftServer server) {
+        if (Perf.active) {
+            // This tick's time is recorded after the event; the previous one is complete.
+            long[] times = server.getTickTimesNanos();
+            Perf.serverTick(times[Math.floorMod(server.getTickCount() - 1, times.length)]);
+        }
         if (engine != null) {
             engine.tickServer();
         }
