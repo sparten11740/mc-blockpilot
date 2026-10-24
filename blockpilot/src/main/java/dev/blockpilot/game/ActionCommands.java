@@ -64,6 +64,9 @@ final class ActionCommands {
         registry.register(CommandSpec.action("sprint", (context, args) -> toggle(context, options().keySprint,
             args.word("state"))).needsWorld().group("move").choice("state", false, "on", "off")
             .help("holds or releases sprint").example("sprint on"));
+        registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("move")
+            .choice("state", false, "on", "off")
+            .help("starts or stops flying where the game mode allows it (creative, spectator)").example("fly on"));
         registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("move")
             .arg("target", ArgType.TARGET).option("near", "stop within this many blocks")
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
@@ -277,6 +280,17 @@ final class ActionCommands {
             InputState.release(key);
         }
         return () -> Result.ok();
+    }
+
+    private Action fly(CommandContext context, Args args) throws CommandException {
+        LocalPlayer player = player();
+        if (!player.getAbilities().mayfly) {
+            throw new CommandException("syntax", "flying needs creative or spectator mode");
+        }
+        player.getAbilities().flying = args.word("state").equals("on");
+        player.onUpdateAbilities();
+        return () -> Result.ok(new Fields().put("flying", player.getAbilities().flying,
+            player.getAbilities().flying ? "flying" : "not flying"));
     }
 
     private Action navigate(CommandContext context, Args args) throws CommandException {
