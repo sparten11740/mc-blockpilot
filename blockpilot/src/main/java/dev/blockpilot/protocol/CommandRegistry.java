@@ -1,6 +1,7 @@
 package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.BlockpilotApi;
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,8 +24,26 @@ public final class CommandRegistry {
     private final Map<String, List<Entry>> namespaces = new TreeMap<>();
 
     public void register(CommandSpec spec) {
+        String problem = exampleProblem(spec);
+        if (problem != null) {
+            throw new IllegalStateException("Example of built-in command " + spec.name() + " does not parse: "
+                + problem);
+        }
         if (commands.putIfAbsent(spec.name(), new Entry(spec.name(), "", "blockpilot", spec)) != null) {
             throw new IllegalStateException("Built-in command registered twice: " + spec.name());
+        }
+    }
+
+    /** Null when the spec's example parses against its own grammar, else what is wrong with it. */
+    static String exampleProblem(CommandSpec spec) {
+        if (spec.example() == null) {
+            return null;
+        }
+        try {
+            ArgParser.parse(spec, RawCommand.of(spec.example()));
+            return null;
+        } catch (CommandException e) {
+            return e.getMessage();
         }
     }
 
@@ -37,6 +56,10 @@ public final class CommandRegistry {
                 LOGGER.error("Command {} is registered by both {} and {}; keeping the one from {}", name,
                     existing.registrant(), registration.registrant(), existing.registrant());
                 continue;
+            }
+            String problem = exampleProblem(registration.spec());
+            if (problem != null) {
+                LOGGER.warn("Example of {} (from {}) does not parse: {}", name, registration.registrant(), problem);
             }
             Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec());
             commands.put(name, entry);
