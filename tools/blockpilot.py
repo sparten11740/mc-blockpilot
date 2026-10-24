@@ -14,9 +14,25 @@ import sys
 import time
 
 
+def alive(pid):
+    if os.name == "nt":
+        # Signal 0 means CTRL_C_EVENT on Windows; don't probe there.
+        return True
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
 def endpoint(game_dir):
     with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as handle:
         info = json.load(handle)
+    # A file left behind by a game that has exited names a port another game may hold by now.
+    if not alive(info["pid"]):
+        raise ValueError(f"endpoint.json is stale (game process {info['pid']} is not running)")
     with open(info["token_file"], encoding="utf-8") as handle:
         return info["port"], handle.read().strip()
 
