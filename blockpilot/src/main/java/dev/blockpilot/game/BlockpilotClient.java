@@ -47,6 +47,7 @@ import org.lwjgl.glfw.GLFW;
 public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge {
     private static BlockpilotClient instance;
 
+    /** The player's switch for agent control; agents can't press it (see InputCommands). */
     private final KeyMapping toggleKey = new KeyMapping("key.blockpilot.toggle", GLFW.GLFW_KEY_F8,
         "key.categories.blockpilot");
     // Set up on the loader's load-complete thread, then used on the client and server threads.
@@ -79,6 +80,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     public Config config() {
         return config;
+    }
+
+    KeyMapping toggleKey() {
+        return toggleKey;
     }
 
     @Override

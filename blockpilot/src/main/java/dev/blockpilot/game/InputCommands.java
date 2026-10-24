@@ -357,6 +357,9 @@ final class InputCommands {
 
     private Action key(CommandContext context, Args args) throws CommandException {
         InputConstants.Key key = resolveKey(args.word("key"));
+        if (key.equals(((KeyMappingAccessor) BlockpilotClient.get().toggleKey()).blockpilot$key())) {
+            throw new CommandException("syntax", "the agent control toggle is the player's; agents can't press it");
+        }
         boolean mouse = key.getType() == InputConstants.Type.MOUSE;
         int code = key.getValue();
         int session = context.sessionId();
