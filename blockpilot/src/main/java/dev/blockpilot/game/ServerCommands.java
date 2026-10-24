@@ -9,6 +9,7 @@ import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
@@ -49,9 +50,12 @@ final class ServerCommands {
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("server", this::server).onServer().group("integrated")
             .arg("command", ArgType.TEXT).option("as", "player: run as the player, at the player's position")
+            .option("settle", "server ticks to wait before answering so the client has the changes (default 2t; "
+                + "0t for pure probes)")
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
-                + "every feedback line").field("result", "the command's return value").field("success", "true/false")
-            .example("server execute if block 0 -60 0 minecraft:air"));
+                + "every feedback line; options go before the command (server as=player settle=0t <command>)")
+            .field("result", "the command's return value").field("success", "true/false")
+            .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
             .arg("target", ArgType.WORD).option("path", "NBT path inside the data, e.g. Pos or Items[0].id")
             .help("server-side data of a block entity (<pos>) or entity (e<id> or uuid); SNBT in text, JSON in json")
@@ -134,7 +138,11 @@ final class ServerCommands {
             : Result.error("command_failed", capture.lines.isEmpty() ? command : capture.lines.get(
                 capture.lines.size() - 1)).with(new Fields().put("result", value[0], "result=" + value[0]));
         Result answer = result.withRows(rows);
-        return () -> answer;
+        // The server sends block and entity changes to the client during its next tick; answer only once the
+        // client can see them, so a following client query (block, look, status) reads the new state.
+        Duration settle = args.durationOption("settle");
+        int[] remaining = {settle == null ? 2 : settle.ticks()};
+        return () -> remaining[0]-- <= 0 ? answer : null;
     }
 
     private Result nbt(CommandContext context, Args args) throws CommandException {
