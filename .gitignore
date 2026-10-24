@@ -1,0 +1,32 @@
+# Gradle and build outputs
+.gradle/
+build/
+/bin/
+out/
+.kotlin/
+
+# Development worlds, logs, and generated launch files
+run/
+run-*/
+.minecraft/
+logs/
+*.log
+
+# Editor-local settings
+/.eclipse/
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.zed/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings (the OpenSpec skills and commands under .claude/ are tracked)
+.claude/settings.local.json
