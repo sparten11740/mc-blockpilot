@@ -40,6 +40,9 @@ class EngineTest {
         registry.register(CommandSpec.action("walk", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
         registry.register(CommandSpec.query("world", (context, args) -> Result.ok()).needsWorld());
+        registry.register(CommandSpec.query("probe", (context, args) ->
+            Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
+        registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
         engine = new Engine(registry, game);
     }
 
@@ -148,6 +151,35 @@ class EngineTest {
         CompletableFuture<Reply> wait = engine.submit(session, null, "wait counter until value>5 timeout=3t");
         tick(5);
         assertEquals("err timeout 0.15s value=0", text(wait));
+    }
+
+    @Test
+    void serverClockWaitReportsTheServerTick() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> wait = engine.submit(session, null, "wait probe until value>=2 clock=server");
+        tick(1);
+        for (int index = 0; index < 10 && !wait.isDone(); index++) {
+            game.time = 100 + index;
+            counter.incrementAndGet();
+            engine.tickServer();
+        }
+        assertEquals("ok 0.05s t101 value=2", text(wait));
+    }
+
+    @Test
+    void serverActionsAreCancelledOnTheServerThread() {
+        Session first = engine.openSession();
+        Session second = engine.openSession();
+        CompletableFuture<Reply> spin = engine.submit(first, null, "spin");
+        // The gate is checked on a client tick, then the action starts and ticks on server ticks.
+        tick(1);
+        engine.tickServer();
+        assertTrue(log.contains("spin"));
+        assertEquals("ok stopped 1", text(engine.submit(second, null, "stop")));
+        assertEquals("err cancelled", text(spin));
+        assertFalse(log.contains("spin cancelled"));
+        game.serverTasks.forEach(Runnable::run);
+        assertTrue(log.contains("spin cancelled"));
     }
 
     @Test

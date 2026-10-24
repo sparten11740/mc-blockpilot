@@ -257,6 +257,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public void runOnServer(Runnable task) {
+        MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+        if (server == null || server.isSameThread()) {
+            task.run();
+        } else {
+            server.execute(task);
+        }
+    }
+
+    @Override
     public boolean ready() {
         return Minecraft.getInstance().getOverlay() == null;
     }

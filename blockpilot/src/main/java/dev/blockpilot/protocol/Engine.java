@@ -450,8 +450,12 @@ public final class Engine {
                 }
                 matches = condition.holds(last) ? matches + every : 0;
                 if (matches >= stable) {
-                    return Result.ok(new Fields().bare("elapsed", new Duration(elapsed).seconds() + "s"))
-                        .with(condition.observed(last));
+                    Fields fields = new Fields().bare("elapsed", new Duration(elapsed).seconds() + "s");
+                    if (serverClock) {
+                        long time = game.gameTime(true);
+                        fields.put("tick", time, "t" + time);
+                    }
+                    return Result.ok(fields).with(condition.observed(last));
                 }
             }
             elapsed++;

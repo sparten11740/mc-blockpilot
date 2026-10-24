@@ -241,7 +241,13 @@ final class ScriptJob implements CommandContext {
             return;
         }
         if (running != null) {
-            running.action().cancel();
+            Action action = running.action();
+            if (running.affinity() == Affinity.SERVER) {
+                // Server-thread actions start and tick on the server thread, so they are cancelled there too.
+                engine.game().runOnServer(action::cancel);
+            } else {
+                action.cancel();
+            }
             running = null;
             activity = null;
         }

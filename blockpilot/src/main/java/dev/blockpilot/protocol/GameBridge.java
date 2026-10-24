@@ -9,6 +9,9 @@ public interface GameBridge {
     /** Runs the task on the client thread as soon as possible. */
     void runOnClient(Runnable task);
 
+    /** Runs the task on the integrated server thread; at once when already there or when no server runs. */
+    void runOnServer(Runnable task);
+
     /** False while the game is still loading its resources; queued actions wait until then, queries still run. */
     boolean ready();
 

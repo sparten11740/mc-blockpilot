@@ -2,11 +2,17 @@ package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** A game for engine tests: tasks run at once, positions resolve around 0,64,0, releases are counted. */
+/**
+ * A game for engine tests: client tasks run at once, server tasks wait in {@link #serverTasks} until the test runs
+ * them, positions resolve around 0,64,0, releases are counted.
+ */
 final class FakeGame implements GameBridge {
     final AtomicInteger releases = new AtomicInteger();
+    final List<Runnable> serverTasks = new ArrayList<>();
     /** The gate's answer for commands that need a world; null lets them run. */
     String worldGate;
     /** The game time the fake reports; tests advance it. */
@@ -17,6 +23,11 @@ final class FakeGame implements GameBridge {
     @Override
     public void runOnClient(Runnable task) {
         task.run();
+    }
+
+    @Override
+    public void runOnServer(Runnable task) {
+        serverTasks.add(task);
     }
 
     @Override
