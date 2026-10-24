@@ -120,6 +120,22 @@ final class ActionCommands {
         return minecraft().player;
     }
 
+    /**
+     * Closes an open screen (container, inventory, menu) the way Esc would, so world actions and inventory clicks
+     * reach the world and the player's own inventory instead of a screen left open by an earlier command.
+     */
+    static void closeScreen() {
+        Minecraft minecraft = minecraft();
+        if (minecraft.screen == null || minecraft.player == null) {
+            return;
+        }
+        if (minecraft.player.containerMenu != minecraft.player.inventoryMenu) {
+            minecraft.player.closeContainer();
+        } else {
+            minecraft.setScreen(null);
+        }
+    }
+
     /** Queues one click of the mapping, as a key press would; the game handles it on its next tick. */
     static void click(KeyMapping mapping) {
         KeyMappingAccessor accessor = (KeyMappingAccessor) mapping;
@@ -163,6 +179,7 @@ final class ActionCommands {
     }
 
     private Action face(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         Supplier<Vec3> target = point(context, args.word("target"));
         int[] step = {0};
         return named("face", () -> {
@@ -199,6 +216,7 @@ final class ActionCommands {
     }
 
     private Action move(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         KeyMapping key = switch (args.word("dir")) {
             case "forward" -> options().keyUp;
             case "back" -> options().keyDown;
@@ -294,6 +312,7 @@ final class ActionCommands {
     }
 
     private Action navigate(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         String token = args.word("target");
         double near = args.numberOption("near", EntityRef.parse(token) != null ? 2 : 0);
         Supplier<Vec3> target;
@@ -313,6 +332,7 @@ final class ActionCommands {
     }
 
     private Action use(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args.word("target")) : null;
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
@@ -379,6 +399,7 @@ final class ActionCommands {
     }
 
     private Action attack(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         if (!args.has("target")) {
             int[] step = {0};
             Fields[] hit = {null};
@@ -464,6 +485,7 @@ final class ActionCommands {
     }
 
     private Action mine(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         int wanted = args.count("count", 1);
         String token = args.word("target");
         int session = context.sessionId();
@@ -614,6 +636,7 @@ final class ActionCommands {
     }
 
     private Action place(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         Item item = InventoryOps.item(args.word("item"));
         BlockPos pos = Rel.block(context.resolve(args.position("pos")));
         var level = minecraft().level;
@@ -661,6 +684,7 @@ final class ActionCommands {
     }
 
     private Action select(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         String what = args.word("what");
         if (what.matches("[0-8]")) {
             player().getInventory().selected = Integer.parseInt(what);
@@ -672,6 +696,7 @@ final class ActionCommands {
     }
 
     private Action swap(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         int a = InventoryOps.menuSlotOf(args.word("a"));
         int b = InventoryOps.menuSlotOf(args.word("b"));
         InventoryOps.click(a, 0, ClickType.PICKUP);
@@ -681,6 +706,7 @@ final class ActionCommands {
     }
 
     private Action drop(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         String what = args.word("what");
         int menuSlot;
         if (what.matches("\\d+|head|chest|legs|feet|offhand")) {
@@ -705,6 +731,7 @@ final class ActionCommands {
     }
 
     private Action offhand(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         Item item = InventoryOps.item(args.word("item"));
         int index = InventoryOps.find(item);
         if (index < 0) {
@@ -715,6 +742,7 @@ final class ActionCommands {
     }
 
     private Action equip(CommandContext context, Args args) throws CommandException {
+        closeScreen();
         Item item = InventoryOps.item(args.word("item"));
         int index = InventoryOps.find(item);
         if (index < 0) {

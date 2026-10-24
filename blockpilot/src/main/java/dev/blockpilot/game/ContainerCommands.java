@@ -315,6 +315,7 @@ final class ContainerCommands {
                 } else if (!placeByHand(menu)) {
                     clearGrid(menu);
                     if (made == 0) {
+                        closeOpened();
                         throw new CommandException("missing", "ingredients for " + Ids.of(new ItemStack(item)));
                     }
                     return done();
@@ -330,6 +331,7 @@ final class ContainerCommands {
                 }
                 if (made == 0) {
                     clearGrid(menu);
+                    closeOpened();
                     throw new CommandException("missing", "ingredients for " + Ids.of(new ItemStack(item)));
                 }
                 clearGrid(menu);
@@ -347,7 +349,15 @@ final class ContainerCommands {
         }
 
         private Result done() {
+            closeOpened();
             return Result.ok(new Fields().put("crafted", made, "craft " + made + " " + Ids.of(new ItemStack(item))));
+        }
+
+        /** Closes the crafting table this craft opened, so later world actions aren't stuck behind its screen. */
+        private void closeOpened() {
+            if (opening != null && opened) {
+                ActionCommands.closeScreen();
+            }
         }
 
         /**
@@ -401,6 +411,7 @@ final class ContainerCommands {
             if (opening != null && !opened) {
                 opening.cancel();
             }
+            closeOpened();
         }
 
         @Override
