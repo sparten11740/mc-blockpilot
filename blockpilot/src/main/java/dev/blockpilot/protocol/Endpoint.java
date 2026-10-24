@@ -58,8 +58,25 @@ public final class Endpoint {
         this.identity = identity;
     }
 
-    /** Binds the port; throws when it is taken or the address is invalid. */
-    public void start(String bindAddress, int port) throws Exception {
+    /**
+     * Binds the first free port of {@code port} … {@code port + tries - 1}, so several game instances on one machine
+     * each get an endpoint; {@code endpoint.json} tells clients which one. Throws when none is free.
+     */
+    public void start(String bindAddress, int port, int tries) throws Exception {
+        Exception last = null;
+        for (int candidate = port; candidate < port + Math.max(1, tries); candidate++) {
+            try {
+                bind(bindAddress, candidate);
+                return;
+            } catch (Exception e) {
+                last = e;
+                LOGGER.info("Could not bind port {} ({}); trying the next one", candidate, e.getMessage());
+            }
+        }
+        throw last;
+    }
+
+    private void bind(String bindAddress, int port) throws Exception {
         ThreadFactory threads = runnable -> {
             Thread thread = new Thread(runnable, "Blockpilot endpoint");
             thread.setDaemon(true);

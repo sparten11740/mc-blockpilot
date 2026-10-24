@@ -12,6 +12,7 @@ import dev.blockpilot.api.Row;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +37,17 @@ final class ScriptJob implements CommandContext {
     private final List<RawCommand> commands;
     private final List<Result> results = new ArrayList<>();
     private final CompletableFuture<Reply> future = new CompletableFuture<>();
+    /**
+     * Guards the job's progress. Steps only try to take it: a job busy on one thread (say the client, blocked in a
+     * world load that waits for the integrated server) must never make the other thread wait, or they deadlock.
+     */
+    private final ReentrantLock lock = new ReentrantLock();
     private int index;
     private int gatedIndex = -1;
     private Running running;
+    private volatile String activity;
+    /** A cancel that arrived on the thread already inside this job's step; applied when that step ends. */
+    private String pendingCancel;
 
     ScriptJob(Engine engine, Session session, String id, List<RawCommand> commands) {
         this.engine = engine;
@@ -66,12 +75,30 @@ final class ScriptJob implements CommandContext {
     }
 
     /** The running action's name for the HUD, or null. */
-    synchronized String activity() {
-        return running == null ? null : running.name();
+    String activity() {
+        return activity;
     }
 
     /** Advances the job as far as it can on this thread; true once it is complete. */
-    synchronized boolean step(Affinity affinity) {
+    boolean step(Affinity affinity) {
+        // Tasks run while the client thread waits inside a command (a world load) must not re-enter that job.
+        if (lock.isHeldByCurrentThread() || !lock.tryLock()) {
+            return false;
+        }
+        try {
+            boolean done = advance(affinity);
+            if (pendingCancel != null) {
+                cancelLocked(pendingCancel);
+                return true;
+            }
+            return done;
+        } finally {
+            activity = running == null ? null : running.name();
+            lock.unlock();
+        }
+    }
+
+    private boolean advance(Affinity affinity) {
         while (index < commands.size()) {
             if (running != null) {
                 if (running.affinity() != affinity) {
@@ -195,13 +222,28 @@ final class ScriptJob implements CommandContext {
     }
 
     /** Stops the job: the running action is cancelled and every command not yet done fails with the code. */
-    synchronized void cancel(String code) {
+    void cancel(String code) {
+        if (lock.isHeldByCurrentThread()) {
+            // Called from a task the client runs while it waits inside this job's own step: apply it afterwards.
+            pendingCancel = code;
+            return;
+        }
+        lock.lock();
+        try {
+            cancelLocked(code);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void cancelLocked(String code) {
         if (future.isDone()) {
             return;
         }
         if (running != null) {
             running.action().cancel();
             running = null;
+            activity = null;
         }
         if (index < commands.size()) {
             finish(Result.error(code));

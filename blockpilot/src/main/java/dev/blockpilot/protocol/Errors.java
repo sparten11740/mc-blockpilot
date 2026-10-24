@@ -31,6 +31,7 @@ public final class Errors {
         CODES.put("unloaded", "the position is in a chunk that is not loaded");
         CODES.put("join_failed", "joining the world or server failed; the reason is attached");
         CODES.put("exists", "a world with that name already exists");
+        CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("internal", "Blockpilot hit an unexpected error; it is logged");

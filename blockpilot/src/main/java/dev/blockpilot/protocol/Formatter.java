@@ -43,19 +43,24 @@ public final class Formatter {
             out.insert(0, "#" + reply.id() + " ");
         }
         for (Event event : reply.events()) {
-            out.append('\n').append(event.text());
+            out.append('\n').append(oneLine(event.text()));
         }
         return out.toString();
     }
 
+    /** Text from the game (titles, chat) can contain line breaks; one result or event stays on its own lines. */
+    private static String oneLine(String text) {
+        return text.indexOf('\n') < 0 && text.indexOf('\r') < 0 ? text : text.replaceAll("[\\r\\n]+", " ");
+    }
+
     private static void appendResult(StringBuilder out, Result result) {
-        String fields = result.fields().text();
+        String fields = oneLine(result.fields().text());
         switch (result.status()) {
             case SKIP -> out.append("skip");
             case ERR -> {
                 out.append("err ").append(result.code());
                 if (result.argument() != null && !result.argument().isEmpty()) {
-                    out.append(' ').append(result.argument());
+                    out.append(' ').append(oneLine(result.argument()));
                 }
                 if (!fields.isEmpty()) {
                     out.append(' ').append(fields);
@@ -74,14 +79,14 @@ public final class Formatter {
         }
         Result.Diff diff = result.diff();
         if (diff != null) {
-            diff.added().forEach(row -> out.append("\n  + ").append(row.text()));
-            diff.removed().forEach(key -> out.append("\n  - ").append(key));
-            diff.changed().forEach(row -> out.append("\n  ~ ").append(row.text()));
+            diff.added().forEach(row -> out.append("\n  + ").append(oneLine(row.text())));
+            diff.removed().forEach(key -> out.append("\n  - ").append(oneLine(key)));
+            diff.changed().forEach(row -> out.append("\n  ~ ").append(oneLine(row.text())));
         } else if (result.rows() != null) {
             if (result.rows().isEmpty() && result.isOk() && fields.isEmpty()) {
                 out.append(" none");
             }
-            result.rows().forEach(row -> out.append("\n  ").append(row.text()));
+            result.rows().forEach(row -> out.append("\n  ").append(oneLine(row.text())));
         }
         if (result.more() > 0) {
             out.append("\n  +").append(result.more()).append(" more");

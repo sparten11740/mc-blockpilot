@@ -18,6 +18,8 @@ public final class Config {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public int port = 25599;
+    /** How many ports from {@code port} on to try when it is taken (several game instances on one machine). */
+    public int portTries = 10;
     /** Loopback by default; anything else exposes the endpoint to the network. */
     public String bind = "127.0.0.1";
     /** Extra block ids or id patterns ({@code *_ore}) that {@code look} lists besides blocks with block entities. */
