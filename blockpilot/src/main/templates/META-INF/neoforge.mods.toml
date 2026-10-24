@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+# Client-only: servers neither need it nor report it as missing.
+displayTest="IGNORE_ALL_VERSION"
+description='''
+Lets AI agents and scripts observe and control the game through a fast, token-efficient local interface.
+'''
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neo_version},)"
+ordering="NONE"
+side="CLIENT"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_version_range}"
+ordering="NONE"
+side="CLIENT"
+
+<% mixin_configs.each { config -> %>[[mixins]]
+config="${config}"
+
+<% } %>

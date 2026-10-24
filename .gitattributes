@@ -1,0 +1,6 @@
+# Text is stored with LF in the repository and checked out with LF everywhere, except Windows batch files.
+* text=auto eol=lf
+*.bat text eol=crlf
+
+*.png binary
+*.jar binary

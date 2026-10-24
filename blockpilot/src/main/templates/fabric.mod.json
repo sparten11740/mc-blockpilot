@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "Lets AI agents and scripts observe and control the game through a fast, token-efficient local interface.",
+  "license": "${mod_license}",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.blockpilot.platform.fabric.FabricClientEntrypoint"]
+  },
+  "mixins": [<%= mixin_configs.collect { '"' + it + '"' }.join(", ") %>],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_min_version}",
+    "fabric-api": ">=${fabric_api_version}",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=${java_version}"
+  }
+}
