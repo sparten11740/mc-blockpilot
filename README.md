@@ -15,11 +15,13 @@ instances run) and the token file. The endpoint listens on `127.0.0.1` only and 
 **From a shell** (no setup, Python standard library only):
 
 ```sh
-python3 tools/blockpilot.py --game-dir run --wait-ready 300 "status; look"
+python3 tools/blockpilot.py --game-dir run --wait-ready 300 --wait-world "status; look"
 python3 tools/blockpilot.py --game-dir run --json "inv"
 ```
 
-Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached.
+`--wait-ready <seconds>` waits for the game to come up, and `--wait-world` also for the player to be in a world.
+Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
+out).
 
 **Over MCP** (Streamable HTTP; three tools: `run`, `screenshot`, `help`):
 
@@ -34,6 +36,49 @@ events as they happen.
 The window can stay in the background: while an agent is connected the game does not pause and keeps handling input.
 Real keyboard or mouse input to the focused window cancels running agent actions; F8 toggles agent control off and on.
 A line in the top-left corner shows when an agent is connected or acting.
+
+### In another mod's dev environment
+
+`./gradlew publishToMavenLocal` publishes `dev.blockpilot:blockpilot-neoforge` and `blockpilot-fabric` (version
+`<mod version>+<minecraft>`, e.g. `0.1.0-alpha.1+1.21.1`) and `dev.blockpilot:blockpilot-api`. In the other project,
+add `mavenLocal()` to the repositories and Blockpilot as a runtime-only dependency. `blockpilot.autojoin` joins that
+world on launch, and `blockpilot.autocreate=flat|void|normal` creates it first if it is missing.
+
+ModDevGradle (`localRuntime` as in the NeoForge MDK; `runtimeOnly` works too):
+
+```kotlin
+dependencies {
+    localRuntime("dev.blockpilot:blockpilot-neoforge:0.1.0-alpha.1+1.21.1")
+}
+neoForge {
+    runs {
+        named("client") {
+            systemProperty("blockpilot.autojoin", "mymod-test")
+            systemProperty("blockpilot.autocreate", "flat")
+        }
+    }
+}
+```
+
+Fabric Loom:
+
+```kotlin
+dependencies {
+    modLocalRuntime("dev.blockpilot:blockpilot-fabric:0.1.0-alpha.1+1.21.1")
+}
+loom {
+    runs {
+        named("client") {
+            vmArg("-Dblockpilot.autojoin=mymod-test")
+            vmArg("-Dblockpilot.autocreate=flat")
+        }
+    }
+}
+```
+
+Then `python3 <blockpilot checkout>/tools/blockpilot.py --game-dir run --wait-ready 300 --wait-world "status"`, run
+from that project, returns once the player is in the test world. In this repository the same properties go through Gradle:
+`./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test -Pblockpilot.autocreate=flat`.
 
 ## The command language
 
@@ -73,8 +118,9 @@ ok
 
 ## Extending it
 
-Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Register them
-during mod loading, in a class only touched when Blockpilot is installed:
+Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile
+against the API only (`compileOnly("dev.blockpilot:blockpilot-api:1.0.0")`, from mavenLocal as above) and register
+them during mod loading, in a class only touched when Blockpilot is installed:
 
 ```java
 if (ModList.get().isLoaded("blockpilot")) {
