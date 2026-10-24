@@ -51,6 +51,10 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    // The protocol layer's tests run without the game; these are the versions Minecraft 1.21.1 ships.
+    testImplementation("com.google.code.gson:gson:2.10.1")
+    testImplementation("io.netty:netty-handler:4.1.97.Final")
+    testImplementation("org.slf4j:slf4j-api:2.0.9")
 }
 
 neoForge {
