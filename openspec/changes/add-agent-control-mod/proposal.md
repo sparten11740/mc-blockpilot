@@ -2,7 +2,7 @@
 
 ## Why
 
-AI agents can't play or operate Minecraft well today. Screen-and-mouse computer use is slow and costs a lot of tokens, and the existing bot frameworks (Mineflayer and similar) are separate protocol clients. They don't run inside the modded game the user is actually playing. Blockpilot is a mod that gives agents a direct, fast, token-cheap interface to the running game. It is built from one source tree for several Minecraft versions and mod loaders, the same way Ultrasplosive is built with Stonecutter, so the interface stays the same wherever it runs.
+AI agents can't play or operate Minecraft well today. Screen-and-mouse computer use is slow and costs a lot of tokens, and the existing bot frameworks (Mineflayer and similar) are separate protocol clients. They don't run inside the modded game the user is actually playing. Blockpilot is a mod that gives agents a direct, fast, token-cheap interface to the running game. It is built from one source tree for several Minecraft versions and mod loaders, the same way Ultrasplosive is built with Stonecutter, so the interface stays the same wherever it runs. The same interface also serves mod developers: today agents play-test mods in development through RCON and grep, without a player, without rendering, and with `sleep` for timing. Blockpilot gives them real input, screenshots, structured results and condition-based waits.
 
 ## What Changes
 
@@ -11,12 +11,20 @@ AI agents can't play or operate Minecraft well today. Screen-and-mouse computer 
   - **MCP over Streamable HTTP** (`/mcp`) with a deliberately tiny tool set (`run`, `screenshot`, `help`), so tool schemas cost almost nothing in every request.
   - A **raw line protocol** over TCP for scripts, `nc`, and custom harnesses.
 - A **compact command language** shared by both protocols. Commands are short, chainable into one script per round trip, and return terse text replies (no namespaces, no default fields, relative positions, run-length-encoded block dumps, diffs on repeated observations). Pending game events (chat, damage, death, …) are added to the next reply.
-- **Perception**: player status, surroundings (entities, notable blocks, crosshair target), targeted searches, region block dumps, inventory, open screen/container, and an optional downscaled screenshot for when vision is needed.
+- **Structured results** behind every command, rendered as compact text by default or as **JSON** per session (`fmt json`) for test scripts and harnesses.
+- **Condition waits**: `wait <query> until <predicate>` re-runs a read-only command each tick until its fields match, which replaces `sleep`-based timing.
+- An **extension API** so other mods (and Blockpilot's own compat modules) can register namespaced commands and events, for example `aerolarge:build` or `sable:info`, that behave exactly like built-in ones. It ships as a compile-only, Minecraft-version-independent `blockpilot-api` artifact.
+- **Perception**: player status, surroundings (entities, notable blocks, crosshair target), targeted searches, single-block queries, region block dumps, inventory, open screen/container, and an optional downscaled screenshot for when vision is needed.
 - **Player control**: in-mod pathfinding (`goto`), movement, looking, mining, placing, using/attacking, hotbar/inventory management, crafting, container transfer, chat/commands, waiting. Long actions run in the mod at tick rate, not across agent turns. A human player keypress interrupts the agent, and a HUD indicator shows when an agent is connected or acting.
 - **Session control** from the title screen: list worlds and servers, join, and leave, so an agent can get into a game unaided.
 - Binary wire formats (protobuf etc.) are **explicitly not used**. The model reads text, so token cost depends on the text format, not the wire encoding. Localhost serialization cost is negligible next to model latency.
 
-Out of scope for this change (planned follow-ups): server-side control (world queries/edits as the server, command execution, fake/bot players), the 26.1 nodes, and multi-agent coordination.
+Out of scope for this change (planned follow-ups):
+- `add-test-harness`: the integrated server in singleplayer (server commands with captured results, NBT queries, tick freeze/step, log streaming, test-world creation, world snapshots).
+- Sable compat commands.
+- A dedicated-server half with fake players.
+- The 26.1 nodes.
+- Multi-agent coordination.
 
 ## Capabilities
 
@@ -27,6 +35,7 @@ Out of scope for this change (planned follow-ups): server-side control (world qu
 - `game-perception`: Read-only observation commands: status, look, find, blocks, inventory, screen, and screenshot.
 - `player-control`: Commands that act as the local player: movement, pathfinding, interaction, inventory, crafting, containers, chat, waiting/cancelling, and human-override behavior.
 - `game-session`: Getting the client into and out of a game: listing singleplayer worlds and servers, joining, leaving, and reporting connection state.
+- `extension-api`: How other mods register namespaced commands and events, the guarantees those commands get, fault isolation, and the published version-independent API artifact.
 
 ### Modified Capabilities
 <!-- none: the project has no existing specs -->
@@ -36,5 +45,6 @@ Out of scope for this change (planned follow-ups): server-side control (world qu
 - **New code**: a whole new repository layout (`settings.gradle.kts`, root `build.gradle.kts`, `blockpilot/` Stonecutter tree, Gradle wrapper 9.x with a JDK 25 daemon toolchain, Java 21 for 1.21.1 targets).
 - **Dependencies**: Stonecutter, ModDevGradle, Fabric Loom (remap variant for 1.21.x, plain for 26.x via loom-back-compat), Fabric API, Parchment. No new runtime libraries: Netty and Gson come with Minecraft. The MCP SDK is deliberately not bundled.
 - **Runtime surface**: opens a TCP port on `127.0.0.1` while the client runs. A per-install token in the config dir guards it.
-- **Users/agents**: MCP clients connect with `--transport http http://127.0.0.1:<port>/mcp` and the token header. Scripts connect with a plain TCP socket.
+- **Users/agents**: MCP clients connect with `--transport http http://127.0.0.1:<port>/mcp` and the token header. Scripts connect with a plain TCP socket, usually in JSON mode.
+- **Other mods**: integrate via a `compileOnly` dependency on `dev.blockpilot:blockpilot-api` (published to mavenLocal at first), registering commands only when Blockpilot is loaded.
 - **Multiplayer note**: the agent acts through the normal client input path, so servers see ordinary player actions. Server rules on automation still apply, and the HUD indicator makes agent control visible to the user.

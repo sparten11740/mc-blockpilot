@@ -27,7 +27,7 @@ The mod SHALL generate a random token on first start, store it in its config dir
 
 #### Scenario: Line connection authenticates
 - **WHEN** a TCP client sends `auth <valid token>` as its first line
-- **THEN** the endpoint replies `ok blockpilot <mod version> mc<minecraft version> <loader>` and accepts commands
+- **THEN** the endpoint replies `ok blockpilot <mod version> api<api version> mc<minecraft version> <loader>` and accepts commands
 
 #### Scenario: Line connection sends a command before auth
 - **WHEN** the first line is not a valid `auth` line
@@ -68,11 +68,15 @@ The MCP tool set SHALL be `run` (executes a command-language script), `screensho
 - **THEN** the tool result has `isError: true` and the command-language error line as text content
 
 ### Requirement: Line protocol framing
-On the line protocol, each request SHALL be one line, optionally prefixed with `#<id> `. The reply SHALL be one or more lines ending with a line holding only `.`. If the request had an id, the reply's first line repeats it.
+On the line protocol, each request SHALL be one line, optionally prefixed with `#<id> `. In text mode, the reply SHALL be one or more lines ending with a line holding only `.`, and if the request had an id the reply's first line repeats it. In JSON mode, each reply SHALL be exactly one line of JSON with the id as an `id` field, and pushed events are JSON lines too.
 
 #### Scenario: Pipelined requests
 - **WHEN** a client sends `#1 status` and `#2 inv` without waiting
 - **THEN** it receives two `.`-terminated replies, tagged `#1` and `#2`, in request order
+
+#### Scenario: JSON line framing
+- **WHEN** a client in JSON mode sends `#3 status`
+- **THEN** it receives a single line `{"id":"3","results":[…],"events":[…]}` and no `.` line
 
 #### Scenario: Pushed events
 - **WHEN** a line client has sent `sub on` and the player receives a chat message

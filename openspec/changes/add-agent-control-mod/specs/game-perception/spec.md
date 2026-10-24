@@ -40,6 +40,17 @@ Read-only commands that tell an agent what the player can perceive: own state, s
 - **WHEN** no matching block is loaded within the radius
 - **THEN** the result is `ok none`
 
+### Requirement: Single block query
+`block <pos>` SHALL return the block id, its non-default state properties and its block-entity type when it has one, as the fields `id`, `props` and `be`.
+
+#### Scenario: Block with state and block entity
+- **WHEN** an agent runs `block ~1,0,0` on an east-facing chest
+- **THEN** the result is `ok chest facing=east be:chest`
+
+#### Scenario: Plain block
+- **WHEN** an agent runs `block ~0,-1,0` while standing on stone
+- **THEN** the result is `ok stone`
+
 ### Requirement: Region block dump
 `blocks <pos1> <pos2>` SHALL dump the cuboid between two positions (at most 4096 blocks). The output has a palette line that maps short symbols to block states, then one line per Y layer, bottom to top, with run-length encoding. Air prints as `.`.
 

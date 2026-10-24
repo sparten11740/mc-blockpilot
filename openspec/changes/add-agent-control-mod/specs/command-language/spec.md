@@ -85,12 +85,54 @@ The mod SHALL buffer game events per session (chat received, damage taken, death
 - **WHEN** the player takes 4 damage from a skeleton between two agent requests
 - **THEN** the next reply ends with a line like `! hurt 4 skeleton e933 hp16`
 
+### Requirement: Structured results in text or JSON
+Every command SHALL produce a structured result: status, error code, named fields and keyed rows. `fmt text|json` SHALL choose how a session renders results. Text, the compact form described above, is the default. Both formats carry the same fields with the same default omissions, and the setting affects only the session that sets it.
+
+#### Scenario: JSON status
+- **WHEN** a session runs `fmt json` and then `status`
+- **THEN** the reply is a JSON object whose `results` array holds one object like `{"ok":true,"pos":[104.5,64,-33.2],"dim":"overworld","hp":20,"max_hp":20,"food":18}`
+
+#### Scenario: Error and skip in JSON
+- **WHEN** a JSON-mode session runs `select diamond_pickaxe; mine ~0,-1,0` without a diamond pickaxe
+- **THEN** `results` holds `{"ok":false,"err":"no_item","arg":"diamond_pickaxe"}` followed by `{"skip":true}`
+
+#### Scenario: Diff in JSON
+- **WHEN** a JSON-mode session repeats `inv` after picking up 3 raw iron
+- **THEN** the result has a `changed`/`added`/`removed` row array with a row for `raw_iron` and nothing for unchanged slots
+
+#### Scenario: Format is per session
+- **WHEN** session A runs `fmt json`
+- **THEN** session B still receives text replies
+
+### Requirement: Wait conditions
+`wait <query> until <predicate> [and <predicate>…]` SHALL re-run a read-only command until every predicate over its result holds. A predicate is `<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of rows. Options after `until`: `stable=<Nt>` (consecutive matches needed, default 1), `every=<Nt>` (default 1t), `timeout=<duration>` (default 60s).
+
+#### Scenario: Wait for a block change
+- **WHEN** an agent runs `wait block 0,-60,0 until id==air`
+- **THEN** the result is `ok <elapsed> id=air` on the first tick the block is air
+
+#### Scenario: Wait until values settle
+- **WHEN** an agent runs `wait sable:info <uuid> until speed<0.01 stable=20t timeout=30s`
+- **THEN** the result returns once `speed` has stayed below 0.01 for 20 consecutive ticks
+
+#### Scenario: Timeout reports the last values
+- **WHEN** the predicate never holds before the timeout
+- **THEN** the result is `err timeout` with the fields named in the predicates, as last observed
+
+#### Scenario: Action used as condition
+- **WHEN** an agent runs `wait mine ~0,-1,0 until ok`
+- **THEN** the result is `err syntax` because `mine` is not a read-only command
+
 ### Requirement: In-band help
-`help` SHALL list command groups. `help <command|group|errors>` SHALL return syntax, arguments and one example. Help text SHALL report commands this target does not support.
+`help` SHALL list command groups. `help <command|group|errors>` SHALL return syntax, arguments, result fields and one example. Help text SHALL report commands this target does not support.
 
 #### Scenario: Help for a command
 - **WHEN** an agent runs `help goto`
 - **THEN** the reply gives the `goto` syntax, its options and an example
+
+#### Scenario: Help lists result fields
+- **WHEN** an agent runs `help status`
+- **THEN** the reply lists the field names `status` produces (e.g. `pos`, `hp`, `food`), which can be used in `wait … until` predicates
 
 ### Requirement: Unambiguous tokens
 Arguments SHALL be separated by spaces. Free text (chat messages, sign text) SHALL be the last argument and runs to the end of the command; a literal `;` inside it is written `\;`. Unknown commands and malformed arguments SHALL fail with `err syntax <hint>`.

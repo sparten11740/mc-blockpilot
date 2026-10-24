@@ -135,7 +135,11 @@ While an agent session is connected, injected input SHALL work when the game win
 - **THEN** the command is sent and any feedback arrives as `! chat` events
 
 ### Requirement: Waiting and cancelling
-`wait <Nt|Ns>` SHALL wait the given ticks or seconds. `wait idle` SHALL wait until queued actions finish. `stop` SHALL cancel the running and queued actions and release held inputs.
+`wait <Nt|Ns>` SHALL wait the given ticks or seconds. `wait idle` SHALL wait until queued actions finish. `wait <query> until <predicate>` SHALL wait until a condition holds; see command-language. `stop` SHALL cancel the running and queued actions and release held inputs.
+
+#### Scenario: Wait for a block to disappear
+- **WHEN** an agent runs `use ~1,0,0; wait block ~1,0,0 until id==air timeout=5s` on a block that breaks when used
+- **THEN** the script returns as soon as the block is gone, and fails with `err timeout` after 5 s if it isn't
 
 #### Scenario: Stop interrupts goto
 - **WHEN** session B runs `stop` while session A's `goto` is in progress

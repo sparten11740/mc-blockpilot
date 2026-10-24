@@ -36,8 +36,12 @@ blockpilot/
   src/main/java/dev/blockpilot/...      shared
   src/main/templates/                   fabric.mod.json, META-INF/neoforge.mods.toml
   src/1.21.1/java/...                   version-specific copies
-  src/test/java/...                     JUnit tests for the protocol layer
+  src/test/java/...                     JUnit tests for the api and protocol layers
+blockpilot-api/
+  build.gradle.kts          plain java-library + maven-publish over blockpilot/src/main/java, only dev/blockpilot/api/** (D12)
 ```
+
+The `api` package must never contain Stonecutter conditions, because `blockpilot-api` compiles it outside the tree.
 
 The build scripts are adapted from Ultrasplosive's: Supplementaries handling removed, `environment: client` / `side = "CLIENT"` in the metadata, and a JUnit test task added. Adding 26.1 later means a `target("26.1", ...)` line, two `versions/26.1-*` folders, rename rules, and `src/26.1/` copies of the version-sensitive files (see D9).
 
@@ -45,11 +49,12 @@ The build scripts are adapted from Ultrasplosive's: Supplementaries handling rem
 
 ### D2. Three layers inside the one tree
 
-- `dev.blockpilot.protocol`: **no `net.minecraft` imports.** Tokenizer, script parser, command registry and help generator, reply/line formatter, diff engine, event ring buffer, MCP JSON-RPC handling, line-protocol framing, config/token handling. Uses only the JDK, Gson and Netty, all of which ship with Minecraft on every target.
+- `dev.blockpilot.api`: **no `net.minecraft` or loader imports.** The public extension API (D12): command specs, argument and result value types, the registry entry point, the event emitter. Published on its own as `blockpilot-api`.
+- `dev.blockpilot.protocol`: **no `net.minecraft` imports.** Tokenizer, script parser, command registry and help generator, the structured result model with its text and JSON formatters, diff engine, condition parser/evaluator, event ring buffer, MCP JSON-RPC handling, line-protocol framing, config/token handling. Uses only the JDK, Gson, Netty (all of which ship with Minecraft on every target) and `api`.
 - `dev.blockpilot.game`: command implementations against Minecraft (perception, actions, input, session). Version differences are handled with Stonecutter conditions or `src/<version>/` copies.
 - `dev.blockpilot.platform`: the `ClientPlatform` seam (config dir, key mapping registration, client tick hook, HUD render hook, mod-loaded checks) with `neoforge` / `fabric` implementations.
 
-A JUnit test asserts that nothing in `protocol` imports `net.minecraft`. This keeps the layer portable, and the server half can reuse it later.
+A JUnit test asserts that nothing in `api` or `protocol` imports `net.minecraft`, and that nothing in `api` imports `protocol`, `game` or `platform`. This keeps both layers portable, and the server half can reuse them later.
 
 *Alternative:* a separate plain-Java `blockpilot-protocol` Gradle project included into each jar. Rejected for now because it means jar-in-jar or shading on both loaders. An import rule plus a package boundary gets the same separation more cheaply.
 
@@ -73,7 +78,9 @@ The grammar is defined in the `command-language` spec. Implementation notes:
 
 - A **command registry** holds each command's name, argument grammar, kind (`query` or `action`), help text and example, and a per-target `supported` predicate. The parser, `help`, the `run` cheat sheet and unsupported-command errors all come from this one registry.
 - **Script scheduling:** a script made only of queries runs immediately as one client-thread task. A script with any action goes into the shared FIFO **action queue** as a unit. Queries inside it run in order, at their position in the script, so `select; mine; status` sees consistent state.
-- **Diffs:** `look`, `inv` and `screen` produce *keyed lines* (key = entity ref / block type / slot / widget index). The session keeps the last keyed snapshot per command, and the diff engine emits `+`, `-` and `~` lines. This is pure `protocol` code and unit-tested.
+- **Structured results first, formatting last:** a command handler returns a `Result` (ok/err/skip, error code and argument, ordered named fields, and optional keyed rows), never a string. The registry declares each command's fields with their types and their text rendering (e.g. fields `hp` and `max_hp` render as `hp20/20`). The text formatter applies token-saving rules (namespace stripping, default omission, compact field syntax). The JSON formatter writes the same fields with Gson, using snake_case names. Both formatters are golden-tested against the same `Result` fixtures, so they can't drift apart.
+- **Diffs:** `look`, `inv` and `screen` produce *keyed rows* (key = entity ref / block type / slot / widget index). The session keeps the last keyed snapshot per command, and the diff engine produces added/removed/changed rows. Text renders them as `+`, `-` and `~` lines; JSON as `added`, `removed` and `changed` arrays. This is pure `protocol` code and unit-tested.
+- **Conditions:** `wait <query> until …` parses the query with the normal parser (rejecting actions), and parses predicates into `(field path, operator, literal)` triples. Numbers compare numerically, everything else by string equality. It runs as an action in the queue, so it keeps the session's ordering. Each `every` ticks it runs the query on the client thread and evaluates the predicates against the `Result` fields (or `count` for rows), counting consecutive matches for `stable`. `help <command>` shows the field list from the registry, so the predicates an agent can write are discoverable.
 - **Reply budget:** every list output has a hard cap (e.g. `look` lists at most 24 entities and 24 block groups, then prints `+N more`), so a crowded area can't blow up an agent's context.
 
 Example round trip (line protocol):
@@ -123,7 +130,7 @@ These files are expected to need `src/<version>/` copies or `//? if` blocks:
 - HUD indicator rendering: the `GuiGraphics` → `GuiGraphicsExtractor` rename (rename rule, as in Ultrasplosive).
 - `ResourceLocation` → `Identifier` (rename rule).
 
-Everything in `protocol`, plus pathfinding, diffing and command parsing, stays a single copy.
+Everything in `api` and `protocol`, plus pathfinding, diffing, conditions and command parsing, stays a single copy.
 
 ### D10. Pathfinding
 
@@ -135,6 +142,18 @@ Blockpilot has its own A* on block positions over loaded chunks. Moves: walk, di
 
 `config/blockpilot/config.json` holds the port, bind address, default timeouts, the notable-block list and caps. `config/blockpilot/token` holds a random 32-byte token, base64url, created with owner-only permissions where the OS supports it. The token is printed to the log on first start, and `/blockpilot token` (client command) copies it to the clipboard. Line-protocol and HTTP auth compare tokens in constant time.
 
+### D12. Extension API: a static registry with Minecraft-free types
+
+`dev.blockpilot.api.Blockpilot.register(String namespace, CommandSpec spec)` and `Blockpilot.events(namespace).emit(name, fields)`. A `CommandSpec` is built fluently: `query(name)` or `action(name)`, typed arguments drawn from the standard tokens (`Position`, `EntityRef`, `Count`, `Duration`, `Word`, `Text`, options), declared result fields, help and example. A query handler is `ctx -> Result`. An action handler returns an `ExtensionAction` with `start`/`tick`/`cancel`, the same state machine as built-in actions (D6). Handlers run on the client thread. To reach Minecraft objects they use the game directly; the API only passes Minecraft-free value types.
+
+Registration is a **static registry** that stores specs whenever it is called. Blockpilot builds its command table from it when mod loading completes (NeoForge `FMLLoadCompleteEvent`, Fabric client-started, through the `ClientPlatform` seam), and only then starts the listener. So no request can arrive before every mod has registered, it doesn't matter whether the integrating mod initializes before or after Blockpilot, and there's no loader-specific discovery (Fabric entrypoints, NeoForge mod properties). An integrating mod keeps its Blockpilot calls in a separate class that it only touches after checking `isModLoaded("blockpilot")`. That is the same pattern Ultrasplosive uses for Supplementaries, so the class never loads without Blockpilot. Registrations after the table is built are rejected with a log line, so the command set is stable during a session.
+
+The `api` package is compiled into every mod jar. A separate `blockpilot-api` jar holding only `dev/blockpilot/api/**` is built once by a plain `java-library` project, outside the Stonecutter tree, from the same source folder. It is published with `maven-publish` (mavenLocal first). Because it contains no Minecraft types, one artifact serves every target.
+
+Blockpilot's own compat modules, starting with Sable in a later change, use this same API from a `compat/<mod>` package, as optional dependencies like Ultrasplosive's.
+
+*Alternatives:* `ServiceLoader` discovery (behaves differently across NeoForge's module layers and Fabric's classloader), and Fabric entrypoints plus a NeoForge event (two discovery paths to keep in step). Both are rejected in favor of the loader-agnostic static registry. Exposing Minecraft types in the API would be convenient for handlers, but would need one API artifact per Minecraft version, so it is rejected as well.
+
 ## Risks / Trade-offs
 
 - [Modded handlers that read GLFW state directly (`glfwGetMouseButton`, `InputConstants.isKeyDown`) rather than callbacks or `KeyMapping`s won't see injected input.] → Mixin `InputConstants.isKeyDown` and the mouse-button polling helper so they consult `InputState` first. Verify with a Create Simulated drag during manual testing.
@@ -143,6 +162,8 @@ Blockpilot has its own A* on block positions over loaded chunks. Moves: walk, di
 - [`netty-codec-http` may not be on every target's runtime classpath.] → Verified first (task 3.1). The fallback is the minimal in-house HTTP/1.1 decoder.
 - [Custom-rendered modded GUIs expose no widgets.] → `screenshot` plus coordinate pointer commands still work. `screen` reports cursor and size so the agent can map coordinates.
 - [Unfocused windows render slowly (inactivity FPS limit), which slows screenshots and per-frame mouse processing.] → Ticks keep running at 20 TPS. Raw mouse movement is fed per tick, and screenshots wait for the next rendered frame with a timeout.
+- [Every-tick `wait` conditions on costly queries (`find` at radius 128) could cost frame time.] → `every=` option, the usual caps on query radius, and a log warning when a condition evaluation takes longer than 2 ms.
+- [Extension API stability: a breaking change to `api` breaks integrating mods.] → `api` follows semantic versioning separately from the mod version. Its version is reported in the `auth` reply and in `help`, and only additive changes are made within a major version.
 - [Line protocol is plaintext on loopback.] → Loopback-only by default, token required, Origin checks on HTTP. Opening it to other machines is an explicit, documented choice.
 
 ## Migration Plan
