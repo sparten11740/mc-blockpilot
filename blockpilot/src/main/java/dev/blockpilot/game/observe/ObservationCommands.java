@@ -145,7 +145,16 @@ public final class ObservationCommands {
             target = () -> point;
         }
         CameraControl.place(new CameraControl.Placement(position, target));
-        return ActionSupport.afterFrames(2, () -> Result.ok(new Fields().bare("camera", Rel.of(position))));
+        // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
+        Position atAbsolute = Rel.absolute(position);
+        return ActionSupport.afterFrames(2, () -> {
+            Vec3 looking = target.get();
+            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+            if (looking != null) {
+                fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
+            }
+            return Result.ok(fields);
+        });
     }
 
     private static long since(Args args, long fallback) throws CommandException {
