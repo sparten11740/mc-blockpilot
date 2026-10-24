@@ -70,14 +70,17 @@ final class PerceptionCommands {
             .field("count", "rows").example("look 12"));
         registry.register(CommandSpec.query("find", this::find).needsWorld().group("perception")
             .arg("what", ArgType.WORD).optionalArg("radius", ArgType.INT).optionalArg("limit", ArgType.INT)
+            .option("side", "server: read the integrated server's level (cheats on), incl. chunks the client lacks")
             .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks")
             .field("count", "matches").example("find #logs 32 3"));
         registry.register(CommandSpec.query("block", this::block).needsWorld().group("perception")
-            .arg("pos", ArgType.POSITION).help("one block: id, non-default properties, block entity type")
+            .arg("pos", ArgType.POSITION).option("side", "server: read the integrated server's level (cheats on)")
+            .help("one block: id, non-default properties, block entity type")
             .field("id", "block id").field("props", "non-default state properties").field("be", "block entity type")
             .example("block ~0,-1,0"));
         registry.register(CommandSpec.query("blocks", this::blocks).needsWorld().group("perception")
             .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION)
+            .option("side", "server: read the integrated server's level (cheats on)")
             .help("a region (max 4096 blocks): palette, then Y layers bottom-up, rows north to south, RLE, . = air")
             .example("blocks ~-2,-1,-2 ~2,0,2"));
         registry.register(CommandSpec.query("inv", this::inventory).needsWorld().diffable().group("perception")
@@ -251,8 +254,16 @@ final class PerceptionCommands {
     }
 
     static Row entityRow(Entity entity) {
+        return entityRow(entity, false);
+    }
+
+    /** An entity as a row; read on the server side, it also carries the entity's UUID. */
+    static Row entityRow(Entity entity, boolean server) {
         Fields fields = new Fields().bare("type", Ids.of(entity)).bare("ref", new EntityRef(entity.getId()))
             .bare("at", Rel.of(entity.position())).hidden("at_abs", Rel.absolute(entity.position()));
+        if (server) {
+            fields.put("uuid", entity.getUUID().toString(), "uuid:" + entity.getUUID());
+        }
         if (entity.hasCustomName()) {
             fields.put("name", entity.getCustomName().getString(), "\"" + entity.getCustomName().getString() + "\"");
         }
@@ -327,48 +338,55 @@ final class PerceptionCommands {
     }
 
     private Result find(CommandContext context, Args args) throws CommandException {
-        Minecraft minecraft = minecraft();
-        LocalPlayer player = minecraft.player;
+        LocalPlayer player = minecraft().player;
         String what = args.word("what");
         int radius = Mth.clamp(args.integer("radius", 32), 1, MAX_FIND_RADIUS);
         int limit = Mth.clamp(args.integer("limit", 5), 1, 100);
-        List<Row> rows = new ArrayList<>();
         var id = what.startsWith("#") || what.contains("*") ? null : Ids.parse(what);
-        if (id != null && BuiltInRegistries.ENTITY_TYPE.containsKey(id) && !BuiltInRegistries.BLOCK.containsKey(id)) {
-            var type = BuiltInRegistries.ENTITY_TYPE.get(id);
-            List<Entity> entities = minecraft.level.getEntities(player, new AABB(player.blockPosition()).inflate(radius),
-                entity -> entity.getType() == type && entity.isAlive());
-            entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(player)));
-            entities.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity)));
-            return Result.ok().withRows(rows);
-        }
-        if (id != null && BuiltInRegistries.ITEM.containsKey(id) && !BuiltInRegistries.BLOCK.containsKey(id)) {
-            var item = BuiltInRegistries.ITEM.get(id);
-            List<Entity> drops = minecraft.level.getEntities(player, new AABB(player.blockPosition()).inflate(radius),
-                entity -> entity instanceof ItemEntity drop && drop.getItem().is(item));
-            drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(player)));
-            drops.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity)));
-            return Result.ok().withRows(rows);
-        }
-        BlockMatcher matcher = BlockMatcher.parse(what);
+        BlockMatcher matcher = id != null && !BuiltInRegistries.BLOCK.containsKey(id) ? null : BlockMatcher.parse(what);
         BlockPos center = player.blockPosition();
-        List<BlockPos> found = new ArrayList<>();
-        scan(minecraft.level, center, radius, matcher, false, (pos, state) -> found.add(pos.immutable()));
-        found.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
-        for (BlockPos pos : found.subList(0, Math.min(limit, found.size()))) {
-            rows.add(Row.of(pos.toShortString(), new Fields().bare("block", Ids.of(minecraft.level.getBlockState(pos)))
-                .bare("at", Rel.of(pos)).hidden("at_abs", Rel.absolute(pos))));
-        }
-        return Result.ok().withRows(rows);
+        Vec3 eyes = player.position();
+        AABB box = new AABB(center).inflate(radius);
+        return Sides.read(args, (level, server) -> {
+            List<Row> rows = new ArrayList<>();
+            if (matcher == null && BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
+                var type = BuiltInRegistries.ENTITY_TYPE.get(id);
+                List<Entity> entities = level.getEntities((Entity) null, box,
+                    entity -> entity.getType() == type && entity.isAlive() && entity.getId() != player.getId());
+                entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
+                entities.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity, server)));
+                return Result.ok().withRows(rows);
+            }
+            if (matcher == null) {
+                if (!BuiltInRegistries.ITEM.containsKey(id)) {
+                    throw new CommandException("syntax", "no block, item or entity type " + what);
+                }
+                var item = BuiltInRegistries.ITEM.get(id);
+                List<Entity> drops = level.getEntities((Entity) null, box,
+                    entity -> entity instanceof ItemEntity drop && drop.getItem().is(item));
+                drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
+                drops.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity, server)));
+                return Result.ok().withRows(rows);
+            }
+            List<BlockPos> found = new ArrayList<>();
+            scan(level, center, radius, matcher, false, (pos, state) -> found.add(pos.immutable()));
+            found.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
+            for (BlockPos pos : found.subList(0, Math.min(limit, found.size()))) {
+                rows.add(Row.of(pos.toShortString(), new Fields().bare("block", Ids.of(level.getBlockState(pos)))
+                    .bare("at", Rel.of(pos)).hidden("at_abs", Rel.absolute(pos))));
+            }
+            return Result.ok().withRows(rows);
+        });
     }
 
     private Result block(CommandContext context, Args args) throws CommandException {
-        Level level = minecraft().level;
         BlockPos pos = Rel.block(context.resolve(args.position("pos")));
-        if (!level.hasChunkAt(pos)) {
-            throw new CommandException("unloaded", Rel.of(pos).toString());
-        }
-        return Result.ok(describe(level, pos));
+        return Sides.read(args, (level, server) -> {
+            if (!level.hasChunkAt(pos)) {
+                throw new CommandException("unloaded", Rel.of(pos).toString());
+            }
+            return Result.ok(describe(level, pos));
+        });
     }
 
     /** A block's id, non-default properties and block entity type, as {@code block} reports it. */
@@ -403,7 +421,6 @@ final class PerceptionCommands {
     }
 
     private Result blocks(CommandContext context, Args args) throws CommandException {
-        Level level = minecraft().level;
         BlockPos from = Rel.block(context.resolve(args.position("from")));
         BlockPos to = Rel.block(context.resolve(args.position("to")));
         BlockPos min = new BlockPos(Math.min(from.getX(), to.getX()), Math.min(from.getY(), to.getY()),
@@ -414,7 +431,7 @@ final class PerceptionCommands {
         if (volume > MAX_REGION_BLOCKS) {
             throw new CommandException("too_large", String.valueOf(MAX_REGION_BLOCKS));
         }
-        return Regions.dump(level, min, max);
+        return Sides.read(args, (level, server) -> Regions.dump(level, min, max));
     }
 
     private Result inventory(CommandContext context, Args args) {
