@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Sends one Blockpilot script to a running game and prints the reply.
 
-    python3 tools/blockpilot.py --game-dir <run dir> [--json] [--timeout 120] [--wait-ready 180] "status; look"
+    python3 tools/blockpilot.py --game-dir <run dir> [--json] [--timeout 120] [--wait-ready 180 [--wait-world]] \
+        "status; look"
 
 Reads <game dir>/blockpilot/endpoint.json (port, token file) written by the mod. Exit code: 0 if every command
 returned ok, 1 if any returned err, 2 if the game could not be reached. Standard library only.
@@ -37,8 +38,7 @@ def endpoint(game_dir):
         return info["port"], handle.read().strip()
 
 
-def connect(game_dir, wait_ready, timeout):
-    deadline = time.time() + wait_ready
+def connect(game_dir, deadline, timeout):
     while True:
         try:
             port, token = endpoint(game_dir)
@@ -57,10 +57,13 @@ def main():
     parser.add_argument("--json", action="store_true", help="print the reply as one JSON object")
     parser.add_argument("--timeout", type=float, default=300, help="seconds to wait for the reply")
     parser.add_argument("--wait-ready", type=float, default=0, help="seconds to wait for the game to come up")
+    parser.add_argument("--wait-world", action="store_true",
+                        help="also wait (within --wait-ready) until the player is in a world")
     args = parser.parse_args()
+    deadline = time.time() + args.wait_ready
 
     try:
-        sock, token = connect(args.game_dir, args.wait_ready, args.timeout)
+        sock, token = connect(args.game_dir, deadline, args.timeout)
     except SystemExit as error:
         print(error, file=sys.stderr)
         return 2
@@ -87,6 +90,15 @@ def main():
     if not greeting.startswith("ok"):
         print(greeting, file=sys.stderr)
         return 2
+    if args.wait_world:
+        while True:
+            send("status")
+            if not text_reply().startswith("ok menu"):
+                break
+            if time.time() >= deadline:
+                print("blockpilot: timed out waiting for a world", file=sys.stderr)
+                return 2
+            time.sleep(1)
     if args.json:
         send("fmt json")
         stream.readline()
