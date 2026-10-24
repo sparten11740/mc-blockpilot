@@ -227,6 +227,30 @@ actions fail with `err disabled` and perception still works.
 - **THEN** the agent's action ends with `err interrupted`, and the user has full
   control
 
+#### Scenario: Agents can't press the toggle
+- **WHEN** an agent runs `key press` with the toggle's mapping id or its bound
+  key
+- **THEN** the result is `err syntax`, and agent control stays on
+
+### Requirement: Leftover screens are closed for world actions
+Commands that act on the world or the player's own inventory (`face`, `move`,
+`goto`, `use`, `attack`, `mine`, `place`, `select`, `swap`, `drop`, `offhand`,
+`equip`) SHALL first close an open screen, as a player would press Esc. Commands
+that work on screens (`screen`, `click`, `take`, `put`, `type`) keep it open.
+
+#### Scenario: Table left open by craft
+- **WHEN** a screen is still open from an earlier command and an agent runs
+  `mine ~1,0,0`
+- **THEN** the screen closes and the block is mined
+
+### Requirement: Flying
+`fly on|off` SHALL start or stop flying where the game mode allows it (creative,
+spectator), and fail with `err syntax` elsewhere.
+
+#### Scenario: Hover after a teleport
+- **WHEN** an agent in creative teleports into the air and runs `fly on`
+- **THEN** the player hovers instead of falling
+
 ### Requirement: Agent activity indicator
 A small HUD indicator SHALL show when an agent session is connected, when an
 action is running, and when agent control is disabled.

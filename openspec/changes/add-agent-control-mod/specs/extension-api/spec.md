@@ -50,7 +50,8 @@ exactly as built-in commands do.
   script result is `err cancelled`
 
 ### Requirement: Discovery through help
-`help` SHALL list registered namespaces. `help <namespace>` SHALL list that
+`help` SHALL list registered namespaces. `help <namespace>` (or `help
+<namespace>:`, needed when a built-in command has the same name) SHALL list that
 namespace's commands, and `help <namespace>:<name>` SHALL return its syntax,
 result fields and example. Registering extensions SHALL NOT change the MCP tool
 list or tool descriptions.

@@ -19,9 +19,14 @@ user explicitly sets a bind address in the config.
 - **AND** connections to the machine's LAN address on that port are refused
 
 #### Scenario: Port in use
-- **WHEN** the configured port is already in use
-- **THEN** the mod logs the failure, shows a one-time in-game notice, and the
-  game keeps running without the endpoint
+- **WHEN** the configured port is already in use (another game instance)
+- **THEN** the endpoint binds the next free port, up to the configured number of
+  tries, and `blockpilot/endpoint.json` records the port it got
+
+#### Scenario: No free port
+- **WHEN** none of the ports it tries is free
+- **THEN** the mod logs the failure and the game keeps running without the
+  endpoint
 
 ### Requirement: Token authentication
 The mod SHALL generate a random token on first start, store it in its config

@@ -108,11 +108,15 @@ more cheaply.
 A Netty `ServerBootstrap` on a single NIO event-loop thread, separate from the
 game's network threads. The first handler reads the opening bytes. If they start
 with an HTTP method (`GET `, `POST `, `DELETE `, `OPTIONS `) it installs an HTTP
-pipeline, otherwise a line pipeline (`LineBasedFrameDecoder`, UTF-8). HTTP uses
-`netty-codec-http` (`HttpServerCodec` + `HttpObjectAggregator`) if it is on the
-runtime classpath of every target. Task 3.1 checks this. If it isn't, a minimal
-HTTP/1.1 decoder (request line, headers, `Content-Length` body, keep-alive; no
-chunked request bodies) is written in `protocol` instead.
+pipeline, otherwise a line pipeline (`LineBasedFrameDecoder`, UTF-8). Minecraft
+1.21.1 ships Netty without `netty-codec-http` (checked in task 3.1: only buffer,
+codec, handler, transport and resolver are on the runtime classpath), so HTTP
+uses a minimal decoder in `protocol` (request line, headers, `Content-Length`
+body, keep-alive; no chunked request bodies).
+
+When the configured port is taken (several game instances on one machine), the
+endpoint tries the next ports, up to `portTries` (default 10), and
+`blockpilot/endpoint.json` records the one it got.
 
 *Alternatives:* the JDK `HttpServer` (can't share a port with the line protocol,
 and has its own thread pool). The MCP Java SDK (pulls in Jackson and Reactor,
@@ -309,22 +313,26 @@ later.
 
 `config/blockpilot/config.json` holds the port, bind address, default timeouts,
 the notable-block list and caps. `config/blockpilot/token` holds a random
-32-byte token, base64url, created with owner-only permissions where the OS
-supports it. The token is printed to the log on first start, and `/blockpilot
-token` (client command) copies it to the clipboard. Line-protocol and HTTP auth
-compare tokens in constant time.
+32-byte token, base64url, created with owner-only permissions from the start.
+The token is never written to the log, which is world-readable; the log names
+the token file, and `<gameDir>/blockpilot/endpoint.json` records its path. (A
+`/blockpilot token` clipboard command was planned and dropped: agents read the
+file, and a human can open it.) Line-protocol and HTTP auth compare tokens in
+constant time.
 
 ### D12. Extension API: a static registry with Minecraft-free types
 
-`dev.blockpilot.api.Blockpilot.register(String namespace, CommandSpec spec)` and
-`Blockpilot.events(namespace).emit(name, fields)`. A `CommandSpec` is built
-fluently: `query(name)` or `action(name)`, typed arguments drawn from the
-standard tokens (`Position`, `EntityRef`, `Count`, `Duration`, `Word`, `Text`,
-options), declared result fields, help and example. A query handler is `ctx ->
-Result`. An action handler returns an `ExtensionAction` with
-`start`/`tick`/`cancel`, the same state machine as built-in actions (D6).
-Handlers run on the client thread. To reach Minecraft objects they use the game
-directly; the API only passes Minecraft-free value types.
+`dev.blockpilot.api.BlockpilotApi.register(namespace, registrant, spec)` (or
+`register(modId, spec)`) and `BlockpilotApi.emit(namespace, name, fields)`. The
+entry class is `BlockpilotApi`, not `Blockpilot`, to avoid clashing with the
+mod's own `dev.blockpilot.Blockpilot`. A `CommandSpec` is built fluently:
+`query(name)` or `action(name)`, typed arguments drawn from the standard tokens
+(`Position`, `EntityRef`, `Count`, `Duration`, `Word`, `Text`, options),
+declared result fields, help and example. A query handler is `ctx -> Result`. An
+action handler returns an `Action` (`tick`, `cancel`, `label`): the same
+interface built-in actions implement (D6). Handlers run on the client thread. To
+reach Minecraft objects they use the game directly; the API only passes
+Minecraft-free value types.
 
 Registration is a **static registry** that stores specs whenever it is called.
 Blockpilot builds its command table from it when mod loading completes (NeoForge
