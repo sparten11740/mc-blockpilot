@@ -11,10 +11,17 @@ final class FakeGame implements GameBridge {
     String worldGate;
     /** The game time the fake reports; tests advance it. */
     long time;
+    /** Whether the fake has finished loading; queued actions wait while false. */
+    boolean ready = true;
 
     @Override
     public void runOnClient(Runnable task) {
         task.run();
+    }
+
+    @Override
+    public boolean ready() {
+        return ready;
     }
 
     @Override

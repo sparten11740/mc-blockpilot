@@ -9,6 +9,9 @@ public interface GameBridge {
     /** Runs the task on the client thread as soon as possible. */
     void runOnClient(Runnable task);
 
+    /** False while the game is still loading its resources; queued actions wait until then, queries still run. */
+    boolean ready();
+
     /** Null when the command may run now, otherwise the error code that stops it (e.g. {@code not_in_world}). */
     String gate(CommandSpec spec);
 

@@ -252,6 +252,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public boolean ready() {
+        return Minecraft.getInstance().getOverlay() == null;
+    }
+
+    @Override
     public String gate(CommandSpec spec) {
         Minecraft minecraft = Minecraft.getInstance();
         if (spec.kind() == CommandSpec.Kind.ACTION && !enabled) {

@@ -201,6 +201,19 @@ class EngineTest {
     }
 
     @Test
+    void actionsWaitWhileTheGameLoadsButQueriesAnswer() {
+        Session session = engine.openSession();
+        game.ready = false;
+        CompletableFuture<Reply> walk = engine.submit(session, null, "walk a 1");
+        tick(3);
+        assertFalse(walk.isDone());
+        assertEquals("ok value=0", text(engine.submit(session, null, "counter")));
+        game.ready = true;
+        tick(1);
+        assertEquals("ok", text(walk));
+    }
+
+    @Test
     void gateStopsCommandsOutsideAWorld() {
         Session session = engine.openSession();
         game.worldGate = "not_in_world";

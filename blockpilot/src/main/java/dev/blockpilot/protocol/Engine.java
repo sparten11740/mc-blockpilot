@@ -107,6 +107,10 @@ public final class Engine {
 
     private void tick(ScriptJob.Affinity affinity) {
         stepFree(affinity);
+        if (!game.ready()) {
+            // Loading a world while the game still loads its resources never finishes, so actions wait.
+            return;
+        }
         ScriptJob head = queue.peekFirst();
         while (head != null && head.step(affinity)) {
             queue.remove(head);
