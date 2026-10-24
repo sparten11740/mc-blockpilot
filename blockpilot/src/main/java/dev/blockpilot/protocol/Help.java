@@ -27,14 +27,17 @@ public final class Help {
                 .put("meaning", meaning, "— " + meaning))));
             return Result.ok().withRows(rows);
         }
-        CommandRegistry.Entry entry = registry.resolve(topic);
+        // "help sample:" always means the namespace, even when a command has the same name.
+        boolean namespaceOnly = topic.endsWith(":");
+        String name = namespaceOnly ? topic.substring(0, topic.length() - 1) : topic;
+        CommandRegistry.Entry entry = namespaceOnly ? null : registry.resolve(name);
         if (entry != null) {
             return command(entry);
         }
-        List<CommandRegistry.Entry> group = new ArrayList<>(registry.namespace(topic));
+        List<CommandRegistry.Entry> group = new ArrayList<>(registry.namespace(name));
         if (group.isEmpty()) {
             for (CommandRegistry.Entry candidate : registry.all()) {
-                if (candidate.namespace().isEmpty() && candidate.spec().group().equals(topic)) {
+                if (candidate.namespace().isEmpty() && candidate.spec().group().equals(name)) {
                     group.add(candidate);
                 }
             }
@@ -68,7 +71,8 @@ public final class Help {
                 .put("commands", names, String.join(" ", names))));
         }
         rows.add(Row.of("more", new Fields().bare("hint",
-            "help <command|group|errors>; scripts: cmd1; cmd2; positions x,y,z or ~dx,dy,dz; entities e<id>")));
+            "help <command|group|namespace:|errors>; scripts: cmd1; cmd2; positions x,y,z or ~dx,dy,dz; "
+                + "entities e<id>")));
         return Result.ok().withRows(rows);
     }
 
