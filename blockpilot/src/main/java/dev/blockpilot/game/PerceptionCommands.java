@@ -11,8 +11,8 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.protocol.CommandRegistry;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -84,10 +84,6 @@ final class PerceptionCommands {
             .choice("detail", true, "detail")
             .help("non-empty slots: *selected hotbar, 0-8 hotbar, 9-35 main, head/chest/legs/feet, offhand")
             .example("inv"));
-        registry.register(CommandSpec.query("screenshot", this::screenshot).group("perception")
-            .optionalArg("width", ArgType.INT)
-            .help("saves the last frame as PNG (default 512 wide) and returns its path; MCP has a screenshot tool")
-            .field("file", "absolute path").example("screenshot 800"));
     }
 
     private static Minecraft minecraft() {
@@ -155,6 +151,17 @@ final class PerceptionCommands {
         flag(fields, player.isDeadOrDying(), "dead");
         if (minecraft.screen != null) {
             fields.put("screen", Screens.type(minecraft.screen), "screen:" + Screens.type(minecraft.screen));
+        }
+        CameraControl.Angles camera = CameraControl.rendered();
+        if (camera != null && (Math.abs(Mth.wrapDegrees(camera.yaw() - player.getYRot())) > 0.5
+            || Math.abs(camera.pitch() - player.getXRot()) > 0.5 || Math.abs(camera.roll()) > 0.5
+            || CameraControl.placement() != null)) {
+            fields.put("cam_yaw", Math.round(Mth.wrapDegrees(camera.yaw()) * 10) / 10.0, "cam:"
+                    + Numbers.format(Math.round(Mth.wrapDegrees(camera.yaw()) * 10) / 10.0) + "/"
+                    + Numbers.format(Math.round(camera.pitch() * 10) / 10.0) + "/"
+                    + Numbers.format(Math.round(camera.roll() * 10) / 10.0))
+                .hidden("cam_pitch", Math.round(camera.pitch() * 10) / 10.0)
+                .hidden("cam_roll", Math.round(camera.roll() * 10) / 10.0);
         }
         return Result.ok(fields);
     }
@@ -433,14 +440,5 @@ final class PerceptionCommands {
             rows.add(Row.of("offhand", Items.describe("offhand", offhand, detail)));
         }
         return Result.ok().withRows(rows);
-    }
-
-    private Result screenshot(CommandContext context, Args args) throws CommandException {
-        try {
-            byte[] png = Screenshots.captureNow(Mth.clamp(args.integer("width", 512), 16, 1280));
-            return Result.ok(new Fields().bare("file", Screenshots.save(png, "").toString()));
-        } catch (IOException e) {
-            throw new CommandException("internal", "screenshot failed: " + e.getMessage());
-        }
     }
 }

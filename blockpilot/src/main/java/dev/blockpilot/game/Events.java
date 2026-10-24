@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.protocol.Engine;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +41,7 @@ final class Events {
         }
         lastScreen = screen;
         if (player == null || minecraft.level == null) {
+            CameraControl.reset();
             lastHealth = -1;
             lastItems = null;
             lastDimension = null;

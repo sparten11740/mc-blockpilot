@@ -1,24 +1,52 @@
 package dev.blockpilot.game.observe;
 
+import dev.blockpilot.api.Action;
+import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
+import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
+import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Rel;
+import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.protocol.CommandRegistry;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 /** Queries over the sound, message and particle logs. */
 public final class ObservationCommands {
+    private static final int MAX_BURST = 60;
 
     public void register(CommandRegistry registry) {
+        registry.register(CommandSpec.action("screenshot", this::screenshot).group("observe")
+            .optionalArg("width", ArgType.INT).option("burst", "number of frames (max 60)")
+            .option("every", "ticks between burst frames, e.g. 10t")
+            .option("hud", "off: hide the GUI, crosshair and hand while capturing")
+            .help("saves the last rendered frame as PNG (default 512 wide) and returns its path; with burst=n "
+                + "every=Nt it saves n frames, one every N ticks, starting now. Works with the window in the "
+                + "background. MCP also has a screenshot tool").field("file", "absolute path")
+            .example("screenshot burst=8 every=10t"));
+        registry.register(CommandSpec.action("camera", this::camera).group("observe")
+            .choice("op", false, "at", "reset").optionalArg("pos", ArgType.POSITION)
+            .choice("look", true, "look").optionalArg("target", ArgType.TARGET)
+            .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
+                + "camera reset: back to the player's view. The player keeps acting normally")
+            .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
             .option("since", "first tick to include (use the tick of a previous reply)")
             .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*")
@@ -35,6 +63,89 @@ public final class ObservationCommands {
             .option("since", "first tick to include (default: the last 20 ticks)")
             .help("particles spawned per type over a window (the last 1200 ticks are kept)")
             .field("tick", "current tick").field("total", "all particles in the window").example("particles since=1200"));
+    }
+
+    private Action screenshot(CommandContext context, Args args) throws CommandException {
+        int width = Mth.clamp(args.integer("width", 512), 16, 1280);
+        int frames = Mth.clamp(args.intOption("burst", 1), 1, MAX_BURST);
+        Duration every = args.durationOption("every");
+        int interval = every == null ? 10 : Math.max(1, every.ticks());
+        boolean hideHud = "off".equals(args.option("hud"));
+        var options = Minecraft.getInstance().options;
+        boolean hudBefore = options.hideGui;
+        List<Row> rows = new ArrayList<>();
+        // With the HUD hidden, the first capture waits a tick so a frame without it has been rendered.
+        int delay = hideHud ? 1 : 0;
+        int[] elapsed = {0};
+        return new Action() {
+            @Override
+            public Result tick() throws CommandException {
+                if (hideHud) {
+                    options.hideGui = true;
+                }
+                int tick = elapsed[0]++;
+                if (tick >= delay && (tick - delay) % interval == 0) {
+                    try {
+                        Path file = Screenshots.save(Screenshots.captureNow(width), frames > 1 ? "_" + rows.size() : "");
+                        rows.add(Row.of(String.valueOf(rows.size()), new Fields().bare("file", file.toString())
+                            .put("tick", Observations.tick(), "t" + Observations.tick())));
+                    } catch (IOException e) {
+                        cancel();
+                        throw new CommandException("internal", "screenshot failed: " + e.getMessage());
+                    }
+                }
+                if (rows.size() < frames) {
+                    return null;
+                }
+                cancel();
+                if (frames == 1) {
+                    return Result.ok(new Fields().bare("file", rows.get(0).fields().get("file")));
+                }
+                return Result.ok(new Fields().put("frames", rows.size(), "frames=" + rows.size())).withRows(rows);
+            }
+
+            @Override
+            public void cancel() {
+                if (hideHud) {
+                    options.hideGui = hudBefore;
+                }
+            }
+
+            @Override
+            public String label() {
+                return "screenshot";
+            }
+        };
+    }
+
+    private Action camera(CommandContext context, Args args) throws CommandException {
+        if (args.word("op").equals("reset")) {
+            CameraControl.reset();
+            return () -> Result.ok();
+        }
+        if (!args.has("pos")) {
+            throw new CommandException("syntax", "camera at <pos> [look <pos|e<id>>]");
+        }
+        Position at = context.resolve(args.position("pos"));
+        Vec3 position = new Vec3(at.x(), at.y(), at.z());
+        Supplier<Vec3> target;
+        String token = args.word("target");
+        if (token == null) {
+            var player = Minecraft.getInstance().player;
+            target = () -> player.getEyePosition();
+        } else if (EntityRef.parse(token) != null) {
+            Entity entity = Minecraft.getInstance().level.getEntity(EntityRef.parse(token).id());
+            if (entity == null) {
+                throw new CommandException("no_entity", token);
+            }
+            target = () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
+        } else {
+            Position look = context.resolve(Position.parse(token));
+            Vec3 point = new Vec3(look.x(), look.y(), look.z());
+            target = () -> point;
+        }
+        CameraControl.place(new CameraControl.Placement(position, target));
+        return ActionSupport.afterFrames(2, () -> Result.ok(new Fields().bare("camera", Rel.of(position))));
     }
 
     private static long since(Args args, long fallback) throws CommandException {

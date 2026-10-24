@@ -11,6 +11,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
+import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -178,7 +179,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onHudRender(GuiGraphics graphics) {
-        if (engine == null || engine.sessionCount() == 0) {
+        CameraControl.recordRendered();
+        if (engine == null || engine.sessionCount() == 0 || Minecraft.getInstance().options.hideGui) {
             return;
         }
         String activity = engine.activity();
