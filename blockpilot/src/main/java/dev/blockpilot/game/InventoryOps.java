@@ -44,6 +44,18 @@ final class InventoryOps {
         return -1;
     }
 
+    /** How many of the item the player carries (main inventory and hotbar). */
+    static int count(Item item) {
+        Inventory inventory = player().getInventory();
+        int total = 0;
+        for (ItemStack stack : inventory.items) {
+            if (stack.is(item)) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
     /** The inventory menu's slot number for an inventory index (hotbar 0-8 sits at 36-44). */
     static int menuSlot(int inventoryIndex) {
         return inventoryIndex < 9 ? InventoryMenu.USE_ROW_SLOT_START + inventoryIndex : inventoryIndex;

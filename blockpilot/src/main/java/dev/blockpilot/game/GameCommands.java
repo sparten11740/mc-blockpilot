@@ -13,6 +13,7 @@ final class GameCommands {
     static void registerAll(CommandRegistry registry, BlockpilotClient client) {
         new PerceptionCommands(client).register(registry);
         new ActionCommands().register(registry);
+        new ContainerCommands().register(registry);
         new InputCommands().register(registry);
         new SessionCommands().register(registry);
         new TestWorlds().register(registry);
