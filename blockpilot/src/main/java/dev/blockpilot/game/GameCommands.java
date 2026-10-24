@@ -9,5 +9,7 @@ final class GameCommands {
 
     static void registerAll(CommandRegistry registry, BlockpilotClient client) {
         new PerceptionCommands(client).register(registry);
+        new ActionCommands().register(registry);
+        new InputCommands().register(registry);
     }
 }
