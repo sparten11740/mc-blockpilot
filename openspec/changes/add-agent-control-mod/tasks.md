@@ -46,10 +46,10 @@
 - [x] 5.4 Implement `block <pos>` (`id`, `props`, `be`); verify the chest and plain-block scenarios and `wait block <pos> until id==air` after breaking it
 - [x] 5.5 Implement `blocks <pos1> <pos2>` (palette, Y layers, RLE, non-default state properties, `err too_large 4096`); verify with a golden test on a known built structure
 - [x] 5.6 Implement `inv` / `inv detail` with keyed diff rows; verify the compact-inventory scenario and `ok same`
-- [ ] 5.7 Implement `screen` (container slots, vanilla widget kinds with bounds and state, unknown widgets with bounds, GUI scale, size, cursor); verify on a crafting table, the options screen (slider) and one modded screen
+- [x] 5.7 Implement `screen` (container slots, vanilla widget kinds with bounds and state, unknown widgets with bounds, GUI scale, size, cursor); verify on a crafting table, the options screen (slider) and one modded screen; verified: a crafting table (46 slots, filled slots and the recipe-book button with bounds), the options screen (`slider "FOV: 73"` with bounds), and NeoForge's mod list as the modded screen (its own `ModListWidget` listed by class with bounds, next to vanilla text fields and buttons)
 - [x] 5.8 Implement `screenshot [width]` (render-thread capture, NativeImage downscale, PNG, MCP image content / file path on line protocol); verify both transports return a correctly sized image
 - [x] 5.9 Implement event detection (chat via platform hook; hurt, death, got/lost items, screen open/close by tick polling; action finished/interrupted); verify the "damage while waiting" scenario
-- [ ] 5.10 Add a test or debug assertion that perception commands don't change rotation, position or selected slot and send no packets; verify it passes across all perception commands
+- [x] 5.10 Add a test or debug assertion that perception commands don't change rotation, position or selected slot and send no packets; verify it passes across all perception commands; done as a smoke-test step: every perception command runs across a few dozen ticks inside a perf capture, and status, inventory and selected slot stay the same and the client sends only position reminders, keep-alives and chunk batch acks; passes on both loaders
 
 ## 6. Raw input layer (player-control: raw input, focus, override)
 
@@ -74,7 +74,7 @@
 
 ## 8. Session control (game-session)
 
-- [ ] 8.1 Implement `worlds` and `servers` listing from any screen; verify against a dev instance with two saves and one server entry
+- [x] 8.1 Implement `worlds` and `servers` listing from any screen; verify against a dev instance with two saves and one server entry; verified with several saves (the loaded one flagged) and one server entry added through the vanilla Add Server screen, which `servers` lists as `0 "Blockpilot Test" 127.0.0.1:25570`; `join server 0` with nothing listening fails with `err join_failed`
 - [x] 8.2 Implement `join world <folder>`, `join server <index|address>` (leave first if in a game, result once the player can act, `err join_failed <reason>`) and `leave`; verify the join-save, server-unreachable and leave scenarios
 - [x] 8.3 Implement session events (`! disconnected`, `! kicked`, `! died <cause>`) and `respawn`, and `err not_in_world` gating for world commands; verify the death/respawn and mine-from-title-screen scenarios
 
