@@ -1,6 +1,5 @@
 package dev.blockpilot.protocol;
 
-import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Position;
@@ -31,29 +30,6 @@ public final class Condition {
         return new Condition(tests, requireOk);
     }
 
-    public static Condition parse(List<String> tokens) throws CommandException {
-        List<Lexicon.Test> tests = new ArrayList<>();
-        boolean requireOk = false;
-        for (String token : tokens) {
-            if (token.equals("and")) {
-                continue;
-            }
-            if (token.equals("ok")) {
-                requireOk = true;
-                continue;
-            }
-            Lexicon.Test test = Lexicon.test(token);
-            if (test == null) {
-                throw new CommandException("syntax", "predicate expected (field==value, field<n, ok), got " + token);
-            }
-            tests.add(test);
-        }
-        if (tests.isEmpty() && !requireOk) {
-            throw new CommandException("syntax", "wait … until needs at least one predicate");
-        }
-        return new Condition(tests, requireOk);
-    }
-
     public boolean holds(Result result) {
         if (!result.isOk()) {
             return false;
@@ -75,11 +51,6 @@ public final class Condition {
     /** The field a {@code $<field>} value refers to, or null for a literal. */
     private static String reference(String value) {
         return value.length() > 1 && value.charAt(0) == '$' ? value.substring(1) : null;
-    }
-
-    /** Whether a token reads as a predicate (or {@code and}/{@code ok}), so it can be split off a query's arguments. */
-    static boolean isPredicate(String token) {
-        return token.equals("and") || token.equals("ok") || Lexicon.test(token) != null;
     }
 
     /** The fields the predicates name, including fields compared against, as last observed; attached to the result. */

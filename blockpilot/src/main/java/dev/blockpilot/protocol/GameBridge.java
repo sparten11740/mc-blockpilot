@@ -18,6 +18,9 @@ public interface GameBridge {
     /** Null when the command may run now, otherwise the error code that stops it (e.g. {@code not_in_world}). */
     String gate(CommandSpec spec);
 
+    /** Null when actions may run, otherwise the error code that stops them ({@code disabled}). */
+    String actionGate();
+
     /** Resolves a {@code ~} position against the player's block position. */
     Position resolve(Position position) throws CommandException;
 

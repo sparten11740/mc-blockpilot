@@ -11,6 +11,7 @@ import java.util.Map;
 
 /** The in-band reference, generated from the registry so it can't drift from the commands themselves. */
 public final class Help {
+    private static final String CONSTRUCT_GROUP = "meta";
     private final CommandRegistry registry;
 
     public Help(CommandRegistry registry) {
@@ -34,6 +35,10 @@ public final class Help {
         if (entry != null) {
             return command(entry);
         }
+        Construct construct = namespaceOnly ? null : Construct.named(name);
+        if (construct != null) {
+            return construct(construct);
+        }
         List<CommandRegistry.Entry> group = new ArrayList<>(registry.namespace(name));
         if (group.isEmpty()) {
             for (CommandRegistry.Entry candidate : registry.all()) {
@@ -42,16 +47,26 @@ public final class Help {
                 }
             }
         }
-        if (group.isEmpty()) {
+        boolean meta = name.equals(CONSTRUCT_GROUP) && !namespaceOnly;
+        if (group.isEmpty() && !meta) {
             return Result.error("syntax", "no help topic " + topic + "; try help");
         }
         List<Row> rows = new ArrayList<>();
         for (CommandRegistry.Entry member : group) {
-            rows.add(Row.of(member.qualifiedName(), new Fields()
-                .bare("usage", String.join(" | ", member.spec().usages(member.qualifiedName())))
-                .put("help", member.spec().help(), member.spec().help().isEmpty() ? "" : "— " + member.spec().help())));
+            rows.add(summary(member.qualifiedName(), member.spec().usages(member.qualifiedName()),
+                member.spec().help()));
+        }
+        if (meta) {
+            for (Construct member : Construct.ALL) {
+                rows.add(summary(member.name(), member.usages(), member.help()));
+            }
         }
         return Result.ok().withRows(rows);
+    }
+
+    private static Row summary(String name, List<String> usages, String help) {
+        return Row.of(name, new Fields().bare("usage", String.join(" | ", usages))
+            .put("help", help, help.isEmpty() ? "" : "— " + help));
     }
 
     private Result overview() {
@@ -61,6 +76,8 @@ public final class Help {
                 groups.computeIfAbsent(entry.spec().group(), key -> new ArrayList<>()).add(entry.qualifiedName());
             }
         }
+        Construct.ALL.forEach(construct ->
+            groups.computeIfAbsent(CONSTRUCT_GROUP, key -> new ArrayList<>()).add(construct.name()));
         List<Row> rows = new ArrayList<>();
         groups.forEach((group, names) -> rows.add(Row.of(group, new Fields().put("group", group, group + ":")
             .put("commands", names, String.join(" ", names)))));
@@ -102,6 +119,18 @@ public final class Help {
         if (spec.needsIntegratedServer()) {
             rows.add(Row.of("needs", new Fields().bare("needs", "singleplayer world with cheats on")));
         }
+        return Result.ok().withRows(rows);
+    }
+
+    private Result construct(Construct construct) {
+        List<Row> rows = new ArrayList<>();
+        for (int form = 0; form < construct.usages().size(); form++) {
+            rows.add(Row.of(form == 0 ? "usage" : "usage " + form,
+                new Fields().bare("usage", construct.usages().get(form))));
+        }
+        rows.add(Row.of("help", new Fields().bare("help", construct.help())));
+        rows.add(Row.of("kind", new Fields().put("kind", "construct", "construct of the language")));
+        rows.add(Row.of("example", new Fields().put("example", construct.example(), "e.g. " + construct.example())));
         return Result.ok().withRows(rows);
     }
 

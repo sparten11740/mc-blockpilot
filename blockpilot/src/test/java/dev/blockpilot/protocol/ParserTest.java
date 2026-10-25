@@ -152,6 +152,8 @@ class ParserTest {
         assertEquals("col 22: timeout= given twice; mine [target] [count] [near=…]",
             error("mine #logs timeout=9 timeout=90"));
         assertEquals("col 8: unknown option foo= (takes none); status", error("status foo=1"));
+        // Only actions take timeout=.
+        assertEquals("col 6: unknown option timeout= (takes none); look [radius]", error("look timeout=5"));
         assertEquals("col 13: unknown option bogus= (takes side=); block <pos> [side=…]",
             error("block 1,2,3 bogus=1"));
         assertEquals("col 6: unknown option rule:x= (takes near=, timeout=); mine [target] [count] [near=…]",
@@ -292,5 +294,12 @@ class ParserTest {
         assertEquals("col 6: unexpected 1,2; mine [target] [count] [near=…]", wrong.getMessage());
         assertThrows(Parser.SyntaxError.class, () -> Parser.example(mine, "mine; mine"));
         assertThrows(Parser.SyntaxError.class, () -> Parser.example(mine, " "));
+    }
+
+    @Test
+    void theConstructsHelpExamplesParse() {
+        for (Construct construct : Construct.ALL) {
+            assertNull(line(construct.example()).error(), construct.example());
+        }
     }
 }

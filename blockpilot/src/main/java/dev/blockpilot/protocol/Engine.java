@@ -42,21 +42,13 @@ public final class Engine {
     private final AtomicInteger nextSessionId = new AtomicInteger(1);
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
-    private final CommandSpec assertSpec = CommandSpec.query("assert", Engine::onlyInScripts).group("meta")
-        .arg("what", ArgType.TEXT)
-        .help(Check.ASSERT_USAGE + ": runs the read-only query once; ok with the observed fields when the predicates "
-            + "(as in wait … until) hold, else err assert_failed; ?assert goes on")
-        .example("assert block ~0,-1,0 id==grass_block");
-    private final CommandSpec ifSpec = CommandSpec.query("if", Engine::onlyInScripts).group("meta")
-        .arg("what", ArgType.TEXT)
-        .help(Check.IF_USAGE + ": runs the command when the predicates hold (its result is the line), else ok false "
-            + "with the observed fields")
-        .example("if block ~0,-1,0 id==grass_block then place torch ~0,0,1");
+    private final Parser parser;
 
     public Engine(CommandRegistry registry, GameBridge game) {
         this.registry = registry;
         this.game = game;
         this.help = new Help(registry);
+        this.parser = new Parser(registry);
         registerBuiltIns();
     }
 
@@ -70,18 +62,6 @@ public final class Engine {
 
     public Help help() {
         return help;
-    }
-
-    /** The parsed check when the command is {@code assert} or {@code if}, else null. */
-    Check check(CommandSpec spec, RawCommand command) throws CommandException {
-        if (spec == assertSpec) {
-            return Check.parse(command, false);
-        }
-        return spec == ifSpec ? Check.parse(command, true) : null;
-    }
-
-    boolean isCheck(CommandSpec spec) {
-        return spec == assertSpec || spec == ifSpec;
     }
 
     public Session openSession() {
@@ -101,13 +81,22 @@ public final class Engine {
         return sessions.size();
     }
 
+    /**
+     * Parses the script and queues it (with an action) or runs it (queries only). A syntax error in a step that isn't
+     * soft runs nothing: that step answers {@code err syntax} and every other one {@code skip}.
+     */
     public CompletableFuture<Reply> submit(Session session, String id, String script) {
-        List<RawCommand> commands = ScriptParser.parse(script);
-        if (commands.isEmpty()) {
+        List<Parser.Line> lines = parser.script(script);
+        if (lines.isEmpty()) {
             return CompletableFuture.completedFuture(new Reply(id,
                 List.of(Result.error("syntax", "empty script")), session.drainEvents()));
         }
-        ScriptJob job = new ScriptJob(this, session, id, commands);
+        if (lines.stream().anyMatch(line -> line.error() != null && !line.soft())) {
+            List<Result> results = lines.stream().map(line -> line.error() != null && !line.soft()
+                ? Result.error("syntax", line.error()) : Result.skip()).toList();
+            return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
+        }
+        ScriptJob job = new ScriptJob(this, session, id, lines);
         if (job.hasAction()) {
             queue.addLast(job);
         } else {
@@ -219,81 +208,29 @@ public final class Engine {
             return Result.ok(new Fields().put("stopped", stopped, "stopped " + stopped));
         }).group("meta").help("cancels the running and queued actions of every session and releases held input")
             .field("stopped", "number of scripts cancelled").example("stop"));
-        registry.register(CommandSpec.action("wait", this::startWait).group("meta").arg("what", ArgType.TEXT)
-            .help("wait <Nt|Ns> | wait idle | wait <query> until <field><op><value> [and …] "
-                + "[stable=<Nt>] [every=<Nt>] [timeout=<duration>] [clock=server]; ops == != < <= > >=, or ok; "
-                + "a value $<field> compares with another field (hp<$max_hp); "
-                + "server-side queries are checked at the end of server ticks and report the tick (t<n>)")
-            .example("wait block ~1,0,0 until id==air timeout=5s"));
-        registry.register(assertSpec);
-        registry.register(ifSpec);
-        registry.register(CommandSpec.action("sample", this::startSample).group("meta").arg("what", ArgType.TEXT)
-            .help("sample <query> every <Nt> x<n> [clock=client|server]: runs the read-only query n times (max "
-                + "1000), every N ticks, one row per run with the game tick and the query's fields")
-            .example("sample status every 1t x20"));
     }
 
     static final int MAX_SAMPLES = 1000;
 
-    /** The script runner evaluates assert and if itself; only wait and sample around them get here. */
-    private static Result onlyInScripts(CommandContext context, Args args) throws CommandException {
-        throw new CommandException("syntax", "assert and if only work as commands of a script");
-    }
-
-    private Action startSample(CommandContext context, Args args) throws CommandException {
-        List<RawCommand.Token> tokens = RawCommand.of("sample " + args.text("what")).tokens();
-        int every = -1;
-        for (int index = 0; index < tokens.size(); index++) {
-            if (tokens.get(index).text().equals("every")) {
-                every = index;
-                break;
-            }
-        }
-        if (every <= 0) {
-            throw new CommandException("syntax", "sample <query> every <Nt> x<n> [clock=client|server]");
-        }
-        StringBuilder query = new StringBuilder();
-        for (int index = 0; index < every; index++) {
-            query.append(index == 0 ? "" : " ").append(tokens.get(index).text());
-        }
-        RawCommand queryCommand = RawCommand.of(query.toString());
-        CommandRegistry.Entry entry = registry.resolve(queryCommand.name());
-        if (entry == null || entry.spec().kind() != CommandSpec.Kind.QUERY || isCheck(entry.spec())) {
-            throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
-        }
-        Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
-        // The inner query is gated here, on the client thread; server-clock runs skip the per-run client gate.
-        String gate = game.gate(entry.spec());
-        if (gate != null) {
-            throw new CommandException(gate);
-        }
-        Duration interval = null;
-        int count = 0;
-        boolean serverClock = false;
-        for (int index = every + 1; index < tokens.size(); index++) {
-            String token = tokens.get(index).text();
-            if (token.matches("x\\d+")) {
-                count = Integer.parseInt(token.substring(1));
-            } else if (token.equals("clock=server") || token.equals("clock=client")) {
-                serverClock = token.endsWith("server");
-            } else if (Duration.parse(token) != null && interval == null) {
-                interval = Duration.parse(token);
-            } else {
-                throw new CommandException("syntax", "unexpected " + token + " in sample … every <Nt> x<n>");
-            }
-        }
-        if (interval == null || count <= 0) {
-            throw new CommandException("syntax", "sample <query> every <Nt> x<n>");
-        }
-        if (count > MAX_SAMPLES) {
+    /** {@code sample}'s action: fails with {@code too_large} past {@link #MAX_SAMPLES} runs. */
+    Action sample(CommandContext context, Statement.Sample sample) throws CommandException {
+        if (sample.count() > MAX_SAMPLES) {
             throw new CommandException("too_large", String.valueOf(MAX_SAMPLES));
         }
-        if (serverClock && !entry.spec().runsOnServer()) {
-            throw new CommandException("syntax", "clock=server needs a server-side query; "
-                + queryCommand.name() + " runs on the client");
-        }
-        return new Sampler(context, entry.spec(), queryArgs, Math.max(1, interval.ticks()), count,
-            serverClock || entry.spec().runsOnServer());
+        Statement.Call query = sample.query();
+        return new Sampler(context, query.entry().spec(), query.args(), Math.max(1, sample.every().ticks()),
+            sample.count(), query.entry().spec().runsOnServer());
+    }
+
+    Action waitTicks(Statement.WaitTicks wait) {
+        return new WaitTicks(wait.duration().ticks());
+    }
+
+    Action waitUntil(CommandContext context, Statement.WaitUntil wait) {
+        Statement.Call query = wait.query();
+        Duration timeout = wait.timeout() == null ? ScriptJob.DEFAULT_TIMEOUT : wait.timeout();
+        return new WaitUntil(context, query.entry().spec(), query.args(), wait.condition(), wait.stable(),
+            wait.every(), timeout.ticks(), query.entry().spec().runsOnServer());
     }
 
     /** {@code sample}: runs a query every N ticks and collects one row per run. */
@@ -350,74 +287,6 @@ public final class Engine {
         public String label() {
             return "sample";
         }
-    }
-
-    private Action startWait(CommandContext context, Args args) throws CommandException {
-        RawCommand what = RawCommand.of("wait " + args.text("what"));
-        List<RawCommand.Token> tokens = what.tokens();
-        if (tokens.size() == 1) {
-            String token = tokens.get(0).text();
-            if (token.equals("idle")) {
-                return () -> Result.ok();
-            }
-            Duration duration = Duration.parse(token);
-            if (duration != null) {
-                return new WaitTicks(duration.ticks());
-            }
-        }
-        int until = -1;
-        for (int index = 0; index < tokens.size(); index++) {
-            if (tokens.get(index).text().equals("until")) {
-                until = index;
-                break;
-            }
-        }
-        if (until <= 0) {
-            throw new CommandException("syntax", "wait <Nt|Ns>, wait idle or wait <query> until <predicate>");
-        }
-        StringBuilder query = new StringBuilder();
-        for (int index = 0; index < until; index++) {
-            query.append(index == 0 ? "" : " ").append(tokens.get(index).text());
-        }
-        RawCommand queryCommand = RawCommand.of(query.toString());
-        CommandRegistry.Entry entry = registry.resolve(queryCommand.name());
-        if (entry == null) {
-            throw new CommandException("syntax", "unknown command " + queryCommand.name());
-        }
-        if (entry.spec().kind() != CommandSpec.Kind.QUERY || isCheck(entry.spec())) {
-            throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
-        }
-        Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
-        String gate = game.gate(entry.spec());
-        if (gate != null) {
-            throw new CommandException(gate);
-        }
-        List<String> predicates = new ArrayList<>();
-        Map<String, String> options = new java.util.LinkedHashMap<>();
-        for (int index = until + 1; index < tokens.size(); index++) {
-            String token = tokens.get(index).text();
-            int equals = token.indexOf('=');
-            boolean option = equals > 0 && token.charAt(equals - 1) != '!' && token.charAt(equals - 1) != '<'
-                && token.charAt(equals - 1) != '>' && !token.startsWith("==", equals)
-                && List.of("stable", "every", "timeout", "clock").contains(token.substring(0, equals));
-            if (option) {
-                options.put(token.substring(0, equals), token.substring(equals + 1));
-            } else {
-                predicates.add(token);
-            }
-        }
-        Args waitOptions = new Args(Map.of(), Map.of(), options);
-        Duration stable = waitOptions.durationOption("stable");
-        Duration every = waitOptions.durationOption("every");
-        Duration timeout = waitOptions.durationOption("timeout");
-        boolean serverClock = "server".equals(options.get("clock"));
-        if (serverClock && !entry.spec().runsOnServer()) {
-            throw new CommandException("syntax", "clock=server needs a server-side query; "
-                + queryCommand.name() + " runs on the client");
-        }
-        return new WaitUntil(context, entry.spec(), queryArgs, Condition.parse(predicates),
-            stable == null ? 1 : Math.max(1, stable.ticks()), every == null ? 1 : Math.max(1, every.ticks()),
-            (timeout == null ? ScriptJob.DEFAULT_TIMEOUT : timeout).ticks(), entry.spec().runsOnServer());
     }
 
     /** {@code wait <Nt|Ns>}. */

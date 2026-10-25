@@ -204,4 +204,14 @@ class LexiconTest {
         assertEquals(new EntityRef(812), EntityRef.parse("e812"));
         assertNull(EntityRef.parse("e99999999999"));
     }
+
+    @Test
+    void printedTokensParseBack() {
+        for (Position position : new Position[] {Position.relative(3, -1, 2), Position.absolute(104.5, 64, -33.25)}) {
+            assertEquals(position, Position.parse(position.toString()));
+        }
+        assertEquals("~3,-1,2", Position.relative(3, -1, 2).toString());
+        assertEquals(new Duration(40), Duration.parse(new Duration(40).toString()));
+        assertEquals(new EntityRef(7), EntityRef.parse(new EntityRef(7).toString()));
+    }
 }

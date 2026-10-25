@@ -37,6 +37,14 @@ final class FakeGame implements GameBridge {
         return ready;
     }
 
+    /** The action gate's answer; null lets actions run. */
+    String actionGate;
+
+    @Override
+    public String actionGate() {
+        return actionGate;
+    }
+
     @Override
     public String gate(CommandSpec spec) {
         if (spec.needsIntegratedServer() && serverGate != null) {

@@ -87,4 +87,16 @@ class FormTest {
         assertEquals(Map.of("doDaylightCycle", "false"), args.family("rule"));
         assertEquals(Map.of(), args.family("other"));
     }
+
+    @Test
+    void argsConvertTheirTokens() throws CommandException {
+        Args args = new Args(Map.of("count", "x6", "radius", "12"), Map.of(), Map.of("timeout", "90", "every", "5t"));
+        assertEquals(6, args.count("count", 1));
+        assertEquals(1, args.count("missing", 1));
+        assertEquals(12, args.integer("radius", 16));
+        assertEquals(16, args.integer("missing", 16));
+        assertEquals(Duration.seconds(90), args.durationOption("timeout"));
+        assertEquals(new Duration(5), args.durationOption("every"));
+        assertNull(args.durationOption("missing"));
+    }
 }

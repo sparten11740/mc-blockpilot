@@ -93,7 +93,7 @@ class EngineTest {
     void failureSkipsTheRest() {
         Session session = engine.openSession();
         assertEquals("err no_item torch\nskip", text(engine.submit(session, null, "fail; counter")));
-        assertEquals("err syntax unknown command nope; try help\nskip",
+        assertEquals("err syntax col 1: unknown command nope; try help\nskip",
             text(engine.submit(session, null, "nope; counter")));
     }
 
@@ -235,7 +235,7 @@ class EngineTest {
         Session session = engine.openSession();
         CompletableFuture<Reply> wait = engine.submit(session, null, "wait walk a until ok");
         tick(1);
-        assertTrue(text(wait).startsWith("err syntax walk is not a read-only command"), text(wait));
+        assertEquals("err syntax col 6: walk is not a read-only command", text(wait));
     }
 
     @Test
@@ -266,7 +266,7 @@ class EngineTest {
         CompletableFuture<Reply> action = engine.submit(session, null, "sample walk a every 1t x2");
         CompletableFuture<Reply> huge = engine.submit(session, null, "sample counter every 1t x5000");
         tick(2);
-        assertTrue(text(action).startsWith("err syntax walk is not a read-only command"), text(action));
+        assertEquals("err syntax col 8: walk is not a read-only command", text(action));
         assertEquals("err too_large 1000", text(huge));
     }
 
@@ -400,14 +400,27 @@ class EngineTest {
     }
 
     @Test
-    void checksNeedAQueryAPredicateAndOnlyRunInScripts() {
-        Session session = engine.openSession();
-        assertEquals("err syntax " + Check.ASSERT_USAGE, text(engine.submit(session, null, "assert counter")));
-        assertEquals("err syntax " + Check.IF_USAGE, text(engine.submit(session, null, "if counter value==0")));
-        assertEquals("err syntax walk is not a read-only command",
-            text(engine.submit(session, null, "assert walk a value==0")));
-        CompletableFuture<Reply> wait = engine.submit(session, null, "wait assert counter value==0 until ok");
+    void aSyntaxErrorRunsNothing() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "walk a 1; nope; walk b x");
+        assertTrue(reply.isDone());
+        assertEquals("skip\nerr syntax col 1: unknown command nope; try help\nerr syntax col 8: unexpected x; walk "
+            + "<name> [ticks]", text(reply));
+        tick(2);
+        assertTrue(log.isEmpty());
+    }
+
+    @Test
+    void aSoftStepsSyntaxErrorIsItsOwnResult() {
+        assertEquals("err syntax col 2: unknown command nope; try help\nok value=0",
+            text(engine.submit(engine.openSession(), null, "?nope; counter")));
+    }
+
+    @Test
+    void constructsRunTheirQueryOnItsThread() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "wait probe until value==2");
         tick(1);
-        assertEquals("err syntax assert is not a read-only command", text(wait));
+        counter.set(2);
+        engine.tickServer();
+        assertTrue(text(reply).startsWith("ok "), text(reply));
     }
 }

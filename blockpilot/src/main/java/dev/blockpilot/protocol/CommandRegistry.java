@@ -1,7 +1,6 @@
 package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.BlockpilotApi;
-import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,9 +39,9 @@ public final class CommandRegistry {
             return null;
         }
         try {
-            ArgParser.parse(spec, RawCommand.of(spec.example()));
+            Parser.example(new Entry(spec.name(), "", "", spec), spec.example());
             return null;
-        } catch (CommandException e) {
+        } catch (Parser.SyntaxError e) {
             return e.getMessage();
         }
     }

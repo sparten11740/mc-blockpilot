@@ -298,10 +298,15 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public String actionGate() {
+        return enabled ? null : "disabled";
+    }
+
+    @Override
     public String gate(CommandSpec spec) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (spec.kind() == CommandSpec.Kind.ACTION && !enabled) {
-            return "disabled";
+        if (spec.kind() == CommandSpec.Kind.ACTION && actionGate() != null) {
+            return actionGate();
         }
         if (spec.needsWorldLoaded() && (minecraft.player == null || minecraft.level == null)) {
             return "not_in_world";
