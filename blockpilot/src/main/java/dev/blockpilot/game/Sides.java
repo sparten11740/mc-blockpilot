@@ -19,13 +19,13 @@ import net.minecraft.world.level.Level;
  * {@code side=server} on read-only queries: the same read against the integrated server's level instead of the
  * client's, on the server thread, so it sees chunks the client has not loaded (and never loads any).
  */
-final class Sides {
-    static final List<String> NAMES = List.of("client", "server");
+public final class Sides {
+    public static final List<String> NAMES = List.of("client", "server");
     private static final long SERVER_READ_SECONDS = 5;
 
     /** A read that may fail with a command error. */
     @FunctionalInterface
-    interface Read {
+    public interface Read {
         Result apply(Level level, boolean server) throws CommandException;
     }
 
@@ -42,7 +42,7 @@ final class Sides {
             SectionPos.blockToSectionCoord(pos.getZ())) != null;
     }
 
-    static Result read(Args args, Read read) throws CommandException {
+    public static Result read(Args args, Read read) throws CommandException {
         String side = args.option("side");
         Minecraft minecraft = Minecraft.getInstance();
         if (side == null || side.equals("client")) {

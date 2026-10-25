@@ -161,8 +161,8 @@ releases. The approach, in layers:
 - **`sable:find`:**
   - Scans the sub-level's plot-space bounds (its bounding box transformed back
     through its pose), with `find`'s section-palette pruning.
-  - The scan is capped like `blocks` (at most 262,144 positions, else
-    `err too_large`).
+  - The scan is capped at a 64-block cube's worth of positions (262,144),
+    else `err too_large`. `blocks` allows only 4,096, too few for a ship.
   - It runs on the client, or on the server with `side=server`.
 - **`sable:tp`:**
   - Runs on the server thread and needs a world with commands allowed.

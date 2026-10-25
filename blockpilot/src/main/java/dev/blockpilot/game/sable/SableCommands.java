@@ -10,7 +10,11 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.BlockMatcher;
+import dev.blockpilot.game.BlockScan;
+import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
+import dev.blockpilot.game.Sides;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -31,6 +36,11 @@ import net.minecraft.world.phys.Vec3;
 final class SableCommands {
     private static final String REGISTRANT = "blockpilot";
     private static final int DEFAULT_RADIUS = 128;
+    private static final int MAX_FIND_LIMIT = 100;
+    /** The positions sable:find may scan: a 64-block cube. */
+    private static final long MAX_FIND_BLOCKS = 64 * 64 * 64;
+    /** Keeps a bound that ends on a block edge from taking in the next block. */
+    private static final double EDGE = 1.0E-6;
     /** Sub-levels are seen inside the world border, so this box holds them all. */
     private static final AABB EVERYWHERE = new AABB(-3.0E7, -3.0E7, -3.0E7, 3.0E7, 3.0E7, 3.0E7);
     private static final String REFERENCE = "a sub-level: its UUID, its name, or here (the one the player stands on "
@@ -65,6 +75,14 @@ final class SableCommands {
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("pos", ArgType.POSITION)
             .help("the point in a sub-level's plot that is at a world position now; " + REFERENCE)
             .field("plot", "plot position").field("sub", "the sub-level").example("sable:plot here ~0,1,0"));
+        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("find", SableCommands::find)
+            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .optionalArg("limit", ArgType.INT)
+            .option("side", "server: read the integrated server's copy of the plot (cheats on)", Sides.NAMES)
+            .help("blocks aboard a sub-level (id, #tag or *pattern), nearest to the player first (limit default 5, "
+                + "max 100); " + REFERENCE)
+            .field("block", "block id").field("at", "plot position").field("world", "world position")
+            .example("sable:find here *door* 3"));
     }
 
     private static Result list(CommandContext context, Args args) {
@@ -119,6 +137,33 @@ final class SableCommands {
             throw new CommandException("no_sublevel", info.id().toString());
         }
         return Result.ok(new Fields().bare("plot", Rel.absolute(plot)).put("sub", info.name()));
+    }
+
+    private static Result find(CommandContext context, Args args) throws CommandException {
+        SubLevels.Info info = resolve(args, "sub");
+        BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
+        int limit = Mth.clamp(args.integer("limit", 5), 1, MAX_FIND_LIMIT);
+        AABB plot = info.plotBounds();
+        BlockPos min = BlockPos.containing(plot.minX, plot.minY, plot.minZ);
+        BlockPos max = BlockPos.containing(plot.maxX - EDGE, plot.maxY - EDGE, plot.maxZ - EDGE);
+        long volume = (long) (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1)
+            * (max.getZ() - min.getZ() + 1);
+        if (volume > MAX_FIND_BLOCKS) {
+            throw new CommandException("too_large", volume + " blocks in the plot bounds, max " + MAX_FIND_BLOCKS);
+        }
+        Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
+        return Sides.read(args, (level, server) -> {
+            SubLevels subLevels = SableSupport.subLevels();
+            Map<BlockPos, Vec3> found = new LinkedHashMap<>();
+            BlockScan.box(level, min, max, matcher, false,
+                (pos, state) -> found.put(pos.immutable(), subLevels.toWorld(level, Vec3.atCenterOf(pos))));
+            return Result.ok().withRows(found.entrySet().stream()
+                .sorted(Comparator.comparingDouble(entry -> entry.getValue().distanceTo(eyes))).limit(limit)
+                .map(entry -> Row.of(entry.getKey().toShortString(), new Fields()
+                    .bare("block", Ids.of(level.getBlockState(entry.getKey())))
+                    .bare("at", Rel.absolute(entry.getKey())).put("world", Rel.absolute(entry.getValue()))))
+                .toList());
+        });
     }
 
     /** The sub-level an argument names: {@code here}, a UUID or a name; fails when it names none, or a name several. */
