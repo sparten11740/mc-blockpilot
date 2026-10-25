@@ -24,6 +24,7 @@ public final class Errors {
         CODES.put("no_path", "no walkable path to the target through loaded chunks");
         CODES.put("stuck", "the player stopped making progress (goto along its path, move by distance)");
         CODES.put("out_of_reach", "the target is beyond reach and the command does not walk");
+        CODES.put("obstructed", "use at a block aboard a sub-level found something else in the way; it is named");
         CODES.put("no_recipe", "no crafting recipe for that item");
         CODES.put("missing", "ingredients missing for the recipe");
         CODES.put("need_table", "the recipe needs a crafting table within 4 blocks");

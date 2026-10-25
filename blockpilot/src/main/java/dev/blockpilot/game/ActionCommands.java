@@ -206,7 +206,9 @@ final class ActionCommands {
         BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
         Vec3 target = whole ? shapeCentre(level, block) : new Vec3(absolute.x(), absolute.y(), absolute.z());
         if (SableSupport.subLevels().at(level, block) != null) {
-            return () -> SableSupport.subLevels().toWorld(level, target);
+            // The crosshair is picked at the start of the next tick, so aim where the point will be by then.
+            return () -> SableSupport.subLevels().toWorld(level, target)
+                .add(SableSupport.subLevels().velocity(level, target).scale(1 / 20.0));
         }
         return () -> target;
     }
@@ -215,6 +217,30 @@ final class ActionCommands {
         VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
         return shape.isEmpty() ? Vec3.atCenterOf(pos)
             : shape.bounds().getCenter().add(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    /** The block a position argument names when it lies in a sub-level's plot, else null. */
+    static BlockPos plotBlock(CommandContext context, Args args, String name) throws CommandException {
+        if (!args.has(name) || args.type(name) != ArgType.POSITION) {
+            return null;
+        }
+        Position absolute = context.resolve(args.position(name));
+        BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
+        return SableSupport.subLevels().at(minecraft().level, block) == null ? null : block;
+    }
+
+    /** Null when the crosshair rests on the target block, else why {@code use} must not click. */
+    private static CommandException obstruction(BlockPos target) {
+        HitResult hit = minecraft().hitResult;
+        if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK) {
+            BlockPos pos = block.getBlockPos();
+            return pos.equals(target) ? null
+                : new CommandException("obstructed", Ids.of(minecraft().level.getBlockState(pos)) + " " + Rel.of(pos));
+        }
+        if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
+            return new CommandException("obstructed", Ids.of(entity.getEntity()) + " e" + entity.getEntity().getId());
+        }
+        return new CommandException("out_of_reach", Rel.of(target).toString());
     }
 
     static void lookAt(Vec3 point) {
@@ -230,11 +256,8 @@ final class ActionCommands {
             if (point == null) {
                 throw new CommandException("no_entity", args.word("target"));
             }
-            if (step[0]++ == 0) {
-                lookAt(point);
-                return null;
-            }
-            return Result.ok(hit());
+            lookAt(point);
+            return step[0]++ == 0 ? null : Result.ok(hit());
         });
     }
 
@@ -385,6 +408,7 @@ final class ActionCommands {
     private Action use(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
+        BlockPos aboard = plotBlock(context, args, "target");
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
@@ -415,6 +439,14 @@ final class ActionCommands {
                 }
                 if (step == 1) {
                     step++;
+                    if (aboard != null) {
+                        CommandException obstructed = obstruction(aboard);
+                        if (obstructed != null) {
+                            release();
+                            throw obstructed;
+                        }
+                        lookAt(target.get());
+                    }
                     hit = hit();
                     if (hold != null) {
                         InputState.hold(session, use);

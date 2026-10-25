@@ -48,6 +48,11 @@ public interface SubLevels {
         return point;
     }
 
+    /** How fast a point in a plot moves through the world, in blocks per second; zero for any other point. */
+    default Vec3 velocity(Level level, Vec3 point) {
+        return Vec3.ZERO;
+    }
+
     /** As {@link #toWorld}, where the client draws the sub-level in the frame being rendered. */
     default Vec3 toWorldRendered(Level level, Vec3 point, float partialTick) {
         return point;

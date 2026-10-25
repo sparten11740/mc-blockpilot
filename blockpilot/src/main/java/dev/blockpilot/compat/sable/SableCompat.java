@@ -81,6 +81,11 @@ public final class SableCompat implements SubLevels {
     }
 
     @Override
+    public Vec3 velocity(Level level, Vec3 point) {
+        return guard("velocity", () -> companion.getVelocity(level, (Position) point));
+    }
+
+    @Override
     public Vec3 toWorldRendered(Level level, Vec3 point, float partialTick) {
         return guard("toWorldRendered", () -> {
             SubLevelAccess subLevel = companion.getContaining(level, (Position) point);

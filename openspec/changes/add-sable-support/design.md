@@ -134,11 +134,18 @@ releases. The approach, in layers:
 ### D5. Aim and camera targets are suppliers
 
 - **Aiming:** `ActionCommands.point` already returns a supplier. For a plot
-  position it projects the block's centre through the sub-level's logical pose
-  on every tick, so `face` and `use` track a moving sub-level.
+  position it projects the centre of the block's shape through the
+  sub-level's logical pose on every tick, so `face` and `use` track a moving
+  sub-level.
+  - The game picks the crosshair's target at the start of the next tick, so
+    the aim leads by one tick of the point's velocity.
+  - A floor lever fills only the bottom of its cell, which is why the aim
+    goes at the shape's centre rather than the cell's. The same change
+    applies to world blocks.
 - **Obstruction:** after aiming, `use` at a plot position compares the
   crosshair's block (Sable's ray hits report plot positions) with the target. A
-  mismatch fails with `err obstructed <id> <position>`.
+  mismatch fails with `err obstructed <id> <position>`. When nothing is hit,
+  `use` fails with `err out_of_reach`.
 - **Camera:** the placement's position becomes a supplier too. A plot position
   projects through the client sub-level's render pose for the frame's partial
   tick, so a camera riding a moving ship doesn't jitter.
