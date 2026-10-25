@@ -29,6 +29,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTickRateManager;
 import net.minecraft.server.level.ServerLevel;
@@ -84,10 +85,23 @@ final class ServerCommands {
     /** Collects what a command tells its source. */
     private static final class Capture implements CommandSource {
         final List<String> lines = new ArrayList<>();
+        /** The last line that is not Brigadier's "...command<--[HERE]" pointer: the error message, on failure. */
+        String error;
 
         @Override
         public void sendSystemMessage(Component message) {
             lines.add(message.getString());
+            if (!mentions(message, "command.context.here")) {
+                error = message.getString();
+            }
+        }
+
+        /** Whether the component or any part nested in it is the translation {@code key}. */
+        private static boolean mentions(Component component, String key) {
+            if (component.getContents() instanceof TranslatableContents contents && contents.getKey().equals(key)) {
+                return true;
+            }
+            return component.getSiblings().stream().anyMatch(part -> mentions(part, key));
         }
 
         @Override
@@ -135,8 +149,8 @@ final class ServerCommands {
         }
         Result result = success[0]
             ? Result.ok(new Fields().put("result", value[0], "result=" + value[0]).put("success", true, "success=true"))
-            : Result.error("command_failed", capture.lines.isEmpty() ? command : capture.lines.get(
-                capture.lines.size() - 1)).with(new Fields().put("result", value[0], "result=" + value[0]));
+            : Result.error("command_failed", capture.error == null ? command : capture.error)
+                .with(new Fields().put("result", value[0], "result=" + value[0]));
         Result answer = result.withRows(rows);
         // The server sends block and entity changes to the client during its next tick; answer only once the
         // client can see them, so a following client query (block, look, status) reads the new state.
