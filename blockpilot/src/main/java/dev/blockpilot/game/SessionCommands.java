@@ -164,7 +164,8 @@ final class SessionCommands {
         screen.children().forEach(child -> {
             if (child instanceof AbstractWidget widget && !(widget instanceof Button)) {
                 String text = widget.getMessage().getString();
-                if (!text.isBlank()) {
+                // The title is one of the widgets too.
+                if (!text.isBlank() && !parts.contains(text)) {
                     parts.add(text);
                 }
             }
