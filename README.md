@@ -122,7 +122,7 @@ ok
 | perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r [limit]]`, `block <pos>`, `blocks <from> <to> [grid]` (`grid`: one id per cell), `inv [detail]` |
 | observe | `screenshot [width] [burst=n every=Nt [sheet]] [crop=x0,y0,x1,y1] [hud=off]` (`sheet`: one PNG of the burst in a labelled grid), `pixels [[name=]x0,y0,x1,y1\|[name=]@<pos>]… [r=]` (mean rgb and luma, max and p90 luma of parts of the last frame), `option [<name> [<value>]]`, `option reset`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=]`, `particles [since=]`, `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>` |
 | movement | `face <pos\|e<id>>`, `turn <yaw> <pitch> [Nt]`, `move <dir> <blocks\|Nt>` (by blocks, `err stuck` after 20 ticks without progress), `jump`, `sneak on\|off`, `sprint on\|off`, `fly on\|off`, `goto <pos\|e<id>> [near=]` |
-| interact | `use [target] [sneak] [hold=Nt]`, `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
+| interact | `use [target] [any] [sneak] [hold=Nt]`, `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
 | inventory | `select <slot\|item>`, `swap <a> <b>`, `drop <item\|slot> [n]`, `offhand <item>`, `equip <item>` |
 | gui | `screen` (lists rows of lists as `w<i>` too), `cursor <x,y\|w<i>>`, `click <x,y\|w<i>\|s<slot>> [button]` (`w<i>`: a widget's centre, as `screen` numbers them), `close` |
 | input | `mouse down\|up\|click <button>`, `mouse move <dx> <dy> [Nt]`, `drag <button> …`, `scroll <n>`, `key down\|up\|press <key\|key.mapping>`, `type <text>`, `release` |
@@ -156,8 +156,9 @@ works with them:
   `aim:stone_button 20481032,129,20481033 sub=ship world=10.5,-58.5,6.5`. It pastes back into `block`, `blocks`,
   `face`, `use` and `camera`. `status` shows `aboard:<name>` while the player stands on or rides a sub-level.
 - `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. `use`
-  fails with `err obstructed <id> <position>` when something else is in the way. A camera placed at, or looking at, a
-  plot position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard.
+  fails with `err obstructed <id> <position>` when something else is in the way; `use <pos> any` clicks it anyway,
+  for multi-block panels whose mod takes a click on any of their blocks. A camera placed at, or looking at, a plot
+  position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard.
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
   the one under the crosshair):
   - `sable:list` lists the sub-levels within 128 blocks, nearest first.

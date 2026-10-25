@@ -44,8 +44,8 @@ final class SableCommands {
     private static final int TP_REACH = 2;
     private static final int TP_SETTLE_TICKS = 2;
     private static final int MAX_FIND_LIMIT = 100;
-    /** The positions sable:find may scan: a 64-block cube. */
-    private static final long MAX_FIND_BLOCKS = 64 * 64 * 64;
+    /** The positions sable:find may scan: as many as find's widest cube, 128 blocks each way. */
+    private static final long MAX_FIND_BLOCKS = 257L * 257 * 257;
     /** Keeps a bound that ends on a block edge from taking in the next block. */
     private static final double EDGE = 1.0E-6;
     /** Sub-levels are seen inside the world border, so this box holds them all. */

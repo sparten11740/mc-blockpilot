@@ -40,6 +40,7 @@
 - [x] 6.1 Without Sable: run `tools/smoke_test.py` in text and JSON mode on NeoForge and Fabric; verify every step passes and the JSON shapes match between the loaders
 - [x] 6.2 With Sable 2.0.6 and a mod that builds sub-levels in a dev client: run the cases end to end (aim on a button aboard, find a door, `sable:tp` onto the bridge, `use` a seat, a chase camera on a moving ship with `sample … while wait`); verify each and record the Sable and companion versions in the README
 - [ ] 6.3 Build the jar, share it with the agents play-testing Sable-based mods with what changed, and fold their feedback into the specs or a follow-up; verify they confirm the reported cases work
+- [x] 6.4 From the play-test of 6.3: cap `sable:find` at `find`'s own reach (a cube 128 blocks each way) instead of a 64-block cube, and add `use <pos> any` to skip the obstruction check for multi-block panels; verify that `sable:find` scans a ship whose plot bounds exceed 262,144 positions, and that `use <pos> any` clicks a block behind another block aboard where plain `use` gives `err obstructed`
 
 ## Workflow follow-up
 

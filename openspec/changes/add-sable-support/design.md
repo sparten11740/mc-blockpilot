@@ -146,6 +146,11 @@ releases. The approach, in layers:
   crosshair's block (Sable's ray hits report plot positions) with the target. A
   mismatch fails with `err obstructed <id> <position>`. When nothing is hit,
   `use` fails with `err out_of_reach`.
+  - `use <pos> any` skips the check. Some mods take a click on any block of a
+    multi-block panel and work out the key from where the look meets it, so
+    another block of the same panel in front of the target is no obstruction.
+  - Treating blocks of the target's id as no obstruction was rejected: in a
+    row of identical blocks it would click the wrong one without a word.
 - **Camera:** the placement's position becomes a supplier too. A plot position
   projects through the client sub-level's render pose for the frame's partial
   tick, so a camera riding a moving ship doesn't jitter.
@@ -161,8 +166,11 @@ releases. The approach, in layers:
 - **`sable:find`:**
   - Scans the sub-level's plot-space bounds (its bounding box transformed back
     through its pose), with `find`'s section-palette pruning.
-  - The scan is capped at a 64-block cube's worth of positions (262,144),
-    else `err too_large`. `blocks` allows only 4,096, too few for a ship.
+  - The scan is capped at what `find` may scan at most, a cube 128 blocks
+    each way (16,974,593 positions), else `err too_large`. Palette pruning
+    keeps it cheap where nothing matches. A 64-block cube was too small for
+    large ships, which reach well over a million positions, and `blocks`'s
+    4,096 far too small.
   - It runs on the client, or on the server with `side=server`.
 - **`sable:tp`:**
   - Runs on the server thread and needs a world with commands allowed.

@@ -80,6 +80,7 @@ SHALL refuse a plot position and point to `sable:tp`.
 is on each tick, so a moving or turning sub-level doesn't throw the aim off.
 When the crosshair ends on another block, `use` SHALL fail with `err
 obstructed <block> <position>`, naming what is in the way instead of using it.
+`use <pos> any` SHALL skip that check and click whatever the crosshair ends on.
 
 #### Scenario: Seat behind a wall panel
 - **WHEN** an agent runs `use <plot position of a seat>` and a wall panel of
@@ -92,6 +93,12 @@ obstructed <block> <position>`, naming what is in the way instead of using it.
   with a clear line of sight
 - **THEN** the lever is used, although its world position changed during the
   aim
+
+#### Scenario: Key on a multi-block panel
+- **WHEN** an agent runs `use <point on a touch key> any` and another block of
+  the same panel is first on the line of sight
+- **THEN** the click goes to the panel, which the panel's mod resolves to the
+  key
 
 ### Requirement: Cameras follow a sub-level
 `camera at` and its `look` target SHALL accept plot positions and, for a plot

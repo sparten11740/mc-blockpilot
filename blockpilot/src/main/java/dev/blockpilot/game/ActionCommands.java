@@ -83,10 +83,13 @@ final class ActionCommands {
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
             .field("took", "seconds").example("goto 120,64,-30"));
         registry.register(CommandSpec.action("use", this::use).needsWorld().group("interact")
-            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).optionalKeyword("sneak", "sneak")
+            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).optionalKeyword("any", "any")
+            .optionalKeyword("sneak", "sneak")
             .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)",
                 ArgType.DURATION, ArgType.SECONDS)
-            .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit")
+            .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit. "
+                + "At a block aboard a sub-level it fails with err obstructed when another block is in the way; any "
+                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks)")
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
             .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
@@ -408,7 +411,7 @@ final class ActionCommands {
     private Action use(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
-        BlockPos aboard = plotBlock(context, args, "target");
+        BlockPos aboard = args.has("any") ? null : plotBlock(context, args, "target");
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
