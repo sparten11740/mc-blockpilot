@@ -71,8 +71,11 @@ public final class SableCompat implements SubLevels {
     }
 
     @Override
-    public UUID carrying(Entity entity) {
-        return guard("carrying", () -> id(companion.getTrackingOrVehicleSubLevel(entity)));
+    public Info carrying(Entity entity) {
+        return guard("carrying", () -> {
+            SubLevelAccess subLevel = companion.getTrackingOrVehicleSubLevel(entity);
+            return subLevel == null ? null : info(entity.level(), subLevel);
+        });
     }
 
     @Override
@@ -138,10 +141,6 @@ public final class SableCompat implements SubLevels {
         return new Info(id, name == null || name.isEmpty() ? id.toString().substring(0, 8) : name, position, velocity,
             angles.yaw(), angles.pitch(), angles.roll(), subLevel.boundingBox().toMojang(),
             subLevel.boundingBox().transformInverse(pose, new BoundingBox3d()).toMojang());
-    }
-
-    private static UUID id(SubLevelAccess subLevel) {
-        return subLevel == null ? null : subLevel.getUniqueId();
     }
 
     private static Vec3 vec(Vector3dc vector) {

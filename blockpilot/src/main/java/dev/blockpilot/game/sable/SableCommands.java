@@ -1,5 +1,6 @@
 package dev.blockpilot.game.sable;
 
+import dev.blockpilot.api.Action;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.BlockpilotApi;
@@ -15,6 +16,7 @@ import dev.blockpilot.game.BlockScan;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Sides;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +24,9 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -36,6 +41,8 @@ import net.minecraft.world.phys.Vec3;
 final class SableCommands {
     private static final String REGISTRANT = "blockpilot";
     private static final int DEFAULT_RADIUS = 128;
+    private static final int TP_REACH = 2;
+    private static final int TP_SETTLE_TICKS = 2;
     private static final int MAX_FIND_LIMIT = 100;
     /** The positions sable:find may scan: a 64-block cube. */
     private static final long MAX_FIND_BLOCKS = 64 * 64 * 64;
@@ -83,6 +90,12 @@ final class SableCommands {
                 + "max 100); " + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
             .example("sable:find here *door* 3"));
+        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.action("tp", SableCommands::teleport)
+            .onServer().arg("pos", ArgType.POSITION)
+            .help("puts the player aboard: on a free spot within " + TP_REACH + " blocks of a block in a sub-level's "
+                + "plot, standing on that sub-level (cheats on)")
+            .field("at", "where the player stands, world position").field("plot", "that spot's plot position")
+            .field("sub", "the sub-level").example("sable:tp 20481032,129,20481033"));
     }
 
     private static Result list(CommandContext context, Args args) {
@@ -105,7 +118,8 @@ final class SableCommands {
         Minecraft minecraft = Minecraft.getInstance();
         SubLevels.Info info = resolve(args, "sub");
         Vec3 velocity = info.velocity();
-        boolean rides = info.id().equals(SableSupport.subLevels().carrying(minecraft.player));
+        SubLevels.Info carrying = SableSupport.subLevels().carrying(minecraft.player);
+        boolean rides = carrying != null && carrying.id().equals(info.id());
         return Result.ok(new Fields().bare("name", info.name()).bare("id", info.id().toString())
             .bare("at", Rel.of(info.position())).hidden("at_abs", Rel.absolute(info.position()))
             .tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch())).tag("roll", tenths(info.roll()))
@@ -166,6 +180,60 @@ final class SableCommands {
         });
     }
 
+    private static Action teleport(CommandContext context, Args args) throws CommandException {
+        Position target = context.resolve(args.position("pos"));
+        BlockPos block = BlockPos.containing(target.x(), target.y(), target.z());
+        Minecraft minecraft = Minecraft.getInstance();
+        MinecraftServer server = minecraft.getSingleplayerServer();
+        UUID playerId = minecraft.player.getUUID();
+        int[] ticks = {0};
+        Result[] done = {null};
+        return () -> {
+            if (ticks[0]++ > 0) {
+                // The client sees the player's new place a tick or two later.
+                return ticks[0] > TP_SETTLE_TICKS ? done[0] : null;
+            }
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player == null) {
+                throw new CommandException("not_in_world");
+            }
+            ServerLevel level = player.serverLevel();
+            SubLevels subLevels = SableSupport.subLevels();
+            SubLevels.Info info = subLevels.at(level, block);
+            if (info == null) {
+                throw new CommandException("no_sublevel", target + " is in no sub-level's plot");
+            }
+            BlockPos spot = freeSpot(level, block, subLevels);
+            if (spot == null) {
+                throw new CommandException("no_room", "no free spot within " + TP_REACH + " blocks of " + target);
+            }
+            Vec3 at = subLevels.toWorld(level, Vec3.atBottomCenterOf(spot));
+            player.teleportTo(level, at.x, at.y, at.z, player.getYRot(), player.getXRot());
+            done[0] = Result.ok(new Fields().bare("at", Rel.absolute(at)).put("plot", Rel.absolute(spot))
+                .put("sub", info.name()));
+            return null;
+        };
+    }
+
+    /** The nearest spot with room for the player, standing on a block of the same sub-level. */
+    private static BlockPos freeSpot(Level level, BlockPos target, SubLevels subLevels) {
+        List<BlockPos> spots = new ArrayList<>();
+        BlockPos.betweenClosed(target.offset(-TP_REACH, -TP_REACH, -TP_REACH), target.offset(TP_REACH, TP_REACH,
+            TP_REACH)).forEach(pos -> spots.add(pos.immutable()));
+        spots.sort(Comparator.comparingDouble(pos -> pos.distSqr(target)));
+        for (BlockPos spot : spots) {
+            if (passable(level, spot) && passable(level, spot.above()) && !passable(level, spot.below())
+                && subLevels.at(level, spot.below()) != null) {
+                return spot;
+            }
+        }
+        return null;
+    }
+
+    private static boolean passable(Level level, BlockPos pos) {
+        return level.getBlockState(pos).getCollisionShape(level, pos).isEmpty();
+    }
+
     /** The sub-level an argument names: {@code here}, a UUID or a name; fails when it names none, or a name several. */
     static SubLevels.Info resolve(Args args, String name) throws CommandException {
         Minecraft minecraft = Minecraft.getInstance();
@@ -195,8 +263,7 @@ final class SableCommands {
     }
 
     private static SubLevels.Info here(Minecraft minecraft, SubLevels subLevels) throws CommandException {
-        UUID carrying = subLevels.carrying(minecraft.player);
-        SubLevels.Info info = carrying == null ? null : subLevels.info(minecraft.level, carrying);
+        SubLevels.Info info = subLevels.carrying(minecraft.player);
         if (info == null && minecraft.hitResult instanceof BlockHitResult hit
             && hit.getType() == HitResult.Type.BLOCK) {
             info = subLevels.at(minecraft.level, hit.getBlockPos());

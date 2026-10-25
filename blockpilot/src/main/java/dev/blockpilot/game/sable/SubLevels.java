@@ -42,7 +42,7 @@ public interface SubLevels {
     }
 
     /** The sub-level the entity stands on or rides, or null. */
-    default UUID carrying(Entity entity) {
+    default Info carrying(Entity entity) {
         return null;
     }
 

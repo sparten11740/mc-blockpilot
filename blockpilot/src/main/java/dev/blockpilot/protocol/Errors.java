@@ -41,6 +41,7 @@ public final class Errors {
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");
+        CODES.put("no_room", "sable:tp found no spot with room for the player near that block aboard");
         CODES.put("ambiguous", "several sub-levels have that name; their UUIDs are attached");
         CODES.put("sable", "a call into Sable failed; a missing method turns the Sable integration off until restart");
         CODES.put("internal", "Blockpilot hit an unexpected error; it is logged");

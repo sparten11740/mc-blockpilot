@@ -12,6 +12,8 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.observe.CameraControl;
+import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -62,6 +64,7 @@ final class PerceptionCommands {
             .field("sub", "with Sable: the sub-level the aimed block is aboard; its position prints absolute")
             .field("world", "with Sable: where that block is in the world").field("vel", "velocity, blocks per tick")
             .field("on_ground", "standing on something").field("vehicle", "what the player rides")
+            .field("aboard", "with Sable: the sub-level the player stands on or rides")
             .example("status"));
         registry.register(CommandSpec.query("look", this::look).needsWorld().diffable()
             .group("perception").optionalArg("radius", ArgType.INT)
@@ -131,6 +134,10 @@ final class PerceptionCommands {
         }
         if (!player.onGround()) {
             fields.put("on_ground", false, player.getAbilities().flying ? "flying" : "airborne");
+        }
+        SubLevels.Info aboard = SableSupport.subLevels().carrying(player);
+        if (aboard != null) {
+            fields.put("aboard", aboard.name(), "aboard:" + aboard.name());
         }
         Entity vehicle = player.getVehicle();
         if (vehicle != null) {
