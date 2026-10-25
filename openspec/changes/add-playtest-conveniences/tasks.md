@@ -7,8 +7,8 @@
 
 ## 2. Points within a block (player-control, game-perception)
 
-- [ ] 2.1 Add the game-free block-frame helper (north-facing model frame, quarter turns by a horizontal facing, both directions) with unit tests for all four facings, an unturned block and the round trip
-- [ ] 2.2 Add `at <u,v,w>` to `face` and `use` (coordinates 0 to 1, else `err syntax`), aiming at that point of the block for world and plot positions; help and README; verify in game that `face <furnace> at 0.25,0.75,0` aims at the upper left of the front of a furnace facing north and of one facing east (the crosshair is on the front face both times), that `use <lever> at 0.5,0.1,0.5` toggles a lever, and that `use <plot position> at …` works on a block aboard a moving sub-level
+- [x] 2.1 Add the game-free block-frame helper (north-facing model frame, quarter turns by a horizontal facing, both directions) with unit tests for all four facings, an unturned block and the round trip
+- [ ] 2.2 Add `at <u,v,w>` to `face` and `use` (coordinates 0 to 1, else `err syntax`), aiming at that point of the block for world and plot positions; help and README; verify in game that `face <furnace> at 0.75,0.75,0` aims at the upper left of the front (as seen from in front) of a furnace facing north and of one facing east (the crosshair is on the front face both times), that `use <lever> at 0.5,0.1,0.5` toggles a lever, and that `use <plot position> at …` works on a block aboard a moving sub-level
 - [ ] 2.3 Add `hit=<u,v,w>` (JSON `hit`) to the crosshair report of `status` and the aim of `face`/`use` replies; verify in game that aiming at a point by hand, reading `hit=` and passing it to `use <pos> at` lands on the same point, on a turned block and aboard a sub-level
 
 ## 3. Messages and screenshots (client-observation, game-perception)
