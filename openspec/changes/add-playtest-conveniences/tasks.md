@@ -23,7 +23,7 @@
 ## 5. Integration checks
 
 - [x] 5.1 Run `tools/smoke_test.py` in text and JSON mode on NeoForge and Fabric; verify every step passes and the JSON shapes match between the loaders
-- [ ] 5.2 Build the jar and give it to the agents play-testing mods with what changed; verify they confirm quit, points within a block and the message pattern work in their loop, and fold their feedback in
+- [x] 5.2 Build the jar and give it to the agents play-testing mods with what changed; verify they confirm quit, points within a block and the message pattern work in their loop, and fold their feedback in
 
 ## Workflow follow-up
 
