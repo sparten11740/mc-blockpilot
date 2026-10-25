@@ -197,7 +197,7 @@ public final class Engine {
     private void registerBuiltIns() {
         registry.register(CommandSpec.query("help", (context, args) -> help.answer(args.text("topic")))
             .group("meta").optionalArg("topic", ArgType.WORD)
-            .help("lists commands; help <command|group|namespace|errors> for details").example("help goto"));
+            .help("lists commands; help <command|group|namespace|errors|grammar> for details").example("help goto"));
         registry.register(CommandSpec.query("fmt", (context, args) -> {
             Session session = sessions.get(context.sessionId());
             session.setFormat(args.word("format").equals("json") ? Session.Format.JSON : Session.Format.TEXT);

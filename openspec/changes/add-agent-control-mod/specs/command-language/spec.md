@@ -85,8 +85,9 @@ identifier   ::= [A-Za-z_] [A-Za-z0-9_]*
 digits       ::= [0-9]+
 
 /* What forms are made of */
-option       ::= option-name "=" ( token-char - "=" ) token-char*
+option       ::= option-name "=" option-value
 option-name  ::= identifier ( ":" identifier )?
+option-value ::= ( token-char - "=" ) token-char*
 text         ::= token ( blank+ token )*
 word         ::= token - ( option | test-shape )
 

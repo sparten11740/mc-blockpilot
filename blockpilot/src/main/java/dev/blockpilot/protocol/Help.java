@@ -22,6 +22,9 @@ public final class Help {
         if (topic == null || topic.isBlank()) {
             return overview();
         }
+        if (topic.equals("grammar")) {
+            return grammar();
+        }
         if (topic.equals("errors")) {
             List<Row> rows = new ArrayList<>();
             Errors.CODES.forEach((code, meaning) -> rows.add(Row.of(code, new Fields().bare("code", code)
@@ -64,6 +67,18 @@ public final class Help {
         return Result.ok().withRows(rows);
     }
 
+    /** The core grammar, then each command's productions; one row per comment or production. */
+    private Result grammar() {
+        List<Row> rows = new ArrayList<>();
+        Grammar.coreLines().forEach(line -> rows.add(Row.of("core", new Fields().bare("ebnf", line))));
+        rows.add(Row.of("commands", new Fields().bare("ebnf", Grammar.COMMANDS_COMMENT)));
+        for (CommandRegistry.Entry entry : registry.all()) {
+            Grammar.command(entry).forEach(line -> rows.add(Row.of(entry.qualifiedName(), new Fields().bare("ebnf",
+                line))));
+        }
+        return Result.ok().withRows(rows);
+    }
+
     private static Row summary(String name, List<String> usages, String help) {
         return Row.of(name, new Fields().bare("usage", String.join(" | ", usages))
             .put("help", help, help.isEmpty() ? "" : "— " + help));
@@ -88,8 +103,8 @@ public final class Help {
                 .put("commands", names, String.join(" ", names))));
         }
         rows.add(Row.of("more", new Fields().bare("hint",
-            "help <command|group|namespace:|errors>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes on past "
-                + "its err); positions x,y,z or ~dx,dy,dz; entities e<id>")));
+            "help <command|group|namespace:|errors|grammar>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes "
+                + "on past its err); positions x,y,z or ~dx,dy,dz; entities e<id>")));
         return Result.ok().withRows(rows);
     }
 
