@@ -15,6 +15,7 @@
     "FrameMixin",
     "GuiMixin",
     "InputConstantsMixin",
+    "InputKeyAccessor",
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
     "LevelRendererMixin",

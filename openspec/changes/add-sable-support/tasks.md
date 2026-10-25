@@ -27,7 +27,7 @@
 
 ## 5. Play-test fixes (player-control, command-language, client-observation, game-perception)
 
-- [ ] 5.1 Accept key names with `_` or `.` between words and list the three closest key names for an unknown one, with help naming the forms; verify with a game-free unit test of the closest-name choice and in game that `key press left_shift 5t` holds shift and `key press leftshift` names `left_shift`
+- [x] 5.1 Accept key names with `_` or `.` between words and list the three closest key names for an unknown one, with help naming the forms; verify with a game-free unit test of the closest-name choice and in game that `key press left_shift 5t` holds shift and `key press leftshift` names `left_shift`
 - [ ] 5.2 Let `sample … while` take a `wait` (duration, `idle` or `until`) in the parser, the grammar listing and the runner, and update the core grammar text from the spec; verify with `ParserTest`, `GrammarTest`, an `EngineTest` case (10 rows over `wait 200t` every 20t), and in game
 - [ ] 5.3 Name the camera's block in `camera at`'s reply and add `inside=<id>` when it is a full solid block; verify in game with the camera in a stone wall and in the air
 - [ ] 5.4 Add `blocks <pos1> <pos2> grid` (one id per cell, rows per layer bottom-up, north to south, west to east); verify in game with the two-by-two scenario in text and JSON

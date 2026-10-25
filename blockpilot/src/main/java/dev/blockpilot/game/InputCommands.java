@@ -13,6 +13,8 @@ import dev.blockpilot.api.Point;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.Injection;
 import dev.blockpilot.game.input.InputState;
+import dev.blockpilot.game.input.KeyNames;
+import dev.blockpilot.mixin.InputKeyAccessor;
 import dev.blockpilot.mixin.KeyMappingAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.List;
@@ -62,8 +64,8 @@ final class InputCommands {
             .help("scrolls by n notches (positive up), optionally at x,y or w<i>").example("scroll -2"));
         registry.register(CommandSpec.action("key", this::key).group("input")
             .keyword("op", "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
-            .help("a key by name (w, space, left_shift, e, f5, escape, enter) or key mapping id (key.use, "
-                + "key.inventory, a mod's mapping); press = down then up after Nt (default 1t)")
+            .help("a key by name (w, space, left_shift or left.shift, e, f5, escape, enter) or key mapping id "
+                + "(key.use, key.inventory, a mod's mapping); press = down then up after Nt (default 1t)")
             .example("key press key.inventory"));
         registry.register(CommandSpec.action("type", this::type).group("input").arg("text", ArgType.TEXT)
             .help("types text into the focused text field").example("type hello"));
@@ -324,18 +326,21 @@ final class InputCommands {
                 return key;
             }
         }
-        for (String prefix : new String[] {"key.keyboard.", "key.mouse.", ""}) {
-            try {
-                InputConstants.Key key = InputConstants.getKey(prefix + name);
-                if (!key.equals(InputConstants.UNKNOWN)) {
-                    return key;
+        for (String spelling : KeyNames.spellings(name)) {
+            for (String prefix : new String[] {"key.keyboard.", "key.mouse.", ""}) {
+                try {
+                    InputConstants.Key key = InputConstants.getKey(prefix + spelling);
+                    if (!key.equals(InputConstants.UNKNOWN)) {
+                        return key;
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Try the next prefix.
                 }
-            } catch (IllegalArgumentException e) {
-                // Try the next prefix.
             }
         }
-        throw new CommandException("syntax", "unknown key " + name + "; use names like w, space, left_shift, f5 "
-            + "or a mapping id like key.use");
+        List<String> known = InputKeyAccessor.blockpilot$names().keySet().stream().map(KeyNames::agentName).toList();
+        throw new CommandException("syntax", "unknown key " + name + "; closest: "
+            + String.join(" ", KeyNames.closest(name, known, 3)) + "; or a mapping id like key.use");
     }
 
     private Action key(CommandContext context, Args args) throws CommandException {
