@@ -235,12 +235,15 @@ final class Screens {
         return fields;
     }
 
-    /** A row's narration without the narrator's "Selected: …" around it. */
+    /** A row's narration without the narrator's "Selected …" phrasing: its parts, such as a world's name and mode. */
     private static String rowLabel(Component narration) {
         if (narration.getContents() instanceof TranslatableContents contents
-            && contents.getKey().equals("narrator.select") && contents.getArgs().length == 1) {
-            Object name = contents.getArgs()[0];
-            return name instanceof Component component ? component.getString() : String.valueOf(name);
+            && contents.getKey().startsWith("narrator.select") && contents.getArgs().length > 0) {
+            List<String> parts = new ArrayList<>();
+            for (Object part : contents.getArgs()) {
+                parts.add(part instanceof Component component ? rowLabel(component) : String.valueOf(part));
+            }
+            return String.join(", ", parts);
         }
         return narration.getString();
     }
