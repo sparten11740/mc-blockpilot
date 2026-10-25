@@ -85,9 +85,10 @@ final class PerceptionCommands {
             .field("sub", "with Sable: the sub-level whose plot holds the block")
             .field("world", "with Sable: where that block is in the world").example("block ~0,-1,0"));
         registry.register(CommandSpec.query("blocks", this::blocks).needsWorld().group("perception")
-            .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION)
+            .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION).optionalKeyword("grid", "grid")
             .option("side", "server: read the integrated server's level (cheats on)", Sides.NAMES)
-            .help("a region (max 4096 blocks): palette, then Y layers bottom-up, rows north to south, RLE, . = air")
+            .help("a region (max 4096 blocks): palette, then Y layers bottom-up, rows north to south, RLE, . = air; "
+                + "with grid, one block id per cell instead, a line per Y layer and row")
             .example("blocks ~-2,-1,-2 ~2,0,2"));
         registry.register(CommandSpec.query("inv", this::inventory).needsWorld().diffable().group("perception")
             .optionalKeyword("detail", "detail")
@@ -391,7 +392,9 @@ final class PerceptionCommands {
         if (volume > MAX_REGION_BLOCKS) {
             throw new CommandException("too_large", String.valueOf(MAX_REGION_BLOCKS));
         }
-        return Sides.read(args, (level, server) -> Regions.dump(level, min, max));
+        boolean grid = args.has("grid");
+        return Sides.read(args, (level, server) -> grid ? Regions.grid(level, min, max)
+            : Regions.dump(level, min, max));
     }
 
     private Result inventory(CommandContext context, Args args) {

@@ -13,7 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Region dumps for {@code blocks}: a palette of one-character symbols, then one section per Y layer (bottom up),
- * one row per Z (north to south), X west to east, runs of the same symbol written as {@code <count><symbol>}.
+ * one row per Z (north to south), X west to east, runs of the same symbol written as {@code <count><symbol>}. The grid
+ * form spells every cell out instead.
  */
 final class Regions {
     private static final String SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -50,6 +51,24 @@ final class Regions {
         palette.forEach((state, symbol) -> entries.add(symbol + "=" + state));
         return Result.ok(new Fields().put("palette", palette, String.join(" ", entries)).hidden("from",
             Rel.absolute(min)).hidden("to", Rel.absolute(max))).withRows(rows);
+    }
+
+    /** One row per Y layer (bottom up) and Z (north to south), one block id per cell west to east; ? is unloaded. */
+    static Result grid(Level level, BlockPos min, BlockPos max) {
+        List<Row> rows = new ArrayList<>();
+        for (int y = min.getY(); y <= max.getY(); y++) {
+            for (int z = min.getZ(); z <= max.getZ(); z++) {
+                List<String> cells = new ArrayList<>();
+                for (int x = min.getX(); x <= max.getX(); x++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    cells.add(Sides.loaded(level, pos) ? Ids.of(level.getBlockState(pos)) : "?");
+                }
+                rows.add(Row.of("y" + y + " z" + z, new Fields().put("y", y, "y" + y).put("z", z, "z" + z + ":")
+                    .put("cells", cells, String.join(" ", cells))));
+            }
+        }
+        return Result.ok(new Fields().hidden("from", Rel.absolute(min)).hidden("to", Rel.absolute(max)))
+            .withRows(rows);
     }
 
     private static String symbol(Level level, BlockPos pos, Map<String, String> palette) {

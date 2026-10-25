@@ -118,7 +118,7 @@ ok
 
 | Group | Commands |
 | --- | --- |
-| perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r [limit]]`, `block <pos>`, `blocks <from> <to>`, `inv [detail]` |
+| perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r [limit]]`, `block <pos>`, `blocks <from> <to> [grid]` (`grid`: one id per cell), `inv [detail]` |
 | observe | `screenshot [width] [burst=n every=Nt [sheet]] [crop=x0,y0,x1,y1] [hud=off]` (`sheet`: one PNG of the burst in a labelled grid), `pixels [[name=]x0,y0,x1,y1\|[name=]@<pos>]… [r=]` (mean rgb and luma, max and p90 luma of parts of the last frame), `option [<name> [<value>]]`, `option reset`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=]`, `particles [since=]`, `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>` |
 | movement | `face <pos\|e<id>>`, `turn <yaw> <pitch> [Nt]`, `move <dir> <blocks\|Nt>` (by blocks, `err stuck` after 20 ticks without progress), `jump`, `sneak on\|off`, `sprint on\|off`, `fly on\|off`, `goto <pos\|e<id>> [near=]` |
 | interact | `use [target] [sneak] [hold=Nt]`, `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
