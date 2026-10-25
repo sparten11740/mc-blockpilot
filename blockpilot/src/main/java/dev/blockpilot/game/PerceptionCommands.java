@@ -23,6 +23,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -366,6 +367,18 @@ final class PerceptionCommands {
             fields.put("be", type, "be:" + type);
         }
         return fields;
+    }
+
+    /** The block's own frame: turned by a horizontal {@code facing} or {@code horizontal_facing}, else unturned. */
+    static BlockFrame frame(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        for (Property<?> property : state.getProperties()) {
+            if ((property.getName().equals("facing") || property.getName().equals("horizontal_facing"))
+                && state.getValue(property) instanceof Direction direction) {
+                return BlockFrame.ofFacing(direction.getName());
+            }
+        }
+        return BlockFrame.UNTURNED;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

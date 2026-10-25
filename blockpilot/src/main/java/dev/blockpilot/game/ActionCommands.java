@@ -9,6 +9,7 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Form;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.AimedClick;
@@ -21,6 +22,7 @@ import dev.blockpilot.protocol.CommandRegistry;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -52,6 +54,11 @@ final class ActionCommands {
     /** A move by distance fails when the player hasn't got this far from where it last progressed in that long. */
     private static final double MOVE_PROGRESS = 0.1;
     private static final int MOVE_STUCK_TICKS = 20;
+    /** {@code at <u,v,w>}: a point inside the target block, in the block's own frame. */
+    private static final Consumer<Form> WITHIN_BLOCK = at -> at.keyword("at", "at").arg("point", ArgType.POSITION);
+    private static final String WITHIN_BLOCK_HELP = "at u,v,w aims at that point of the block, each 0 to 1 in the "
+        + "frame its model is drawn in facing north (u west to east, v up, w north to south), turned with the block's "
+        + "facing";
     /** How long {@code use} re-aims at a block aboard for the crosshair to rest on it before it gives up. */
     private static final int MAX_AIM_TICKS = 10;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
@@ -59,9 +66,9 @@ final class ActionCommands {
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
-            .arg("target", ArgType.POSITION, ArgType.ENTITY)
+            .form(form -> form.arg("target", ArgType.POSITION, ArgType.ENTITY).optional(WITHIN_BLOCK))
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
-                + "returns what the crosshair then hits").example("face 12.5,70.2,-3.4"));
+                + "returns what the crosshair then hits. " + WITHIN_BLOCK_HELP).example("face 12.5,70.2,-3.4"));
         registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
             .arg("yaw", ArgType.NUMBER).arg("pitch", ArgType.NUMBER).optionalArg("ticks", ArgType.DURATION)
             .help("sets the camera to yaw/pitch (degrees), optionally smoothed over a duration")
@@ -88,13 +95,14 @@ final class ActionCommands {
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
             .field("took", "seconds").example("goto 120,64,-30"));
         registry.register(CommandSpec.action("use", this::use).needsWorld().group("interact")
-            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).optionalKeyword("any", "any")
-            .optionalKeyword("sneak", "sneak")
+            .form(form -> form.optional(target -> target.arg("target", ArgType.POSITION, ArgType.ENTITY)
+                .optional(WITHIN_BLOCK)).optionalKeyword("any", "any").optionalKeyword("sneak", "sneak"))
             .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)",
                 ArgType.DURATION, ArgType.SECONDS)
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit. "
                 + "At a block aboard a sub-level it fails with err obstructed when another block is in the way; any "
-                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks)")
+                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks). "
+                + WITHIN_BLOCK_HELP)
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
             .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
@@ -195,12 +203,15 @@ final class ActionCommands {
     }
 
     /**
-     * The point a position or entity argument names: an entity's centre, for whole coordinates the centre of the
-     * block's shape (a lever's base, not the air above it), else the exact point. An entity's centre follows it, and a
-     * point in a sub-level's plot follows the sub-level.
+     * The point a position or entity argument names: an entity's centre, with {@code at <u,v,w>} that point of the
+     * block, for whole coordinates the centre of the block's shape (a lever's base, not the air above it), else the
+     * exact point. An entity's centre follows it, and a point in a sub-level's plot follows the sub-level.
      */
     static Supplier<Vec3> point(CommandContext context, Args args, String name) throws CommandException {
         if (args.type(name) == ArgType.ENTITY) {
+            if (args.has("point")) {
+                throw new CommandException("syntax", "at takes a block position, not an entity");
+            }
             Entity entity = minecraft().level.getEntity(args.entity(name).id());
             if (entity == null) {
                 throw new CommandException("no_entity", args.word(name));
@@ -210,7 +221,7 @@ final class ActionCommands {
         Level level = minecraft().level;
         Position absolute = context.resolve(args.position(name));
         BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
-        Vec3 target = target(level, absolute);
+        Vec3 target = target(level, absolute, args);
         SubLevels.Info subLevel = SableSupport.subLevels().at(level, block);
         if (subLevel != null) {
             return () -> SableSupport.subLevels().toWorld(level, target).add(lead(level, target, subLevel.id()));
@@ -218,8 +229,21 @@ final class ActionCommands {
         return () -> target;
     }
 
-    /** For whole coordinates the centre of the block's shape (a lever's base, not the air above it), else the point. */
-    private static Vec3 target(Level level, Position absolute) {
+    /**
+     * With {@code at <u,v,w>} that point of the block in its own frame; for whole coordinates the centre of the block's
+     * shape (a lever's base, not the air above it); else the point itself.
+     */
+    private static Vec3 target(Level level, Position absolute, Args args) throws CommandException {
+        if (args.has("point")) {
+            BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
+            Position point = args.position("point");
+            if (point.relative() || outsideBlock(point.x()) || outsideBlock(point.y()) || outsideBlock(point.z())) {
+                throw new CommandException("syntax", "at takes u,v,w each from 0 to 1, not " + args.word("point"));
+            }
+            BlockFrame.Point offset = PerceptionCommands.frame(level, block)
+                .toBlock(new BlockFrame.Point(point.x(), point.y(), point.z()));
+            return new Vec3(block.getX() + offset.x(), block.getY() + offset.y(), block.getZ() + offset.z());
+        }
         boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
             && absolute.z() == Math.floor(absolute.z());
         return whole ? shapeCentre(level, BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
@@ -238,6 +262,10 @@ final class ActionCommands {
         }
         Vec3 velocity = subLevels.velocity(level, point);
         return (carrier == null ? velocity : velocity.subtract(carrier.velocity())).scale(1 / 20.0);
+    }
+
+    private static boolean outsideBlock(double coordinate) {
+        return coordinate < 0 || coordinate > 1;
     }
 
     private static Vec3 shapeCentre(Level level, BlockPos pos) {
@@ -437,7 +465,7 @@ final class ActionCommands {
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
         BlockPos aboard = args.has("any") ? null : plotBlock(context, args, "target");
         Level level = minecraft().level;
-        Vec3 plotPoint = aboard == null ? null : target(level, context.resolve(args.position("target")));
+        Vec3 plotPoint = aboard == null ? null : target(level, context.resolve(args.position("target")), args);
         Supplier<Vec3> now = aboard == null ? null : () -> SableSupport.subLevels().toWorld(level, plotPoint);
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
