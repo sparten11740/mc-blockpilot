@@ -15,6 +15,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -177,8 +178,7 @@ public final class Formatter {
         }
         if (value instanceof Double || value instanceof Float) {
             double number = ((Number) value).doubleValue();
-            return Double.isFinite(number) ? new JsonPrimitive(Numbers.round(number)) : new JsonPrimitive(
-                String.valueOf(number));
+            return Double.isFinite(number) ? number(number) : new JsonPrimitive(String.valueOf(number));
         }
         if (value instanceof Number number) {
             return new JsonPrimitive(number);
@@ -188,9 +188,9 @@ public final class Formatter {
                 return new JsonPrimitive(position.toString());
             }
             JsonArray array = new JsonArray();
-            array.add(Numbers.round(position.x()));
-            array.add(Numbers.round(position.y()));
-            array.add(Numbers.round(position.z()));
+            array.add(number(position.x()));
+            array.add(number(position.y()));
+            array.add(number(position.z()));
             return array;
         }
         if (value instanceof EntityRef || value instanceof CharSequence) {
@@ -210,5 +210,11 @@ public final class Formatter {
             return array;
         }
         return new JsonPrimitive(value.toString());
+    }
+
+    /** Rounded, and without the E notation Gson uses from 10^7 up, where Sable's plot coordinates are. */
+    private static JsonPrimitive number(double value) {
+        String plain = BigDecimal.valueOf(Numbers.round(value)).toPlainString();
+        return new JsonPrimitive(new BigDecimal(plain.contains(".") ? plain : plain + ".0"));
     }
 }

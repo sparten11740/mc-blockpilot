@@ -37,6 +37,13 @@ class FormatterTest {
     }
 
     @Test
+    void largeCoordinatesStayPlainInJson() {
+        Result result = Result.ok(new Fields().bare("at", Position.absolute(20481032, 128, 20481033.494)));
+        assertTrue(Formatter.json(reply(null, result)).contains("\"at\":[20481032.0,128.0,20481033.49]"),
+            Formatter.json(reply(null, result)));
+    }
+
+    @Test
     void rendersStatusAsJson() {
         JsonObject result = JsonParser.parseString(Formatter.json(reply(null, status())))
             .getAsJsonObject().getAsJsonArray("results").get(0).getAsJsonObject();
