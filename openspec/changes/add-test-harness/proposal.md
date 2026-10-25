@@ -69,6 +69,8 @@ dedicated-server half with fake players, and remote servers.
 ### New Capabilities
 - `server-bridge`: Running commands on the integrated server with captured
   results, server-side NBT/block/entity queries, and the cheats/no-server gate.
+  Its paused-game requirement comes from `add-sable-support`, which
+  implemented it.
 - `tick-control`: Freezing, stepping and rate-setting server ticks, plus
   server-clock sampling and condition evaluation.
 - `log-stream`: Reading, marking, filtering and subscribing to the game log,

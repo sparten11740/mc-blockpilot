@@ -64,7 +64,8 @@ SHALL never stop the game from starting.
   inside a solid one.
 - `game-perception`: `blocks … grid` lays a region out one name per cell.
 - `server-bridge` (from `add-test-harness`): server work fails with
-  `err paused` while the game is paused.
+  `err paused` while the game is paused. The requirement sits in
+  `add-test-harness`'s delta, so it lands with that capability.
 
 ## Impact
 

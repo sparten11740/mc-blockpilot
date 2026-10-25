@@ -55,7 +55,7 @@ wait-option  ::= ( "stable=" | "every=" ) duration
 sample       ::= "sample" blank+ query blank+ "every" blank+ duration
                  ( blank+ count ( blank+ clock )? ( blank+ beside )?
                  | ( blank+ clock )? blank+ beside )
-beside       ::= "while" blank+ call
+beside       ::= "while" blank+ ( wait | call )
 clock        ::= "clock=" ( "server" | "client" )
 assert       ::= "assert" blank+ query blank+ predicates
 if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
@@ -383,9 +383,10 @@ only the session that sets it.
 command until every predicate over its result holds. A predicate is
 `<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of
 rows; an ordering compares with a number or `$<field>`, another field of the
-same result. Options after the predicates: `stable=` how long the predicates
-must keep holding, `every=` how often to check (both default 1t), `timeout=`
-(default 60s, a plain number is seconds).
+same result. A field the result leaves out reads as `none`, so `==none` holds
+for it and an ordering on it never does. Options after the predicates:
+`stable=` how long the predicates must keep holding, `every=` how often to
+check (both default 1t), `timeout=` (default 60s, a plain number is seconds).
 
 #### Scenario: Wait for a block change
 - **WHEN** an agent runs `wait block 0,-60,0 until id==air`
@@ -417,6 +418,12 @@ must keep holding, `every=` how often to check (both default 1t), `timeout=`
 - **THEN** the result is `err syntax` saying an ordering compares with a number
   or `$field`
 
+#### Scenario: Field left out
+- **WHEN** an agent runs `wait status until state!=menu` while the game loads
+  a world
+- **THEN** the wait returns once the player is in the world, where `status`
+  leaves `state` out and a timeout would report it as `state=none`
+
 ### Requirement: Samples
 `sample <query> every <duration> x<n>` SHALL run a read-only query n times, 1
 to 1,000, every N ticks, at least 1t. A server-side query is sampled on the
@@ -432,16 +439,23 @@ With `while <action>`, `sample` SHALL run the action as if written alone and
 sample beside it until the action ends or n (at most 1,000) samples are taken:
 from before the action's first tick when both run on one side, else from the
 query side's next tick. The line is the action's result, success or error, with
-the samples as its rows.
+the samples as its rows. A `wait` (a duration, `idle` or `until`) SHALL serve
+as the action too.
 
 #### Scenario: Sampling a walk
 - **WHEN** an agent runs `sample status every 2t while move forward 3`
 - **THEN** the result is the move's `ok moved 3.0`, with one row of `status`
   fields every 2 ticks from before the first step to the end of the walk
 
+#### Scenario: Sampling across a wait
+- **WHEN** an agent runs `sample status every 20t while wait 200t`
+- **THEN** the result is the wait's `ok` with ten rows of `status` fields, the
+  first taken before the wait began
+
 #### Scenario: Something other than an action after while
 - **WHEN** an agent runs `sample status every 2t while look`
-- **THEN** the result is `err syntax` saying `while` takes an action
+- **THEN** the result is `err syntax` saying `while` takes an action or a
+  `wait`
 
 ### Requirement: Assertions
 `assert <query> <predicate> [and <predicate>…]` SHALL run a read-only command
