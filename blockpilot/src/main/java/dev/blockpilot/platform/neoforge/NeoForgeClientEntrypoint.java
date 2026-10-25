@@ -1,6 +1,7 @@
 package dev.blockpilot.platform.neoforge;
 
 import dev.blockpilot.Blockpilot;
+import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -8,6 +9,7 @@ import java.util.List;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
@@ -17,6 +19,7 @@ import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
@@ -73,6 +76,10 @@ public final class NeoForgeClientEntrypoint {
         modEventBus.addListener(FMLLoadCompleteEvent.class, event -> ClientPlatform.hooks().onLoadComplete());
 
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> ClientPlatform.hooks().onClientTickEnd());
+        // Between the first and the last listener of a stage run all its other handlers, which a capture times.
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLevelStageEvent.class, event -> Perf.stageStart());
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderLevelStageEvent.class,
+            event -> Perf.stageEnd(event.getStage().toString().replace("minecraft:", "")));
         NeoForge.EVENT_BUS.addListener(RenderGuiEvent.Post.class,
             event -> ClientPlatform.hooks().onHudRender(event.getGuiGraphics()));
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class,

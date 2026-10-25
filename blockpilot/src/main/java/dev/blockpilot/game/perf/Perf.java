@@ -94,6 +94,10 @@ public final class Perf {
     private static Timings clientBlockEntities = new Timings();
     private static Timings clientEntities = new Timings();
     private static Timings renderers = new Timings();
+    private static Timings entityRenderers = new Timings();
+    private static Timings particleTicks = new Timings();
+    private static Timings particleRenders = new Timings();
+    private static Timings renderStages = new Timings();
     private static List<Double> tickMillis = Collections.synchronizedList(new ArrayList<>());
     private static List<Double> frameMillis = Collections.synchronizedList(new ArrayList<>());
     private static long lastFrame;
@@ -112,6 +116,9 @@ public final class Perf {
     private static long serverEntityStart;
     private static long clientEntityStart;
     private static final Deque<Long> RENDER_STARTS = new ArrayDeque<>();
+    private static final Deque<Long> ENTITY_RENDER_STARTS = new ArrayDeque<>();
+    private static long particleTickStart;
+    private static long stageStart;
 
     private Perf() {
     }
@@ -131,6 +138,10 @@ public final class Perf {
         clientBlockEntities = new Timings();
         clientEntities = new Timings();
         renderers = new Timings();
+        entityRenderers = new Timings();
+        particleTicks = new Timings();
+        particleRenders = new Timings();
+        renderStages = new Timings();
         tickMillis = Collections.synchronizedList(new ArrayList<>());
         frameMillis = Collections.synchronizedList(new ArrayList<>());
         lastFrame = 0;
@@ -139,6 +150,9 @@ public final class Perf {
         serverbound = new Traffic();
         clientTicks = 0;
         RENDER_STARTS.clear();
+        ENTITY_RENDER_STARTS.clear();
+        particleTickStart = 0;
+        stageStart = 0;
         heapStart = usedHeap();
         heapPeak = heapStart;
         gcCountStart = gcCount();
@@ -218,6 +232,52 @@ public final class Perf {
         }
     }
 
+    public static void entityRenderStart() {
+        if (active) {
+            ENTITY_RENDER_STARTS.push(System.nanoTime());
+        }
+    }
+
+    public static void entityRenderEnd(String type) {
+        if (active && !ENTITY_RENDER_STARTS.isEmpty()) {
+            entityRenderers.add(type, System.nanoTime() - ENTITY_RENDER_STARTS.pop());
+        }
+    }
+
+    public static void particleTickStart() {
+        if (active) {
+            particleTickStart = System.nanoTime();
+        }
+    }
+
+    public static void particleTickEnd(String type) {
+        if (active && particleTickStart != 0) {
+            particleTicks.add(type, System.nanoTime() - particleTickStart);
+            particleTickStart = 0;
+        }
+    }
+
+    public static void particleRendered(String type, long nanos) {
+        if (active) {
+            particleRenders.add(type, nanos);
+        }
+    }
+
+    /** At the start of a render-level stage, before its other handlers (NeoForge). */
+    public static void stageStart() {
+        if (active) {
+            stageStart = System.nanoTime();
+        }
+    }
+
+    /** At the end of a render-level stage, after its other handlers. */
+    public static void stageEnd(String stage) {
+        if (active && stageStart != 0) {
+            renderStages.add(stage, System.nanoTime() - stageStart);
+            stageStart = 0;
+        }
+    }
+
     public static void sectionRebuilt() {
         if (active) {
             SECTION_REBUILDS.incrementAndGet();
@@ -264,10 +324,10 @@ public final class Perf {
     }
 
     /**
-     * Ends the capture and builds its summary. The counts of loaded block entities and entities are filled in by
-     * the caller, which can reach the server.
+     * Ends the capture and builds its summary. The counts of loaded block entities and entities and of live
+     * particles are filled in by the caller, which can reach the game.
      */
-    public static synchronized JsonObject stop(JsonObject serverCounts) {
+    public static synchronized JsonObject stop(JsonObject serverCounts, Map<String, Integer> liveParticles) {
         active = false;
         double seconds = (System.nanoTime() - startNanos) / 1e9;
         JsonObject summary = new JsonObject();
@@ -305,6 +365,16 @@ public final class Perf {
         client.add("frame_ms", frameTime);
         client.addProperty("frames", frames.length);
         client.add("block_entity_renderers", renderers.ranked(frames.length, "ms_per_frame"));
+        client.add("entity_renderers", entityRenderers.ranked(frames.length, "ms_per_frame"));
+        JsonObject particles = new JsonObject();
+        particles.add("renders", particleRenders.ranked(frames.length, "ms_per_frame"));
+        particles.add("ticks", particleTicks.ranked(clientTicks, "ms_per_tick"));
+        JsonObject live = new JsonObject();
+        liveParticles.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue())
+            .forEach(entry -> live.addProperty(entry.getKey(), entry.getValue()));
+        particles.add("live", live);
+        client.add("particles", particles);
+        client.add("render_stages", renderStages.ranked(frames.length, "ms_per_frame"));
         client.addProperty("ticks", clientTicks);
         client.add("block_entity_ticks", clientBlockEntities.ranked(clientTicks, "ms_per_tick"));
         client.add("entities", clientEntities.ranked(clientTicks, "ms_per_tick"));
@@ -328,7 +398,8 @@ public final class Perf {
         network.add("serverbound", serverbound.ranked(seconds));
         summary.add("network", network);
         summary.addProperty("instrumented_calls", serverBlockEntities.calls() + serverEntities.calls()
-            + clientBlockEntities.calls() + clientEntities.calls() + renderers.calls());
+            + clientBlockEntities.calls() + clientEntities.calls() + renderers.calls() + entityRenderers.calls()
+            + particleTicks.calls() + particleRenders.calls() + renderStages.calls());
         return summary;
     }
 

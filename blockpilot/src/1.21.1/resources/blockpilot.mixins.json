@@ -10,6 +10,7 @@
     "CameraMixin",
     "ChunkMapAccessor",
     "ConnectionMixin",
+    "EntityRenderDispatcherMixin",
     "EntityTickMixin",
     "FrameMixin",
     "GuiMixin",
@@ -21,7 +22,9 @@
     "MouseHandlerMixin",
     "PacketDecoderMixin",
     "PacketEncoderMixin",
+    "ParticleEngineAccessor",
     "ParticleEngineMixin",
+    "ParticleMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
     "SoundEngineMixin"

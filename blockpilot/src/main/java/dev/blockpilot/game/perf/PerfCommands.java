@@ -17,6 +17,7 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.mixin.ChunkMapAccessor;
+import dev.blockpilot.mixin.ParticleEngineAccessor;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -26,11 +27,14 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
@@ -100,7 +104,7 @@ public final class PerfCommands {
             if (!counts.isDone() && waited++ < COUNT_WAIT_TICKS) {
                 return null;
             }
-            JsonObject summary = Perf.stop(counts.getNow(null));
+            JsonObject summary = Perf.stop(counts.getNow(null), liveParticles());
             Path file = save(summary);
             return Result.ok(overview(summary, file)).withRows(top(summary));
         }
@@ -109,6 +113,18 @@ public final class PerfCommands {
         public String label() {
             return "perf";
         }
+    }
+
+    /** The particles alive now, per type; on the client thread. */
+    private static Map<String, Integer> liveParticles() {
+        Map<String, Integer> live = new HashMap<>();
+        for (Queue<Particle> queue : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
+            .blockpilot$particles().values()) {
+            for (Particle particle : queue) {
+                live.merge(ParticleTag.of(particle), 1, Integer::sum);
+            }
+        }
+        return live;
     }
 
     /** Loaded block entities and entities per type across the server's levels; on the server thread. */
@@ -177,6 +193,11 @@ public final class PerfCommands {
         addTop(rows, "server be", server.getAsJsonArray("block_entities"), "ms_per_tick", "ms/t");
         addTop(rows, "server entity", server.getAsJsonArray("entities"), "ms_per_tick", "ms/t");
         addTop(rows, "renderer", client.getAsJsonArray("block_entity_renderers"), "ms_per_frame", "ms/frame");
+        addTop(rows, "entity renderer", client.getAsJsonArray("entity_renderers"), "ms_per_frame", "ms/frame");
+        JsonObject particles = client.getAsJsonObject("particles");
+        addTop(rows, "particle render", particles.getAsJsonArray("renders"), "ms_per_frame", "ms/frame");
+        addTop(rows, "particle tick", particles.getAsJsonArray("ticks"), "ms_per_tick", "ms/t");
+        addTop(rows, "stage", client.getAsJsonArray("render_stages"), "ms_per_frame", "ms/frame");
         addTop(rows, "client be", client.getAsJsonArray("block_entity_ticks"), "ms_per_tick", "ms/t");
         addTop(rows, "in", network.getAsJsonArray("clientbound"), "per_s", "/s");
         addTop(rows, "out", network.getAsJsonArray("serverbound"), "per_s", "/s");
