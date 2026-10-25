@@ -10,9 +10,10 @@ access without Blockpilot knowing about each mod.
 
 ### Requirement: Registering extension commands
 A mod SHALL be able to register commands during startup through a public API.
-Each registration declares the command name, its arguments using the standard
-token types, whether it is a query or an action, its result fields, help text,
-and one example.
+Each registration declares the command name, its forms (keywords, slots of the
+grammar's slot types, optional groups and a final text slot), its options,
+whether it is a query or an action, its result fields, help text, and one
+example, which must parse.
 
 #### Scenario: Registered command is callable
 - **WHEN** a mod with id `aerolarge` registers an action `build` taking a
@@ -35,9 +36,10 @@ with a logged error naming both registering mods.
 
 ### Requirement: Extensions follow the language rules
 Extension commands SHALL get parsed arguments (positions, entity refs, counts,
-durations, options), and SHALL take part in scripts, fail-fast, the action
-queue, `stop`, timeouts, diffs for keyed rows, `fmt json`, and `wait … until`
-exactly as built-in commands do.
+durations, options, and which slot type each matched), and SHALL take part in
+scripts, fail-fast, the action queue, `stop`, timeouts, diffs for keyed rows,
+`fmt json`, `wait … until`, `sample`, `assert`, `if` and `help grammar` exactly
+as built-in commands do.
 
 #### Scenario: Wait on an extension query
 - **WHEN** an agent runs `wait sable:info <uuid> until speed<0.01 stable=20t`

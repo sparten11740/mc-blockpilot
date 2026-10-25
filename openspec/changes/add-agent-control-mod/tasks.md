@@ -93,6 +93,17 @@
 - [x] 10.2 Add `assert <query> <predicates>` and `if <query> <predicates> then <command>`, evaluated by the script runner with the inner query's thread and gate (`err assert_failed`, `ok false`, the `then` command gated and run in place, `?` soft forms, rejected inside `wait` and `sample`); verify with `EngineTest` cases for each, including a server-side query and an `if` whose command is an action
 - [ ] 10.3 Document `assert`/`if` in help, the cheat sheet and the README; verify in game that `assert block ~0,-1,0 id==grass_block` passes on grass and fails on stone, and that `if … then place …` places only when the predicate holds
 
+## 11. Grammar and parser (command-language, extension-api)
+
+- [ ] 11.1 Add the API lexicon: one hand-written recognizer per lexical production of the grammar, used by `Position.parse`, `Duration.parse` and `EntityRef.parse`; verify with tests of accepted and rejected input for every production
+- [ ] 11.2 Add forms to `CommandSpec` (keywords bound to names, slots with one or more slot types, optional groups, text last; registration checks), the new slot types (point, widget, slot, uuid, id, tag, pattern), the matched type in `Args`, and bump `blockpilot-api` to 2.0.0; verify with registry tests and the README snippets
+- [ ] 11.3 Add the lexer and the recursive-descent parser producing the syntax tree (constructs, calls, embedded queries, options anywhere and once, greedy optional parts, form choice and the furthest error, columns); verify with tests for every production and every error path
+- [ ] 11.4 Run scripts from the syntax tree: parse whole scripts first (non-soft syntax errors run nothing), run constructs from their nodes, and remove `RawCommand`, `ScriptParser`, `ArgParser` and `Check`; verify with `EngineTest`, including the parse-before-run and soft-syntax-error scenarios
+- [ ] 11.5 Declare every built-in command's forms with typed slots and drop handler-side token parsing; verify that every example and every command in help parses, and with the smoke test on both loaders
+- [ ] 11.6 Add `help grammar` (EBNF from the forms, extensions included) and per-form usage in help; verify with a golden test of the built-in commands' productions and a test that the code's core grammar matches the spec's
+- [ ] 11.7 Measure coverage with JaCoCo and fail `check` below 100% of lines and branches for the lexer, lexicon, parser and grammar printer; verify `./gradlew check` passes and fails when a branch is left untested
+- [ ] 11.8 Update the README (grammar, forms in the extension API) and tell the Aerolarge agent; verify in game on NeoForge and Fabric that the README's examples run
+
 ## Workflow follow-up
 
 - Archive the change once 1.21.1 NeoForge and Fabric are verified.

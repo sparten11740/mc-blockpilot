@@ -17,11 +17,148 @@ in order.
 - **WHEN** an agent runs `select iron_pickaxe; mine ~0,-1,0; status`
 - **THEN** the reply has three result lines, one per command, in that order
 
+### Requirement: Grammar
+Requests and scripts SHALL follow this grammar, written in W3C EBNF (XML 1.0,
+section 6). `A - B` matches what `A` matches unless `B` matches it too. Where
+alternatives overlap, the earlier one is taken, and `"\;"` is a semicolon that
+doesn't end a step.
+
+```ebnf
+/* Line protocol requests; MCP's run tool takes a script directly */
+request      ::= ( "#" request-id ( " " script )? | script ) line-end
+request-id   ::= [^ #xA#xD]+
+line-end     ::= #xD? #xA
+
+/* Scripts: steps in order; empty steps are ignored */
+script       ::= step ( separator step )*
+separator    ::= ";" | #xA | #xD
+step         ::= blank* ( "?"? statement blank* )?
+blank        ::= #x20 | #x9
+statement    ::= wait | sample | assert | if | call
+
+/* Constructs */
+wait         ::= "wait" blank+ ( duration | "idle" | query blank+ "until"
+                 blank+ predicates ( blank+ option )* )
+sample       ::= "sample" blank+ query blank+ "every" blank+ duration blank+
+                 count ( blank+ option )*
+assert       ::= "assert" blank+ query blank+ predicates
+if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
+                 "?"? statement
+query        ::= command-name ( blank+ ( argument - stop-word ) )*
+stop-word    ::= predicate | "until" | "every" | "then"
+
+/* Calls: the arguments match one of the command's forms, whose last slot
+   may be text */
+call         ::= command-name ( blank+ argument )*
+command-name ::= ( namespace ":" )? name
+name         ::= [a-z] [a-z0-9_]*
+argument     ::= option | token
+option       ::= option-name "=" ( ( token-char - "=" ) token-char* )?
+option-name  ::= identifier ( ":" identifier )?
+
+/* Predicates */
+predicates   ::= predicate ( blank+ ( "and" blank+ )? predicate )*
+predicate    ::= "ok" | test
+test         ::= field-path comparison operand
+comparison   ::= "==" | "!=" | "<=" | ">=" | "<" | ">"
+operand      ::= "$" field-path | token-char+
+field-path   ::= identifier ( "." ( identifier | digits ) )*
+
+/* Tokens */
+token        ::= token-char+
+token-char   ::= "\;" | [^#x20#x9#xA#xD;]
+identifier   ::= [A-Za-z_] [A-Za-z0-9_]*
+digits       ::= [0-9]+
+
+/* Slot types */
+position     ::= "~"? decimal "," decimal "," decimal
+point        ::= decimal "," decimal
+entity       ::= "e" digits
+widget       ::= "w" digits
+slot         ::= "s" digits
+uuid         ::= hex8 "-" hex4 "-" hex4 "-" hex4 "-" hex8 hex4
+hex8         ::= hex4 hex4
+hex4         ::= [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
+integer      ::= "-"? digits
+number       ::= decimal
+decimal      ::= "-"? digits ( "." digits )?
+count        ::= "x" digits
+duration     ::= digits "t" | decimal "s"
+id           ::= ( namespace ":" )? path
+namespace    ::= [a-z0-9_.-]+
+path         ::= [a-z0-9_./-]+
+tag          ::= "#" id
+pattern      ::= [a-z0-9_.:/*-]* "*" [a-z0-9_.:/*-]*
+word         ::= token - ( option | test )
+text         ::= ( "\;" | [^;#xA#xD] )*
+```
+
+#### Scenario: A construct in a script
+- **WHEN** an agent runs `wait block ~0,-1,0 until id==air timeout=5s; status`
+- **THEN** the first step is a wait on the query `block ~0,-1,0` with the
+  predicate `id==air` and the option `timeout=5s`, and the second is a call of
+  `status`
+
+#### Scenario: Escaped semicolon
+- **WHEN** an agent runs `chat a\; b; status`
+- **THEN** the chat message is `a; b` and `status` is a step of its own
+
+### Requirement: Command forms
+Every command SHALL declare one or more forms, and a call SHALL match one of
+them. A form is a sequence of keywords, slots and optional groups. A slot takes
+one or more of the slot types, and the first type that matches the token is
+used. A form's last slot may be text, which takes the rest of the step as
+written. Optional slots and groups take the next token when it fits. Forms are
+tried in order. When none matches, the error is that of the form that matched
+the most tokens.
+
+#### Scenario: Form chosen by keyword
+- **WHEN** an agent runs `mouse move 30 -10 4t`, then `mouse move 30 up`
+- **THEN** the first matches the `move` form, and the second fails with `err
+  syntax col 15: …` naming the number it expected instead of `up`
+
+#### Scenario: Slot with several types
+- **WHEN** an agent runs `click w3`, `click 120,40` and `click s5 shift`
+- **THEN** the first two match the form taking a point or a widget, and the
+  third the form taking a container slot
+
+### Requirement: Options
+Options SHALL be written `<name>=<value>` and may stand anywhere after the
+command name and before any text, each at most once. A command takes only the
+options it declares, and every action also takes `timeout=`.
+
+#### Scenario: Option position doesn't matter
+- **WHEN** an agent runs `mine timeout=90 #logs x6` or `mine #logs x6
+  timeout=90`
+- **THEN** both mean the same
+
+#### Scenario: Option given twice
+- **WHEN** an agent runs `mine #logs timeout=9 timeout=90`
+- **THEN** the result is `err syntax` naming the repeated option
+
+### Requirement: Parsing before running
+A script SHALL be parsed completely before any of it runs. A syntax error in a
+step that isn't soft makes the script run nothing: that step's line is `err
+syntax col <n>: <hint>`, counting columns from the step's first non-blank
+character, and every other line is `skip`. A soft step's syntax error is its
+own result, and the rest of the script runs.
+
+#### Scenario: Typo at the end
+- **WHEN** an agent runs `status; turn 90 up`
+- **THEN** the reply is `skip` followed by `err syntax col 9: …`, and nothing
+  ran
+
+#### Scenario: Soft step with an unknown command
+- **WHEN** an agent runs `?frobnicate; status`
+- **THEN** the reply is `err syntax col 2: unknown command frobnicate…`
+  followed by the `status` result
+
 ### Requirement: Fail-fast with skipped remainder
-When a command fails, the script SHALL stop. The failing command's line reports
-the error, and each remaining command gets a line `skip`. A command written
-`?<command>` is soft: its error is reported the same way, but the script goes
-on.
+When a command fails while running, the script SHALL stop. The failing
+command's line reports the error, and each remaining command gets a line `skip`.
+A command written `?<command>` is soft: its error is reported the same way, but
+the script goes on. Syntax errors are found before anything runs (see Parsing
+before running).
 
 #### Scenario: Middle command fails
 - **WHEN** an agent runs `select diamond_pickaxe; mine ~0,-1,0` and has no
@@ -214,11 +351,19 @@ script, not inside `wait` or `sample`.
 ### Requirement: In-band help
 `help` SHALL list command groups. `help <command|group|errors>` SHALL return
 syntax, arguments, result fields and one example. Help text SHALL report
-commands this target does not support.
+commands this target does not support. `help grammar` SHALL print the grammar
+of every command's forms, extensions included, as EBNF productions in the
+notation of the grammar, with blanks between items and options allowed between
+any two of them.
 
 #### Scenario: Help for a command
 - **WHEN** an agent runs `help goto`
 - **THEN** the reply gives the `goto` syntax, its options and an example
+
+#### Scenario: Grammar of the commands
+- **WHEN** an agent runs `help grammar`
+- **THEN** the reply has one production per command, such as `mouse ::= "mouse"
+  ( ( "down" | "up" ) button | "click" button duration? | … )`
 
 #### Scenario: Help lists result fields
 - **WHEN** an agent runs `help status`
@@ -226,10 +371,10 @@ commands this target does not support.
   `food`), which can be used in `wait … until` predicates
 
 ### Requirement: Unambiguous tokens
-Arguments SHALL be separated by spaces. Free text (chat messages, sign text)
+Arguments SHALL be separated by blanks. Free text (chat messages, sign text)
 SHALL be the last argument and runs to the end of the command; a literal `;`
-inside it is written `\;`. Unknown commands and malformed arguments SHALL fail
-with `err syntax <hint>`.
+inside it is written `\;`. Unknown commands and arguments that match none of a
+command's forms SHALL fail with `err syntax col <n>: <hint>`.
 
 #### Scenario: Chat containing semicolon
 - **WHEN** an agent runs `chat hi\; brb; status`

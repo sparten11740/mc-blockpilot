@@ -170,25 +170,21 @@ The grammar is defined in the `command-language` spec. Implementation notes:
   per command, and the diff engine produces added/removed/changed rows. Text
   renders them as `+`, `-` and `~` lines; JSON as `added`, `removed` and
   `changed` arrays. This is pure `protocol` code and unit-tested.
-- **Conditions:** `wait <query> until …` parses the query with the normal parser
-  (rejecting actions), and parses predicates into `(field path, operator,
-  literal)` triples. Numbers compare numerically, everything else by string
-  equality. It runs as an action in the queue, so it keeps the session's
-  ordering. Each `every` ticks it runs the query on the client thread and
-  evaluates the predicates against the `Result` fields (or `count` for rows),
-  counting consecutive matches for `stable`. `help <command>` shows the field
-  list from the registry, so the predicates an agent can write are discoverable.
-  A `$<field>` literal is looked up in the same result before comparing.
-- **Assertions and conditionals:** `assert` and `if` are registered like other
-  commands (for help and argument shape), but the script runner evaluates them
-  itself. It splits off the trailing predicate tokens (and for `if` the command
-  after `then`), and runs the inner query with that query's own thread and gate,
-  so `assert` over a server-side query runs on the server thread. When an `if`
-  holds, its command takes the `if`'s place in the script, is gated afresh and
-  runs as if written there. A script counts as having an action when an `if`
-  would run one, so it queues like any other action script. The registered
-  handlers only answer `err syntax`, which is all `wait` or `sample` around them
-  would get, and both reject them up front.
+- **Conditions:** predicates are `(field path, operator, operand)` triples from
+  the parser (D13). Numbers compare numerically, everything else by string
+  equality, and a `$<field>` operand is looked up in the same result first.
+  `wait … until` runs as an action in the queue, so it keeps the session's
+  ordering. Each `every` ticks it runs the query on its thread and evaluates the
+  predicates against the `Result` fields (or `count` for rows), counting
+  consecutive matches for `stable`. `help <command>` shows the field list from
+  the registry, so the predicates an agent can write are discoverable.
+- **Assertions and conditionals:** `assert` and `if` are constructs of the
+  grammar, evaluated by the script runner. It runs the inner query with that
+  query's own thread and gate, so `assert` over a server-side query runs on the
+  server thread. When an `if` holds, its statement takes the `if`'s place in the
+  script, is gated afresh and runs as if written there. A script counts as
+  having an action when an `if` would run one, so it queues like any other
+  action script.
 - **Reply budget:** every list output has a hard cap (e.g. `look` lists at most
   24 entities and 24 block groups, then prints `+N more`), so a crowded area
   can't blow up an agent's context.
@@ -374,6 +370,52 @@ event (two discovery paths to keep in step). Both are rejected in favor of the
 loader-agnostic static registry. Exposing Minecraft types in the API would be
 convenient for handlers, but would need one API artifact per Minecraft version,
 so it is rejected as well.
+
+### D13. A grammar, a lexer and a recursive-descent parser
+
+The language is defined by the EBNF in the `command-language` spec, and each
+command's arguments by the forms it declares. Parsing follows both directly:
+
+- **Lexer:** scans a script once into steps of tokens with their columns,
+  resolving `\;` and noting a leading `?` and empty steps. It knows nothing
+  about commands.
+- **Lexicon:** one recognizer per lexical production (position, point, entity,
+  widget, slot, uuid, integer, decimal, count, duration, id, tag, pattern,
+  identifier, field path, option, test), each a small scanner written after
+  its production rather than a regular expression. It lives in the API, so
+  `Position.parse`, `Duration.parse` and `EntityRef.parse` use the same rules.
+- **Forms:** `CommandSpec` holds one or more forms. A form is a sequence of
+  keywords (bound to a name, like `op`), slots (a name and one or more slot
+  types, optional or not), optional groups and, last, a text slot. The older
+  `arg`/`optionalArg`/`choice` builder calls add to the first form. A slot with
+  several types records which one matched, so handlers switch on the type
+  instead of re-reading the token. Registration rejects text anywhere but last,
+  and an example that doesn't parse.
+- **Parser:** recursive descent over the tokens. A step is a construct when its
+  first token is `wait`, `sample`, `assert` or `if`, otherwise a call. A call's
+  tokens are matched against each form in turn, left to right: options are
+  taken wherever they stand, checked against the declared names, once each;
+  optional slots and groups take a token when it fits. The first form that uses
+  every token wins, and when none does, the error is the one from the form that
+  got furthest. A construct's query is matched the same way, but stops at the
+  construct's keyword or the first predicate, and must end its form there.
+- **Syntax tree:** the parser returns statements (`Call`, `WaitTicks`,
+  `WaitIdle`, `WaitUntil`, `Sample`, `Assert`, `If`), each with its soft flag
+  and the column of every token for errors. The script runner and the engine
+  execute the tree; nothing is parsed again at run time.
+- **Errors:** a syntax error carries the column within its step. Because the
+  whole script is parsed first, a typo late in a script stops it before anything
+  runs.
+- **Grammar listing:** `help grammar` prints each command's forms as EBNF
+  productions, generated from the declarations, so the listing can't drift from
+  the parser. A golden test pins the built-in commands' productions, and another
+  checks that the core grammar the code prints is the one in the spec.
+- **Tests:** the lexer, lexicon, parser and grammar printer are covered
+  completely: JaCoCo runs with the unit tests, and `check` fails below 100% of
+  lines and branches for those classes.
+
+The extension API changes shape (forms, slot types, matched types), so
+`blockpilot-api` becomes 2.0.0.
 
 ## Risks / Trade-offs
 
