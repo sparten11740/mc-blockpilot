@@ -30,7 +30,22 @@ out). When a step failed or was skipped, one line on stderr counts them and says
 `blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI returns only once the game
 process has exited (within `--timeout`, else exit code 2), so a restart can follow straight away.
 
-**Over MCP** (Streamable HTTP; three tools: `run`, `screenshot`, `help`):
+**Over MCP** (three tools: `run`, `screenshot`, `help`): the launcher also serves MCP over stdio. The MCP client
+starts it once per session, so the tools are there before the game is and keep working through every restart of
+the game, with no reconnect. Start the game once in that directory first, so the launcher exists, then from the
+directory that holds `run`:
+
+```sh
+claude mcp add --transport stdio blockpilot -- "$PWD/run/blockpilot/blockpilot" --mcp
+```
+
+On Windows the command is `cmd /c <game dir>\blockpilot\blockpilot.cmd --mcp`. While no game runs, a tool call
+answers with an error naming the game directory, and the first call after the game is up works. A restarted game
+gets a new session, so per-session settings such as `fmt json` start from their defaults again.
+
+The game also serves MCP itself, over Streamable HTTP, for clients that can't launch a process. That server goes
+away with each restart of the game, and Claude Code doesn't retry an HTTP server that was down when its session
+started:
 
 ```sh
 claude mcp add --transport http blockpilot http://127.0.0.1:25599/mcp --header "Authorization: Bearer $(cat run/config/blockpilot/token)"
