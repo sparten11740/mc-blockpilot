@@ -19,7 +19,7 @@
 
 ## 4. The `sable:` commands (sable-sublevels)
 
-- [ ] 4.1 Add sub-level references (UUID, name, `here`; `err ambiguous` with UUIDs, `err no_sublevel`), `sable:list [radius]` and `sable:info <sub-level>` with help, fields and parsing examples; verify in game with Sable next to a ship at rest (speed 0, rides=false), aboard it (`here`, rides=true), and with two sub-levels of one name
+- [x] 4.1 Add sub-level references (UUID, name, `here`; `err ambiguous` with UUIDs, `err no_sublevel`), `sable:list [radius]` and `sable:info <sub-level>` with help, fields and parsing examples; verify in game with Sable next to a ship at rest (speed 0, rides=false), aboard it (`here`, rides=true), and with two sub-levels of one name
 - [ ] 4.2 Add `sable:world <plot position>` and `sable:plot <sub-level> <world position>`; verify in game that a round trip returns the starting world position within 0.01 blocks, also in flight
 - [ ] 4.3 Add `sable:find <sub-level> <block|#tag|*pattern> [limit]` over the sub-level's plot bounds with palette pruning, the `blocks` cap (`err too_large`) and `side=server`; verify in game that `sable:find here *door* 3` lists the ship's doors with plot and world positions in one call
 - [ ] 4.4 Add `sable:tp <plot position>` (server thread, commands allowed, a free spot within two blocks, `err no_room`); verify in game that `sable:tp <captain's seat>` puts the player aboard and `status` shows them riding the ship
