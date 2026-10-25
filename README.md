@@ -129,6 +129,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
+| sable | with Sable only: `sable:list [r]`, `sable:info <sub>`, `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action>` (samples beside the action) |
 
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
@@ -138,9 +139,38 @@ them. The log names what was put back.
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
 on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world
-can't use them to cheat. `snapshot restore` leaves the world, copies the save back and rejoins, the same as quitting
-to the title screen and loading it again. Mods that keep static state across worlds may therefore behave differently
-than after a fresh launch; relaunch the client when a test needs full isolation.
+can't use them to cheat. While the game is paused (a pause screen in singleplayer), the server runs no ticks, so
+commands that need them fail at once with `err paused` instead of holding up the queue. `snapshot restore` leaves the
+world, copies the save back and rejoins, the same as quitting to the title screen and loading it again. Mods that keep
+static state across worlds may therefore behave differently than after a fresh launch; relaunch the client when a test
+needs full isolation.
+
+### With Sable
+
+Sable builds sub-levels: structures such as ships whose blocks live in a *plot*, a grid far out in the same dimension
+(around x and z 20,000,000), and are drawn wherever the sub-level's pose puts them. With Sable installed, Blockpilot
+works with them:
+
+- A position in a plot prints as itself, followed by the sub-level and where that block is in the world, e.g.
+  `aim:stone_button 20481032,129,20481033 sub=ship world=10.5,-58.5,6.5`. It pastes back into `block`, `blocks`,
+  `face`, `use` and `camera`. `status` shows `aboard:<name>` while the player stands on or rides a sub-level.
+- `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. `use`
+  fails with `err obstructed <id> <position>` when something else is in the way. A camera placed at, or looking at, a
+  plot position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard.
+- The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
+  the one under the crosshair):
+  - `sable:list` lists the sub-levels within 128 blocks, nearest first.
+  - `sable:info here` gives the pose, velocity, bounds and whether the player rides it.
+  - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions.
+  - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on).
+  - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to
+    plot.
+
+Blockpilot talks to Sable only through its published
+[companion API](https://github.com/ryanhcode/sable-companion) and bundles nothing of it. Without Sable nothing changes
+and nothing has to be installed; `help sable` says why the `sable:` commands are missing. Companion versions 1.x from
+1.6 are supported (Sable 2.0.5 and 2.0.6 ship 1.6.0). With any other version the integration stays off, and the log
+and `help sable` name the version found. Tested with Sable 2.0.6 (companion 1.6.0) on NeoForge 1.21.1.
 
 ## Extending it
 

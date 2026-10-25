@@ -23,7 +23,7 @@
 - [x] 4.2 Add `sable:world <plot position>` and `sable:plot <sub-level> <world position>`; verify in game that a round trip returns the starting world position within 0.01 blocks, also in flight
 - [x] 4.3 Add `sable:find <sub-level> <block|#tag|*pattern> [limit]` over the sub-level's plot bounds with palette pruning, a cap of 262,144 positions (`err too_large`) and `side=server`; verify in game that `sable:find here *door* 3` lists the ship's doors with plot and world positions in one call
 - [x] 4.4 Add `sable:tp <plot position>` (server thread, commands allowed, a free spot within two blocks, `err no_room`); verify in game that `sable:tp <captain's seat>` puts the player aboard and `status` shows them riding the ship
-- [ ] 4.5 Add a Sable section to the README (what the integration adds, that it needs nothing installed without Sable, the supported versions and those the play-test used) and the `sable:` commands to the command table; verify the README's Sable examples run in a dev client with Sable
+- [x] 4.5 Add a Sable section to the README (what the integration adds, that it needs nothing installed without Sable, the supported versions and those the play-test used) and the `sable:` commands to the command table; verify the README's Sable examples run in a dev client with Sable
 
 ## 5. Play-test fixes (player-control, command-language, client-observation, game-perception)
 
