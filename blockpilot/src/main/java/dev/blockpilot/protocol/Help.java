@@ -71,8 +71,8 @@ public final class Help {
                 .put("commands", names, String.join(" ", names))));
         }
         rows.add(Row.of("more", new Fields().bare("hint",
-            "help <command|group|namespace:|errors>; scripts: cmd1; cmd2; positions x,y,z or ~dx,dy,dz; "
-                + "entities e<id>")));
+            "help <command|group|namespace:|errors>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes on past "
+                + "its err); positions x,y,z or ~dx,dy,dz; entities e<id>")));
         return Result.ok().withRows(rows);
     }
 
@@ -106,8 +106,8 @@ public final class Help {
     public static String cheatSheet() {
         return """
             Runs Blockpilot commands in the Minecraft client. Script: commands separated by ; (one result line each, \
-            stops at the first err). Positions x,y,z or ~dx,dy,dz (relative); entities e<id>; counts x<n>; \
-            durations 20t / 3s; options name=value.
+            stops at the first err; ?cmd goes on past its own err). Positions x,y,z or ~dx,dy,dz (relative); \
+            entities e<id>; counts x<n>; durations 20t / 3s; options name=value.
             Common: status; look [r]; find <block|#tag|entity> [r]; block <pos>; inv; screen; goto <pos|e<id>>; \
             mine <pos|block> [x<n>]; place <item> <pos>; use [pos|e<id>]; attack <e<id>>; select <item>; \
             craft <item> [x<n>]; chat <text>; cmd <command>; mouse down|up|click <button>; drag <button> <dx> <dy> [Nt]; \

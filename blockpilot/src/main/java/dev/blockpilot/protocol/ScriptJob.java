@@ -227,16 +227,21 @@ final class ScriptJob implements CommandContext {
 
     private void finish(Result result) {
         results.add(result);
+        boolean soft = commands.get(index).soft();
         index++;
-        if (!result.isOk()) {
+        if (!result.isOk() && !soft) {
             // A failing script must not leave keys or buttons held that its earlier commands pressed.
             if (hasAction()) {
                 engine.game().releaseInputs(session.id());
             }
-            while (index < commands.size()) {
-                results.add(Result.skip());
-                index++;
-            }
+            skipRest();
+        }
+    }
+
+    private void skipRest() {
+        while (index < commands.size()) {
+            results.add(Result.skip());
+            index++;
         }
     }
 
@@ -271,7 +276,10 @@ final class ScriptJob implements CommandContext {
             activity = null;
         }
         if (index < commands.size()) {
-            finish(Result.error(code));
+            // A cancelled script stops even at a soft (?) command.
+            results.add(Result.error(code));
+            index++;
+            skipRest();
         }
         complete();
     }

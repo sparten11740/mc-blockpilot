@@ -12,16 +12,25 @@ public final class RawCommand {
     private final String name;
     private final String argumentText;
     private final List<Token> tokens;
+    private final boolean soft;
 
-    private RawCommand(String name, String argumentText, List<Token> tokens) {
+    private RawCommand(String name, String argumentText, List<Token> tokens, boolean soft) {
         this.name = name;
         this.argumentText = argumentText;
         this.tokens = tokens;
+        this.soft = soft;
     }
 
-    /** Splits one command (already separated from the rest of the script) into its name and tokens. */
+    /**
+     * Splits one command (already separated from the rest of the script) into its name and tokens. A leading
+     * {@code ?} marks it soft.
+     */
     public static RawCommand of(String command) {
         String trimmed = command.strip();
+        boolean soft = trimmed.startsWith("?");
+        if (soft) {
+            trimmed = trimmed.substring(1).strip();
+        }
         int space = indexOfWhitespace(trimmed);
         String name = space < 0 ? trimmed : trimmed.substring(0, space);
         String argumentText = space < 0 ? "" : trimmed.substring(space).strip();
@@ -39,7 +48,7 @@ public final class RawCommand {
                 tokens.add(new Token(argumentText.substring(start, index), start));
             }
         }
-        return new RawCommand(name, argumentText, tokens);
+        return new RawCommand(name, argumentText, tokens, soft);
     }
 
     private static int indexOfWhitespace(String text) {
@@ -63,6 +72,11 @@ public final class RawCommand {
         return tokens;
     }
 
+    /** Written {@code ?command}: its error is reported, but the script goes on instead of skipping the rest. */
+    public boolean soft() {
+        return soft;
+    }
+
     /** The argument text from the given token on, as free text. */
     public String restFrom(int tokenIndex) {
         return tokenIndex >= tokens.size() ? "" : argumentText.substring(tokens.get(tokenIndex).start());
@@ -70,7 +84,7 @@ public final class RawCommand {
 
     /** A copy without the tokens equal to the given word (e.g. {@code full}). */
     public RawCommand without(String word) {
-        StringBuilder rebuilt = new StringBuilder(name);
+        StringBuilder rebuilt = new StringBuilder(soft ? "?" + name : name);
         for (Token token : tokens) {
             if (!token.text().equals(word)) {
                 rebuilt.append(' ').append(token.text());

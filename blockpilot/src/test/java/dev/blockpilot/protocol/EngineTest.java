@@ -96,6 +96,22 @@ class EngineTest {
     }
 
     @Test
+    void aSoftCommandsErrorDoesNotStopTheScript() {
+        Session session = engine.openSession();
+        assertEquals("err no_item torch\nok value=0\nerr no_item torch\nskip",
+            text(engine.submit(session, null, "?fail; counter; fail; counter")));
+    }
+
+    @Test
+    void stopEndsAScriptEvenAtASoftCommand() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> walk = engine.submit(session, null, "?walk a 100; counter");
+        tick(2);
+        engine.submit(engine.openSession(), null, "stop").join();
+        assertEquals("err cancelled\nskip", text(walk));
+    }
+
+    @Test
     void actionsRunTickByTickInQueueOrder() {
         Session first = engine.openSession();
         Session second = engine.openSession();
