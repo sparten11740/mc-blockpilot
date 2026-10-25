@@ -87,7 +87,10 @@ after a failure) plus indented rows. Positions are `x,y,z` or `~dx,dy,dz` (relat
 `e<id>`, counts `x<n>`, durations `20t` or `3s`, options `name=value`. Ids drop the `minecraft:` namespace. Repeating
 `look`, `inv` or `screen` in a session reports only what changed (`full` forces everything). Game events (hurt, got,
 chat, actionbar, screen, died, …) arrive as `! …` lines with the next reply. A script stops at the first `err`
-unless the command is written `?cmd`, which reports its error and goes on (handy for probes). Every tick number in a
+unless the command is written `?cmd`, which reports its error and goes on (handy for probes). `assert <query>
+<predicates>` turns a script into a test: it fails with `err assert_failed` and the observed values when the
+predicates (as in `wait … until`) don't hold, and `if <query> <predicates> then <command>` runs the command only when
+they do. A predicate's value can name another field of the same result, as in `hp<$max_hp`. Every tick number in a
 reply (`tick query`, `sample` rows, waits, `sounds`, `messages` and their `since=`) is the same clock: the integrated
 server's game time in singleplayer, else the client's. `help`, `help <command|group>` and `help errors` give the full
 reference.
@@ -115,7 +118,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| meta | `help`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `sample <query> every <Nt> x<n> [clock=server]` |
+| meta | `help`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]` |
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
 on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world

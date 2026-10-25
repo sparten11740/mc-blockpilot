@@ -111,7 +111,8 @@ public final class Help {
             Common: status; look [r]; find <block|#tag|entity> [r]; block <pos>; inv; screen; goto <pos|e<id>>; \
             mine <pos|block> [x<n>]; place <item> <pos>; use [pos|e<id>]; attack <e<id>>; select <item>; \
             craft <item> [x<n>]; chat <text>; cmd <command>; mouse down|up|click <button>; drag <button> <dx> <dy> [Nt]; \
-            key press <key>; wait <Nt>; wait <query> until <field><op><value>; stop; fmt json|text.
+            key press <key>; wait <Nt>; wait <query> until <field><op><value>; assert <query> <field><op><value>; \
+            if <query> <field><op><value> then <cmd>; stop; fmt json|text.
             Use help, help <command> or help errors for the full reference.""";
     }
 }
