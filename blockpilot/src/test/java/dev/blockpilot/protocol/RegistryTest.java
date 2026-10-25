@@ -1,6 +1,7 @@
 package dev.blockpilot.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -21,7 +22,10 @@ class RegistryTest {
         CommandSpec broken = CommandSpec.query("look", (context, args) -> Result.ok())
             .optionalArg("radius", ArgType.INT).example("look twelve");
         assertThrows(IllegalStateException.class, () -> new CommandRegistry().register(broken));
-        assertNull(CommandRegistry.exampleProblem(CommandSpec.query("look", (context, args) -> Result.ok())
-            .optionalArg("radius", ArgType.INT).example("look 12")));
+        CommandSpec look = CommandSpec.query("look", (context, args) -> Result.ok())
+            .optionalArg("radius", ArgType.INT).example("look 12");
+        assertNull(CommandRegistry.exampleProblem(new CommandRegistry.Entry("look", "", "blockpilot", look)));
+        assertEquals("col 1: an example starts with mod:look, not look",
+            CommandRegistry.exampleProblem(new CommandRegistry.Entry("mod:look", "mod", "mod", look)));
     }
 }

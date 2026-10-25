@@ -267,7 +267,8 @@ class EngineTest {
         CompletableFuture<Reply> huge = engine.submit(session, null, "sample counter every 1t x5000");
         tick(2);
         assertEquals("err syntax col 8: walk is not a read-only command", text(action));
-        assertEquals("err too_large 1000", text(huge));
+        assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> every "
+            + "<duration> x<n> [clock=server|client]", text(huge));
     }
 
     @Test
@@ -400,11 +401,21 @@ class EngineTest {
     }
 
     @Test
+    void requestIdsFollowTheGrammar() {
+        Session session = engine.openSession();
+        assertEquals("err syntax col 2: missing a request id after #", text(engine.submit(session, "", "status")));
+        assertEquals("err syntax col 3: a request id can't hold a tab or ;", text(engine.submit(session, "7;status",
+            "")));
+        assertEquals("err syntax col 4: a request id can't hold a tab or ;", text(engine.submit(session, "a1\tb",
+            "status")));
+    }
+
+    @Test
     void aSyntaxErrorRunsNothing() {
         CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "walk a 1; nope; walk b x");
         assertTrue(reply.isDone());
-        assertEquals("skip\nerr syntax col 1: unknown command nope; try help\nerr syntax col 8: unexpected x; walk "
-            + "<name> [ticks]", text(reply));
+        assertEquals("skip\nerr syntax col 1: unknown command nope; try help\nerr syntax col 8: <ticks> (a whole "
+            + "number) expected, got x; walk <name> [ticks]", text(reply));
         tick(2);
         assertTrue(log.isEmpty());
     }

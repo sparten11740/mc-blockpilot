@@ -1,8 +1,10 @@
 package dev.blockpilot.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 class LexerTest {
@@ -39,6 +41,40 @@ class LexerTest {
         assertEquals(9, step.tokens().get(2).offset());
         // A backslash before an escaped semicolon is a backslash.
         assertEquals(List.of("\\;x"), texts(Lexer.steps("\\\\;x").get(0)));
+    }
+
+    @Test
+    void onlySpacesAndTabsAreBlanks() {
+        Lexer.Step step = Lexer.steps("chat 　\f  \t").get(0);
+        assertEquals(List.of("chat", "　\f"), texts(step));
+        assertEquals("chat 　\f", step.source());
+        assertEquals(7, step.width());
+    }
+
+    @Test
+    void aStepsWidthCountsEscapesAsWritten() {
+        Lexer.Step step = Lexer.steps("  chat a\\;b  ").get(0);
+        assertEquals("chat a;b", step.source());
+        assertEquals(9, step.width());
+    }
+
+    @Test
+    void everyTokenIsInItsStepsSource() {
+        Random random = new Random(1703);
+        String alphabet = "ab ;\\\t\n\r　\f?";
+        for (int run = 0; run < 20_000; run++) {
+            StringBuilder script = new StringBuilder();
+            for (int length = random.nextInt(16); length > 0; length--) {
+                script.append(alphabet.charAt(random.nextInt(alphabet.length())));
+            }
+            for (Lexer.Step step : Lexer.steps(script.toString())) {
+                Lexer.Token last = step.tokens().get(step.tokens().size() - 1);
+                assertEquals(step.source().length(), last.offset() + last.text().length(), script.toString());
+                for (Lexer.Token token : step.tokens()) {
+                    assertTrue(step.source().startsWith(token.text(), token.offset()), script.toString());
+                }
+            }
+        }
     }
 
     @Test

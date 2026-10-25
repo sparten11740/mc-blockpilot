@@ -15,8 +15,11 @@ final class Lexer {
     record Token(String text, int column, int offset) {
     }
 
-    /** A step's text from its first non-blank character, escapes resolved and trailing blanks dropped. */
-    record Step(String source, List<Token> tokens) {
+    /**
+     * A step's text from its first token to the end of its last, escapes resolved; {@code width} is the columns that
+     * span takes as written.
+     */
+    record Step(String source, List<Token> tokens, int width) {
     }
 
     private Lexer() {
@@ -52,6 +55,8 @@ final class Lexer {
         private int column;
         private int tokenColumn;
         private int tokenOffset;
+        private int sourceEnd;
+        private int columnEnd;
 
         /** A character as written ({@code width} 2 for an escaped semicolon). */
         void add(char character, int width) {
@@ -75,13 +80,15 @@ final class Lexer {
             if (!token.isEmpty()) {
                 tokens.add(new Token(token.toString(), tokenColumn, tokenOffset));
                 token.setLength(0);
+                sourceEnd = source.length();
+                columnEnd = column;
             }
         }
 
         void finish(List<Step> steps) {
             endToken();
             if (!tokens.isEmpty()) {
-                steps.add(new Step(source.toString().stripTrailing(), List.copyOf(tokens)));
+                steps.add(new Step(source.substring(0, sourceEnd), List.copyOf(tokens), columnEnd));
             }
         }
     }

@@ -86,6 +86,11 @@ public final class Engine {
      * soft runs nothing: that step answers {@code err syntax} and every other one {@code skip}.
      */
     public CompletableFuture<Reply> submit(Session session, String id, String script) {
+        String badId = id == null ? null : requestIdProblem(id);
+        if (badId != null) {
+            return CompletableFuture.completedFuture(new Reply(null, List.of(Result.error("syntax", badId)),
+                session.drainEvents()));
+        }
         List<Parser.Line> lines = parser.script(script);
         if (lines.isEmpty()) {
             return CompletableFuture.completedFuture(new Reply(id,
@@ -104,6 +109,19 @@ public final class Engine {
             game.runOnClient(() -> stepFree(ScriptJob.Affinity.CLIENT));
         }
         return job.future();
+    }
+
+    /** The grammar's {@code request-id}: after the {@code #}, one or more characters other than blanks and ;. */
+    private static String requestIdProblem(String id) {
+        if (id.isEmpty()) {
+            return "col 2: missing a request id after #";
+        }
+        for (int index = 0; index < id.length(); index++) {
+            if (id.charAt(index) == '\t' || id.charAt(index) == ';') {
+                return "col " + (index + 2) + ": a request id can't hold a tab or ;";
+            }
+        }
+        return null;
     }
 
     /** Called at the end of every client tick. */
@@ -210,16 +228,10 @@ public final class Engine {
             .field("stopped", "number of scripts cancelled").example("stop"));
     }
 
-    static final int MAX_SAMPLES = 1000;
-
-    /** {@code sample}'s action: fails with {@code too_large} past {@link #MAX_SAMPLES} runs. */
-    Action sample(CommandContext context, Statement.Sample sample) throws CommandException {
-        if (sample.count() > MAX_SAMPLES) {
-            throw new CommandException("too_large", String.valueOf(MAX_SAMPLES));
-        }
+    Action sample(CommandContext context, Statement.Sample sample) {
         Statement.Call query = sample.query();
-        return new Sampler(context, query.entry().spec(), query.args(), Math.max(1, sample.every().ticks()),
-            sample.count(), query.entry().spec().runsOnServer());
+        return new Sampler(context, query.entry().spec(), query.args(), sample.every().ticks(), sample.count(),
+            query.entry().spec().runsOnServer());
     }
 
     Action waitTicks(Statement.WaitTicks wait) {

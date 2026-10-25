@@ -350,9 +350,9 @@ public final class CommandSpec {
         return action;
     }
 
-    /** Each form as help shows it, e.g. {@code goto <target> [near=number]}. */
+    /** Each form as help shows it, e.g. {@code goto <target> [near=number]}; {@code [full]} for a diffable one. */
     public List<String> usages(String qualifiedName) {
-        StringBuilder optionUsage = new StringBuilder();
+        StringBuilder optionUsage = new StringBuilder(diffable ? " [full]" : "");
         for (Option option : options.values()) {
             optionUsage.append(" [").append(option.usageName()).append('=').append(option.valueUsage()).append(']');
         }

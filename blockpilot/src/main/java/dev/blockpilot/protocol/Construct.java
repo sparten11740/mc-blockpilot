@@ -6,16 +6,18 @@ import java.util.List;
 record Construct(String name, List<String> usages, String help, String example) {
     static final List<Construct> ALL = List.of(
         new Construct("wait", List.of("wait <duration>", "wait idle",
-            "wait <query> until <predicate> [and …] [stable=…] [every=…] [timeout=…] [clock=server]"),
+            "wait <query> until <predicate> [and …] [stable=<duration>] [every=<duration>] [timeout=<duration>] "
+                + "[clock=server|client]"),
             "waits a time, until the action queue is idle, or until the read-only query's predicates hold; "
                 + "predicates are <field><op><value> with == != < <= > >=, or ok, and a value $<field> compares with "
-                + "another field (hp<$max_hp); stable= consecutive matches (default 1t), every= check interval "
-                + "(default 1t), timeout= (default 60s, a plain number is seconds); server-side queries are checked "
-                + "at the end of server ticks and report the tick (t<n>)",
+                + "another field (hp<$max_hp); stable= how long they must keep holding (default 1t), every= how "
+                + "often to check (default 1t), timeout= (default 60s, a plain number is seconds), clock= the side "
+                + "the query runs on; server-side queries are checked at the end of server ticks and report the "
+                + "tick (t<n>)",
             "wait block ~1,0,0 until id==air timeout=5s"),
-        new Construct("sample", List.of("sample <query> every <duration> <count> [clock=server]"),
-            "runs the read-only query n times (max 1000), every N ticks, one row per run with the game tick and "
-                + "the query's fields",
+        new Construct("sample", List.of("sample <query> every <duration> x<n> [clock=server|client]"),
+            "runs the read-only query n times (x1 to x1000), every N ticks (1t or more), one row per run with the "
+                + "game tick and the query's fields",
             "sample status every 1t x20"),
         new Construct("assert", List.of("assert <query> <predicate> [and …]"),
             "runs the read-only query once; ok with the observed fields when the predicates (as in wait) hold, "

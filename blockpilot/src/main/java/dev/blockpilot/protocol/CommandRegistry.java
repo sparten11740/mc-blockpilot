@@ -24,23 +24,24 @@ public final class CommandRegistry {
 
     public void register(CommandSpec spec) {
         spec.freeze();
-        String problem = exampleProblem(spec);
+        Entry entry = new Entry(spec.name(), "", "blockpilot", spec);
+        String problem = exampleProblem(entry);
         if (problem != null) {
             throw new IllegalStateException("Example of built-in command " + spec.name() + " does not parse: "
                 + problem);
         }
-        if (commands.putIfAbsent(spec.name(), new Entry(spec.name(), "", "blockpilot", spec)) != null) {
+        if (commands.putIfAbsent(spec.name(), entry) != null) {
             throw new IllegalStateException("Built-in command registered twice: " + spec.name());
         }
     }
 
-    /** Null when the spec's example parses against its own grammar, else what is wrong with it. */
-    static String exampleProblem(CommandSpec spec) {
-        if (spec.example() == null) {
+    /** Null when the command's example parses against its own grammar, else what is wrong with it. */
+    static String exampleProblem(Entry entry) {
+        if (entry.spec().example() == null) {
             return null;
         }
         try {
-            Parser.example(new Entry(spec.name(), "", "", spec), spec.example());
+            Parser.example(entry, entry.spec().example());
             return null;
         } catch (Parser.SyntaxError e) {
             return e.getMessage();
@@ -60,13 +61,13 @@ public final class CommandRegistry {
                     existing.registrant(), registration.registrant(), existing.registrant());
                 continue;
             }
-            String problem = exampleProblem(registration.spec());
+            Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec());
+            String problem = exampleProblem(entry);
             if (problem != null) {
                 LOGGER.error("Example of {} (from {}) does not parse, so the command is ignored: {}", name,
                     registration.registrant(), problem);
                 continue;
             }
-            Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec());
             commands.put(name, entry);
             namespaces.computeIfAbsent(registration.namespace(), key -> new ArrayList<>()).add(entry);
         }
