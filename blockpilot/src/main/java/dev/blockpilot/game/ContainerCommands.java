@@ -13,21 +13,18 @@ import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CraftingScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -53,7 +50,13 @@ final class ContainerCommands {
         registry.register(CommandSpec.action("craft", this::craft).needsWorld().group("inventory")
             .arg("item", ArgType.ID).optionalArg("count", ArgType.COUNT)
             .help("crafts with the recipe book: in the 2x2 grid when the recipe fits, else at an open or nearby "
-                + "crafting table; x<n> items (default one craft)").field("crafted", "items made")
+                //? if >=26.1 {
+                /*+ "crafting table; x<n> items (default one craft). On a remote server only unlocked recipes are "
+                + "known")
+                *///?} else {
+                + "crafting table; x<n> items (default one craft)")
+                //?}
+            .field("crafted", "items made")
             .example("craft oak_planks x8"));
     }
 
@@ -217,24 +220,19 @@ final class ContainerCommands {
 
     private Action craft(CommandContext context, Args args) throws CommandException {
         Item item = InventoryOps.item(args.word("item"));
-        var level = minecraft().level;
-        List<RecipeHolder<CraftingRecipe>> recipes = level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)
-            .stream().filter(recipe -> recipe.value().getResultItem(level.registryAccess()).is(item)).toList();
+        List<CraftingCandidate> recipes = CraftingRecipes.forItem(item);
         if (recipes.isEmpty()) {
             throw new CommandException("no_recipe", args.word("item"));
         }
-        int perCraft = Math.max(1, recipes.get(0).value().getResultItem(level.registryAccess()).getCount());
-        int wanted = args.count("count", perCraft);
+        int wanted = args.count("count", recipes.get(0).resultCount());
         boolean tableOpen = minecraft().screen instanceof CraftingScreen;
         // Several recipes can make one item (sticks from planks or bamboo): prefer one the inventory can make, and
         // one that fits the 2x2 grid unless a table is open.
-        List<RecipeHolder<CraftingRecipe>> craftable = recipes.stream().filter(ContainerCommands::haveIngredients)
-            .toList();
-        List<RecipeHolder<CraftingRecipe>> candidates = craftable.isEmpty() ? recipes : craftable;
-        Optional<RecipeHolder<CraftingRecipe>> small = candidates.stream()
-            .filter(recipe -> recipe.value().canCraftInDimensions(2, 2)).findFirst();
-        RecipeHolder<CraftingRecipe> recipe = tableOpen || small.isEmpty() ? candidates.get(0) : small.get();
-        boolean needsTable = !recipe.value().canCraftInDimensions(2, 2);
+        List<CraftingCandidate> craftable = recipes.stream().filter(ContainerCommands::haveIngredients).toList();
+        List<CraftingCandidate> candidates = craftable.isEmpty() ? recipes : craftable;
+        Optional<CraftingCandidate> small = candidates.stream().filter(CraftingCandidate::fitsSmallGrid).findFirst();
+        CraftingCandidate recipe = tableOpen || small.isEmpty() ? candidates.get(0) : small.get();
+        boolean needsTable = !recipe.fitsSmallGrid();
         Action opening = null;
         if (needsTable && !tableOpen) {
             BlockPos table = nearestTable();
@@ -249,13 +247,16 @@ final class ContainerCommands {
     }
 
     /** Whether the inventory holds one craft's worth of the recipe's ingredients. */
-    private static boolean haveIngredients(RecipeHolder<CraftingRecipe> recipe) {
+    private static boolean haveIngredients(CraftingCandidate recipe) {
         List<ItemStack> stock = new ArrayList<>();
-        player().getInventory().items.forEach(stack -> stock.add(stack.copy()));
-        for (Ingredient ingredient : recipe.value().getIngredients()) {
-            if (ingredient.isEmpty()) {
+        for (int slot = 0; slot < Inventory.INVENTORY_SIZE; slot++) {
+            stock.add(player().getInventory().getItem(slot).copy());
+        }
+        for (Optional<Predicate<ItemStack>> slot : recipe.ingredients()) {
+            if (slot.isEmpty()) {
                 continue;
             }
+            Predicate<ItemStack> ingredient = slot.get();
             ItemStack match = stock.stream().filter(stack -> !stack.isEmpty() && ingredient.test(stack)).findFirst()
                 .orElse(null);
             if (match == null) {
@@ -282,7 +283,7 @@ final class ContainerCommands {
     /** Places the recipe with the recipe book, takes the result with a shift-click, until enough are made. */
     private static final class Crafting implements Action {
         private final Action opening;
-        private final RecipeHolder<CraftingRecipe> recipe;
+        private final CraftingCandidate recipe;
         private final Item item;
         private final int wanted;
         private boolean opened;
@@ -290,7 +291,7 @@ final class ContainerCommands {
         private int waiting;
         private boolean placed;
 
-        Crafting(Action opening, RecipeHolder<CraftingRecipe> recipe, Item item, int wanted) {
+        Crafting(Action opening, CraftingCandidate recipe, Item item, int wanted) {
             this.opening = opening;
             this.recipe = recipe;
             this.item = item;
@@ -310,8 +311,8 @@ final class ContainerCommands {
             AbstractContainerMenu menu = player.containerMenu;
             if (!placed) {
                 // The recipe book only places unlocked recipes; others are laid out click by click.
-                if (player.getRecipeBook().contains(recipe)) {
-                    minecraft().gameMode.handlePlaceRecipe(menu.containerId, recipe, false);
+                if (recipe.placeWithBook() != null) {
+                    recipe.placeWithBook().accept(menu.containerId);
                 } else if (!placeByHand(menu)) {
                     clearGrid(menu);
                     if (made == 0) {
@@ -367,15 +368,14 @@ final class ContainerCommands {
          */
         private boolean placeByHand(AbstractContainerMenu menu) {
             int gridWidth = menu == player().inventoryMenu ? 2 : 3;
-            List<Ingredient> ingredients = recipe.value().getIngredients();
-            int recipeWidth = recipe.value() instanceof ShapedRecipe shaped ? shaped.getWidth() : gridWidth;
+            List<Optional<Predicate<ItemStack>>> ingredients = recipe.ingredients();
+            int recipeWidth = recipe.width() > 0 ? recipe.width() : gridWidth;
             for (int index = 0; index < ingredients.size(); index++) {
-                Ingredient ingredient = ingredients.get(index);
-                if (ingredient.isEmpty()) {
+                if (ingredients.get(index).isEmpty()) {
                     continue;
                 }
                 int gridSlot = 1 + (index / recipeWidth) * gridWidth + index % recipeWidth;
-                int source = findIngredient(menu, ingredient);
+                int source = findIngredient(menu, ingredients.get(index).get());
                 if (source < 0 || gridSlot >= 1 + gridWidth * gridWidth) {
                     return false;
                 }
@@ -386,7 +386,7 @@ final class ContainerCommands {
             return true;
         }
 
-        private static int findIngredient(AbstractContainerMenu menu, Ingredient ingredient) {
+        private static int findIngredient(AbstractContainerMenu menu, Predicate<ItemStack> ingredient) {
             for (int index = 0; index < menu.slots.size(); index++) {
                 Slot slot = menu.slots.get(index);
                 if (inPlayerInventory(slot) && slot.hasItem() && ingredient.test(slot.getItem())) {
