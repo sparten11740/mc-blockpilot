@@ -10,7 +10,7 @@
 
 ## 3. Readiness wait (dev-integration)
 
-- [ ] 3.1 End `--wait-ready` at a crash report that appears while it waits (D4), with `MainTest` cases for a new and an old report, and add the wait and the asleep-display note to the README; verify the tests pass on both loaders' nodes
+- [x] 3.1 End `--wait-ready` at a crash report that appears while it waits (D4), with `MainTest` cases for a new and an old report, and add the wait and the asleep-display note to the README; verify the tests pass on both loaders' nodes
 
 ## 4. Integration checks
 

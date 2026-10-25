@@ -11,8 +11,12 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /** One script over the line protocol: connect (waiting if asked), authenticate, send, print, and pick the exit code. */
 final class ShellClient {
@@ -35,6 +39,9 @@ final class ShellClient {
         String token;
         try {
             token = connect(deadline);
+        } catch (Crashed e) {
+            err.println("blockpilot: the game crashed while starting: " + e.getMessage());
+            return 2;
         } catch (IOException e) {
             err.println("blockpilot: game not reachable: " + e.getMessage());
             return 2;
@@ -74,6 +81,8 @@ final class ShellClient {
 
     private String connect(long deadline) throws IOException {
         int timeoutMillis = (int) Math.min(Integer.MAX_VALUE, options.timeout() * 1000);
+        // Whole seconds, as some file systems keep modification times.
+        long waitStarted = System.currentTimeMillis() / 1000 * 1000;
         while (true) {
             Socket candidate = new Socket();
             try {
@@ -86,11 +95,42 @@ final class ShellClient {
                 return endpoint.token();
             } catch (IOException e) {
                 candidate.close();
+                Path crash = crashReportSince(waitStarted);
+                if (crash != null) {
+                    throw new Crashed(crash);
+                }
                 if (System.nanoTime() - deadline >= 0) {
                     throw e;
                 }
                 pause();
             }
+        }
+    }
+
+    /** A game that crashes while starting never writes endpoint.json, but Minecraft writes a crash report. */
+    private Path crashReportSince(long since) throws IOException {
+        Path folder = options.gameDir().resolve("crash-reports");
+        if (!Files.isDirectory(folder)) {
+            return null;
+        }
+        try (Stream<Path> reports = Files.list(folder)) {
+            return reports.filter(report -> report.getFileName().toString().endsWith(".txt"))
+                .filter(report -> modified(report) >= since)
+                .max(Comparator.comparingLong(ShellClient::modified)).orElse(null);
+        }
+    }
+
+    private static long modified(Path file) {
+        try {
+            return Files.getLastModifiedTime(file).toMillis();
+        } catch (IOException e) {
+            return 0;
+        }
+    }
+
+    private static final class Crashed extends IOException {
+        Crashed(Path report) {
+            super(report.toString());
         }
     }
 

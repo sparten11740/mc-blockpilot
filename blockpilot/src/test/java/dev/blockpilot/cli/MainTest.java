@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -105,6 +106,35 @@ class MainTest {
     void noGameIsUnreachable() {
         assertEquals(2, run("status"));
         assertTrue(stderr().startsWith("blockpilot: game not reachable: no "), stderr());
+    }
+
+    @Test
+    void aCrashReportWrittenWhileWaitingEndsTheWait() throws Exception {
+        Path report = gameDir.resolve("crash-reports/crash-2026-10-25_23.00.00-client.txt");
+        Thread crash = new Thread(() -> {
+            try {
+                Thread.sleep(1500);
+                Files.createDirectories(report.getParent());
+                Files.writeString(report, "---- Minecraft Crash Report ----\n");
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        crash.start();
+        long started = System.nanoTime();
+        assertEquals(2, run("--wait-ready", "30", "status"));
+        crash.join();
+        assertTrue(System.nanoTime() - started < 10_000_000_000L, "waited past the crash");
+        assertEquals("blockpilot: the game crashed while starting: " + report, stderr());
+    }
+
+    @Test
+    void anOlderCrashReportDoesNotEndTheWait() throws IOException {
+        Path report = Files.createDirectories(gameDir.resolve("crash-reports")).resolve("crash-old-client.txt");
+        Files.writeString(report, "---- Minecraft Crash Report ----\n");
+        Files.setLastModifiedTime(report, FileTime.fromMillis(System.currentTimeMillis() - 3_600_000));
+        assertEquals(2, run("--wait-ready", "2", "status"));
+        assertTrue(stderr().startsWith("blockpilot: game not reachable: "), stderr());
     }
 
     @Test

@@ -24,7 +24,11 @@ run/blockpilot/blockpilot --json "inv"
 ```
 
 `--wait-ready <seconds>` waits for the game to come up, and `--wait-world` also for the player to be in a world.
-`--game-dir <dir>` talks to the game in another directory, and `--help` lists the options.
+A crash report the game writes meanwhile ends the wait at once, with exit code 2 and the report's path. A client
+that can't open its window fails before any mod loads, so nothing reports that and the wait runs to its timeout; on
+macOS that is a client started while the display sleeps ("Failed to locate a primary monitor"), which
+`caffeinate -u -t 300` before the start avoids by waking the display. `--game-dir <dir>` talks to the game in another
+directory, and `--help` lists the options.
 Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
 out). When a step failed or was skipped, one line on stderr counts them and says whether anything ran, e.g.
 `blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI returns only once the game
