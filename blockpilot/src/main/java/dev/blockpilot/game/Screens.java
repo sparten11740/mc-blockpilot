@@ -5,18 +5,22 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
+import dev.blockpilot.mixin.SelectionListAccessor;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.events.ContainerEventHandler;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.DeathScreen;
@@ -33,6 +37,8 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.inventory.Slot;
 
 /** Describes the open GUI so agents can read it and click, type and drag on it by GUI-scaled coordinates. */
@@ -128,7 +134,7 @@ final class Screens {
             }
             fields.put("slots", container.getMenu().slots.size(), "slots=" + container.getMenu().slots.size());
         }
-        List<GuiEventListener> widgets = new ArrayList<>();
+        List<Item> widgets = new ArrayList<>();
         collect(screen, widgets);
         for (int index = 0; index < widgets.size(); index++) {
             rows.add(Row.of("w" + index, widget(index, widgets.get(index))));
@@ -136,34 +142,65 @@ final class Screens {
         return Result.ok(fields).withRows(rows, more);
     }
 
+    /** What {@code screen} numbers {@code w<i>}: a widget, or a row of a list, with its bounds when it has any. */
+    private record Item(GuiEventListener listener, String kind, ScreenRectangle bounds) {
+        static Item of(GuiEventListener listener) {
+            return new Item(listener, Screens.kind(listener), listener instanceof LayoutElement element
+                ? element.getRectangle() : null);
+        }
+    }
+
     /** The centre of widget {@code w<index>} as {@code screen} numbers them, in GUI coordinates. */
     static double[] widgetCentre(Screen screen, int index) throws CommandException {
-        List<GuiEventListener> widgets = new ArrayList<>();
+        List<Item> widgets = new ArrayList<>();
         collect(screen, widgets);
         if (index >= widgets.size()) {
             throw new CommandException("syntax", widgets.isEmpty() ? "the screen has no widgets"
                 : "the screen has widgets w0-w" + (widgets.size() - 1));
         }
-        if (!(widgets.get(index) instanceof LayoutElement element)) {
+        ScreenRectangle bounds = widgets.get(index).bounds();
+        if (bounds == null) {
             throw new CommandException("syntax", "w" + index + " has no bounds; use x,y");
         }
-        return new double[] {element.getX() + element.getWidth() / 2.0, element.getY() + element.getHeight() / 2.0};
+        return new double[] {bounds.left() + bounds.width() / 2.0, bounds.top() + bounds.height() / 2.0};
     }
 
-    private static void collect(ContainerEventHandler parent, List<GuiEventListener> out) {
+    /** The widgets, and after a list its rows in view: a row's own widgets, or the row itself. */
+    private static void collect(ContainerEventHandler parent, List<Item> out) {
         for (GuiEventListener child : parent.children()) {
-            if (child instanceof AbstractWidget || !(child instanceof ContainerEventHandler)) {
-                out.add(child);
+            if (child instanceof AbstractSelectionList<?> list) {
+                out.add(Item.of(list));
+                rows(list, out);
+            } else if (child instanceof AbstractWidget || !(child instanceof ContainerEventHandler)) {
+                out.add(Item.of(child));
             } else {
                 collect((ContainerEventHandler) child, out);
             }
         }
     }
 
-    private static Fields widget(int index, GuiEventListener listener) {
+    private static void rows(AbstractSelectionList<?> list, List<Item> out) {
+        SelectionListAccessor geometry = (SelectionListAccessor) list;
+        int height = geometry.blockpilot$itemHeight();
+        for (int index = 0; index < list.children().size(); index++) {
+            int top = geometry.blockpilot$rowTop(index);
+            if (top < list.getY() || top + height > list.getBottom()) {
+                continue;
+            }
+            GuiEventListener entry = list.children().get(index);
+            if (entry instanceof ContainerEventHandler row && !row.children().isEmpty()) {
+                row.children().forEach(widget -> out.add(Item.of(widget)));
+            } else {
+                out.add(new Item(entry, "row", new ScreenRectangle(list.getRowLeft(), top, list.getRowWidth(),
+                    height - 4)));
+            }
+        }
+    }
+
+    private static Fields widget(int index, Item item) {
+        GuiEventListener listener = item.listener();
         Fields fields = new Fields();
-        String kind = kind(listener);
-        fields.put("kind", kind, "w" + index + ":" + kind);
+        fields.put("kind", item.kind(), "w" + index + ":" + item.kind());
         if (listener instanceof AbstractWidget widget) {
             String label = widget.getMessage().getString();
             if (!label.isEmpty()) {
@@ -182,15 +219,36 @@ final class Screens {
                 fields.put("tooltip", true, "has_tooltip");
             }
         }
-        if (listener instanceof LayoutElement element) {
-            List<Integer> bounds = List.of(element.getX(), element.getY(), element.getWidth(), element.getHeight());
+        if (listener instanceof ObjectSelectionList.Entry<?> entry) {
+            String label = rowLabel(entry.getNarration());
+            fields.put("label", label, "\"" + label + "\"");
+        }
+        if (listener instanceof AbstractSelectionList<?> list) {
+            fields.put("rows", list.children().size(), "rows=" + list.children().size());
+        }
+        if (item.bounds() != null) {
+            ScreenRectangle rectangle = item.bounds();
+            List<Integer> bounds = List.of(rectangle.left(), rectangle.top(), rectangle.width(), rectangle.height());
             fields.put("bounds", bounds, "@" + bounds.get(0) + "," + bounds.get(1) + "," + bounds.get(2) + ","
                 + bounds.get(3));
         }
         return fields;
     }
 
+    /** A row's narration without the narrator's "Selected: …" around it. */
+    private static String rowLabel(Component narration) {
+        if (narration.getContents() instanceof TranslatableContents contents
+            && contents.getKey().equals("narrator.select") && contents.getArgs().length == 1) {
+            Object name = contents.getArgs()[0];
+            return name instanceof Component component ? component.getString() : String.valueOf(name);
+        }
+        return narration.getString();
+    }
+
     private static String kind(GuiEventListener listener) {
+        if (listener instanceof AbstractSelectionList<?>) {
+            return "list";
+        }
         if (listener instanceof EditBox) {
             return "text";
         }

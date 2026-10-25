@@ -22,6 +22,7 @@
     "PacketEncoderMixin",
     "ParticleEngineMixin",
     "RebuildTaskMixin",
+    "SelectionListAccessor",
     "SoundEngineMixin"
   ],
   "injectors": {
