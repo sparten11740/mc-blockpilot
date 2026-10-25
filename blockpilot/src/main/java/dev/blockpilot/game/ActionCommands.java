@@ -101,8 +101,9 @@ final class ActionCommands {
                 ArgType.DURATION, ArgType.SECONDS)
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit. "
                 + "At a block aboard a sub-level it fails with err obstructed when another block is in the way; any "
-                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks). "
-                + WITHIN_BLOCK_HELP)
+                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks). The server "
+                + "gets the game's own crosshair hit: where the aimed look ray first meets a block's shape, which the "
+                + "reply reports as aim and hit=. " + WITHIN_BLOCK_HELP)
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
             .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
@@ -509,9 +510,13 @@ final class ActionCommands {
                 }
                 if (step == 1) {
                     step++;
-                    hit = hit();
                     press.run();
                     return null;
+                }
+                if (hit == null) {
+                    // The game handled the click during this tick, on the hit still in place now; read at the
+                    // press it could be a tick older, which shows on a moving target.
+                    hit = hit();
                 }
                 if (hold != null && ++held < hold.ticks()) {
                     return null;

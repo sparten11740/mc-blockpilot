@@ -6,7 +6,7 @@
 
 ## 2. The hit a click sends (player-control)
 
-- [ ] 2.1 Read `use`'s hit on the tick the click is handled (D3) and say in `help use` and the README which hit the server gets; verify on the dev client that `use` at a point above a button's shape reports the hit where the ray met a shape, that a plain `use <pos>` still reports the block, and that the smoke test passes
+- [x] 2.1 Read `use`'s hit on the tick the click is handled (D3) and say in `help use` and the README which hit the server gets; verify on the dev client that `use` at a point above a button's shape reports the hit where the ray met a shape, that a plain `use <pos>` still reports the block, and that the smoke test passes
 
 ## 3. Readiness wait (dev-integration)
 
