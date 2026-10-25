@@ -189,13 +189,20 @@ the world. `release` SHALL release them explicitly.
 - **THEN** the right button is released within one tick
 
 ### Requirement: Input works without window focus
-While an agent session is connected, injected input SHALL work when the game
-window is not focused, and losing focus SHALL NOT open the pause menu or break
-agent control. Normal behavior returns when no agent session remains.
+While an agent is present, injected input SHALL work when the game window is
+not focused, and losing focus SHALL NOT open the pause menu or break agent
+control. An agent is present while a session is connected and for 60 seconds
+after the last one closed, because one-shot clients open a connection per
+script. Normal behavior returns after that.
 
 #### Scenario: Window in background
 - **WHEN** the user switches to another app while an agent runs `goto`
 - **THEN** the game does not pause and the player keeps walking
+
+#### Scenario: Scripts from a one-shot client
+- **WHEN** an agent sends one script after another through the CLI, each on its
+  own connection, with the window in the background
+- **THEN** the game does not pause between the scripts
 
 ### Requirement: Chat and commands
 `chat <text>` SHALL send a chat message. `cmd <command>` SHALL send a slash
@@ -252,7 +259,7 @@ that work on screens (`screen`, `click`, `take`, `put`, `type`) keep it open.
 ### Requirement: Flying
 `fly on|off` SHALL start or stop flying where the game mode allows it (creative,
 spectator), and fail with `err syntax` elsewhere. After `fly on` the player
-keeps flying through landings and teleports, while an agent is connected and in
+keeps flying through landings and teleports, while an agent is present and in
 control, until `fly off`, leaving the world or a game mode that can't fly.
 
 #### Scenario: Hover after a teleport
@@ -264,9 +271,16 @@ control, until `fly off`, leaving the world or a game mode that can't fly.
 - **THEN** the player is still flying after the teleport
 
 ### Requirement: Agent activity indicator
-A small HUD indicator SHALL show when an agent session is connected, when an
-action is running, and when agent control is disabled.
+A small HUD indicator SHALL show while an agent is present, the action running,
+and when agent control is disabled. The action stays shown until 2 seconds
+without one have passed, and the text changes at most twice a second, so agents
+running short actions one after another don't make it flicker.
 
 #### Scenario: Agent acting
 - **WHEN** an agent's `goto` is running
 - **THEN** the HUD shows the active indicator with the action name
+
+#### Scenario: Short actions in a row
+- **WHEN** an agent runs one `server` command after another, a second apart
+- **THEN** the indicator keeps showing `server` instead of switching back and
+  forth with "agent active"

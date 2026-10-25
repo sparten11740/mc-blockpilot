@@ -59,6 +59,7 @@
 - [x] 6.4 Implement unfocused-window support (window-active / pause-on-lost-focus / mouse-grab overrides only while a session is connected, no OS cursor capture while unfocused); verify the "window in background" scenario, and that normal behavior returns after disconnect
 - [ ] 6.5 Implement human-override detection (callbacks without the `injecting` flag), the agent-control toggle key mapping, `err interrupted` / `err disabled`, and release-on-session-close; verify the "user grabs control" and "session dropped mid-hold" scenarios
 - [x] 6.6 Implement the HUD indicator (connected / acting with action name / disabled) through the platform HUD hook; verify it shows on both loaders
+- [x] 6.7 Smooth agent presence for one-shot clients and short actions (present until 60 s after the last session closed; the HUD keeps an action shown until 2 s without one, each text at least 0.5 s); verify with `AgentPresenceTest` and in game that CLI calls seconds apart with the window in the background never pause the game; verified: four `server time query` calls 4 s apart left `status` without `screen:pause`, where a launch before the change had paused it
 
 ## 7. High-level actions (player-control)
 

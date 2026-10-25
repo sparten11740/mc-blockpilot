@@ -61,6 +61,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private long ticks;
     private boolean autoJoined;
     private boolean wasInWorld;
+    private final AgentPresence presence = new AgentPresence();
 
     private BlockpilotClient() {
     }
@@ -172,7 +173,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             // A loader or mod may reload the logging setup, which drops our appender.
             LogCapture.install();
         }
-        boolean agentInControl = enabled && engine.sessionCount() > 0;
+        long now = System.currentTimeMillis();
+        presence.update(engine.sessionCount(), engine.activity(), now);
+        boolean agentInControl = enabled && presence.present(now);
         Focus.setKeepActive(agentInControl);
         ActionCommands.holdFlight(agentInControl);
         InputState.reassert();
@@ -256,12 +259,13 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onHudRender(GuiGraphics graphics) {
         CameraControl.recordRendered();
-        if (engine == null || engine.sessionCount() == 0 || Minecraft.getInstance().options.hideGui) {
+        long now = System.currentTimeMillis();
+        if (engine == null || !presence.present(now) || Minecraft.getInstance().options.hideGui) {
             return;
         }
-        String activity = engine.activity();
+        String activity = presence.shownActivity();
         String text = !enabled ? "Blockpilot: agent control off (" + toggleKey.getTranslatedKeyMessage().getString()
-            + ")" : activity != null ? "Blockpilot: " + activity : "Blockpilot: agent connected";
+            + ")" : activity != null ? "Blockpilot: " + activity : "Blockpilot: agent active";
         int color = !enabled ? 0xFFFF5555 : activity != null ? 0xFF55FF55 : 0xFFAAAAAA;
         graphics.drawString(Minecraft.getInstance().font, text, 4, 4, color);
     }

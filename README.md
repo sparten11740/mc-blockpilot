@@ -33,9 +33,9 @@ claude mcp add --transport http blockpilot http://127.0.0.1:25599/mcp --header "
 `#<id> `. Text replies end with a line holding only `.`; after `fmt json` each reply is one JSON line. `sub on` pushes
 events as they happen.
 
-The window can stay in the background: while an agent is connected the game does not pause and keeps handling input.
+The window can stay in the background: while an agent is connected, and for a minute after its last connection closed (the CLI opens one per call), the game does not pause and keeps handling input.
 Real keyboard or mouse input to the focused window cancels running agent actions; F8 toggles agent control off and on.
-A line in the top-left corner shows when an agent is connected or acting.
+A line in the top-left corner shows when an agent is active and what it is doing.
 
 ### In another mod's dev environment
 
