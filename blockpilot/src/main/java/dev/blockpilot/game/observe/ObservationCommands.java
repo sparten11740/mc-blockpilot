@@ -69,6 +69,8 @@ public final class ObservationCommands {
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
             .option("since", "first tick to include", ArgType.INT)
             .option("kind", "which messages", List.of("chat", "actionbar", "title", "subtitle"))
+            .option("match", "only messages whose whole text fits this pattern, ignoring case; * stands for any run "
+                + "of characters, spaces included, e.g. *gear*refused*")
             .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("chat, action-bar, title and subtitle messages with their tick").field("tick", "current tick")
             .field("count", "matching messages").example("messages kind=actionbar"));
@@ -228,8 +230,7 @@ public final class ObservationCommands {
     }
 
     private static Pattern glob(String pattern) {
-        String id = pattern.contains(":") || pattern.startsWith("*") ? pattern : "minecraft:" + pattern;
-        return Pattern.compile(("\\Q" + id + "\\E").replace("*", "\\E.*\\Q"));
+        return TextPattern.compile(pattern.contains(":") || pattern.startsWith("*") ? pattern : "minecraft:" + pattern);
     }
 
     private static <T> List<T> last(List<T> items, int limit) {
@@ -267,9 +268,11 @@ public final class ObservationCommands {
     private Result messages(CommandContext context, Args args) throws CommandException {
         long since = since(args, Long.MIN_VALUE);
         String kind = args.option("kind");
+        Pattern match = args.option("match") == null ? null : TextPattern.compile(args.option("match"));
         List<Observations.Message> messages = new ArrayList<>();
         for (Observations.Message message : Observations.messages(since)) {
-            if (kind == null || kind.equals(message.kind())) {
+            if ((kind == null || kind.equals(message.kind()))
+                && (match == null || match.matcher(message.text()).matches())) {
                 messages.add(message);
             }
         }

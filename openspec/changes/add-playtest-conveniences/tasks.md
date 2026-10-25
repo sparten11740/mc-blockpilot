@@ -13,7 +13,7 @@
 
 ## 3. Messages and screenshots (client-observation, game-perception)
 
-- [ ] 3.1 Add `match=<pattern>` to `messages` (whole text, any case, `*` for any run) with a unit test of the pattern rule and the help; verify in game that `wait messages since=<tick> match=*engaged* until count>0 timeout=30s` returns on the matching chat line and not on an earlier other one
+- [x] 3.1 Add `match=<pattern>` to `messages` (whole text, any case, `*` for any run) with a unit test of the pattern rule and the help; verify in game that `wait messages since=<tick> match=*engaged* until count>0 timeout=30s` returns on the matching chat line and not on an earlier other one
 - [ ] 3.2 Make the `screenshot` action and the MCP tool capture a frame rendered after the request, keeping burst spacing; verify in game that `use <lever>; screenshot` shows the lever flipped and `chat hello; screenshot` shows the chat line (both arrive from the server a tick later), and that bursts, sheets and `hud=off` still pass the smoke test
 
 ## 4. Flight readout (sable-sublevels)
