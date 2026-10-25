@@ -51,7 +51,7 @@ final class Snapshots {
     }
 
     /** The save folder name of the world the integrated server runs. */
-    private static String folderOf(MinecraftServer server) {
+    static String folderOf(MinecraftServer server) {
         return server.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName().toString();
     }
 

@@ -25,7 +25,10 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.LevelSummary;
+import net.minecraft.world.level.storage.WorldData;
 
 /** Getting into and out of games: listing saves and servers, joining, leaving, respawning. */
 final class SessionCommands {
@@ -61,22 +64,35 @@ final class SessionCommands {
         List<LevelSummary> saves = new ArrayList<>(summaries());
         saves.sort(Comparator.comparingLong(LevelSummary::getLastPlayed).reversed());
         List<Row> rows = new ArrayList<>();
+        // Vanilla leaves out saves whose lock is held, which includes the world loaded right now.
+        MinecraftServer server = minecraft().getSingleplayerServer();
+        if (server != null) {
+            String folder = Snapshots.folderOf(server);
+            WorldData data = server.getWorldData();
+            rows.add(Row.of(folder, world(folder, data.getLevelName(), data.getGameType(), data.isAllowCommands(),
+                System.currentTimeMillis()).put("loaded", true, "loaded")));
+            saves.removeIf(save -> save.getLevelId().equals(folder));
+        }
         for (LevelSummary save : saves) {
-            Fields fields = new Fields().put("folder", save.getLevelId(), "\"" + save.getLevelId() + "\"");
-            if (!save.getLevelName().equals(save.getLevelId())) {
-                fields.put("name", save.getLevelName(), "name:\"" + save.getLevelName() + "\"");
-            }
-            fields.bare("mode", save.getGameMode().getName());
-            if (save.hasCommands()) {
-                fields.put("cheats", true, "cheats");
-            }
-            if (TestWorlds.isTestWorld(save.getLevelId())) {
-                fields.put("test", true, "test");
-            }
-            fields.hidden("last_played", save.getLastPlayed());
-            rows.add(Row.of(save.getLevelId(), fields));
+            rows.add(Row.of(save.getLevelId(), world(save.getLevelId(), save.getLevelName(), save.getGameMode(),
+                save.hasCommands(), save.getLastPlayed())));
         }
         return Result.ok().withRows(rows);
+    }
+
+    private static Fields world(String folder, String name, GameType mode, boolean cheats, long lastPlayed) {
+        Fields fields = new Fields().put("folder", folder, "\"" + folder + "\"");
+        if (!name.equals(folder)) {
+            fields.put("name", name, "name:\"" + name + "\"");
+        }
+        fields.bare("mode", mode.getName());
+        if (cheats) {
+            fields.put("cheats", true, "cheats");
+        }
+        if (TestWorlds.isTestWorld(folder)) {
+            fields.put("test", true, "test");
+        }
+        return fields.hidden("last_played", lastPlayed);
     }
 
     private Result servers() {
