@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """End-to-end smoke test against a running game with Blockpilot.
 
-    python3 tools/smoke_test.py --game-dir <run dir> [--shapes <file>]
+    python3 tools/smoke_test.py --game-dir <run dir> [--json] [--shapes <file>]
 
 Creates a throwaway flat test world, exercises the command groups (perception, actions, inventory, containers,
 crafting, raw input, observation, the integrated server, sampling, performance capture, snapshots, JSON output),
 checks each reply, then leaves and deletes the world. Exit code 0 when every step passed.
+
+--json runs the same steps in JSON mode and checks the structure of each reply instead of its text: one JSON line
+with one result per step, each ok unless the step expects an error.
 
 --shapes writes the JSON structure (field names, row field names) of a set of queries to a file, so runs on two
 loaders can be compared with diff.
@@ -47,6 +50,23 @@ def shape(result):
     return " ".join(fields) + (" rows[" + " ".join(rows) + "]" if rows else "")
 
 
+def json_problem(script, output, expected_error):
+    """Why a JSON reply is wrong, or None."""
+    try:
+        reply = json.loads(output.splitlines()[0])
+    except (ValueError, IndexError):
+        return "not one JSON line"
+    results = reply.get("results", [])
+    steps = len([step for step in re.split(r"(?<!\\);", script) if step.strip()])
+    if len(results) != steps:
+        return f"{len(results)} results for {steps} steps"
+    if not all(isinstance(result.get("ok"), bool) for result in results):
+        return "a result without ok"
+    if not expected_error and not all(result["ok"] for result in results):
+        return "a step failed"
+    return None
+
+
 def check_perception_is_passive(game_dir):
     """Runs every perception command across a few dozen ticks; returns a problem, or None if nothing changed."""
     script = "inv; status; perf start passive; " + "; ".join(f"{query}; wait 2t" for query in PERCEPTION) \
@@ -84,6 +104,7 @@ def write_shapes(game_dir, path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--game-dir", default="run")
+    parser.add_argument("--json", action="store_true", help="run the steps in JSON mode and check reply structure")
     parser.add_argument("--shapes", help="also write the JSON shapes of a set of queries to this file")
     args = parser.parse_args()
     world = f"smoke-{int(time.time())}"
@@ -129,12 +150,16 @@ def main():
     ]
     failures = 0
     for name, script, expectations, *expected_error in steps:
-        code, output = run(args.game_dir, script)
-        missing = [pattern for pattern in expectations if not re.search(pattern, output, re.MULTILINE)]
-        # A step that checks an error reply exits non-zero, as every reply with an err line does.
-        if (code != 0 and not expected_error) or missing:
+        code, output = run(args.game_dir, script, as_json=args.json)
+        if args.json:
+            problem = json_problem(script, output, expected_error)
+        else:
+            missing = [pattern for pattern in expectations if not re.search(pattern, output, re.MULTILINE)]
+            # A step that checks an error reply exits non-zero, as every reply with an err line does.
+            problem = f"exit {code}, missing {missing}" if (code != 0 and not expected_error) or missing else None
+        if problem:
             failures += 1
-            print(f"FAIL {name}: exit {code}, missing {missing}\n    " + output.strip().replace("\n", "\n    "))
+            print(f"FAIL {name}: {problem}\n    " + output.strip().replace("\n", "\n    "))
         else:
             print(f"pass {name}")
     problem = check_perception_is_passive(args.game_dir)

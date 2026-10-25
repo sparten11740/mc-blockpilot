@@ -82,7 +82,7 @@
 ## 9. Integration checks
 
 - [ ] 9.1 Run the same scripted smoke test (`tools/smoke.sh` over the line protocol: auth, status, look, block, inv, goto, mine, craft, screen, screenshot, wait … until, stop) against both 1.21.1 jars in a production-like instance; verify identical reply structure on NeoForge and Fabric
-- [ ] 9.2 Run the smoke test again in JSON mode and parse every reply with a JSON parser; verify each reply is one valid JSON line, with the same fields as the text run
+- [x] 9.2 Run the smoke test again in JSON mode and parse every reply with a JSON parser; verify each reply is one valid JSON line, with the same fields as the text run; verified with `tools/smoke_test.py --json` on NeoForge (33/33 with shapes) and Fabric (32/32): every reply is one JSON line with one result per step, and the two loaders' shapes match except where world content differs (`look 4` found items on one run only)
 - [ ] 9.3 Install a separately built sample mod that integrates via `blockpilot-api` from mavenLocal into both 1.21.1 instances; verify its commands work over text and JSON, and that the sample mod still loads with Blockpilot removed
 - [ ] 9.4 Run an end-to-end MCP session from Claude Code (join a world, gather wood, craft planks and a crafting table, place it); verify it finishes with only `run`/`help`/`screenshot` calls, and record total tokens used in the README as a baseline
 - [x] 9.5 Run `openspec validate add-agent-control-mod --strict`; verify it passes
@@ -91,7 +91,7 @@
 
 - [x] 10.1 Let predicates compare two fields (`$<field>` on the right-hand side, also in `wait … until`) and report the referenced field among the observed values; verify with `ConditionTest`
 - [x] 10.2 Add `assert <query> <predicates>` and `if <query> <predicates> then <command>`, evaluated by the script runner with the inner query's thread and gate (`err assert_failed`, `ok false`, the `then` command gated and run in place, `?` soft forms, rejected inside `wait` and `sample`); verify with `EngineTest` cases for each, including a server-side query and an `if` whose command is an action
-- [ ] 10.3 Document `assert`/`if` in help, the cheat sheet and the README; verify in game that `assert block ~0,-1,0 id==grass_block` passes on grass and fails on stone, and that `if … then place …` places only when the predicate holds
+- [x] 10.3 Document `assert`/`if` in help, the cheat sheet and the README; verify in game that `assert block ~0,-1,0 id==grass_block` passes on grass and fails on stone, and that `if … then place …` places only when the predicate holds; verified in game on Fabric: the assert passed on grass and gave `err assert_failed id=stone` on stone, and `if block ~0,-1,0 id==grass_block then place torch …` placed the torch on grass and answered `ok false id=stone` (nothing placed) on stone
 
 ## 11. Grammar and parser (command-language, extension-api)
 
