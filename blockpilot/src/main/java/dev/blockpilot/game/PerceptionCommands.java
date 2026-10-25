@@ -105,7 +105,7 @@ final class PerceptionCommands {
             .tag("yaw", Math.round(Mth.wrapDegrees(player.getYRot())))
             .tag("pitch", Math.round(player.getXRot()))
             .bare("dim", Ids.of(minecraft.level.dimension().location()))
-            .put("time", minecraft.level.getDayTime() % 24000, "t" + minecraft.level.getDayTime() % 24000)
+            .put("time", minecraft.level.getDayTime() % 24000, "daytime" + minecraft.level.getDayTime() % 24000)
             .hidden("hp", round(player.getHealth())).hidden("max_hp", round(player.getMaxHealth()))
             .put("health", Numbers.format(round(player.getHealth())) + "/" + Numbers.format(round(player.getMaxHealth())),
                 "hp" + Numbers.format(round(player.getHealth())) + "/" + Numbers.format(round(player.getMaxHealth())))
