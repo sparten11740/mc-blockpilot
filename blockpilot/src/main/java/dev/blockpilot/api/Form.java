@@ -42,6 +42,24 @@ public final class Form {
         return add(slot(name, true, type, more));
     }
 
+    /** One of the words, or else a token of the first of the types it matches. */
+    public Form arg(String name, List<String> words, ArgType type, ArgType... more) {
+        return add(withWords(slot(name, false, type, more), words));
+    }
+
+    public Form optionalArg(String name, List<String> words, ArgType type, ArgType... more) {
+        return add(withWords(slot(name, true, type, more), words));
+    }
+
+    private static Slot withWords(Slot slot, List<String> words) {
+        if (words.isEmpty() || slot.isText()) {
+            throw new IllegalArgumentException("words go with token types, not with free text");
+        }
+        List<ArgType> types = new ArrayList<>(List.of(ArgType.CHOICE));
+        types.addAll(slot.types());
+        return new Slot(slot.name(), types, words, slot.optional());
+    }
+
     /** Free text: the rest of the step as written. */
     public Form text(String name) {
         return add(new Slot(name, List.of(ArgType.TEXT), List.of(), false));

@@ -10,10 +10,8 @@ import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
-import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
-import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -58,11 +56,14 @@ final class ServerCommands {
             .field("result", "the command's return value").field("success", "true/false")
             .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
-            .arg("target", ArgType.WORD).option("path", "NBT path inside the data, e.g. Pos or Items[0].id")
+            .arg("target", ArgType.POSITION, ArgType.ENTITY, ArgType.UUID)
+            .option("path", "NBT path inside the data, e.g. Pos or Items[0].id")
             .help("server-side data of a block entity (<pos>) or entity (e<id> or uuid); SNBT in text, JSON in json")
             .field("value", "the data").example("nbt e812 path=Pos"));
         registry.register(CommandSpec.action("tick", this::tick).onServer().group("integrated")
-            .choice("op", false, "freeze", "unfreeze", "step", "rate", "query").optionalArg("amount", ArgType.NUMBER)
+            .form(form -> form.keyword("op", "freeze", "unfreeze", "query"))
+            .form(form -> form.keyword("op", "step").arg("ticks", ArgType.INT))
+            .form(form -> form.keyword("op", "rate").arg("tps", ArgType.NUMBER))
             .help("tick freeze|unfreeze|query, tick rate <tps>, tick step <n> (returns after n ticks ran); "
                 + "'tick' is the overworld game time").field("tick", "game time").field("frozen", "true/false")
             .field("rate", "target ticks per second").example("tick step 20"));
@@ -163,20 +164,15 @@ final class ServerCommands {
         String token = args.word("target");
         ServerLevel level = serverLevel();
         CompoundTag data;
-        EntityRef ref = EntityRef.parse(token);
-        UUID uuid = ref == null ? uuid(token) : null;
-        if (ref != null || uuid != null) {
-            Entity entity = ref != null ? level.getEntity(ref.id()) : findEntity(uuid);
+        if (args.kind("target") != ArgType.POSITION) {
+            Entity entity = args.kind("target") == ArgType.ENTITY ? level.getEntity(args.entity("target").id())
+                : findEntity(UUID.fromString(token));
             if (entity == null) {
                 throw new CommandException("no_entity", token);
             }
             data = entity.saveWithoutId(new CompoundTag());
         } else {
-            Position position = Position.parse(token);
-            if (position == null) {
-                throw new CommandException("syntax", "nbt <pos|e<id>|uuid>");
-            }
-            BlockPos pos = Rel.block(context.resolve(position));
+            BlockPos pos = Rel.block(context.resolve(args.position("target")));
             if (!level.isLoaded(pos)) {
                 throw new CommandException("unloaded", token);
             }
@@ -245,7 +241,7 @@ final class ServerCommands {
             }
             case "unfreeze" -> ticks.setFrozen(false);
             case "rate" -> {
-                double rate = args.number("amount", 20);
+                double rate = args.number("tps", 20);
                 if (rate < 1 || rate > 10000) {
                     throw new CommandException("syntax", "tick rate 1-10000");
                 }
@@ -256,7 +252,7 @@ final class ServerCommands {
                 if (!ticks.isFrozen()) {
                     throw new CommandException("not_frozen", "tick freeze first");
                 }
-                int steps = (int) args.number("amount", 1);
+                int steps = args.integer("ticks", 1);
                 long target = gameTime() + steps;
                 ticks.stepGameIfPaused(steps);
                 return new Action() {

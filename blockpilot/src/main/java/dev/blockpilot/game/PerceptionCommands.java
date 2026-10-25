@@ -69,7 +69,8 @@ final class PerceptionCommands {
             .help("nearby entities and notable blocks (block entities, ores, …) within radius (default 16, max 64)")
             .field("count", "rows").example("look 12"));
         registry.register(CommandSpec.query("find", this::find).needsWorld().group("perception")
-            .arg("what", ArgType.WORD).optionalArg("radius", ArgType.INT).optionalArg("limit", ArgType.INT)
+            .arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID).optionalArg("radius", ArgType.INT)
+            .optionalArg("limit", ArgType.INT)
             .option("side", "server: read the integrated server's level (cheats on), incl. chunks the client lacks")
             .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks")
             .field("count", "matches").example("find #logs 32 3"));
@@ -342,7 +343,7 @@ final class PerceptionCommands {
         String what = args.word("what");
         int radius = Mth.clamp(args.integer("radius", 32), 1, MAX_FIND_RADIUS);
         int limit = Mth.clamp(args.integer("limit", 5), 1, 100);
-        var id = what.startsWith("#") || what.contains("*") ? null : Ids.parse(what);
+        var id = args.kind("what") == ArgType.ID ? Ids.parse(what) : null;
         BlockMatcher matcher = id != null && !BuiltInRegistries.BLOCK.containsKey(id) ? null : BlockMatcher.parse(what);
         BlockPos center = player.blockPosition();
         Vec3 eyes = player.position();

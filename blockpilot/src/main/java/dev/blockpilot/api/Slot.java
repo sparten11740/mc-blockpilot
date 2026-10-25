@@ -16,8 +16,9 @@ public record Slot(String name, List<ArgType> types, List<String> words, boolean
         return types.contains(ArgType.TEXT);
     }
 
+    /** Only words: a keyword, rather than a slot that also takes words. */
     public boolean isKeyword() {
-        return types.contains(ArgType.CHOICE);
+        return types.equals(List.of(ArgType.CHOICE));
     }
 
     /** The type the token is taken as, or null when it doesn't fit. Text isn't matched by token. */
@@ -46,7 +47,9 @@ public record Slot(String name, List<ArgType> types, List<String> words, boolean
         }
         StringBuilder out = new StringBuilder("<").append(name).append("> (");
         for (int index = 0; index < types.size(); index++) {
-            out.append(index == 0 ? "" : " or ").append(types.get(index).description());
+            ArgType type = types.get(index);
+            out.append(index == 0 ? "" : " or ").append(type == ArgType.CHOICE ? String.join("|", words)
+                : type.description());
         }
         return out.append(')').toString();
     }

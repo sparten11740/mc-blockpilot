@@ -25,7 +25,9 @@ public final class OptionCommands {
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("option", this::option).group("observe")
-            .optionalArg("name", ArgType.WORD).optionalArg("value", ArgType.WORD)
+            .form(form -> { })
+            .form(form -> form.keyword("op", "reset"))
+            .form(form -> form.arg("name", ArgType.WORD).optionalArg("value", ArgType.WORD))
             .help("option: the video options and their values; option <name>: its value and what it takes; option "
                 + "<name> <value>: sets it and answers once the chunks have rebuilt (settled=<s>, or unsettled "
                 + "pending=<n> at timeout=, default 20s); option reset: puts back what agents changed, as leave, "
@@ -36,8 +38,7 @@ public final class OptionCommands {
     }
 
     private Action option(CommandContext context, Args args) throws CommandException {
-        String name = args.word("name");
-        if (name == null) {
+        if (!args.has("op") && !args.has("name")) {
             List<Row> rows = new ArrayList<>();
             for (ClientOptions.Setting setting : ClientOptions.all()) {
                 rows.add(Row.of(setting.name(), describe(setting)));
@@ -46,12 +47,12 @@ public final class OptionCommands {
         }
         Duration timeout = args.durationOption("timeout");
         int timeoutTicks = (timeout == null ? SETTLE_TIMEOUT : timeout).ticks();
-        if (name.equals("reset")) {
+        if (args.has("op")) {
             List<String> restored = ClientOptions.restoreAll();
             String text = "restored " + (restored.isEmpty() ? "nothing" : String.join(" ", restored));
             return new Settle(() -> new Fields().put("restored", restored, text), timeoutTicks);
         }
-        ClientOptions.Setting setting = ClientOptions.setting(name);
+        ClientOptions.Setting setting = ClientOptions.setting(args.word("name"));
         if (!args.has("value")) {
             Fields fields = describe(setting).put("takes", setting.accepts(), "takes " + setting.accepts());
             return () -> Result.ok(fields);

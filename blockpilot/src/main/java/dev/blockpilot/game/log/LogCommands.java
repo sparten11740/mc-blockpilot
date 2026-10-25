@@ -18,7 +18,9 @@ import java.util.Locale;
 public final class LogCommands {
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("log", this::log).group("observe")
-            .optionalArg("op", ArgType.WORD).optionalArg("seq", ArgType.INT)
+            .form(form -> { })
+            .form(form -> form.keyword("op", "mark"))
+            .form(form -> form.keyword("op", "detail").arg("seq", ArgType.INT))
             .option("level", "lowest level shown: error, warn (default), info")
             .option("since", "a mark: only entries logged after it")
             .option("grep", "only entries whose message contains this text (case-insensitive)")
@@ -36,9 +38,6 @@ public final class LogCommands {
             return Result.ok(new Fields().put("mark", LogCapture.mark(), "mark=" + LogCapture.mark()));
         }
         if ("detail".equals(op)) {
-            if (!args.has("seq")) {
-                throw new CommandException("syntax", "log detail <seq>");
-            }
             LogCapture.Entry entry = LogCapture.get(args.integer("seq", 0));
             if (entry == null) {
                 throw new CommandException("syntax", "no log entry " + args.word("seq") + " (only the last "
@@ -47,9 +46,6 @@ public final class LogCommands {
             Fields fields = describe(entry).put("trace", entry.fullTrace(), entry.fullTrace() == null ? ""
                 : entry.fullTrace().replace("\n", " ⏎ "));
             return Result.ok(fields);
-        }
-        if (op != null) {
-            throw new CommandException("syntax", "log [mark | detail <seq>] [level=] [since=] [grep=] [logger=]");
         }
         int minimum = Session.logRank(args.option("level") == null ? "warn" : args.option("level"));
         long since = (long) args.numberOption("since", 0);

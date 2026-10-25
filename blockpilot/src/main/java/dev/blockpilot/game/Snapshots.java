@@ -36,8 +36,9 @@ final class Snapshots {
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("snapshot", this::snapshot).needsServer().group("session")
-            .choice("op", false, "save", "restore", "list", "delete").optionalArg("name", ArgType.WORD)
-            .help("snapshot save|restore|delete <name>, snapshot list: copies of this world's whole save folder; "
+            .form(form -> form.keyword("op", "save", "restore", "delete").arg("name", ArgType.WORD))
+            .form(form -> form.keyword("op", "list"))
+            .help("copies of this world's whole save folder: save, restore and delete one by name, or list them; "
                 + "save and restore leave the world, copy, and join it again")
             .example("snapshot save base"));
         registry.register(CommandSpec.action("delete", this::delete).group("session")
@@ -65,7 +66,7 @@ final class Snapshots {
 
     private static String checkedName(Args args) throws CommandException {
         String name = args.word("name");
-        if (name == null || !NAME.matcher(name).matches() || name.startsWith(".")) {
+        if (!NAME.matcher(name).matches() || name.startsWith(".")) {
             throw new CommandException("syntax", "snapshot names use letters, digits, _ . - (max 64)");
         }
         return name;

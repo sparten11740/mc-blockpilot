@@ -14,6 +14,7 @@ import dev.blockpilot.game.input.Injection;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.mixin.KeyMappingAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
+import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.ClickType;
@@ -24,29 +25,40 @@ import net.minecraft.world.inventory.ClickType;
  * coordinates are GUI-scaled, as {@code screen} reports them.
  */
 final class InputCommands {
+    private static final String[] BUTTONS = {"left", "right", "middle"};
+
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
             .group("gui").help("the open GUI: type, title, size, cursor, container slots s<i>, widgets w<i> "
                 + "with @x,y,w,h bounds (GUI-scaled)").example("screen"));
-        registry.register(CommandSpec.action("mouse", this::mouse).group("input").arg("op", ArgType.WORD)
-            .arg("a", ArgType.WORD).optionalArg("b", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
-            .help("mouse down|up <left|right|middle>; mouse click <button> [Nt]; mouse move <dx> <dy> [Nt] "
-                + "(in-world pixels turn the camera; on screens GUI units move the cursor); held buttons stay held")
-            .example("mouse down right"));
-        registry.register(CommandSpec.action("drag", this::drag).group("input").arg("button", ArgType.WORD)
-            .arg("from", ArgType.WORD).arg("to", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
-            .help("in-world: drag <button> <dx> <dy> [Nt] (hold, move, release); on a screen: "
-                + "drag <button> <x1,y1|w<i>> <x2,y2|w<i>> [Nt]").example("drag right 0 -120 30t"));
-        registry.register(CommandSpec.action("cursor", this::cursor).group("gui").arg("at", ArgType.WORD)
+        registry.register(CommandSpec.action("mouse", this::mouse).group("input")
+            .form(form -> form.keyword("op", "down", "up").keyword("button", BUTTONS))
+            .form(form -> form.keyword("op", "click").keyword("button", BUTTONS).optionalArg("ticks", ArgType.DURATION))
+            .form(form -> form.keyword("op", "move").arg("dx", ArgType.NUMBER).arg("dy", ArgType.NUMBER)
+                .optionalArg("ticks", ArgType.DURATION))
+            .help("down|up holds or lets go of a button (held buttons stay held); click presses it for ticks "
+                + "(default 1t); move turns the camera by raw pixels in-world, or moves the cursor by GUI units on a "
+                + "screen, spread over ticks").example("mouse down right"));
+        registry.register(CommandSpec.action("drag", this::drag).group("input")
+            .form(form -> form.keyword("button", BUTTONS).arg("dx", ArgType.NUMBER).arg("dy", ArgType.NUMBER)
+                .optionalArg("ticks", ArgType.DURATION))
+            .form(form -> form.keyword("button", BUTTONS).arg("from", ArgType.POINT, ArgType.WIDGET)
+                .arg("to", ArgType.POINT, ArgType.WIDGET).optionalArg("ticks", ArgType.DURATION))
+            .help("holds the button, moves and lets go (default over 10t): in-world by <dx> <dy> pixels, on a screen "
+                + "from one GUI point or widget to another").example("drag right 0 -120 30t"));
+        registry.register(CommandSpec.action("cursor", this::cursor).group("gui")
+            .arg("at", ArgType.POINT, ArgType.WIDGET)
             .help("moves the cursor to GUI coordinates x,y (or widget w<i>'s centre) on the open screen")
             .example("cursor 120,80"));
-        registry.register(CommandSpec.action("click", this::click).group("gui").arg("at", ArgType.WORD)
-            .optionalArg("button", ArgType.WORD)
-            .help("click <x,y|w<index>> [left|right|middle] on a screen (w<index>: that widget's centre, as screen "
-                + "lists it); click s<index> [left|right|shift|0-8] on a container slot").example("click w0"));
+        registry.register(CommandSpec.action("click", this::click).group("gui")
+            .form(form -> form.arg("at", ArgType.POINT, ArgType.WIDGET).optionalKeyword("button", BUTTONS))
+            .form(form -> form.arg("slot", ArgType.MENU_SLOT)
+                .optionalKeyword("mode", "left", "right", "shift", "0", "1", "2", "3", "4", "5", "6", "7", "8"))
+            .help("clicks a GUI point or a widget's centre (w<index>, as screen lists it), or a container slot "
+                + "s<index>: left, right, shift (quick move) or 0-8 (swap with that hotbar slot)").example("click w0"));
         registry.register(CommandSpec.action("scroll", this::scroll).group("input").arg("amount", ArgType.NUMBER)
-            .optionalArg("at", ArgType.WORD).help("scrolls by n notches (positive up), optionally at x,y or w<i>")
-            .example("scroll -2"));
+            .optionalArg("at", ArgType.POINT, ArgType.WIDGET)
+            .help("scrolls by n notches (positive up), optionally at x,y or w<i>").example("scroll -2"));
         registry.register(CommandSpec.action("key", this::key).group("input")
             .choice("op", false, "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
             .help("a key by name (w, space, left_shift, e, f5, escape, enter) or key mapping id (key.use, "
@@ -76,29 +88,20 @@ final class InputCommands {
         return Minecraft.getInstance();
     }
 
-    private static int button(String name) throws CommandException {
-        return switch (name) {
-            case "left" -> 0;
-            case "right" -> 1;
-            case "middle" -> 2;
-            default -> throw new CommandException("syntax", "button left, right or middle, got " + name);
-        };
+    /** One of {@link #BUTTONS}, as GLFW numbers them. */
+    private static int button(String name) {
+        return List.of(BUTTONS).indexOf(name);
     }
 
-    private static double[] guiPoint(String token) throws CommandException {
-        if (token.matches("w\\d{1,5}")) {
-            requireScreen();
+    /** A {@code x,y} point or widget {@code w<i>}'s centre, in GUI units, on the open screen. */
+    private static double[] guiPoint(Args args, String name) throws CommandException {
+        requireScreen();
+        String token = args.word(name);
+        if (args.kind(name) == ArgType.WIDGET) {
             return Screens.widgetCentre(minecraft().screen, Integer.parseInt(token.substring(1)));
         }
         String[] parts = token.split(",");
-        try {
-            if (parts.length == 2) {
-                return new double[] {Double.parseDouble(parts[0]), Double.parseDouble(parts[1])};
-            }
-        } catch (NumberFormatException e) {
-            // Falls through to the syntax error.
-        }
-        throw new CommandException("syntax", "x,y or w<index> expected, got " + token);
+        return new double[] {Double.parseDouble(parts[0]), Double.parseDouble(parts[1])};
     }
 
     /** GUI-scaled coordinates to the window's screen pixels, which the mouse handler works in. */
@@ -120,33 +123,18 @@ final class InputCommands {
 
     private Action mouse(CommandContext context, Args args) throws CommandException {
         int session = context.sessionId();
-        String op = args.word("op");
-        switch (op) {
+        return switch (args.word("op")) {
             case "down" -> {
-                InputState.holdButton(session, button(args.word("a")));
-                return () -> Result.ok();
+                InputState.holdButton(session, button(args.word("button")));
+                yield () -> Result.ok();
             }
             case "up" -> {
-                InputState.releaseButton(button(args.word("a")));
-                return () -> Result.ok();
+                InputState.releaseButton(button(args.word("button")));
+                yield () -> Result.ok();
             }
-            case "click" -> {
-                Duration hold = args.has("b") ? Duration.parse(args.word("b")) : null;
-                return holdFor(session, button(args.word("a")), hold == null ? 1 : Math.max(1, hold.ticks()));
-            }
-            case "move" -> {
-                double dx;
-                double dy;
-                try {
-                    dx = Double.parseDouble(args.word("a"));
-                    dy = Double.parseDouble(args.word("b"));
-                } catch (NumberFormatException | NullPointerException e) {
-                    throw new CommandException("syntax", "mouse move <dx> <dy> [Nt]");
-                }
-                return move(dx, dy, ticks(args, 1));
-            }
-            default -> throw new CommandException("syntax", "mouse down|up|click|move");
-        }
+            case "click" -> holdFor(session, button(args.word("button")), ticks(args, 1));
+            default -> move(args.number("dx", 0), args.number("dy", 0), ticks(args, 1));
+        };
     }
 
     private static Action holdFor(int session, int button, int ticks) {
@@ -191,9 +179,9 @@ final class InputCommands {
         int button = button(args.word("button"));
         int ticks = ticks(args, 10);
         int session = context.sessionId();
-        if (minecraft().screen != null) {
-            double[] fromGui = guiPoint(args.word("from"));
-            double[] toGui = guiPoint(args.word("to"));
+        if (args.has("from")) {
+            double[] fromGui = guiPoint(args, "from");
+            double[] toGui = guiPoint(args, "to");
             double[] from = toScreen(fromGui[0], fromGui[1]);
             double[] to = toScreen(toGui[0], toGui[1]);
             int[] step = {0};
@@ -208,14 +196,11 @@ final class InputCommands {
                 return progress >= 1;
             });
         }
-        double dx;
-        double dy;
-        try {
-            dx = Double.parseDouble(args.word("from"));
-            dy = Double.parseDouble(args.word("to"));
-        } catch (NumberFormatException e) {
-            throw new CommandException("syntax", "in-world: drag <button> <dx> <dy> [Nt]");
+        if (minecraft().screen != null) {
+            throw new CommandException("syntax", "on a screen, drag <button> <x1,y1|w<i>> <x2,y2|w<i>> [ticks]");
         }
+        double dx = args.number("dx", 0);
+        double dy = args.number("dy", 0);
         int[] step = {0};
         return dragAction(session, button, () -> {
             if (step[0]++ == 0) {
@@ -264,8 +249,7 @@ final class InputCommands {
     }
 
     private Action cursor(CommandContext context, Args args) throws CommandException {
-        requireScreen();
-        double[] point = guiPoint(args.word("at"));
+        double[] point = guiPoint(args, "at");
         double[] screen = toScreen(point[0], point[1]);
         Injection.mouseMoveTo(screen[0], screen[1]);
         return () -> Result.ok();
@@ -279,14 +263,13 @@ final class InputCommands {
 
     private Action click(CommandContext context, Args args) throws CommandException {
         requireScreen();
-        String at = args.word("at");
-        String modifier = args.has("button") ? args.word("button") : "left";
-        if (at.matches("s\\d{1,5}")) {
+        if (args.has("slot")) {
             var player = minecraft().player;
             if (player == null) {
                 throw new CommandException("not_in_world");
             }
-            int slot = Integer.parseInt(at.substring(1));
+            int slot = Integer.parseInt(args.word("slot").substring(1));
+            String modifier = args.has("mode") ? args.word("mode") : "left";
             var menu = player.containerMenu;
             if (slot >= menu.slots.size()) {
                 throw new CommandException("syntax", "the menu has slots s0-s" + (menu.slots.size() - 1));
@@ -307,9 +290,6 @@ final class InputCommands {
                     type = ClickType.QUICK_MOVE;
                 }
                 default -> {
-                    if (!modifier.matches("[0-8]")) {
-                        throw new CommandException("syntax", "click s<i> left|right|shift|0-8");
-                    }
                     button = Integer.parseInt(modifier);
                     type = ClickType.SWAP;
                 }
@@ -317,17 +297,15 @@ final class InputCommands {
             minecraft().gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, player);
             return () -> Result.ok();
         }
-        double[] point = guiPoint(at);
+        double[] point = guiPoint(args, "at");
         double[] screen = toScreen(point[0], point[1]);
-        int button = button(modifier);
         Injection.mouseMoveTo(screen[0], screen[1]);
-        return holdFor(context.sessionId(), button, 1);
+        return holdFor(context.sessionId(), button(args.has("button") ? args.word("button") : "left"), 1);
     }
 
     private Action scroll(CommandContext context, Args args) throws CommandException {
         if (args.has("at")) {
-            requireScreen();
-            double[] point = guiPoint(args.word("at"));
+            double[] point = guiPoint(args, "at");
             double[] screen = toScreen(point[0], point[1]);
             Injection.mouseMoveTo(screen[0], screen[1]);
         }

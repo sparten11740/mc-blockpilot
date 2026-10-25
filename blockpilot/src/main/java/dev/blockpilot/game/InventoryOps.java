@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import dev.blockpilot.api.CommandException;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -126,6 +127,9 @@ final class InventoryOps {
     }
 
     /** Parses a slot token: 0-35, head/chest/legs/feet or offhand, as the inventory menu's slot number. */
+    /** The named slots {@link #menuSlotOf} takes besides inventory indexes 0-35. */
+    static final List<String> SLOT_NAMES = List.of("head", "chest", "legs", "feet", "offhand");
+
     static int menuSlotOf(String token) throws CommandException {
         return switch (token) {
             case "head" -> InventoryMenu.ARMOR_SLOT_START;

@@ -49,6 +49,21 @@ class FormTest {
     }
 
     @Test
+    void aSlotCanTakeWordsOrTokens() {
+        Form swap = new Form().arg("a", List.of("head", "offhand"), ArgType.INT)
+            .optionalArg("b", List.of("feet"), ArgType.INT, ArgType.ID);
+        Slot a = (Slot) swap.elements().get(0);
+        assertEquals(ArgType.CHOICE, a.match("head"));
+        assertEquals(ArgType.INT, a.match("7"));
+        assertNull(a.match("stone"));
+        assertEquals("<a> (head|offhand or a whole number)", a.expectation());
+        assertEquals("<a> [b]", swap.usage());
+        assertEquals(ArgType.ID, ((Slot) swap.elements().get(1)).match("stone"));
+        assertThrows(IllegalArgumentException.class, () -> new Form().arg("a", List.of(), ArgType.INT));
+        assertThrows(IllegalArgumentException.class, () -> new Form().arg("a", List.of("x"), ArgType.TEXT));
+    }
+
+    @Test
     void textComesLastAndKeywordsAreDeclaredAsSuch() {
         assertThrows(IllegalStateException.class, () -> new Form().text("a").arg("b", ArgType.INT));
         assertThrows(IllegalArgumentException.class, () -> new Form().arg("a", ArgType.CHOICE));

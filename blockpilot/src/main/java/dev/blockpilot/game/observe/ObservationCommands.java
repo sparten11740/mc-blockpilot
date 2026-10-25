@@ -7,7 +7,6 @@ import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
-import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
@@ -42,8 +41,9 @@ public final class ObservationCommands {
                 + "background. MCP also has a screenshot tool").field("file", "absolute path")
             .example("screenshot burst=8 every=10t"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
-            .choice("op", false, "at", "reset").optionalArg("pos", ArgType.POSITION)
-            .choice("look", true, "look").optionalArg("target", ArgType.POSITION, ArgType.ENTITY)
+            .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
+                .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY)))
+            .form(form -> form.keyword("op", "reset"))
             .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
                 + "camera reset: back to the player's view. The player keeps acting normally")
             .example("camera at ~10,5,10 look ~0,1,0"));
@@ -123,24 +123,20 @@ public final class ObservationCommands {
             CameraControl.reset();
             return () -> Result.ok();
         }
-        if (!args.has("pos")) {
-            throw new CommandException("syntax", "camera at <pos> [look <pos|e<id>>]");
-        }
         Position at = context.resolve(args.position("pos"));
         Vec3 position = new Vec3(at.x(), at.y(), at.z());
         Supplier<Vec3> target;
-        String token = args.word("target");
-        if (token == null) {
+        if (!args.has("target")) {
             var player = Minecraft.getInstance().player;
             target = () -> player.getEyePosition();
-        } else if (EntityRef.parse(token) != null) {
-            Entity entity = Minecraft.getInstance().level.getEntity(EntityRef.parse(token).id());
+        } else if (args.kind("target") == ArgType.ENTITY) {
+            Entity entity = Minecraft.getInstance().level.getEntity(args.entity("target").id());
             if (entity == null) {
-                throw new CommandException("no_entity", token);
+                throw new CommandException("no_entity", args.word("target"));
             }
             target = () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
         } else {
-            Position look = context.resolve(Position.parse(token));
+            Position look = context.resolve(args.position("target"));
             Vec3 point = new Vec3(look.x(), look.y(), look.z());
             target = () -> point;
         }

@@ -56,7 +56,7 @@ final class ActionCommands {
             .help("sets the camera to yaw/pitch (degrees), optionally smoothed over a duration")
             .example("turn 90 20 10t"));
         registry.register(CommandSpec.action("move", this::move).needsWorld().group("movement")
-            .choice("dir", false, "forward", "back", "left", "right").arg("amount", ArgType.WORD)
+            .choice("dir", false, "forward", "back", "left", "right").arg("amount", ArgType.NUMBER, ArgType.DURATION)
             .help("holds a movement key for <blocks> or <Nt> ticks").example("move forward 3"));
         registry.register(CommandSpec.action("jump", (context, args) -> pulse(context, options().keyJump, 2, "jump"))
             .needsWorld().group("movement").help("one jump").example("jump"));
@@ -80,29 +80,33 @@ final class ActionCommands {
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit")
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
-            .optionalArg("target", ArgType.WORD).optionalArg("count", ArgType.COUNT)
+            .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
             .help("left-clicks the crosshair, or fights e<id> / the nearest of an entity type until it dies, "
                 + "at full attack cooldown").example("attack e812"));
         registry.register(CommandSpec.action("mine", this::mine).needsWorld().group("interact")
-            .optionalArg("target", ArgType.WORD).optionalArg("count", ArgType.COUNT)
+            .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .optionalArg("count", ArgType.COUNT)
             .help("digs the block at <pos> (in reach), what the crosshair hits (no target), or walks to and digs "
                 + "the n nearest <block|#tag>; picks the best tool").example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
-            .arg("item", ArgType.WORD).arg("pos", ArgType.POSITION)
+            .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)
             .help("places the item at pos against an adjacent block").example("place torch ~1,0,0"));
         registry.register(CommandSpec.action("select", this::select).needsWorld().group("inventory")
-            .arg("what", ArgType.WORD).help("selects hotbar slot 0-8, or puts the item into the selected slot")
+            .arg("what", ArgType.INT, ArgType.ID)
+            .help("selects hotbar slot 0-8, or puts the item into the selected slot")
             .example("select iron_pickaxe"));
         registry.register(CommandSpec.action("swap", this::swap).needsWorld().group("inventory")
-            .arg("a", ArgType.WORD).arg("b", ArgType.WORD)
+            .form(form -> form.arg("a", InventoryOps.SLOT_NAMES, ArgType.INT)
+                .arg("b", InventoryOps.SLOT_NAMES, ArgType.INT))
             .help("swaps two inventory slots (0-35, head, chest, legs, feet, offhand)").example("swap 0 9"));
         registry.register(CommandSpec.action("drop", this::drop).needsWorld().group("inventory")
-            .arg("what", ArgType.WORD).optionalArg("count", ArgType.INT)
+            .form(form -> form.arg("what", InventoryOps.SLOT_NAMES, ArgType.INT, ArgType.ID)
+                .optionalArg("count", ArgType.INT))
             .help("drops an item or a slot's stack (all by default)").example("drop dirt 16"));
         registry.register(CommandSpec.action("offhand", this::offhand).needsWorld().group("inventory")
-            .arg("item", ArgType.WORD).help("moves the item to the offhand").example("offhand shield"));
+            .arg("item", ArgType.ID).help("moves the item to the offhand").example("offhand shield"));
         registry.register(CommandSpec.action("equip", this::equip).needsWorld().group("inventory")
-            .arg("item", ArgType.WORD).help("puts on an armor item").example("equip iron_helmet"));
+            .arg("item", ArgType.ID).help("puts on an armor item").example("equip iron_helmet"));
         registry.register(CommandSpec.action("chat", this::chat).needsWorld().group("talk").arg("text", ArgType.TEXT)
             .help("sends a chat message").example("chat hello"));
         registry.register(CommandSpec.action("cmd", this::command).needsWorld().group("talk")
@@ -174,20 +178,16 @@ final class ActionCommands {
     }
 
     /** A point to look at: an entity's center, a block's center for whole coordinates, else the exact point. */
-    static Supplier<Vec3> point(CommandContext context, String token) throws CommandException {
-        EntityRef ref = EntityRef.parse(token);
-        if (ref != null) {
-            Entity entity = minecraft().level.getEntity(ref.id());
+    /** The point a position or entity argument names; an entity's centre follows it. */
+    static Supplier<Vec3> point(CommandContext context, Args args, String name) throws CommandException {
+        if (args.kind(name) == ArgType.ENTITY) {
+            Entity entity = minecraft().level.getEntity(args.entity(name).id());
             if (entity == null) {
-                throw new CommandException("no_entity", token);
+                throw new CommandException("no_entity", args.word(name));
             }
             return () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
         }
-        Position parsed = Position.parse(token);
-        if (parsed == null) {
-            throw new CommandException("syntax", "position or e<id> expected, got " + token);
-        }
-        Position absolute = context.resolve(parsed);
+        Position absolute = context.resolve(args.position(name));
         boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
             && absolute.z() == Math.floor(absolute.z());
         Vec3 target = whole ? Vec3.atCenterOf(BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
@@ -201,7 +201,7 @@ final class ActionCommands {
 
     private Action face(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        Supplier<Vec3> target = point(context, args.word("target"));
+        Supplier<Vec3> target = point(context, args, "target");
         int[] step = {0};
         return named("face", () -> {
             Vec3 point = target.get();
@@ -244,14 +244,8 @@ final class ActionCommands {
             case "left" -> options().keyLeft;
             default -> options().keyRight;
         };
-        String amount = args.word("amount");
-        Duration duration = Duration.parse(amount);
-        double blocks;
-        try {
-            blocks = duration == null ? Double.parseDouble(amount) : 0;
-        } catch (NumberFormatException e) {
-            throw new CommandException("syntax", "move <dir> <blocks|Nt>, got " + amount);
-        }
+        Duration duration = args.duration("amount");
+        double blocks = duration == null ? args.number("amount", 0) : 0;
         int session = context.sessionId();
         Vec3 start = player().position();
         int[] ticks = {0};
@@ -335,18 +329,17 @@ final class ActionCommands {
 
     private Action navigate(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        String token = args.word("target");
-        double near = args.numberOption("near", EntityRef.parse(token) != null ? 2 : 0);
+        boolean entityTarget = args.kind("target") == ArgType.ENTITY;
+        double near = args.numberOption("near", entityTarget ? 2 : 0);
         Supplier<Vec3> target;
-        EntityRef ref = EntityRef.parse(token);
-        if (ref != null) {
-            Entity entity = minecraft().level.getEntity(ref.id());
+        if (entityTarget) {
+            Entity entity = minecraft().level.getEntity(args.entity("target").id());
             if (entity == null) {
-                throw new CommandException("no_entity", token);
+                throw new CommandException("no_entity", args.word("target"));
             }
             target = () -> entity.isRemoved() ? null : entity.position();
         } else {
-            Position absolute = context.resolve(Position.parse(token));
+            Position absolute = context.resolve(args.position("target"));
             Vec3 goal = Vec3.atBottomCenterOf(BlockPos.containing(absolute.x(), absolute.y(), absolute.z()));
             target = () -> goal;
         }
@@ -355,7 +348,7 @@ final class ActionCommands {
 
     private Action use(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        Supplier<Vec3> target = args.has("target") ? point(context, args.word("target")) : null;
+        Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
@@ -435,16 +428,16 @@ final class ActionCommands {
             });
         }
         String token = args.word("target");
-        EntityRef ref = EntityRef.parse(token);
         int wanted = args.count("count", 1);
         Supplier<Entity> next;
-        if (ref != null) {
+        if (args.kind("target") == ArgType.ENTITY) {
+            EntityRef ref = args.entity("target");
             next = () -> minecraft().level.getEntity(ref.id());
         } else {
             var id = Ids.parse(token);
             // The entity registry answers unknown ids with its default (pig), so check first.
             if (!BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
-                throw new CommandException("syntax", "attack e<id> or an entity type, got " + token);
+                throw new CommandException("no_entity", "no entity type " + token);
             }
             var type = BuiltInRegistries.ENTITY_TYPE.get(id);
             next = () -> minecraft().level.getEntities(player(), player().getBoundingBox().inflate(16),
@@ -518,9 +511,8 @@ final class ActionCommands {
             }
             return new Dig(session, () -> blockHit.getBlockPos(), 1, false, null);
         }
-        Position position = Position.parse(token);
-        if (position != null) {
-            BlockPos pos = Rel.block(context.resolve(position));
+        if (args.kind("target") == ArgType.POSITION) {
+            BlockPos pos = Rel.block(context.resolve(args.position("target")));
             if (Vec3.atCenterOf(pos).distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
                 throw new CommandException("out_of_reach", Rel.of(pos).toString());
             }
@@ -708,11 +700,14 @@ final class ActionCommands {
 
     private Action select(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        String what = args.word("what");
-        if (what.matches("[0-8]")) {
-            player().getInventory().selected = Integer.parseInt(what);
+        if (args.kind("what") == ArgType.INT) {
+            int slot = args.integer("what", 0);
+            if (slot < 0 || slot > 8) {
+                throw new CommandException("syntax", "hotbar slots are 0-8, not " + slot);
+            }
+            player().getInventory().selected = slot;
         } else {
-            InventoryOps.select(InventoryOps.item(what));
+            InventoryOps.select(InventoryOps.item(args.word("what")));
         }
         return () -> Result.ok(new Fields().put("hand", Ids.of(player().getMainHandItem()),
             "hand:" + Ids.of(player().getMainHandItem())));
@@ -732,7 +727,7 @@ final class ActionCommands {
         closeScreen();
         String what = args.word("what");
         int menuSlot;
-        if (what.matches("\\d+|head|chest|legs|feet|offhand")) {
+        if (args.kind("what") != ArgType.ID) {
             menuSlot = InventoryOps.menuSlotOf(what);
         } else {
             int index = InventoryOps.find(InventoryOps.item(what));

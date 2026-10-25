@@ -43,15 +43,15 @@ final class ContainerCommands {
             .help("walks into reach of a container (chest, furnace, table…), opens it and waits for its screen")
             .example("open ~3,0,1"));
         registry.register(CommandSpec.action("take", this::take).needsWorld().group("inventory")
-            .arg("what", ArgType.WORD).optionalArg("count", ArgType.INT)
+            .arg("what", ArgType.MENU_SLOT, ArgType.ID).optionalArg("count", ArgType.INT)
             .help("moves an item (or slot s<i>) from the open container into the inventory; all by default")
             .field("moved", "items moved").example("take iron_ingot 10"));
         registry.register(CommandSpec.action("put", this::put).needsWorld().group("inventory")
-            .arg("what", ArgType.WORD).optionalArg("count", ArgType.INT)
+            .arg("what", ArgType.MENU_SLOT, ArgType.ID).optionalArg("count", ArgType.INT)
             .help("moves an item from the inventory into the open container; all by default")
             .field("moved", "items moved").example("put cobblestone 64"));
         registry.register(CommandSpec.action("craft", this::craft).needsWorld().group("inventory")
-            .arg("item", ArgType.WORD).optionalArg("count", ArgType.COUNT)
+            .arg("item", ArgType.ID).optionalArg("count", ArgType.COUNT)
             .help("crafts with the recipe book: in the 2x2 grid when the recipe fits, else at an open or nearby "
                 + "crafting table; x<n> items (default one craft)").field("crafted", "items made")
             .example("craft oak_planks x8"));
@@ -155,7 +155,7 @@ final class ContainerCommands {
         int wanted = args.has("count") ? args.integer("count", 0) : Integer.MAX_VALUE;
         Item item = null;
         Integer onlySlot = null;
-        if (what.matches("s\\d+")) {
+        if (args.kind("what") == ArgType.MENU_SLOT) {
             onlySlot = Integer.parseInt(what.substring(1));
             if (onlySlot >= menu.slots.size()) {
                 throw new CommandException("syntax", "the menu has slots s0-s" + (menu.slots.size() - 1));

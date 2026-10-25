@@ -39,8 +39,9 @@ final class SessionCommands {
         registry.register(CommandSpec.query("servers", (context, args) -> servers()).group("session")
             .help("the multiplayer server list").example("servers"));
         registry.register(CommandSpec.action("join", this::join).group("session")
-            .choice("kind", false, "world", "server").arg("name", ArgType.TEXT)
-            .help("join world <folder> | join server <index|address>; returns once the player can act")
+            .form(form -> form.keyword("kind", "world").text("name"))
+            .form(form -> form.keyword("kind", "server").arg("name", ArgType.INT, ArgType.WORD))
+            .help("joins a save folder or a server (list index or address); returns once the player can act")
             .example("join world New World"));
         registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
             .help("saves and quits singleplayer or disconnects, back to the title screen").example("leave"));
@@ -109,7 +110,7 @@ final class SessionCommands {
     }
 
     private Action join(CommandContext context, Args args) throws CommandException {
-        String name = args.text("name").strip();
+        String name = args.word("name");
         if (minecraft().level != null) {
             disconnect();
         }
@@ -124,8 +125,9 @@ final class SessionCommands {
             ServerList list = new ServerList(minecraft());
             list.load();
             ServerData data = null;
-            if (name.matches("\\d+") && Integer.parseInt(name) < list.size()) {
-                data = list.get(Integer.parseInt(name));
+            int index = args.kind("name") == ArgType.INT ? args.integer("name", -1) : -1;
+            if (index >= 0 && index < list.size()) {
+                data = list.get(index);
                 address = data.ip;
             }
             if (data == null) {

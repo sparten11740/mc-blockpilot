@@ -14,8 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -37,13 +35,17 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 final class TestWorlds {
     static final String MARKER = "blockpilot-test.json";
     private static final Pattern NAME = Pattern.compile("[A-Za-z0-9 _.-]{1,64}");
+    static final List<String> PRESETS = List.of("flat", "void", "normal");
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("create", this::create).group("session")
-            .choice("what", false, "world").arg("spec", ArgType.TEXT)
-            .help("create world <name> [flat|void|normal] [peaceful|easy|hard|difficulty=normal] "
-                + "[mode=creative|survival] [seed=<n>] [rule:<gamerule>=<value>…]: a new world with cheats on, joined "
-                + "when ready (defaults flat, peaceful, creative; 'normal' alone means the normal world type)")
+            .form(form -> form.keyword("what", "world").arg("name", ArgType.WORD)
+                .optionalKeyword("preset", PRESETS.toArray(String[]::new))
+                .optionalKeyword("difficulty", "peaceful", "easy", "hard"))
+            .option("difficulty", "peaceful, easy, normal or hard ('normal' alone is the world type)")
+            .option("mode", "creative, survival, adventure or spectator").option("seed", "the world seed")
+            .option("rule:*", "a game rule, e.g. rule:doDaylightCycle=false")
+            .help("a new world with cheats on, joined when ready (defaults flat, peaceful, creative)")
             .example("create world aerolarge-test flat peaceful rule:doDaylightCycle=false"));
     }
 
@@ -74,50 +76,47 @@ final class TestWorlds {
     }
 
     private Action create(CommandContext context, Args args) throws CommandException {
-        return create(args.text("spec"));
+        String named = args.option("difficulty") != null ? args.option("difficulty") : args.word("difficulty");
+        Difficulty difficulty = named == null ? Difficulty.PEACEFUL : Difficulty.byName(named);
+        if (difficulty == null) {
+            throw new CommandException("syntax", "difficulty= takes peaceful, easy, normal or hard, not " + named);
+        }
+        GameType mode = GameType.byName(args.option("mode") == null ? "creative" : args.option("mode"), null);
+        if (mode == null) {
+            throw new CommandException("syntax", "mode= takes creative, survival, adventure or spectator, not "
+                + args.option("mode"));
+        }
+        return create(args.word("name"), args.has("preset") ? args.word("preset") : "flat", difficulty, mode,
+            seed(args.option("seed")), args.family("rule"));
     }
 
-    /** Creates and joins a world from a {@code create world} spec; also used by auto-join on launch. */
-    static Action create(String spec) throws CommandException {
-        List<String> tokens = new ArrayList<>(List.of(spec.strip().split("\\s+")));
-        String name = tokens.remove(0);
+    /** A seed that isn't a number becomes one, as in the vanilla create world screen; null means random. */
+    private static Long seed(String text) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(text);
+        } catch (NumberFormatException e) {
+            return (long) text.hashCode();
+        }
+    }
+
+    /** A flat, peaceful creative test world; used by auto-join on launch. */
+    static Action create(String name, String preset) throws CommandException {
+        if (!PRESETS.contains(preset)) {
+            throw new CommandException("syntax", "world presets are " + String.join(", ", PRESETS) + ", not "
+                + preset);
+        }
+        return create(name, preset, Difficulty.PEACEFUL, GameType.CREATIVE, null, Map.of());
+    }
+
+    /** Creates and joins a world; {@code seed} null is random, {@code rules} are game rules to set once in. */
+    private static Action create(String name, String preset, Difficulty difficulty, GameType mode, Long seed,
+        Map<String, String> rules) throws CommandException {
         Path folder = checkedFolder(name);
         if (Files.exists(folder)) {
             throw new CommandException("exists", name);
-        }
-        String preset = "flat";
-        Difficulty difficulty = Difficulty.PEACEFUL;
-        GameType mode = GameType.CREATIVE;
-        Long seed = null;
-        Map<String, String> rules = new LinkedHashMap<>();
-        for (String token : tokens) {
-            switch (token) {
-                case "flat", "void", "normal" -> preset = token;
-                case "peaceful", "easy", "hard" -> difficulty = Difficulty.byName(token);
-                default -> {
-                    if (token.startsWith("difficulty=")) {
-                        difficulty = Difficulty.byName(token.substring("difficulty=".length()));
-                        if (difficulty == null) {
-                            throw new CommandException("syntax", "difficulty=peaceful|easy|normal|hard");
-                        }
-                    } else if (token.startsWith("mode=")) {
-                        mode = GameType.byName(token.substring(5), null);
-                        if (mode == null) {
-                            throw new CommandException("syntax", "mode=creative|survival|adventure|spectator");
-                        }
-                    } else if (token.startsWith("seed=")) {
-                        try {
-                            seed = Long.parseLong(token.substring(5));
-                        } catch (NumberFormatException e) {
-                            seed = (long) token.substring(5).hashCode();
-                        }
-                    } else if (token.startsWith("rule:") && token.contains("=")) {
-                        rules.put(token.substring(5, token.indexOf('=')), token.substring(token.indexOf('=') + 1));
-                    } else {
-                        throw new CommandException("syntax", "unexpected " + token);
-                    }
-                }
-            }
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {

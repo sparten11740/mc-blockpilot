@@ -245,7 +245,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
                 if (TestWorlds.exists(world)) {
                     minecraft.createWorldOpenFlows().openWorld(world, () -> minecraft.setScreen(new TitleScreen()));
                 } else if (preset != null) {
-                    TestWorlds.create(world + " " + preset);
+                    TestWorlds.create(world, preset);
                 } else {
                     Blockpilot.LOGGER.warn("blockpilot.autojoin: no world {} and no blockpilot.autocreate; staying on "
                         + "the title screen", world);

@@ -178,7 +178,7 @@ public final class Engine {
 
     private void registerBuiltIns() {
         registry.register(CommandSpec.query("help", (context, args) -> help.answer(args.text("topic")))
-            .group("meta").optionalArg("topic", ArgType.TEXT)
+            .group("meta").optionalArg("topic", ArgType.WORD)
             .help("lists commands; help <command|group|namespace|errors> for details").example("help goto"));
         registry.register(CommandSpec.query("fmt", (context, args) -> {
             Session session = sessions.get(context.sessionId());
@@ -190,8 +190,7 @@ public final class Engine {
         registry.register(CommandSpec.query("sub", (context, args) -> {
             Session session = sessions.get(context.sessionId());
             if (args.word("state").equals("log")) {
-                String level = args.has("level") ? args.word("level") : "warn";
-                session.setLogLevel(level.equals("off") ? null : level);
+                session.setLogLevel(args.word("level").equals("off") ? null : args.word("level"));
                 return Result.ok();
             }
             if (!session.canPush()) {
@@ -199,10 +198,11 @@ public final class Engine {
             }
             session.setPushing(args.word("state").equals("on"));
             return Result.ok();
-        }).group("meta").choice("state", false, "on", "off", "log").optionalArg("level", ArgType.WORD)
-            .help("sub on|off: (line protocol) push events as they happen instead of with the next reply; "
-                + "sub log <error|warn|info|off>: log entries at or above the level arrive as ! log events "
-                + "(max 20/s)").example("sub log error"));
+        }).group("meta")
+            .form(form -> form.keyword("state", "on", "off"))
+            .form(form -> form.keyword("state", "log").keyword("level", "error", "warn", "info", "off"))
+            .help("on|off: (line protocol) push events as they happen instead of with the next reply; log <level>: "
+                + "log entries at or above the level arrive as ! log events (max 20/s)").example("sub log error"));
         registry.register(CommandSpec.query("stop", (context, args) -> {
             int stopped = stopAll("cancelled");
             return Result.ok(new Fields().put("stopped", stopped, "stopped " + stopped));
