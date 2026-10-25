@@ -34,19 +34,36 @@ at the end.
 
 ### Requirement: Client metrics
 The summary SHALL include FPS (average and 1% low), frame time (average, p95,
-max), CPU time spent in block-entity renderers per type, chunk section rebuilds
-(total and per second), heap use (start, end, peak) and garbage collections
-(count and time).
+max), CPU time spent in block-entity renderers per type and in entity renderers
+per entity type, chunk section rebuilds (total and per second), heap use
+(start, end, peak) and garbage collections (count and time).
 
 #### Scenario: Expensive renderer found
 - **WHEN** an autopilot screen renderer costs 3 ms per frame
 - **THEN** its block-entity type appears at the top of the renderer list with
   about 3 ms per frame
 
+### Requirement: Particle and render-stage metrics
+For particles the summary SHALL include the live count per type when the
+capture stops and the tick and render time per type. The type is the particle
+type id when the particle was spawned from particle options, otherwise its
+class name. On NeoForge it SHALL include the time per render-level stage,
+summed over the handlers of that stage.
+
+#### Scenario: Expensive particles found
+- **WHEN** a mod's plasma particles take a large share of the render thread
+- **THEN** their type tops the particle render list with its ms per frame, and
+  the live counts show how many exist
+
+#### Scenario: Render stage handlers
+- **WHEN** a mod draws laser beams in the `after_particles` stage on NeoForge
+- **THEN** `after_particles` appears in the stage list with the handlers' ms
+  per frame
+
 ### Requirement: Network metrics
 The summary SHALL include, per packet type and direction (client-bound,
-server-bound), the packet count and bytes, and for custom payloads the payload
-id.
+server-bound), the packet count, packets per second and bytes, and for custom
+payloads the payload id.
 
 #### Scenario: Payload spam detected
 - **WHEN** a laser sends one custom payload per shot at 20 shots per second

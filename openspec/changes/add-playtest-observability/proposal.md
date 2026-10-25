@@ -46,11 +46,31 @@ server clock).
 
   Instrumentation costs nothing while no capture runs.
 
+A second round of feedback from the same agent adds:
+
+- **Client options**: `option <name> <value>` sets video options such as
+  `graphicsMode` or `renderDistance` and waits for the chunks to rebuild;
+  `option reset` puts back what agents changed. Checking how a mod looks on Fast
+  graphics no longer means clicking through the video settings screen.
+- **Agent changes end with agent control**: options and the placed camera are
+  put back on `leave`, when the player leaves the world, on the agent-control
+  key and on shutdown, so a test never leaves the player's game changed.
+- **Contact sheets and crops**: `screenshot burst=<n> every=<Nt> sheet` saves
+  the frames as one labelled grid, and `crop=` captures part of the frame, so
+  motion is visible in one image.
+- **Pixel probe**: `pixels` reports colour and brightness (mean, max, p90) of
+  frame regions, or of the area around a world position, so a script can check
+  that something rendered without reading the image.
+- **More performance detail**: particles by type (live count, tick and render
+  time), entity renderers by type, and on NeoForge the time per render-level
+  stage.
+
 ## Capabilities
 
 ### New Capabilities
 - `client-observation`: Sound log, message log, particle counts, screenshot
-  bursts, camera placement and rendered camera angles.
+  bursts, contact sheets and crops, the pixel probe, camera placement, rendered
+  camera angles, and client options with their restore.
 - `performance-capture`: Start/stop performance captures and their JSON summary
   for server, client and network.
 
@@ -61,9 +81,10 @@ change -->
 ## Impact
 
 - **Code**: new 1.21.1 mixins (sound engine, GUI overlay messages, particle
-  engine, camera, block-entity ticking and rendering, entity ticking, section
-  rebuilds, connection), plus `dev.blockpilot.game.observe` and
-  `dev.blockpilot.game.perf`.
+  engine, particles, camera, level rendering, block-entity ticking and
+  rendering, entity ticking and rendering, section rebuilds, connection), plus
+  `dev.blockpilot.game.observe` and `dev.blockpilot.game.perf`. On NeoForge two
+  render-stage listeners time the stages.
 - **Output**: perf summaries under `<gameDir>/blockpilot/perf/`, burst frames
   under `<gameDir>/blockpilot/screenshots/`.
 - **Overhead**: the logs are fixed-size ring buffers. Perf timing only runs

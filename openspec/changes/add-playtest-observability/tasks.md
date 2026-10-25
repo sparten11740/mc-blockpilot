@@ -27,3 +27,12 @@
 ## 5. Integration
 
 - [x] 5.1 Update the README command reference and tell the Aerolarge agent what landed; verify `openspec validate add-playtest-observability --strict` passes; verified: the README lists the observe and performance commands, the Aerolarge agent was told after each batch, and validation passes
+
+## 6. Second round (Aerolarge feedback)
+
+- [ ] 6.1 Add `option` (list, get, set, `reset`; the options.txt-named table over `OptionInstance` plus `hud`; enum/boolean/number parsing with the validator's range; originals recorded on first change; no `Options.save`) and wait after a change until the section compile queue stays empty for 3 ticks (`settled=` / `unsettled pending=`); verify in game that `option graphicsMode fast` rebuilds the terrain in Fast, `option renderDistance 99` names the range, and `option reset` restores the previous values
+- [ ] 6.2 Restore changed options on `leave`, on world exits Blockpilot didn't start, on the agent-control key and at shutdown, keep them across `join`, snapshot restore and test-world creation, and reset the placed camera on the key too; verify in game: quitting through the pause menu and pressing F8 each bring the options back, and a snapshot restore keeps them
+- [ ] 6.3 Add `crop=` to `screenshot` and `sheet` for bursts (grid, `#n t<tick>` labels in a pixel font, at most 1,536 px wide), with the layout and font in game-free code; verify with a unit test of the layout and labels, and in game that an 8-frame sheet with a crop shows labelled, cropped tiles
+- [ ] 6.4 Add the `pixels` query (fraction and `@<pos>` regions, `r=`, defaults `all` and `centre`, mean rgb and luma, max, p90, `err offscreen`) with the per-frame projection capture on `LevelRenderer.renderLevel`; verify the statistics and projection with unit tests, and in game that a glowstone block probed with `@` is brighter than the stone around it and that a point behind the camera is offscreen
+- [ ] 6.5 Extend perf captures with particles (type tag, tick and render time per type, live counts), entity renderer time per type and, on NeoForge, time per render-level stage, and add them to the text overview; verify with a capture during a particle burst and with mobs on screen, on NeoForge and Fabric
+- [ ] 6.6 Update the README and help, tell the Aerolarge agent what landed, and run `openspec validate add-playtest-observability --strict`; verify it passes
