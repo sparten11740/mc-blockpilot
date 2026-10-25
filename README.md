@@ -22,7 +22,8 @@ python3 tools/blockpilot.py --game-dir run --json "inv"
 `--wait-ready <seconds>` waits for the game to come up, and `--wait-world` also for the player to be in a world.
 Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
 out). When a step failed or was skipped, one line on stderr counts them and says whether anything ran, e.g.
-`blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`.
+`blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI returns only once the game
+process has exited (within `--timeout`, else exit code 2), so a restart can follow straight away.
 
 **Over MCP** (Streamable HTTP; three tools: `run`, `screenshot`, `help`):
 

@@ -5,7 +5,8 @@
         "status; look"
 
 Reads <game dir>/blockpilot/endpoint.json (port, token file) written by the mod. Exit code: 0 if every command
-returned ok, 1 if any returned err, 2 if the game could not be reached. Standard library only.
+returned ok, 1 if any returned err, 2 if the game could not be reached. After a `quit` it waits (within --timeout)
+until the game process has exited, and exits 2 if it hasn't. Standard library only.
 """
 import argparse
 import json
@@ -26,6 +27,42 @@ def alive(pid):
         return False
     except PermissionError:
         return True
+
+
+def wait_exit(pid, seconds):
+    """True once the process has exited, False if it is still running after the given seconds."""
+    if os.name == "nt":
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
+        if not handle:
+            return True
+        try:
+            return kernel32.WaitForSingleObject(handle, int(seconds * 1000)) == 0
+        finally:
+            kernel32.CloseHandle(handle)
+    deadline = time.time() + seconds
+    while alive(pid):
+        if time.time() >= deadline:
+            return False
+        time.sleep(0.1)
+    return True
+
+
+def quit_pid(reply):
+    """The game's pid when the reply holds a successful quit (text `ok pid=<n>`, JSON `pid`), else None."""
+    if reply.startswith("{"):
+        for result in json.loads(reply)["results"]:
+            if result.get("ok") and "pid" in result:
+                return int(result["pid"])
+        return None
+    for line in reply.splitlines():
+        words = line.split()
+        if words and words[0].startswith("#"):
+            words = words[1:]
+        if len(words) == 2 and words[0] == "ok" and words[1].startswith("pid="):
+            return int(words[1][len("pid="):])
+    return None
 
 
 def endpoint(game_dir):
@@ -142,6 +179,10 @@ def main():
     line = summary(results)
     if line:
         print(line, file=sys.stderr)
+    pid = quit_pid(reply)
+    if pid is not None and not wait_exit(pid, args.timeout):
+        print(f"blockpilot: the game (pid {pid}) is still running after {args.timeout:g}s", file=sys.stderr)
+        return 2
     return 1 if any(result[0] == "err" for result in results) else 0
 
 

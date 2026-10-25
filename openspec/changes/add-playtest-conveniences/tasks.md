@@ -3,7 +3,7 @@
 ## 1. Quit (game-session, dev-integration)
 
 - [x] 1.1 Add `quit`: leave a loaded world as `leave` does, answer `ok pid=<pid>`, then stop the game a few ticks later through its own stop; help, example and the README command table; verify in game on NeoForge and Fabric that `quit` from a world saves it (a block placed just before is there after the next start), the process exits by itself, and `endpoint.json` is gone
-- [ ] 1.2 Make the CLI wait for the pid in a `quit` reply (text `ok pid=<n>`, JSON `pid`) until the process is gone or `--timeout` runs out, exit 0 or 2 with the pid on stderr, and document it in the README's CLI section; verify by running `tools/blockpilot.py "quit"` against a dev client (returns once the process is gone, exit 0) and with `--timeout 0.1`, too short for the game to close (exit 2, pid on stderr)
+- [x] 1.2 Make the CLI wait for the pid in a `quit` reply (text `ok pid=<n>`, JSON `pid`) until the process is gone or `--timeout` runs out, exit 0 or 2 with the pid on stderr, and document it in the README's CLI section; verify by running `tools/blockpilot.py "quit"` against a dev client (returns once the process is gone, exit 0) and from the title screen with `--timeout 0.5`, long enough for the reply but too short for the game to close (exit 2, pid on stderr)
 
 ## 2. Points within a block (player-control, game-perception)
 
