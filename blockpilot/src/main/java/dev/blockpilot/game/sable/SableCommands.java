@@ -21,10 +21,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-//? if >=26.1 {
-/*import java.util.Set;
-*///?}
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -64,7 +63,11 @@ final class SableCommands {
     static void register() {
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("list", SableCommands::list)
             .needsWorld().optionalArg("radius", ArgType.INT)
+            .option("side", "server: the integrated server's sub-levels, also those the client has not received "
+                + "(cheats on)", Sides.NAMES)
             .help("the sub-levels within radius (default " + DEFAULT_RADIUS + ") of the player, nearest first")
+            .field("server_only", "client list in singleplayer with cheats: sub-levels the server holds within the "
+                + "radius that the client does not; left out at 0")
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("dist", "blocks from the player").field("speed", "blocks per second")
             .field("size", "blocks along x, y and z of its plot bounds").example("sable:list 64"));
@@ -107,20 +110,36 @@ final class SableCommands {
             .field("sub", "the sub-level").example("sable:tp 20481032,129,20481033"));
     }
 
-    private static Result list(CommandContext context, Args args) {
-        Minecraft minecraft = Minecraft.getInstance();
+    private static Result list(CommandContext context, Args args) throws CommandException {
         int radius = Math.max(1, args.integer("radius", DEFAULT_RADIUS));
-        Vec3 from = minecraft.player.position();
-        List<SubLevels.Info> near = SableSupport.subLevels().near(minecraft.level, new AABB(from, from).inflate(radius))
-            .stream().filter(info -> info.position().distanceTo(from) <= radius)
+        // Read here: with side=server the listing runs on the server thread.
+        Vec3 from = Minecraft.getInstance().player.position();
+        Result listed = Sides.read(args, (level, server) -> Result.ok().withRows(near(level, from, radius).stream()
+            .map(info -> listRow(info, from)).toList()));
+        if ("server".equals(args.option("side")) || !listed.isOk()) {
+            return listed;
+        }
+        // A client that missed a sub-level (a lost packet, a world joined mid-assembly) lists nothing for it.
+        Set<String> known = listed.rows().stream().map(Row::key).collect(Collectors.toSet());
+        Long serverOnly = Sides.tryServer(level -> near(level, from, radius).stream()
+            .filter(info -> !known.contains(info.id().toString())).count());
+        return serverOnly == null || serverOnly == 0 ? listed
+            : Result.ok(new Fields().put("server_only", serverOnly)).withRows(listed.rows());
+    }
+
+    private static List<SubLevels.Info> near(Level level, Vec3 from, int radius) {
+        return SableSupport.subLevels().near(level, new AABB(from, from).inflate(radius)).stream()
+            .filter(info -> info.position().distanceTo(from) <= radius)
             .sorted(Comparator.comparingDouble(info -> info.position().distanceTo(from))).toList();
-        List<Row> rows = near.stream().map(info -> Row.of(info.id().toString(), new Fields().bare("name", info.name())
+    }
+
+    private static Row listRow(SubLevels.Info info, Vec3 from) {
+        return Row.of(info.id().toString(), new Fields().bare("name", info.name())
             .bare("id", info.id().toString()).bare("at", Rel.of(info.position()))
             .hidden("at_abs", Rel.absolute(info.position()))
             .put("dist", tenths(info.position().distanceTo(from))).put("speed", tenths(info.velocity().length()))
             .put("size", size(info.plotBounds()), "size=" + String.join("x", size(info.plotBounds()).stream()
-                .map(String::valueOf).toList())))).toList();
-        return Result.ok().withRows(rows);
+                .map(String::valueOf).toList())));
     }
 
     private static Result info(CommandContext context, Args args) throws CommandException {

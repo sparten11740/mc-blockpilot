@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -77,6 +78,31 @@ public final class Sides {
             throw new CommandException("internal", "server read failed: " + e.getCause());
         } catch (TimeoutException e) {
             throw new CommandException("timeout", "the server did not answer within " + SERVER_READ_SECONDS + "s");
+        }
+    }
+
+    /**
+     * A read on the integrated server's level, on its thread, for a note beside a client read: null without a
+     * singleplayer server or cheats, and null when it fails or takes too long, so the client's answer never waits on
+     * it for more than the usual limit.
+     */
+    public static <T> T tryServer(Function<Level, T> read) {
+        Minecraft minecraft = Minecraft.getInstance();
+        MinecraftServer server = minecraft.getSingleplayerServer();
+        if (server == null || !cheats(minecraft.player)) {
+            return null;
+        }
+        ServerLevel level = server.getLevel(minecraft.level.dimension());
+        if (level == null) {
+            return null;
+        }
+        try {
+            return server.submit(() -> read.apply(level)).get(SERVER_READ_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } catch (ExecutionException | TimeoutException e) {
+            return null;
         }
     }
 

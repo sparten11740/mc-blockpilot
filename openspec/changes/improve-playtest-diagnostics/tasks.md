@@ -2,7 +2,7 @@
 
 ## 1. Sub-levels the client misses (sable-sublevels)
 
-- [ ] 1.1 Add `side=server` and the `server_only` note to `sable:list` (D1, D2), with its help text and the README's Sable section; verify on the 1.21.1 NeoForge dev client with Sable that, with a ship assembled near spawn and the player teleported far enough that the client drops it, `sable:list <radius>` carries `server_only=1` and `sable:list <radius> side=server` lists the ship, that next to the ship there is no `server_only`, and that the README's new commands run as written
+- [x] 1.1 Add `side=server` and the `server_only` note to `sable:list` (D1, D2), with its help text and the README's Sable section; verify on the 1.21.1 NeoForge dev client with Sable that, with a ship assembled near spawn and the player teleported far enough that the client drops it, `sable:list <radius>` carries `server_only=1` and `sable:list <radius> side=server` lists the ship, that next to the ship there is no `server_only`, and that the README's new commands run as written
 
 ## 2. The hit a click sends (player-control)
 
