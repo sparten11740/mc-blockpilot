@@ -25,7 +25,7 @@ public interface SubLevels {
     };
 
     /** The sub-level whose plot holds the position, or null. */
-    default UUID at(Level level, BlockPos pos) {
+    default Info at(Level level, BlockPos pos) {
         return null;
     }
 

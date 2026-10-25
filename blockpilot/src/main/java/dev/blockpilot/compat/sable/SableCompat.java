@@ -45,8 +45,11 @@ public final class SableCompat implements SubLevels {
     }
 
     @Override
-    public UUID at(Level level, BlockPos pos) {
-        return guard("at", () -> id(companion.getContaining(level, (Vec3i) pos)));
+    public Info at(Level level, BlockPos pos) {
+        return guard("at", () -> {
+            SubLevelAccess subLevel = companion.getContaining(level, (Vec3i) pos);
+            return subLevel == null ? null : info(level, subLevel);
+        });
     }
 
     @Override

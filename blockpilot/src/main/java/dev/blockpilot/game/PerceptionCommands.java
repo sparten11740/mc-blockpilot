@@ -61,7 +61,9 @@ final class PerceptionCommands {
             .field("pos", "position").field("yaw", "degrees").field("pitch", "degrees").field("dim", "dimension")
             .field("time", "time of day").field("hp", "health").field("max_hp", "maximum health")
             .field("food", "food level").field("level", "xp level").field("hand", "held item")
-            .field("aim", "block or entity under the crosshair").field("vel", "velocity, blocks per tick")
+            .field("aim", "block or entity under the crosshair")
+            .field("sub", "with Sable: the sub-level the aimed block is aboard; its position prints absolute")
+            .field("world", "with Sable: where that block is in the world").field("vel", "velocity, blocks per tick")
             .field("on_ground", "standing on something").field("vehicle", "what the player rides")
             .example("status"));
         registry.register(CommandSpec.query("look", this::look).needsWorld().diffable()
@@ -177,9 +179,9 @@ final class PerceptionCommands {
         Level level = minecraft().level;
         if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && level != null) {
             String id = Ids.of(level.getBlockState(block.getBlockPos()));
-            fields.put("aim", id, "aim:" + id)
-                .bare("aim_pos", Rel.of(block.getBlockPos()))
-                .put("face", block.getDirection().getName(), "face:" + block.getDirection().getName())
+            fields.put("aim", id, "aim:" + id).bare("aim_pos", Rel.of(block.getBlockPos()));
+            Rel.sub(fields, block.getBlockPos());
+            fields.put("face", block.getDirection().getName(), "face:" + block.getDirection().getName())
                 .hidden("aim_at", Rel.absolute(hit.getLocation()));
         } else if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
             fields.put("aim", Ids.of(entity.getEntity()), "aim:" + Ids.of(entity.getEntity()))

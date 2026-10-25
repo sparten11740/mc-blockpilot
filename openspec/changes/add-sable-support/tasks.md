@@ -9,7 +9,7 @@
 
 ## 2. Plot positions in replies and arguments (sable-sublevels)
 
-- [ ] 2.1 Print plot positions absolute with `sub=<name> world=<x,y,z>` (JSON `sub` and `world` fields) wherever positions are printed, starting with `status`'s aim; verify in a dev client with Sable and a mod that builds sub-levels that aiming at a button aboard prints its plot position and `block` at that position reads the button
+- [x] 2.1 Print plot positions absolute with `sub=<name> world=<x,y,z>` (JSON `sub` and `world` fields) wherever positions are printed, starting with `status`'s aim; verify in a dev client with Sable and a mod that builds sub-levels that aiming at a button aboard prints its plot position and `block` at that position reads the button
 - [ ] 2.2 Accept plot positions in `block`, `blocks`, `face` and `use`, name the sub-level in `block`'s reply, and refuse `goto` to a plot position with a hint to `sable:tp`; verify in game with Sable that `block <seat>` reports `sub=` and the world position, and `goto <plot position>` fails with the hint
 
 ## 3. Aim and camera follow a sub-level (sable-sublevels)
