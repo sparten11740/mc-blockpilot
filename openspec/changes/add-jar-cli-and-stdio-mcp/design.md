@@ -105,10 +105,11 @@ the game's own, and more build setup for both loaders).
 `McpTools` in the cli package holds the tool definitions (names, descriptions
 including the `run` cheat sheet, input schemas), the supported protocol
 versions and the instructions text, as JSON built with D4's writer.
-`McpServer` parses it once into Gson, and the stdio server sends it as it is,
-so both transports list the same tools. `Help.cheatSheet()` reads from it. The
-`serverInfo` version is the `blockpilot.version` property the launcher sets
-from what the game reports. A resource in the jar would do for jars, but a
+`McpServer` parses it into Gson for each answer, and the stdio server sends it
+as it is, so both transports list the same tools. The `run` cheat sheet moves
+there from `Help`, whose only user was `McpServer`. The `serverInfo` version is
+the `blockpilot.version` property the launcher sets from what the game
+reports. A resource in the jar would do for jars, but a
 1.21.1 NeoForge dev run puts only the classes folder on the launcher's
 classpath, not the resources.
 

@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.cli.Json;
+import dev.blockpilot.cli.McpTools;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -17,12 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * MCP over Streamable HTTP at {@code /mcp}: initialize, ping, tools/list and tools/call, answered with plain JSON
- * (no server-sent events). Three tools keep the per-request schema cost small: {@code run}, {@code screenshot} and
- * {@code help}; the command reference itself is fetched with {@code help} when needed.
+ * (no server-sent events). The tool list and server details come from {@link McpTools}, which the stdio server shares.
  */
 public final class McpServer {
-    static final List<String> PROTOCOL_VERSIONS = List.of("2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05");
-
     /** Captures the next rendered frame as PNG, scaled to the width. */
     public interface Screenshots {
         CompletableFuture<byte[]> capture(int width);
@@ -145,55 +144,11 @@ public final class McpServer {
 
     private JsonObject initialize(JsonObject params) {
         String requested = params.has("protocolVersion") ? params.get("protocolVersion").getAsString() : null;
-        JsonObject result = new JsonObject();
-        result.addProperty("protocolVersion",
-            PROTOCOL_VERSIONS.contains(requested) ? requested : PROTOCOL_VERSIONS.get(0));
-        JsonObject capabilities = new JsonObject();
-        JsonObject toolCapabilities = new JsonObject();
-        toolCapabilities.addProperty("listChanged", false);
-        capabilities.add("tools", toolCapabilities);
-        result.add("capabilities", capabilities);
-        JsonObject serverInfo = new JsonObject();
-        serverInfo.addProperty("name", "blockpilot");
-        serverInfo.addProperty("version", version);
-        result.add("serverInfo", serverInfo);
-        result.addProperty("instructions", "Controls the running Minecraft client. Use run with short command "
-            + "scripts; call help (or run \"help <command>\") for the reference.");
-        return result;
+        return JsonParser.parseString(Json.write(McpTools.initializeResult(requested, version))).getAsJsonObject();
     }
 
     static JsonObject tools() {
-        JsonArray tools = new JsonArray();
-        tools.add(tool("run", Help.cheatSheet(), "script", "string", "Commands separated by ;", true));
-        tools.add(tool("screenshot", "PNG of the next rendered frame. Use only when text output is not enough.",
-            "width", "integer", "Pixel width, default 512, max 1280", false));
-        tools.add(tool("help", "The command reference: no topic lists commands; a command, group or 'errors' "
-            + "gives details.", "topic", "string", "Command, group, namespace or errors", false));
-        JsonObject result = new JsonObject();
-        result.add("tools", tools);
-        return result;
-    }
-
-    private static JsonObject tool(String name, String description, String parameter, String type,
-        String parameterDescription, boolean required) {
-        JsonObject tool = new JsonObject();
-        tool.addProperty("name", name);
-        tool.addProperty("description", description);
-        JsonObject schema = new JsonObject();
-        schema.addProperty("type", "object");
-        JsonObject properties = new JsonObject();
-        JsonObject property = new JsonObject();
-        property.addProperty("type", type);
-        property.addProperty("description", parameterDescription);
-        properties.add(parameter, property);
-        schema.add("properties", properties);
-        if (required) {
-            JsonArray requiredList = new JsonArray();
-            requiredList.add(parameter);
-            schema.add("required", requiredList);
-        }
-        tool.add("inputSchema", schema);
-        return tool;
+        return JsonParser.parseString(Json.write(McpTools.toolsList())).getAsJsonObject();
     }
 
     private CompletableFuture<JsonObject> call(Session session, JsonObject params) {

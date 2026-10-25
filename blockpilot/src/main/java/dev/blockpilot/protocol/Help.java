@@ -153,18 +153,4 @@ public final class Help {
         rows.add(Row.of("example", new Fields().put("example", construct.example(), "e.g. " + construct.example())));
         return Result.ok().withRows(rows);
     }
-
-    /** The short reference in the MCP {@code run} tool description. */
-    public static String cheatSheet() {
-        return """
-            Runs Blockpilot commands in the Minecraft client. Script: commands separated by ; (one result line each, \
-            stops at the first err; ?cmd goes on past its own err). Positions x,y,z or ~dx,dy,dz (relative); \
-            entities e<id>; counts x<n>; durations 20t / 3s; options name=value.
-            Common: status; look [r]; find <block|#tag|entity> [r]; block <pos>; inv; screen; goto <pos|e<id>>; \
-            mine <pos|block> [x<n>]; place <item> <pos>; use [pos|e<id>]; attack <e<id>>; select <item>; \
-            craft <item> [x<n>]; chat <text>; cmd <command>; mouse down|up|click <button>; drag <button> <dx> <dy> [Nt]; \
-            key press <key>; wait <Nt>; wait <query> until <field><op><value>; assert <query> <field><op><value>; \
-            if <query> <field><op><value> then <cmd>; stop; fmt json|text.
-            Use help, help <command> or help errors for the full reference.""";
-    }
 }
