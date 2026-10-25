@@ -37,7 +37,7 @@
 ## 6. Integration checks
 
 - [x] 6.1 Without Sable: run `tools/smoke_test.py` in text and JSON mode on NeoForge and Fabric; verify every step passes and the JSON shapes match between the loaders
-- [ ] 6.2 With Sable 2.0.6 and a mod that builds sub-levels in a dev client: run the cases end to end (aim on a button aboard, find a door, `sable:tp` onto the bridge, `use` a seat, a chase camera on a moving ship with `sample … while wait`); verify each and record the Sable and companion versions in the README
+- [x] 6.2 With Sable 2.0.6 and a mod that builds sub-levels in a dev client: run the cases end to end (aim on a button aboard, find a door, `sable:tp` onto the bridge, `use` a seat, a chase camera on a moving ship with `sample … while wait`); verify each and record the Sable and companion versions in the README
 - [ ] 6.3 Build the jar, share it with the agents play-testing Sable-based mods with what changed, and fold their feedback into the specs or a follow-up; verify they confirm the reported cases work
 
 ## Workflow follow-up
