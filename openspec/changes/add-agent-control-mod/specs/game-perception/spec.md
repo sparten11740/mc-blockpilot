@@ -60,7 +60,8 @@ nearest first. Results only include chunks the client has loaded.
 
 ### Requirement: Single block query
 `block <pos>` SHALL return the block id, its non-default state properties and
-its block-entity type when it has one, as the fields `id`, `props` and `be`.
+its block-entity type when it has one, as the fields `id`, `props` and `be`. A
+position in a chunk the client hasn't loaded fails with `err unloaded`.
 
 #### Scenario: Block with state and block entity
 - **WHEN** an agent runs `block ~1,0,0` on an east-facing chest
@@ -74,7 +75,7 @@ its block-entity type when it has one, as the fields `id`, `props` and `be`.
 `blocks <pos1> <pos2>` SHALL dump the cuboid between two positions (at most 4096
 blocks). The output has a palette line that maps short symbols to block states,
 then one line per Y layer, bottom to top, with run-length encoding. Air prints
-as `.`.
+as `.`, and blocks in chunks that aren't loaded as `?`.
 
 #### Scenario: Small region
 - **WHEN** an agent runs `blocks ~-2,-1,-2 ~2,0,2`

@@ -36,7 +36,7 @@
 - [x] 4.2 Wire extensions into the registry: `<namespace>:<name>` resolution, no shadowing of built-ins, duplicate detection (first wins, log names both mods), `help` namespaces/commands/fields, unchanged MCP tool list; verify with unit tests for each spec scenario
 - [x] 4.3 Run extension handlers through the same paths as built-ins (scripts, fail-fast, action queue, `stop` → cancel hook, timeouts, diffs, `fmt json`, `wait … until`), with fault isolation (`err ext_failed`, stack trace logged, session survives) and extension events (`! <ns>:<event>`); verify with a test-only sample extension covering each scenario
 - [x] 4.4 Add the `blockpilot-api` project (plain `java-library` over `dev/blockpilot/api/**`, `maven-publish` to mavenLocal as `dev.blockpilot:blockpilot-api`); verify `./gradlew :blockpilot-api:publishToMavenLocal` produces a jar containing only `dev/blockpilot/api` classes
-- [ ] 4.5 Document the extension API in the README (soft-dependency pattern with an `isModLoaded("blockpilot")` guard and a separate integration class, an example query and action, events, versioning policy); verify the example compiles in the sample-extension test source set
+- [x] 4.5 Document the extension API in the README (soft-dependency pattern with an `isLoaded("blockpilot")` guard and a separate integration class, an example query and action, events, versioning policy); verified: a copy of the README snippets compiles and runs in the test source set (`ReadmeSnippets`, exercised by `ExtensionApiTest`)
 
 ## 5. Perception (game-perception)
 

@@ -19,12 +19,18 @@ in order.
 
 ### Requirement: Fail-fast with skipped remainder
 When a command fails, the script SHALL stop. The failing command's line reports
-the error, and each remaining command gets a line `skip`.
+the error, and each remaining command gets a line `skip`. A command written
+`?<command>` is soft: its error is reported the same way, but the script goes
+on.
 
 #### Scenario: Middle command fails
 - **WHEN** an agent runs `select diamond_pickaxe; mine ~0,-1,0` and has no
   diamond pickaxe
 - **THEN** the reply is `err no_item diamond_pickaxe` followed by `skip`
+
+#### Scenario: Soft probes
+- **WHEN** an agent runs `?block 90000,64,0; status`
+- **THEN** the reply is `err unloaded …` followed by the `status` result
 
 ### Requirement: Result line format
 Each result line SHALL start with `ok`, `err <code>` or `skip`. Any extra

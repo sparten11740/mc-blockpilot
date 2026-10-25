@@ -9,11 +9,12 @@ including other mods' saved data.
 ## ADDED Requirements
 
 ### Requirement: Create a test world
-`create world <name> [flat|void|normal] [peaceful|easy|normal|hard]
+`create world <name> [flat|void|normal] [peaceful|easy|hard|difficulty=<level>]
 [mode=creative|survival] [seed=<seed>] [rule:<gamerule>=<value>…]` SHALL create
-a singleplayer world with commands allowed, then join it. The result returns
-once the player can act. Defaults are `flat`, `peaceful` and `creative`. A name
-that already exists fails with `err exists`.
+a singleplayer world with commands allowed, then join it. A bare `normal` names
+the world type, so normal difficulty is written `difficulty=normal`. The result
+returns once the player can act. Defaults are `flat`, `peaceful` and
+`creative`. A name that already exists fails with `err exists`.
 
 #### Scenario: Flat peaceful world
 - **WHEN** an agent runs `create world aerolarge-test flat peaceful
@@ -28,11 +29,12 @@ that already exists fails with `err exists`.
 
 ### Requirement: Blockpilot-created worlds are marked
 Worlds made by `create world` SHALL carry a marker in their save folder.
-`worlds` SHALL show the marker as a `test` flag.
+`worlds` SHALL show the marker as a `test` flag, and list the world loaded right
+now first, with a `loaded` flag.
 
 #### Scenario: Worlds listing
 - **WHEN** an agent runs `worlds` after creating a test world
-- **THEN** that world's line includes `test`
+- **THEN** that world's line includes `test` and `loaded`
 
 ### Requirement: Save and restore snapshots
 `snapshot save <name>` SHALL copy the current world's whole save folder (all
@@ -62,7 +64,7 @@ world is not possible.
 - **THEN** `snapshot list` returns both as rows with time and size
 
 ### Requirement: Snapshots need the cheats gate
-`snapshot save|restore|delete` SHALL follow the server-bridge gate, so they are
+`snapshot` (every subcommand) SHALL follow the server-bridge gate, so it is
 available only in singleplayer worlds that allow commands.
 
 #### Scenario: Survival world
@@ -72,7 +74,7 @@ available only in singleplayer worlds that allow commands.
 ### Requirement: Delete only test worlds
 `delete world <folder>` SHALL delete a save only if it carries the Blockpilot
 test-world marker and isn't loaded. Any other save fails with `err
-not_test_world`.
+not_test_world`, and a loaded one with `err syntax` asking to leave first.
 
 #### Scenario: Delete a user's world
 - **WHEN** an agent runs `delete world New World` on a world the user created

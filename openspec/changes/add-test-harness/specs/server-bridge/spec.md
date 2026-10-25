@@ -25,11 +25,12 @@ commands allowed it fails with `err no_cheats`.
 - **THEN** the result is `err no_cheats`
 
 ### Requirement: Run server commands with captured results
-`server <command>` SHALL run the command on the integrated server thread with
-permission level 4. The result carries the command's return value as `result`,
-whether it succeeded as `success`, and every feedback message sent to the
-command source as rows. `as=player` runs it as the player, positioned at the
-player, instead of the server source.
+`server [as=player] [settle=<Nt>] <command>` SHALL run the command on the
+integrated server thread with permission level 4. Options come before the
+command text, which runs to the end of the command. The result carries the
+command's return value as `result`, whether it succeeded as `success`, and every
+feedback message sent to the command source as rows. `as=player` runs it as the
+player, positioned at the player, instead of the server source.
 
 #### Scenario: Probe a block
 - **WHEN** an agent runs `server execute if block 0 -60 0 minecraft:air`
@@ -38,13 +39,25 @@ player, instead of the server source.
 
 #### Scenario: Failing command
 - **WHEN** an agent runs `server setblock 0 -60 0 not_a_block`
-- **THEN** the result is `err command_failed` with the command's error message,
-  and later commands in the script are `skip`
+- **THEN** the result is `err command_failed Unknown block type
+  'minecraft:not_a_block'`, Brigadier's `…<--[HERE]` pointer appears only as a
+  row, and later commands in the script are `skip`
+
 
 #### Scenario: Mod command output
 - **WHEN** an agent runs a mod's info command through `server`
 - **THEN** all feedback lines the mod sends to the source come back as rows, in
   order, in one reply
+
+### Requirement: Server command results wait for the client
+The `server` result SHALL arrive `settle` server ticks after the command ran
+(default `2t`), by which time the client has received the command's changes.
+`settle=0t` answers on the next tick, for commands that only probe.
+
+#### Scenario: Client sees the change
+- **WHEN** an agent runs `server setblock 0 -60 0 minecraft:stone; block
+  0,-60,0`
+- **THEN** the second result is `ok stone`
 
 ### Requirement: Server-side block and entity reads
 `block`, `blocks` and `find` SHALL accept `side=server` to read the integrated
@@ -82,7 +95,13 @@ with a `truncated` marker and the total size.
 
 ### Requirement: Server reads are consistent within a tick
 A server-side query SHALL run in one piece on the server thread, between ticks.
-Its values never mix two different ticks.
+Its values never mix two different ticks. Consecutive server-side queries in one
+script, up to the next action, SHALL all run in the same server tick.
+
+#### Scenario: Many server queries
+- **WHEN** an agent sends a script of 1,000 `nbt <uuid> path=Pos` queries
+- **THEN** all 1,000 results come from one server tick and the reply arrives
+  within that tick, without the client frame rate dropping
 
 #### Scenario: Multi-entity read
 - **WHEN** an agent runs `find armor_stand 64 side=server` while armor stands

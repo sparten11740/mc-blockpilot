@@ -30,7 +30,9 @@ oldest first, plus the current tick as `tick` for the next `since`.
 The client SHALL record chat, action-bar, title and subtitle messages with their
 kind and tick. It keeps the last 500. `messages [since=<tick>]
 [kind=chat|actionbar|title|subtitle]` SHALL return them oldest first.
-Action-bar, title and subtitle messages are also delivered as events.
+Action-bar, title and subtitle messages are also delivered as events. Mods
+refresh the action bar every tick, so the same action-bar text within 2 seconds
+of its last refresh is neither logged nor delivered again.
 
 #### Scenario: Action-bar feedback
 - **WHEN** a mod shows "Gear refused: airspeed too high" in the action bar
@@ -48,9 +50,10 @@ over the window, most frequent first, with the total.
 - **THEN** a row reports `crit x40`
 
 ### Requirement: Screenshot bursts
-`screenshot burst=<n> every=<Nt> [width]` SHALL capture n frames (at most 60),
-one every N ticks, starting with the next frame, and return the saved files in
-order with the tick of each.
+`screenshot burst=<n> every=<Nt> [width] [hud=off]` SHALL capture n frames (at
+most 60), one every N ticks, starting with the next frame, and return the saved
+files in order with the tick of each. `hud=off` hides the GUI for the captured
+frames.
 
 #### Scenario: Gear animation
 - **WHEN** an agent runs `use; screenshot burst=8 every=20t` on the gear lever
@@ -60,8 +63,10 @@ order with the tick of each.
 ### Requirement: Camera placement
 `camera at <pos> [look <pos|e<id>>]` SHALL render the view from the given world
 point, facing the given target, with the player model visible, until `camera
-reset`. While placed, the player still moves and acts as usual. Leaving the
-world resets the camera.
+reset`. The reply gives the camera's absolute position and look point. While
+placed, the player still moves and acts as usual, and the GUI and hand are
+hidden as with F1, until the reset restores them. Leaving the world resets the
+camera.
 
 #### Scenario: Outside view of the airliner
 - **WHEN** an agent runs `camera at 40,90,-20 look e812; screenshot`
@@ -83,7 +88,9 @@ rotation by more than 0.5 degrees (camera shake, roll, or a placed camera),
 `sample <query> every <Nt> x<n>` SHALL also run client-side read-only queries,
 on the client clock (the default), returning one row per run with the tick and
 the query's fields, at most 1,000 runs. Server-clock sampling is specified by
-tick-control.
+tick-control. Every tick in this capability (sound, message and particle logs,
+their `since=`, and sample rows) is the tick of tick-control's one clock, so a
+tick from any reply can be passed to any `since=`.
 
 #### Scenario: Per-tick player state
 - **WHEN** an agent runs `sample status every 1t x40` during an air pocket

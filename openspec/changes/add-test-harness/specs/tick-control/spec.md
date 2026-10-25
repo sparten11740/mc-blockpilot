@@ -51,16 +51,34 @@ ticks.
 - **THEN** the result is `err syntax` because `status` is a client-side query
 
 ### Requirement: Server-clock waits
-`wait <query> until …` SHALL accept `clock=server` for server-side queries.
-Predicates are then evaluated on the server thread at the end of each server
-tick, and `stable=` and `timeout=` durations count server ticks. While the
-server is frozen, a server-clock wait advances only through `tick step`.
+`wait <query> until …` SHALL accept `clock=server` for server-side queries, and
+use the server clock for every server-side query. Predicates are then evaluated
+on the server thread at the end of each server tick, `stable=` and `timeout=`
+durations count server ticks, and a successful wait reports the tick it matched
+on. While the server is frozen, the wait keeps re-checking on every server loop
+iteration and times out normally. `tick step` can't run during it, because
+actions run one at a time.
 
 #### Scenario: Wait for rest on the server clock
-- **WHEN** an agent runs `wait nbt e812 path=Motion[1] until value>-0.001
-  stable=20t clock=server timeout=400t` with the server running
-- **THEN** the result returns on the server tick where the vertical motion has
-  stayed above -0.001 for 20 ticks, and reports that tick number
+- **WHEN** an agent runs `wait nbt e812 path=OnGround until value==1 stable=20t
+  clock=server timeout=400t` with the server running
+- **THEN** the result returns on the server tick where the body has been on the
+  ground for 20 ticks, and reports that tick as `t<n>`
+
+#### Scenario: Wait on a frozen server
+- **WHEN** an agent runs `tick freeze; wait nbt e812 path=OnGround until
+  value==0 clock=server timeout=40t` while the body rests
+- **THEN** the wait fails with `err timeout` and the last value after 40 server
+  loop iterations, instead of hanging
+
+### Requirement: One tick number in every reply
+Every tick number in a reply (`tick query`, `tick step`, sample rows, waits,
+and the observation logs with their `since=`) SHALL come from one clock: the
+integrated server's game time in singleplayer, otherwise the client level's.
+
+#### Scenario: Ticks agree
+- **WHEN** an agent runs `tick query; sounds limit=0; sample status every 1t x1`
+- **THEN** all three report the same tick number
 
 ### Requirement: Freeze is undone on leave
 Leaving or disconnecting from the world SHALL drop any freeze or rate change

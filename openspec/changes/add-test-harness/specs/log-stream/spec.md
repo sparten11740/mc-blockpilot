@@ -21,8 +21,9 @@ sequence number, time, level, thread, logger name and message.
 ### Requirement: Marks and filtered reads
 `log mark` SHALL return the current sequence number as `mark`. `log [level=<min
 level>] [since=<mark>] [grep=<text>] [logger=<prefix>] [limit=<n>]` SHALL return
-matching entries oldest first (default `level=warn`, `limit=50`), and report how
-many more matched beyond the limit.
+the newest `limit` matching entries, oldest first (default `level=warn`,
+`limit=50`), with the current `mark` and the `count` of all matches, and report
+how many older matches were left out.
 
 #### Scenario: Errors from one experiment
 - **WHEN** an agent runs `log mark`, then an experiment, then `log since=<mark>
@@ -31,7 +32,7 @@ many more matched beyond the limit.
 
 #### Scenario: Nothing logged
 - **WHEN** no entries match
-- **THEN** the result is `ok none`
+- **THEN** the result is `ok mark=<n> count=0` with no rows
 
 ### Requirement: Condensed stack traces
 An entry with an exception SHALL show the exception class and message, the first
@@ -49,7 +50,7 @@ trace.
 `sub log <level>` SHALL deliver new entries at or above that level as `! log
 <LEVEL> <logger> <message>` events, through the normal event delivery. `sub log
 off` stops them. Delivery is capped at 20 entries per second per session, and
-the overflow is reported as `! log dropped <n>`.
+the overflow is reported as `! log_dropped <n>` with the next reply.
 
 #### Scenario: Error pushed during an action
 - **WHEN** a session has run `sub log error` and a mod logs an error while that

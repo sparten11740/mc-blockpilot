@@ -38,7 +38,7 @@ after it.
     returns a full trace.
   - `sub log <level>` pushes `! log …` events as they happen.
 - **Test worlds**:
-  - `create world <name> [flat|void|normal] [peaceful|easy|normal|hard]
+  - `create world <name> [flat|void|normal] [peaceful|easy|hard|difficulty=…]
     [mode=creative|survival] [seed=…] [rule:<gamerule>=<value>…]` creates a
     world with cheats on and joins it.
   - `snapshot save|restore|list|delete <name>` copies the whole save folder
@@ -48,9 +48,9 @@ after it.
   - `<gameDir>/blockpilot/endpoint.json` signals that the endpoint is ready.
   - JVM properties `blockpilot.autojoin` / `blockpilot.autocreate` join (and if
     needed create) a test world on launch.
-  - A dependency-free `blockpilot-cli` jar (`java -jar blockpilot-cli.jar
-    --game-dir run --wait-ready "status"`) lets an agent in a shell drive a game
-    it just launched, without an MCP reconnect.
+  - A dependency-free CLI (`python3 tools/blockpilot.py --game-dir run
+    --wait-ready 180 --wait-world "status"`, standard library only) lets an
+    agent in a shell drive a game it just launched, without an MCP reconnect.
   - Mod jars are published to mavenLocal so other mods' dev environments can add
     Blockpilot as a runtime dependency.
 - **Server-side extension handlers**: extension commands can declare that they
@@ -88,9 +88,9 @@ dedicated-server half with fake players, and remote servers.
 
 - **Code**: new `dev.blockpilot.game.server` (bridge, tick, NBT, snapshots), a
   log4j appender in `dev.blockpilot.game.log`, and additions to the session
-  commands. A new `blockpilot-cli` plain Java project outside the Stonecutter
-  tree, using only the JDK. Version-sensitive spots: world creation, the tick
-  manager API, and NBT ↔ JSON conversion.
+  commands. The CLI is `tools/blockpilot.py` (Python 3, standard library
+  only). Version-sensitive spots: world creation, the tick manager API, and
+  NBT ↔ JSON conversion.
 - **Dependencies**: none new. Log4j, Gson and Brigadier ship with Minecraft.
 - **Filesystem**: `<gameDir>/blockpilot/endpoint.json`,
   `<gameDir>/blockpilot/snapshots/`, and a marker file in Blockpilot-created

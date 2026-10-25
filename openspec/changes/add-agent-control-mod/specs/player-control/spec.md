@@ -152,14 +152,20 @@ same as `screen` and `cursor`, and the cursor moves. `drag <button> <dx> <dy>
 ### Requirement: Pointer actions on screens
 With a GUI open, `cursor <x,y>`, `click <x,y> [button]`, `drag <button> <x1,y1>
 <x2,y2> [Nt]` and `scroll <n> [x,y]` SHALL use GUI-scaled coordinates as
-reported by `screen`. They work on any screen, including modded screens and
-widgets the mod does not know.
+reported by `screen`. Wherever they take a point, `w<i>` stands for the centre
+of the widget `screen` lists as `w<i>`. They work on any screen, including
+modded screens and widgets the mod does not know.
 
 #### Scenario: Drag a slider
 - **WHEN** `screen` reports a slider at `60,40,100,20` and the agent runs `drag
   left 62,50 140,50 10t`
 - **THEN** the slider moves as it would under a human drag, and its new value
   appears in the next `screen` diff
+
+#### Scenario: Click a listed widget
+- **WHEN** `screen` lists `w3:button "Create New World"` and the agent runs
+  `click w3`
+- **THEN** that button is clicked at its centre
 
 ### Requirement: Raw keyboard and key mappings
 `key <down|up|press> <key> [Nt]` SHALL feed key events into the game's keyboard
@@ -245,11 +251,17 @@ that work on screens (`screen`, `click`, `take`, `put`, `type`) keep it open.
 
 ### Requirement: Flying
 `fly on|off` SHALL start or stop flying where the game mode allows it (creative,
-spectator), and fail with `err syntax` elsewhere.
+spectator), and fail with `err syntax` elsewhere. After `fly on` the player
+keeps flying through landings and teleports, while an agent is connected and in
+control, until `fly off`, leaving the world or a game mode that can't fly.
 
 #### Scenario: Hover after a teleport
 - **WHEN** an agent in creative teleports into the air and runs `fly on`
 - **THEN** the player hovers instead of falling
+
+#### Scenario: Teleport while flying
+- **WHEN** an agent has run `fly on` and then `server as=player tp @p ~ ~5 ~`
+- **THEN** the player is still flying after the teleport
 
 ### Requirement: Agent activity indicator
 A small HUD indicator SHALL show when an agent session is connected, when an
