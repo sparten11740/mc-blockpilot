@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """End-to-end smoke test against a running game with Blockpilot.
 
-    python3 tools/smoke_test.py --game-dir <run dir>
+    python3 tools/smoke_test.py --game-dir <run dir> [--shapes <file>]
 
 Creates a throwaway flat test world, exercises the command groups (perception, actions, inventory, containers,
 crafting, raw input, observation, the integrated server, sampling, performance capture, snapshots, JSON output),
 checks each reply, then leaves and deletes the world. Exit code 0 when every step passed.
+
+--shapes writes the JSON structure (field names, row field names) of a set of queries to a file, so runs on two
+loaders can be compared with diff.
 """
 import argparse
 import json
@@ -16,6 +19,10 @@ import sys
 import time
 
 CLIENT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blockpilot.py")
+SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1,0 side=server",
+                 "blocks ~0,-1,0 ~1,-1,1", "worlds", "snapshot list", "tick query", "log mark",
+                 "server time query day", "sample status every 1t x2", "wait status until ok", "help status",
+                 "messages limit=1", "particles", "nbt e999999"]
 
 
 def run(game_dir, script, as_json=False, timeout=180):
@@ -27,9 +34,35 @@ def run(game_dir, script, as_json=False, timeout=180):
     return done.returncode, done.stdout + done.stderr
 
 
+def shape(result):
+    """Field names of one JSON result, with the union of its rows' field names."""
+    fields = sorted(key for key in result if key != "rows")
+    rows = sorted({key for row in result.get("rows", []) for key in row})
+    return " ".join(fields) + (" rows[" + " ".join(rows) + "]" if rows else "")
+
+
+def write_shapes(game_dir, path):
+    """Writes one line per query; returns how many replies could not be read."""
+    lines = []
+    unreadable = 0
+    for script in SHAPE_SCRIPTS:
+        _, output = run(game_dir, script, as_json=True)
+        try:
+            reply = json.loads(output.splitlines()[0])
+            lines.append(f"{script} => " + " | ".join(shape(result) for result in reply["results"]))
+        except (ValueError, IndexError, KeyError):
+            unreadable += 1
+            lines.append(f"{script} => unreadable: {output.strip()}")
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines) + "\n")
+    print(f"{'FAIL' if unreadable else 'pass'} json shapes: {len(lines)} written to {path}, {unreadable} unreadable")
+    return unreadable
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--game-dir", default="run")
+    parser.add_argument("--shapes", help="also write the JSON shapes of a set of queries to this file")
     args = parser.parse_args()
     world = f"smoke-{int(time.time())}"
     give = "; ".join(f"server give @p minecraft:{item}" for item in
@@ -84,13 +117,16 @@ def main():
     except (ValueError, AssertionError, IndexError, KeyError) as error:
         failures += 1
         print(f"FAIL json output: {error}\n    {output.strip()}")
+    if args.shapes:
+        failures += 1 if write_shapes(args.game_dir, args.shapes) else 0
     code, output = run(args.game_dir, f"leave; delete world {world}")
     if code == 0 and f"deleted {world}" in output:
         print("pass clean up")
     else:
         failures += 1
         print(f"FAIL clean up: {output.strip()}")
-    print(f"{len(steps) + 2 - failures}/{len(steps) + 2} passed")
+    total = len(steps) + 2 + (1 if args.shapes else 0)
+    print(f"{total - failures}/{total} passed")
     return 1 if failures else 0
 
 
