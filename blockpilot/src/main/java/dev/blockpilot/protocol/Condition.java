@@ -11,9 +11,13 @@ import java.util.Map;
 /**
  * The predicates of {@code wait <query> until …}, {@code assert} and {@code if}: {@code <field><op><value>} joined by
  * {@code and}, or {@code ok}. Numbers compare numerically, anything else by text; {@code count} is the number of
- * rows; a value written {@code $<field>} is that field of the same result.
+ * rows; a value written {@code $<field>} is that field of the same result. A field the result leaves out reads as
+ * {@code none}, as replies omit empty and default fields: {@code status} has {@code state=menu} only in menus, so
+ * {@code state!=menu} holds in a world.
  */
 public final class Condition {
+    private static final String NONE = "none";
+
     private final List<Lexicon.Test> tests;
     private final boolean requireOk;
 
@@ -39,9 +43,9 @@ public final class Condition {
             String expected = test.operand();
             if (test.reference() != null) {
                 Object other = lookup(result, test.reference());
-                expected = other == null ? null : String.valueOf(other);
+                expected = other == null ? NONE : String.valueOf(other);
             }
-            if (actual == null || expected == null || !compare(actual, test.comparison(), expected)) {
+            if (!compare(actual == null ? NONE : actual, test.comparison(), expected)) {
                 return false;
             }
         }
@@ -60,7 +64,7 @@ public final class Condition {
         }
         for (String name : names.stream().distinct().toList()) {
             Object value = result == null ? null : lookup(result, name);
-            fields.put(name, value == null ? "none" : value);
+            fields.put(name, value == null ? NONE : value);
         }
         return fields;
     }

@@ -196,6 +196,14 @@ releases. The approach, in layers:
     runs tasks while paused.
   - Failing fast was chosen over letting GUI actions jump the queue, which
     would break the queue's order.
+- **Fields left out:** replies omit empty and default fields, and a timeout
+  reports a predicate's missing field as `none`. Predicates read it the same
+  way: `==none` and `!=` compare with the text `none`, and an ordering fails
+  because `none` is no number. Before, every predicate on a missing field
+  failed: `status` has `state=menu` only in menus, so
+  `wait status until state!=menu` never returned in a world.
+  - The cost is that a misspelled field reads as `none` too, so a `!=` on it
+    holds. The timeout and assert reports show it as `<field>=none`.
 
 ## Risks / Trade-offs
 

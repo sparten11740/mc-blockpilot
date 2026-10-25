@@ -63,6 +63,21 @@ class ConditionTest {
     }
 
     @Test
+    void aFieldLeftOutReadsAsNone() {
+        // As status: state=menu and the screen in menus, neither field in a world.
+        Result inWorld = Result.ok(new Fields().put("hp", 20));
+        Result inMenu = Result.ok(new Fields().bare("state", "menu").bare("screen", "title"));
+        assertTrue(tests("state!=menu").holds(inWorld));
+        assertTrue(tests("state==none").holds(inWorld));
+        assertFalse(tests("state!=menu").holds(inMenu));
+        assertFalse(tests("state==none").holds(inMenu));
+        assertFalse(tests("food<5").holds(inWorld));
+        assertFalse(tests("food>=0").holds(inWorld));
+        assertTrue(tests("screen==$vehicle").holds(inWorld));
+        assertEquals("state=none", tests("state!=menu").observed(inWorld).text());
+    }
+
+    @Test
     void idsMatchWithOrWithoutTheDefaultNamespace() {
         Result block = Result.ok(new Fields().bare("id", "air"));
         assertTrue(tests("id==minecraft:air").holds(block));

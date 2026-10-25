@@ -135,3 +135,49 @@ as the action too.
 - **WHEN** an agent runs `sample status every 2t while look`
 - **THEN** the result is `err syntax` saying `while` takes an action or a
   `wait`
+
+### Requirement: Wait conditions
+`wait <query> until <predicate> [and <predicate>…]` SHALL re-run a read-only
+command until every predicate over its result holds. A predicate is
+`<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of
+rows; an ordering compares with a number or `$<field>`, another field of the
+same result. A field the result leaves out reads as `none`, so `==none` holds
+for it and an ordering on it never does. Options after the predicates:
+`stable=` how long the predicates must keep holding, `every=` how often to
+check (both default 1t), `timeout=` (default 60s, a plain number is seconds).
+
+#### Scenario: Wait for a block change
+- **WHEN** an agent runs `wait block 0,-60,0 until id==air`
+- **THEN** the result is `ok <elapsed> id=air` on the first tick the block is
+  air
+
+#### Scenario: Wait until values settle
+- **WHEN** an agent runs `wait sable:info <uuid> until speed<0.01 stable=20t
+  timeout=30s`
+- **THEN** the result returns once `speed` has stayed below 0.01 for 20
+  consecutive ticks
+
+#### Scenario: Timeout reports the last values
+- **WHEN** the predicate never holds before the timeout
+- **THEN** the result is `err timeout` with the fields named in the predicates,
+  as last observed
+
+#### Scenario: Action used as condition
+- **WHEN** an agent runs `wait mine ~0,-1,0 until ok`
+- **THEN** the result is `err syntax` because `mine` is not a read-only command
+
+#### Scenario: Two fields compared
+- **WHEN** an agent runs `wait status until hp<$max_hp`
+- **THEN** the wait returns once the player has taken damage, whatever their
+  maximum health is
+
+#### Scenario: Ordering against text
+- **WHEN** an agent runs `wait status until hp<max_hp`
+- **THEN** the result is `err syntax` saying an ordering compares with a number
+  or `$field`
+
+#### Scenario: Field left out
+- **WHEN** an agent runs `wait status until state!=menu` while the game loads
+  a world
+- **THEN** the wait returns once the player is in the world, where `status`
+  leaves `state` out and a timeout would report it as `state=none`

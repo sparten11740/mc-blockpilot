@@ -7,7 +7,7 @@ drive, keep a sub-level's blocks in a plot far from where they are seen.
 Blockpilot only knows the world. An agent play-testing such a mod gets plot
 coordinates printed as offsets from the player, can't `find` anything aboard,
 aims `use` at a world point the sub-level has moved away from, and has to hunt
-blocks by hand. Play-testing also turned up six small gaps elsewhere, which
+blocks by hand. Play-testing also turned up seven small gaps elsewhere, which
 this change fixes too.
 
 Sable is an optional mod. Blockpilot SHALL keep installing, loading and
@@ -42,6 +42,9 @@ SHALL never stop the game from starting.
     Its exit code already says so.
   - While singleplayer is paused, commands that need server ticks fail at once
     with `err paused` instead of blocking the action queue behind them.
+  - A predicate on a field the reply leaves out reads it as `none`, as the
+    timeout report already prints it: `wait status until state!=menu` now
+    returns once the player is in a world.
 
 ## Capabilities
 
@@ -55,7 +58,8 @@ SHALL never stop the game from starting.
 - `player-control`: key names also accepted with underscores
   (`left_shift`).
 - `command-language`: `sample … while` also takes a `wait`, in the grammar and
-  in the sampling requirement.
+  in the sampling requirement; a field left out reads as `none` in
+  predicates.
 - `client-observation`: `camera at` reports the block at the camera and warns
   inside a solid one.
 - `game-perception`: `blocks … grid` lays a region out one name per cell.
