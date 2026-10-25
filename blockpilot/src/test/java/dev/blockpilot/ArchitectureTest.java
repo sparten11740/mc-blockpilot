@@ -49,4 +49,25 @@ class ArchitectureTest {
         assertEquals(List.of(), violations("protocol", List.of("net.minecraft", "net.neoforged", "net.fabricmc",
             "dev.blockpilot.game", "dev.blockpilot.platform")));
     }
+
+    /** The client runs on a bare JVM next to the jar, where neither the game's libraries nor the loader exist. */
+    @Test
+    void cliUsesOnlyTheJdk() throws IOException {
+        List<String> found = new ArrayList<>();
+        try (Stream<Path> files = Files.walk(sources().resolve("cli"))) {
+            for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                for (String line : Files.readAllLines(file)) {
+                    String trimmed = line.strip();
+                    String imported = trimmed.replaceFirst("^import (static )?", "");
+                    boolean foreignImport = !imported.equals(trimmed) && !imported.startsWith("java.")
+                        && !imported.startsWith("dev.blockpilot.cli.");
+                    if (foreignImport || trimmed.matches(".*\\b(net\\.minecraft|net\\.neoforged|net\\.fabricmc"
+                        + "|com\\.google|io\\.netty|org\\.slf4j|dev\\.blockpilot\\.(api|protocol|game|platform))\\b.*")) {
+                        found.add(file.getFileName() + ": " + trimmed);
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), found);
+    }
 }

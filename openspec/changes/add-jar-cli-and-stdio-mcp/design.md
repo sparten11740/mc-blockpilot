@@ -40,9 +40,11 @@ the game directory come from. See proposal.md for the motivation.
 The client, the stdio MCP server, a small JSON reader and writer, the shared
 MCP definitions (D5) and the launcher text (D2) live in `dev.blockpilot.cli`
 under `src/main/java`, so every target's jar carries them. Its classes import
-only `java.*` and `dev.blockpilot.cli.*`; a `CliIsolationTest` in the style of
-`SableIsolationTest` fails on any other import. Game code may use the package,
-never the other way round. The entry point is `dev.blockpilot.cli.Main`.
+only `java.*` and `dev.blockpilot.cli.*`; `ArchitectureTest`, which already
+holds the import rules of the api and protocol layers, fails on any other
+import and on any mention of the game's libraries or Blockpilot's other
+packages. Game code may use the package, never the other way round. The entry
+point is `dev.blockpilot.cli.Main`.
 
 *Alternatives:* a separate client jar (another artifact to publish and to find
 in a dev environment); a source set compiled with a low `--release` so any

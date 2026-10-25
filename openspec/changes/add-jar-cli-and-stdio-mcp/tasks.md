@@ -2,7 +2,7 @@
 
 ## 1. Client in the jar (dev-integration)
 
-- [ ] 1.1 Add the `dev.blockpilot.cli` package with the JSON reader and writer (D4) and `CliIsolationTest` (D1); verify the JSON round-trip and malformed-input unit tests pass, and that the isolation test fails with a planted `com.google.gson` import in the package and passes without it
+- [x] 1.1 Add the `dev.blockpilot.cli` package with the JSON reader and writer (D4) and its import rule in `ArchitectureTest` (D1); verify the JSON round-trip and malformed-input unit tests pass, and that the import rule fails with a planted `com.google.gson` import in the package and passes without it
 - [ ] 1.2 Port `tools/blockpilot.py` to `dev.blockpilot.cli.Main` (D3) with unit tests for the summary line, text and JSON result parsing and the `quit` pid; verify on the 1.21.1 NeoForge dev client that `java -cp <its classes and resources> dev.blockpilot.cli.Main --game-dir run` matches the Python script's stdout, stderr and exit code for `status; inv`, a failing command, a syntax error, `--json`, `--wait-ready 180 --wait-world` right after `runClient`, a killed game (stale file, exit 2) and `quit` (exit 0 once the process is gone)
 
 ## 2. Launcher (dev-integration)
@@ -20,7 +20,7 @@
 
 ## 4. Integration checks
 
-- [ ] 4.1 Build all four jars; verify each holds `dev/blockpilot/cli`, `CliIsolationTest` passes on every node, `java -cp <jar> dev.blockpilot.cli.Main --help` runs on Java 21 for the 1.21.1 jars and on Java 25 for the 26.1 jars, and the smoke test passes on the 1.21.1 and 26.1 Fabric dev clients too
+- [ ] 4.1 Build all four jars; verify each holds `dev/blockpilot/cli`, `ArchitectureTest` passes on every node, `java -cp <jar> dev.blockpilot.cli.Main --help` runs on Java 21 for the 1.21.1 jars and on Java 25 for the 26.1 jars, and the smoke test passes on the 1.21.1 and 26.1 Fabric dev clients too
 - [ ] 4.2 Load Blockpilot as a jar in a fresh NeoForge 1.21.1 MDK project and a fresh Fabric 1.21.1 example-mod project through mavenLocal, as the README describes; verify in both that the launcher appears in `run/blockpilot`, runs `status` with no `java` on `PATH`, and serves `tools/list` and a `run` call over stdio
 
 ## Workflow follow-up
