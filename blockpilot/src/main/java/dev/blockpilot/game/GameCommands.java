@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.game.log.LogCommands;
 import dev.blockpilot.game.observe.ObservationCommands;
 import dev.blockpilot.game.observe.OptionCommands;
+import dev.blockpilot.game.observe.PixelCommands;
 import dev.blockpilot.game.perf.PerfCommands;
 import dev.blockpilot.protocol.CommandRegistry;
 
@@ -22,6 +23,7 @@ final class GameCommands {
         new ServerCommands().register(registry);
         new ObservationCommands().register(registry);
         new OptionCommands().register(registry);
+        new PixelCommands().register(registry);
         new PerfCommands().register(registry);
         new LogCommands().register(registry);
     }
