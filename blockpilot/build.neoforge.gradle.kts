@@ -64,6 +64,7 @@ dependencies {
     testImplementation("io.netty:netty-handler:4.1.97.Final")
     testImplementation("org.slf4j:slf4j-api:2.0.9")
     testImplementation("org.apache.logging.log4j:log4j-core:2.22.1")
+    testImplementation("org.joml:joml:1.10.5")
 }
 
 neoForge {
@@ -80,8 +81,9 @@ neoForge {
     runs {
         register("client") {
             client()
-            // ./gradlew runClient -Pblockpilot.autojoin=<world> [-Pblockpilot.autocreate=flat] joins a world on launch.
-            listOf("blockpilot.autojoin", "blockpilot.autocreate").forEach { key ->
+            // ./gradlew runClient -Pblockpilot.autojoin=<world> [-Pblockpilot.autocreate=flat] joins a world on launch;
+            // -Pblockpilot.sable.version=<version> stands in for the Sable companion version found.
+            listOf("blockpilot.autojoin", "blockpilot.autocreate", "blockpilot.sable.version").forEach { key ->
                 providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
             }
         }

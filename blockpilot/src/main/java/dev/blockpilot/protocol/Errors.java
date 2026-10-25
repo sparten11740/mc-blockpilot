@@ -39,6 +39,7 @@ public final class Errors {
         CODES.put("no_capture", "no performance capture is running (perf start first)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
+        CODES.put("sable", "a call into Sable failed; a missing method turns the Sable integration off until restart");
         CODES.put("internal", "Blockpilot hit an unexpected error; it is logged");
     }
 

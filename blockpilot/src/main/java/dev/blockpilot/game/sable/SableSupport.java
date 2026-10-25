@@ -41,7 +41,8 @@ public final class SableSupport {
             return;
         }
         try {
-            SubLevels compat = Class.forName(COMPAT).asSubclass(SubLevels.class).getConstructor().newInstance();
+            SubLevels compat = Class.forName(COMPAT).asSubclass(SubLevels.class)
+                .getConstructor(SableIntegration.class).newInstance(started);
             started.on(compat, version);
             Blockpilot.LOGGER.info("Sable integration {}", started.status());
         } catch (LinkageError | ReflectiveOperationException | RuntimeException e) {

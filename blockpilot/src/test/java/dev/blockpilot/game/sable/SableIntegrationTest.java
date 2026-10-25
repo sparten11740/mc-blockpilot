@@ -38,4 +38,17 @@ class SableIntegrationTest {
         assertSame(SubLevels.NONE, integration.subLevels());
         assertEquals(List.of("off: Sable is not installed"), switchedOff);
     }
+
+    @Test
+    void aCallThatDoesNotLinkTurnsItOffUntilRestart() {
+        List<String> switchedOff = new ArrayList<>();
+        SableIntegration integration = new SableIntegration(switchedOff::add);
+        integration.on(new SubLevels() {
+        }, "1.6.0");
+        integration.failed("info", new NoSuchMethodError("getName"));
+        assertSame(SubLevels.NONE, integration.subLevels());
+        assertEquals("off until restart: info failed with java.lang.NoSuchMethodError: getName", integration.status());
+        integration.failed("at", new NoSuchMethodError("getContaining"));
+        assertEquals(List.of("off until restart: info failed with java.lang.NoSuchMethodError: getName"), switchedOff);
+    }
 }

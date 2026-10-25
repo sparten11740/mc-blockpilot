@@ -1,5 +1,6 @@
 package dev.blockpilot.game.sable;
 
+import dev.blockpilot.protocol.CommandFailure;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -10,7 +11,9 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Sable's sub-levels as the rest of Blockpilot sees them: structures whose blocks live in a plot away from where they
- * are seen. Only {@code dev.blockpilot.compat.sable} talks to Sable; without it (or without Sable) there are none.
+ * are seen. Only {@code dev.blockpilot.compat.sable} talks to Sable; without it (or without Sable) there are none. A
+ * call into Sable that fails throws {@link CommandFailure} ({@code err sable}), which code outside a command, such as
+ * a frame or tick hook, must catch.
  */
 public interface SubLevels {
     /** A sub-level as it lies now; angles in Minecraft's yaw, pitch and roll, velocity in blocks per second. */

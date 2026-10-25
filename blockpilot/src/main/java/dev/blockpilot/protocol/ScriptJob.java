@@ -330,6 +330,9 @@ final class ScriptJob implements CommandContext {
     }
 
     private Result crash(String name, CommandRegistry.Entry entry, RuntimeException e) {
+        if (e instanceof CommandFailure failure) {
+            return failure.toResult();
+        }
         LOGGER.error("Command {} failed", name, e);
         String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
         if (entry != null && !entry.namespace().isEmpty()) {

@@ -402,6 +402,18 @@ class EngineTest {
     }
 
     @Test
+    void aCommandFailureEndsTheCommandWithItsError() {
+        CommandRegistry registry = new CommandRegistry();
+        registry.addExtensions(List.of(new BlockpilotApi.Registration("sable", "blockpilot",
+            CommandSpec.query("info", (context, args) -> {
+                throw new CommandFailure("sable", "info failed: java.lang.NoSuchMethodError: getName");
+            }))));
+        Engine isolated = new Engine(registry, new FakeGame());
+        assertEquals("err sable info failed: java.lang.NoSuchMethodError: getName\nskip",
+            Formatter.text(isolated.submit(isolated.openSession(), null, "sable:info; help").join()));
+    }
+
+    @Test
     void assertPassesOrStopsTheScript() {
         Session session = engine.openSession();
         assertEquals("ok value=0\nerr assert_failed value=0\nskip",

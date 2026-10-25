@@ -1,12 +1,14 @@
 package dev.blockpilot.game.sable;
 
+import dev.blockpilot.Blockpilot;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Whether Blockpilot works with Sable's sub-levels, and why not when it doesn't. It starts off, and {@link SableSupport}
- * turns it on once the compat package has loaded.
+ * Whether Blockpilot works with Sable's sub-levels, and why not when it doesn't. It starts off, {@link SableSupport}
+ * turns it on once the compat package has loaded, and the first call into Sable that doesn't link turns it off until
+ * restart.
  */
 public final class SableIntegration {
     /** The companion API the compat package compiles against; releases within a major only add to it. */
@@ -50,8 +52,23 @@ public final class SableIntegration {
     }
 
     synchronized void off(String why) {
+        switchOff("off: " + why);
+    }
+
+    /** Sable's API is not what the compat package was compiled against, so retrying would fail the same way. */
+    public void failed(String call, LinkageError error) {
+        synchronized (this) {
+            if (subLevels == SubLevels.NONE) {
+                return;
+            }
+            switchOff("off until restart: " + call + " failed with " + error);
+        }
+        Blockpilot.LOGGER.error("Sable integration switched off: {} failed", call, error);
+    }
+
+    private void switchOff(String newStatus) {
         subLevels = SubLevels.NONE;
-        status = "off: " + why;
+        status = newStatus;
         switchedOff.accept(status);
     }
 }

@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.protocol.CommandFailure;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +61,8 @@ final class Sides {
                 try {
                     return read.apply(level, true);
                 } catch (CommandException e) {
+                    return e.toResult();
+                } catch (CommandFailure e) {
                     return e.toResult();
                 }
             }).get(SERVER_READ_SECONDS, TimeUnit.SECONDS);
