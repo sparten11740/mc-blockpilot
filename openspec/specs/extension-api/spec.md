@@ -97,5 +97,5 @@ SHALL keep working without Blockpilot.
 
 #### Scenario: One API jar for all targets
 - **WHEN** a mod compiles against the published `blockpilot-api` artifact
-- **THEN** the same compiled integration works with the 1.21.1 NeoForge and
-  1.21.1 Fabric Blockpilot jars
+- **THEN** the same compiled integration works with the 1.21.1 and 26.1
+  Blockpilot jars, on NeoForge and on Fabric
