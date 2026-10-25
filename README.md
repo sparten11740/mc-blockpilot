@@ -131,7 +131,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `quit` (leaves, answers `ok pid=<pid>` and closes the game), `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| sable | with Sable only: `sable:list [r]`, `sable:info <sub>`, `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>` (see [With Sable](#with-sable)) |
+| sable | with Sable only: `sable:list [r]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
 
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
@@ -163,7 +163,9 @@ works with them:
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
   the one under the crosshair):
   - `sable:list` lists the sub-levels within 128 blocks, nearest first.
-  - `sable:info here` gives the pose, velocity, bounds and whether the player rides it.
+  - `sable:info here` gives the pose, velocity, height above ground (`agl`), bounds and whether the player rides it;
+    `sable:info ship brief` only heading, pitch, roll, speed, climb rate and `agl`, e.g. for
+    `sample sable:info ship brief every 10t x20` over a take-off.
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on).
   - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to

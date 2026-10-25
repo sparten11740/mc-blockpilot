@@ -37,7 +37,7 @@ public final class Sides {
      * side's thread: off its thread the server's chunk cache answers null. (On the client, {@code Level.hasChunkAt}
      * answers true for every chunk.)
      */
-    static boolean loaded(Level level, BlockPos pos) {
+    public static boolean loaded(Level level, BlockPos pos) {
         return level.getChunkSource().getChunkNow(SectionPos.blockToSectionCoord(pos.getX()),
             SectionPos.blockToSectionCoord(pos.getZ())) != null;
     }

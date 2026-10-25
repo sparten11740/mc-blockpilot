@@ -18,7 +18,7 @@
 
 ## 4. Flight readout (sable-sublevels)
 
-- [ ] 4.1 Add `agl` to `sable:info` and the `brief` form (`yaw`, `pitch`, `roll`, `speed`, `climb`, `agl`) with help and README; verify in a dev client with Sable that a ship on the ground reads `agl=0`, and that `sample sable:info <ship> brief every 10t x6` during a climb shows `agl` growing
+- [x] 4.1 Add `agl` to `sable:info` and the `brief` form (`yaw`, `pitch`, `roll`, `speed`, `climb`, `agl`) with help and README; verify in a dev client with Sable that a ship on the ground reads `agl=0`, and that `sample sable:info <ship> brief every 10t x6` during a climb shows `agl` growing
 
 ## 5. Integration checks
 

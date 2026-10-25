@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,6 +34,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * The {@code sable:} commands. They use only {@link SubLevels}, so they live outside the compat package, and
@@ -64,12 +66,16 @@ final class SableCommands {
             .field("dist", "blocks from the player").field("speed", "blocks per second")
             .field("size", "blocks along x, y and z of its plot bounds").example("sable:list 64"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
-            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD)
-            .help("one sub-level's pose, velocity and bounds; " + REFERENCE)
+            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).optionalKeyword("brief", "brief")
+            .help("one sub-level's pose, velocity, height above ground and bounds; with brief only yaw, pitch, roll, "
+                + "speed, climb and agl, e.g. to sample a climb; " + REFERENCE)
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("yaw", "degrees turned from how it was built; 90 is a quarter turn west")
             .field("pitch", "degrees, nose down positive").field("roll", "degrees, right side down positive")
             .field("speed", "blocks per second").field("vel", "blocks per second along x, y and z")
+            .field("climb", "brief only: vertical speed, blocks per second")
+            .field("agl", "height above ground: from the bottom of its world bounds to the top of the ground under "
+                + "their centre; none above nothing loaded")
             .field("box", "world bounds").field("plot", "plot bounds, looser while it is turned")
             .field("rides", "the player stands on or rides it")
             .example("sable:info here"));
@@ -120,12 +126,18 @@ final class SableCommands {
         Vec3 velocity = info.velocity();
         SubLevels.Info carrying = SableSupport.subLevels().carrying(minecraft.player);
         boolean rides = carrying != null && carrying.id().equals(info.id());
+        Object agl = heightAboveGround(minecraft.level, info.worldBounds());
+        if (args.has("brief")) {
+            return Result.ok(new Fields().tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch()))
+                .tag("roll", tenths(info.roll())).put("speed", tenths(velocity.length()))
+                .put("climb", tenths(velocity.y)).put("agl", agl));
+        }
         return Result.ok(new Fields().bare("name", info.name()).bare("id", info.id().toString())
             .bare("at", Rel.of(info.position())).hidden("at_abs", Rel.absolute(info.position()))
             .tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch())).tag("roll", tenths(info.roll()))
             .put("speed", tenths(velocity.length()))
             .put("vel", Position.absolute(tenths(velocity.x), tenths(velocity.y), tenths(velocity.z)))
-            .put("box", bounds(info.worldBounds()), "box=" + boundsText(info.worldBounds()))
+            .put("agl", agl).put("box", bounds(info.worldBounds()), "box=" + boundsText(info.worldBounds()))
             .put("plot", bounds(info.plotBounds()), "plot=" + boundsText(info.plotBounds()))
             .put("rides", rides));
     }
@@ -272,6 +284,26 @@ final class SableCommands {
             throw new CommandException("no_sublevel", "here: the player is on none and the crosshair is on none");
         }
         return info;
+    }
+
+    /**
+     * Blocks from the bottom of the bounds down to the top of the first block with a collision shape under their
+     * centre, or {@code none} over unloaded chunks or the void. Sub-levels keep their blocks in their plots, so only
+     * the world below counts.
+     */
+    private static Object heightAboveGround(Level level, AABB bounds) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(Mth.floor(bounds.getCenter().x),
+            Math.min(Mth.floor(bounds.minY), level.getMaxBuildHeight() - 1), Mth.floor(bounds.getCenter().z));
+        if (!Sides.loaded(level, cursor)) {
+            return "none";
+        }
+        for (; cursor.getY() >= level.getMinBuildHeight(); cursor.move(0, -1, 0)) {
+            VoxelShape shape = level.getBlockState(cursor).getCollisionShape(level, cursor);
+            if (!shape.isEmpty()) {
+                return tenths(Math.max(0, bounds.minY - (cursor.getY() + shape.max(Direction.Axis.Y))));
+            }
+        }
+        return "none";
     }
 
     private static double tenths(double value) {
