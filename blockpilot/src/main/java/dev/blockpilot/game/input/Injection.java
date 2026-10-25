@@ -1,5 +1,6 @@
 package dev.blockpilot.game.input;
 
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
@@ -28,6 +29,16 @@ public final class Injection {
         void blockpilot$charTyped(long window, int codePoint, int modifiers);
     }
 
+    /** A modifier key's left and right key codes, and the bit GLFW sets in events while either is down. */
+    private record Modifier(int left, int right, int bit) {
+    }
+
+    private static final List<Modifier> MODIFIERS = List.of(
+        new Modifier(GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT, GLFW.GLFW_MOD_SHIFT),
+        new Modifier(GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL, GLFW.GLFW_MOD_CONTROL),
+        new Modifier(GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT, GLFW.GLFW_MOD_ALT),
+        new Modifier(GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER, GLFW.GLFW_MOD_SUPER));
+
     private static int depth;
 
     private Injection() {
@@ -54,6 +65,20 @@ public final class Injection {
         return minecraft().getWindow().getWindow();
     }
 
+    /**
+     * The modifier bits a real event carries while the agent holds modifier keys. Screens from 26.1 on read Shift and
+     * Control from the event (quick-move clicks, select-all and copy in text fields) rather than polling the keys.
+     */
+    private static int modifiers() {
+        int bits = 0;
+        for (Modifier modifier : MODIFIERS) {
+            if (InputState.isRawKeyHeld(modifier.left()) || InputState.isRawKeyHeld(modifier.right())) {
+                bits |= modifier.bit();
+            }
+        }
+        return bits;
+    }
+
     private static Mouse mouse() {
         return (Mouse) minecraft().mouseHandler;
     }
@@ -63,7 +88,7 @@ public final class Injection {
             if (down && minecraft().screen == null) {
                 mouse().blockpilot$markGrabbed();
             }
-            mouse().blockpilot$press(window(), button, down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, 0);
+            mouse().blockpilot$press(window(), button, down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, modifiers());
         });
     }
 
@@ -87,10 +112,10 @@ public final class Injection {
 
     public static void key(int key, boolean down) {
         run(() -> keyboard().blockpilot$keyPress(window(), key, GLFW.glfwGetKeyScancode(key),
-            down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, 0));
+            down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, modifiers()));
     }
 
     public static void typeCharacter(int codePoint) {
-        run(() -> keyboard().blockpilot$charTyped(window(), codePoint, 0));
+        run(() -> keyboard().blockpilot$charTyped(window(), codePoint, modifiers()));
     }
 }
