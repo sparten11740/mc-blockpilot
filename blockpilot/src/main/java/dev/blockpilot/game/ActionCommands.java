@@ -38,6 +38,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * Commands that act as the player: they turn the camera, hold movement keys and click use/attack through the
@@ -186,8 +187,9 @@ final class ActionCommands {
     }
 
     /**
-     * The point a position or entity argument names: an entity's centre, a block's centre for whole coordinates, else
-     * the exact point. An entity's centre follows it, and a point in a sub-level's plot follows the sub-level.
+     * The point a position or entity argument names: an entity's centre, for whole coordinates the centre of the
+     * block's shape (a lever's base, not the air above it), else the exact point. An entity's centre follows it, and a
+     * point in a sub-level's plot follows the sub-level.
      */
     static Supplier<Vec3> point(CommandContext context, Args args, String name) throws CommandException {
         if (args.type(name) == ArgType.ENTITY) {
@@ -200,13 +202,19 @@ final class ActionCommands {
         Position absolute = context.resolve(args.position(name));
         boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
             && absolute.z() == Math.floor(absolute.z());
-        Vec3 target = whole ? Vec3.atCenterOf(BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
-            : new Vec3(absolute.x(), absolute.y(), absolute.z());
         Level level = minecraft().level;
-        if (SableSupport.subLevels().at(level, BlockPos.containing(target)) != null) {
+        BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
+        Vec3 target = whole ? shapeCentre(level, block) : new Vec3(absolute.x(), absolute.y(), absolute.z());
+        if (SableSupport.subLevels().at(level, block) != null) {
             return () -> SableSupport.subLevels().toWorld(level, target);
         }
         return () -> target;
+    }
+
+    private static Vec3 shapeCentre(Level level, BlockPos pos) {
+        VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
+        return shape.isEmpty() ? Vec3.atCenterOf(pos)
+            : shape.bounds().getCenter().add(pos.getX(), pos.getY(), pos.getZ());
     }
 
     static void lookAt(Vec3 point) {
