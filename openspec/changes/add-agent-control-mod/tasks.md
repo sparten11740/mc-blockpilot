@@ -102,6 +102,7 @@
 - [ ] 11.5 Declare every built-in command's forms with typed slots and drop handler-side token parsing; verify that every example and every command in help parses, and with the smoke test on both loaders
 - [ ] 11.6 Add `help grammar` (EBNF from the forms, extensions included) and per-form usage in help; verify with a golden test of the built-in commands' productions and a test that the code's core grammar matches the spec's
 - [ ] 11.7 Measure coverage with JaCoCo and fail `check` below 100% of lines and branches for the lexer, lexicon, parser and grammar printer; verify `./gradlew check` passes and fails when a branch is left untested
+- [ ] 11.9 Fix what the grammar, parser, lexicon and test reviews found: the revised grammar (disjoint bare ids, value limits, strict predicate operands, construct options, request and auth lines), Unicode blanks, `if` nesting, text after optional parts, `full` anywhere, typed and checked option values, frozen and validated declarations, type-checked `Args`, errors that name skipped optional slots and hint at likely mistakes; verify with the differential spec test, the fuzz test, columns computed from the script text, and `./gradlew check` at 100% for the parser classes
 - [ ] 11.8 Update the README (grammar, forms in the extension API) and tell the Aerolarge agent; verify in game on NeoForge and Fabric that the README's examples run
 
 ## Workflow follow-up

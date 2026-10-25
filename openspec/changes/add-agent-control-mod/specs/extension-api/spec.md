@@ -11,9 +11,10 @@ access without Blockpilot knowing about each mod.
 ### Requirement: Registering extension commands
 A mod SHALL be able to register commands during startup through a public API.
 Each registration declares the command name, its forms (keywords, slots of the
-grammar's slot types, optional groups and a final text slot), its options,
-whether it is a query or an action, its result fields, help text, and one
-example, which must parse.
+grammar's slot types, optional groups and a final text slot), its options with
+the slot types of their values, whether it is a query or an action, its result
+fields, help text, and one example, which must parse. A registered declaration
+can't be changed afterwards.
 
 #### Scenario: Registered command is callable
 - **WHEN** a mod with id `aerolarge` registers an action `build` taking a

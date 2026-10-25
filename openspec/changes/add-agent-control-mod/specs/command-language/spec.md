@@ -18,18 +18,28 @@ in order.
 - **THEN** the reply has three result lines, one per command, in that order
 
 ### Requirement: Grammar
-Requests and scripts SHALL follow this grammar, written in W3C EBNF (XML 1.0,
-section 6). `A - B` matches what `A` matches unless `B` matches it too. Where
-alternatives overlap, the earlier one is taken, and `"\;"` is a semicolon that
-doesn't end a step.
+Requests and scripts SHALL follow this grammar, in W3C EBNF (XML 1.0, section
+6) read the way the comment at its top says.
 
 ```ebnf
-/* Line protocol requests; MCP's run tool takes a script directly */
-request      ::= ( "#" request-id ( " " script )? | script ) line-end
-request-id   ::= [^ #xA#xD]+
+/* Read as the parser reads it: alternatives are tried in order and the first
+   that matches is taken; ?, * and + take as much as they can and never give
+   it back; a production for a token matches the whole token; A - B matches
+   what A matches unless B matches it too. [C] marks value limits: whole
+   numbers are below 2^31, decimals have at most 9 digits before their point,
+   and a duration is at most 2^31 - 1 ticks. */
+
+/* Line protocol: an auth line, then one request per line */
+connection   ::= auth-line request*
+auth-line    ::= "auth" #x20 auth-token line-end
+auth-token   ::= [^#x20#x9#xA#xD]+
+request      ::= ( "#" request-id ( #x20 line-script )? | line-script )
+                 line-end
+request-id   ::= [^#x20#x9#xA#xD;]+
+line-script  ::= step ( ";" step )*
 line-end     ::= #xD? #xA
 
-/* Scripts: steps in order; empty steps are ignored */
+/* Scripts; MCP's run tool also ends steps at line breaks */
 script       ::= step ( separator step )*
 separator    ::= ";" | #xA | #xD
 step         ::= blank* ( "?"? statement blank* )?
@@ -37,32 +47,36 @@ blank        ::= #x20 | #x9
 statement    ::= wait | sample | assert | if | call
 
 /* Constructs */
+construct    ::= "wait" | "sample" | "assert" | "if"
 wait         ::= "wait" blank+ ( duration | "idle" | query blank+ "until"
-                 blank+ predicates ( blank+ option )* )
-sample       ::= "sample" blank+ query blank+ "every" blank+ duration blank+
-                 count ( blank+ option )*
+                 blank+ predicates ( blank+ wait-option )* )
+wait-option  ::= ( "stable=" | "every=" ) duration
+               | "timeout=" ( duration | seconds ) | clock
+sample       ::= "sample" blank+ query blank+ "every" blank+ duration
+                 blank+ count ( blank+ clock )?
+clock        ::= "clock=" ( "server" | "client" )
 assert       ::= "assert" blank+ query blank+ predicates
 if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
                  "?"? statement
-query        ::= command-name ( blank+ ( argument - stop-word ) )*
-stop-word    ::= predicate | "until" | "every" | "then"
+query        ::= ( command-name - construct ) ( blank+ ( token - stop ) )*
+stop         ::= "ok" | "until" | "every" | "then" | test-shape
 
-/* Calls: the arguments match one of the command's forms, whose last slot
-   may be text */
-call         ::= command-name ( blank+ argument )*
+/* Calls: the tokens are matched against the command's forms */
+call         ::= ( command-name - construct ) ( blank+ token )*
 command-name ::= ( namespace ":" )? name
 name         ::= [a-z] [a-z0-9_]*
-argument     ::= option | token
-option       ::= option-name "=" ( ( token-char - "=" ) token-char* )?
-option-name  ::= identifier ( ":" identifier )?
 
 /* Predicates */
 predicates   ::= predicate ( blank+ ( "and" blank+ )? predicate )*
 predicate    ::= "ok" | test
-test         ::= field-path comparison operand
+test         ::= field-path ( ( "==" | "!=" ) operand
+                 | ( "<=" | ">=" | "<" | ">" ) ( decimal | reference ) )
+operand      ::= reference | value
+reference    ::= "$" field-path
+value        ::= ( token-char - [$<>=!&|] ) ( token-char - [<>=!&|] )*
+test-shape   ::= field-path comparison token-char+
 comparison   ::= "==" | "!=" | "<=" | ">=" | "<" | ">"
-operand      ::= "$" field-path | token-char+
-field-path   ::= identifier ( "." ( identifier | digits ) )*
+field-path   ::= identifier ( "." ( identifier | digits ) )*      /* [C] */
 
 /* Tokens */
 token        ::= token-char+
@@ -70,27 +84,35 @@ token-char   ::= "\;" | [^#x20#x9#xA#xD;]
 identifier   ::= [A-Za-z_] [A-Za-z0-9_]*
 digits       ::= [0-9]+
 
-/* Slot types; whole numbers, also in references and counts, fit 32 bits */
+/* What forms are made of */
+option       ::= option-name "=" ( token-char - "=" ) token-char*
+option-name  ::= identifier ( ":" identifier )?
+text         ::= token ( blank+ token )*
+word         ::= token - ( option | test-shape )
+
+/* Slot types */
 position     ::= "~"? decimal "," decimal "," decimal
 point        ::= decimal "," decimal
-entity       ::= "e" digits
-widget       ::= "w" digits
-menu-slot    ::= "s" digits
+entity       ::= "e" digits                                       /* [C] */
+widget       ::= "w" digits                                       /* [C] */
+menu-slot    ::= "s" digits                                       /* [C] */
 uuid         ::= hex8 "-" hex4 "-" hex4 "-" hex4 "-" hex8 hex4
 hex8         ::= hex4 hex4
-hex4         ::= [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F] [0-9a-fA-F]
-integer      ::= "-"? digits
+hex4         ::= hex hex hex hex
+hex          ::= [0-9a-fA-F]
+integer      ::= "-"? digits                                      /* [C] */
 number       ::= decimal
-decimal      ::= "-"? digits ( "." digits )?
-count        ::= "x" digits
-duration     ::= digits "t" | digits ( "." digits )? "s"
-id           ::= ( namespace ":" )? path
+decimal      ::= "-"? digits ( "." digits )?                      /* [C] */
+count        ::= "x" digits                                       /* [C] */
+duration     ::= digits "t" | seconds "s"                         /* [C] */
+seconds      ::= digits ( "." digits )?                           /* [C] */
+id           ::= namespace ":" path | bare-id
+bare-id      ::= path - ( decimal | count | duration | entity | widget
+                        | menu-slot | uuid )
 namespace    ::= [a-z0-9_.-]+
 path         ::= [a-z0-9_./-]+
 tag          ::= "#" id
 pattern      ::= [a-z0-9_.:/*-]* "*" [a-z0-9_.:/*-]*
-word         ::= token - ( option | test )
-text         ::= ( "\;" | [^;#xA#xD] )*
 ```
 
 #### Scenario: A construct in a script
@@ -122,12 +144,40 @@ the most tokens.
 - **THEN** the first two match the form taking a point or a widget, and the
   third the form taking a container slot
 
+#### Scenario: Optional slot that doesn't fit
+- **WHEN** an agent runs `turn 90 20 10`
+- **THEN** the result is `err syntax col 12:` naming the duration the optional
+  `ticks` slot takes, like `10t`
+
+### Requirement: Declarations follow the grammar
+Registration SHALL reject a command whose names the grammar can't reach: a
+command name that isn't `name`, a namespace that isn't `namespace`, an option
+name that isn't `option-name` (or `<identifier>:*` for a family of options), a
+field name that isn't an identifier, or a keyword word that isn't a word or is
+one of `ok`, `until`, `every`, `then`, `and` and `full`.
+
+#### Scenario: Option that can't be written
+- **WHEN** an extension declares an option named `max-speed`
+- **THEN** registration fails, naming the option
+
+### Requirement: Unambiguous forms
+Registration SHALL reject forms whose parts can't all be reached: two slots of
+one form with the same name, a slot type that an earlier type of the same slot
+always takes first (any type after `word`, `integer` after `number`), an
+optional slot whose types could take a token the next part is meant for, and
+an optional group whose first part is optional.
+
+#### Scenario: Optional word before a number
+- **WHEN** an extension declares a form `[name:word] <amount:integer>`
+- **THEN** registration fails, because `name` would take the amount
+
 ### Requirement: Options
-Options SHALL be written `<name>=<value>` and may stand anywhere after the
+Options SHALL be written `<name>=<value>`, with a value, anywhere after the
 command name and before any text, each at most once. A command takes only the
-options it declares, and every action also takes `timeout=`. Where text may
-start, a token counts as an option only when the command declares it, so text
-can begin with `name=value`.
+options it declares, each value checked against the slot types the declaration
+gives it, and every action takes `timeout=` (a duration or seconds). A family
+`rule:*` takes `rule:<identifier>=<value>`. Where text may start, a token is an
+option only when the command declares it, so text can begin with `name=value`.
 
 #### Scenario: Option position doesn't matter
 - **WHEN** an agent runs `mine timeout=90 #logs x6` or `mine #logs x6
@@ -141,6 +191,16 @@ can begin with `name=value`.
 #### Scenario: Option given twice
 - **WHEN** an agent runs `mine #logs timeout=9 timeout=90`
 - **THEN** the result is `err syntax` naming the repeated option
+
+#### Scenario: Option value checked before running
+- **WHEN** an agent runs `status; goto 1,64,1 near=abc`
+- **THEN** the reply is `skip` followed by `err syntax` naming the number
+  `near=` takes, and nothing ran
+
+#### Scenario: Family of options
+- **WHEN** an agent runs `create world w1 rule:doDaylightCycle=false
+  rule:keepInventory=true`
+- **THEN** both game rules are set, in that order
 
 ### Requirement: Parsing before running
 A script SHALL be parsed completely before any of it runs. A syntax error in a
@@ -158,6 +218,29 @@ own result, and the rest of the script runs.
 - **WHEN** an agent runs `?frobnicate; status`
 - **THEN** the reply is `err syntax col 2: unknown command frobnicate…`
   followed by the `status` result
+
+### Requirement: Soft steps and nesting
+A step that starts with `?` SHALL be soft even when what follows doesn't parse.
+A `?` before the statement after `then` makes only that statement soft, while
+`?if` makes the `if` and its statement soft. An `if` nests at most 16 deep.
+
+#### Scenario: Blank after the question mark
+- **WHEN** an agent runs `? frobnicate; status`
+- **THEN** the first line is `err syntax col 1: …` and `status` runs
+
+### Requirement: Hints for likely mistakes
+A syntax error SHALL say how to fix the likely mistake when a predicate is
+written with `=` or with blanks around its comparison, a duration lacks its
+unit, a construct's option is written inside its query, or a construct's
+keyword is written as an option (`every=` in `sample`) or the other way round.
+
+#### Scenario: Predicate with a single equals sign
+- **WHEN** an agent runs `assert block ~0,-1,0 id=air`
+- **THEN** the result is `err syntax` saying that predicates compare with `==`
+
+#### Scenario: Duration without a unit
+- **WHEN** an agent runs `wait 5`
+- **THEN** the result is `err syntax` asking for `5t` or `5s`
 
 ### Requirement: Fail-fast with skipped remainder
 When a command fails while running, the script SHALL stop. The failing
@@ -211,7 +294,8 @@ A count SHALL be written `x<n>` (e.g. `x6`), a duration `<n>t` (ticks) or `<n>s`
 ### Requirement: Identifier tokens without default namespace
 Block, item, entity-type and other registry identifiers SHALL be printed without
 the `minecraft:` namespace. Identifiers from other namespaces SHALL keep their
-namespace. Input SHALL accept both forms.
+namespace. Input SHALL accept both forms, in arguments and in predicates, where
+`id==minecraft:air` matches `air`.
 
 #### Scenario: Modded and vanilla ids
 - **WHEN** inventory holds vanilla stone and Create's andesite alloy
@@ -238,8 +322,9 @@ documented in `help`.
 ### Requirement: Diffs on repeated observation
 Within a session, repeating an observation command whose output is diffable
 (`look`, `inv`, `screen`) SHALL return only the changes since that session's
-last output of the same command: `+` added, `-` removed, `~` changed. A `full`
-argument forces a complete output, and an unchanged result prints `ok same`.
+last output of the same command: `+` added, `-` removed, `~` changed. `full`,
+which may stand anywhere an option may and is never taken by a slot, forces a
+complete output, and an unchanged result prints `ok same`.
 
 #### Scenario: Nothing changed
 - **WHEN** an agent runs `inv` twice with no inventory change between
@@ -293,10 +378,10 @@ only the session that sets it.
 `wait <query> until <predicate> [and <predicate>…]` SHALL re-run a read-only
 command until every predicate over its result holds. A predicate is
 `<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of
-rows. A value written `$<field>` is that other field of the same result, so two
-fields can be compared. Options after `until`: `stable=<Nt>` (consecutive
-matches needed, default 1), `every=<Nt>` (default 1t), `timeout=<duration>`
-(default 60s).
+rows; an ordering compares with a number or `$<field>`, another field of the
+same result. Options after the predicates: `stable=` how long the predicates
+must keep holding, `every=` how often to check (both default 1t), `timeout=`
+(default 60s, a plain number is seconds).
 
 #### Scenario: Wait for a block change
 - **WHEN** an agent runs `wait block 0,-60,0 until id==air`
@@ -323,13 +408,28 @@ matches needed, default 1), `every=<Nt>` (default 1t), `timeout=<duration>`
 - **THEN** the wait returns once the player has taken damage, whatever their
   maximum health is
 
+#### Scenario: Ordering against text
+- **WHEN** an agent runs `wait status until hp<max_hp`
+- **THEN** the result is `err syntax` saying an ordering compares with a number
+  or `$field`
+
+### Requirement: Samples
+`sample <query> every <duration> x<n>` SHALL run a read-only query n times, 1
+to 1,000, every N ticks, at least 1t. A server-side query is sampled on the
+server clock: `clock=server` asserts that, and `clock=client` is refused for a
+server-side query.
+
+#### Scenario: Too many samples
+- **WHEN** an agent runs `sample status every 1t x1001`
+- **THEN** the result is `err syntax` naming the 1,000 limit
+
 ### Requirement: Assertions
 `assert <query> <predicate> [and <predicate>…]` SHALL run a read-only command
 once and check the predicates of `wait … until` against its result: `ok` with
 the observed fields when they hold, otherwise `err assert_failed` with them
-(and the query's error code if it failed). The predicates are the trailing
-tokens; the query runs on the thread and behind the gate it would have on its
-own. `?assert` is soft like any command.
+(and the query's error code if it failed). The query ends at its first stop
+token (a predicate, `ok`, `until`, `every` or `then`) and runs on the thread and
+behind the gate it would have on its own. `?assert` is soft.
 
 #### Scenario: Script as a test
 - **WHEN** an agent runs `use 10,64,5; wait block 12,60,5 until id==air
@@ -338,11 +438,10 @@ own. `?assert` is soft like any command.
   assert_failed props.lit=false` followed by `skip` when it is not
 
 ### Requirement: Conditionals
-`if <query> <predicate> [and …] then <command>` SHALL run the command when the
-predicates hold, with its result standing for the `if`; otherwise the result is
-`ok false` with the observed fields. The query is checked as for `assert`. A
-`?if` makes its command soft too. `assert` and `if` only work as commands of a
-script, not inside `wait` or `sample`.
+`if <query> <predicate> [and …] then <statement>` SHALL run the statement when
+the predicates hold, with its result standing for the `if`; otherwise the
+result is `ok false` with the observed fields. The query is checked as for
+`assert`. A construct (`wait`, `sample`, `assert`, `if`) is never a query.
 
 #### Scenario: Conditional action
 - **WHEN** an agent runs `if block ~0,-1,0 id==grass_block then place torch
@@ -352,15 +451,15 @@ script, not inside `wait` or `sample`.
 
 #### Scenario: Assert inside wait
 - **WHEN** an agent runs `wait assert status hp>5 until ok`
-- **THEN** the result is `err syntax`
+- **THEN** the result is `err syntax` saying `assert` can't be a query
 
 ### Requirement: In-band help
 `help` SHALL list command groups. `help <command|group|errors>` SHALL return
 syntax, arguments, result fields and one example. Help text SHALL report
-commands this target does not support. `help grammar` SHALL print the grammar
-of every command's forms, extensions included, as EBNF productions in the
-notation of the grammar, with blanks between items and options allowed between
-any two of them.
+commands this target does not support. `help grammar` SHALL print every
+command's forms, extensions included, as EBNF productions named
+`<command>-command` (`.` for `:`), with keyword choices inline, blanks between
+items, options allowed between any two items and `full` on diffable commands.
 
 #### Scenario: Help for a command
 - **WHEN** an agent runs `help goto`
@@ -368,8 +467,8 @@ any two of them.
 
 #### Scenario: Grammar of the commands
 - **WHEN** an agent runs `help grammar`
-- **THEN** the reply has one production per command, such as `mouse ::= "mouse"
-  ( ( "down" | "up" ) button | "click" button duration? | … )`
+- **THEN** the reply has one production per command, such as `mouse-command
+  ::= "mouse" ( ( "down" | "up" ) ( "left" | "right" | "middle" ) | … )`
 
 #### Scenario: Help lists result fields
 - **WHEN** an agent runs `help status`

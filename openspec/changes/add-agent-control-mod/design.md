@@ -376,46 +376,60 @@ so it is rejected as well.
 The language is defined by the EBNF in the `command-language` spec, and each
 command's arguments by the forms it declares. Parsing follows both directly:
 
-- **Lexer:** scans a script once into steps of tokens with their columns,
-  resolving `\;` and noting a leading `?` and empty steps. It knows nothing
-  about commands.
+- **Lexer:** scans a script once into steps of tokens with their columns (as
+  written, so `\;` counts two), resolving `\;`. Blanks are space and tab and
+  nothing else, also when trimming. It knows nothing about commands.
 - **Lexicon:** one recognizer per lexical production (position, point, entity,
-  widget, slot, uuid, integer, decimal, count, duration, id, tag, pattern,
-  identifier, field path, option, test), each a small scanner written after
-  its production rather than a regular expression. It lives in the API, so
-  `Position.parse`, `Duration.parse` and `EntityRef.parse` use the same rules.
+  widget, menu slot, uuid, integer, decimal, count, duration, seconds, id,
+  tag, pattern, identifier, field path, option, test and test shape), each a
+  small scanner written after its production rather than a regular
+  expression, with the value limits of the grammar. Bare ids exclude the
+  shapes of the other slot types, so an optional id slot can't take `x6` or
+  `5`. It lives in the API, so `Position.parse`, `Duration.parse` and
+  `EntityRef.parse` use the same rules. A test translates the spec's token
+  productions to regular expressions and compares them with the recognizers on
+  generated input, so the two can't drift.
 - **Forms:** `CommandSpec` holds one or more forms. A form is a sequence of
-  keywords (bound to a name, like `op`), slots (a name and one or more slot
-  types, optional or not), optional groups and, last, a text slot. The older
-  `arg`/`optionalArg`/`choice` builder calls add to the first form. A slot with
-  several types records which one matched, so handlers switch on the type
-  instead of re-reading the token. Registration rejects text anywhere but last,
-  and an example that doesn't parse.
+  slots (keywords are slots of words, bound to a name like `op`) and optional
+  groups, with text last. A slot takes one or more slot types and records which
+  one matched; `Args` accessors check it. Options are declared with the slot
+  types of their value. Registration checks a declaration against the grammar
+  (names, option names, keyword words) and against itself (duplicate slot
+  names, types hidden by an earlier one, optional slots that could take the
+  next part's token, groups starting with an optional part), then freezes it.
 - **Parser:** recursive descent over the tokens. A step is a construct when its
   first token is `wait`, `sample`, `assert` or `if`, otherwise a call. A call's
-  tokens are matched against each form in turn, left to right: options are
-  taken wherever they stand, checked against the declared names, once each;
-  optional slots and groups take a token when it fits. The first form that uses
-  every token wins, and when none does, the error is the one from the form that
-  got furthest. A construct's query is matched the same way, but stops at the
-  construct's keyword or the first predicate, and must end its form there.
+  tokens are matched against each form in turn, left to right: options (and
+  `full` on diffable commands) are taken wherever they stand, checked against
+  the declarations, once each; optional slots and groups take a token when it
+  fits. The first form that uses every token wins. A construct's query ends at
+  its first stop token (a test shape, `ok`, `until`, `every`, `then`), and the
+  predicates after it are checked against the strict `test` production. `if`
+  nests at most 16 deep.
 - **Syntax tree:** the parser returns statements (`Call`, `WaitTicks`,
-  `WaitIdle`, `WaitUntil`, `Sample`, `Assert`, `If`), each with its soft flag
-  and the column of every token for errors. The script runner and the engine
-  execute the tree; nothing is parsed again at run time.
-- **Errors:** a syntax error carries the column within its step. Because the
-  whole script is parsed first, a typo late in a script stops it before anything
-  runs.
+  `WaitIdle`, `WaitUntil`, `Sample`, `Assert`, `If`), each with its soft flag.
+  The script runner and the engine execute the tree; nothing is parsed again at
+  run time.
+- **Errors:** a syntax error carries the column within its step. When no form
+  matches, the error comes from the form that got furthest; expectations from
+  forms failing at the same token are merged as a set, and optional slots
+  skipped at that token are named too. Likely agent mistakes (a predicate with
+  `=` or blanks, a duration without a unit, a construct option inside the
+  query) get a hint. Because the whole script is parsed first, a typo late in a
+  script stops it before anything runs.
 - **Grammar listing:** `help grammar` prints each command's forms as EBNF
   productions, generated from the declarations, so the listing can't drift from
   the parser. A golden test pins the built-in commands' productions, and another
   checks that the core grammar the code prints is the one in the spec.
-- **Tests:** the lexer, lexicon, parser and grammar printer are covered
-  completely: JaCoCo runs with the unit tests, and `check` fails below 100% of
-  lines and branches for those classes.
+- **Tests:** the lexer, lexicon, parser, forms, slots, arguments and grammar
+  printer are covered completely: JaCoCo runs with the unit tests, and `check`
+  fails below 100% of lines and branches for those classes. Beyond coverage, a
+  fuzz test feeds random scripts to the parser (it must never throw), columns
+  in expected errors are computed from the script text, and each spec scenario
+  is asserted on every field it mentions.
 
-The extension API changes shape (forms, slot types, matched types), so
-`blockpilot-api` becomes 2.0.0.
+The extension API changes shape (forms, slot types, matched types, typed
+options, frozen declarations), so `blockpilot-api` becomes 2.0.0.
 
 ## Risks / Trade-offs
 
