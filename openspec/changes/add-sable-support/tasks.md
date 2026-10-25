@@ -41,6 +41,7 @@
 - [x] 6.2 With Sable 2.0.6 and a mod that builds sub-levels in a dev client: run the cases end to end (aim on a button aboard, find a door, `sable:tp` onto the bridge, `use` a seat, a chase camera on a moving ship with `sample … while wait`); verify each and record the Sable and companion versions in the README
 - [ ] 6.3 Build the jar, share it with the agents play-testing Sable-based mods with what changed, and fold their feedback into the specs or a follow-up; verify they confirm the reported cases work
 - [x] 6.4 From the play-test of 6.3: cap `sable:find` at `find`'s own reach (a cube 128 blocks each way) instead of a 64-block cube, and add `use <pos> any` to skip the obstruction check for multi-block panels; verify that `sable:find` scans a ship whose plot bounds exceed 262,144 positions, and that `use <pos> any` clicks a block behind another block aboard where plain `use` gives `err obstructed`
+- [x] 6.5 From the play-test of 6.3 (a seat aboard a fast ship needed two tries): make `use` at a plot position press only on a tick whose crosshair rests on the target, aiming just before the game works out the crosshair's hit and pressing just before it handles key clicks, and lead `face` by the target's velocity relative to the player; verify with the player seated aboard a ship flying at speed, and that a covered target still gives `err obstructed` and `any` still clicks through
 
 ## Workflow follow-up
 

@@ -11,13 +11,16 @@ import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.input.AimedClick;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.path.Navigator;
 import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.KeyMappingAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -49,6 +52,8 @@ final class ActionCommands {
     /** A move by distance fails when the player hasn't got this far from where it last progressed in that long. */
     private static final double MOVE_PROGRESS = 0.1;
     private static final int MOVE_STUCK_TICKS = 20;
+    /** How long {@code use} re-aims at a block aboard for the crosshair to rest on it before it gives up. */
+    private static final int MAX_AIM_TICKS = 10;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
     private static boolean holdFlight;
 
@@ -202,18 +207,37 @@ final class ActionCommands {
             }
             return () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
         }
-        Position absolute = context.resolve(args.position(name));
-        boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
-            && absolute.z() == Math.floor(absolute.z());
         Level level = minecraft().level;
+        Position absolute = context.resolve(args.position(name));
         BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
-        Vec3 target = whole ? shapeCentre(level, block) : new Vec3(absolute.x(), absolute.y(), absolute.z());
-        if (SableSupport.subLevels().at(level, block) != null) {
-            // The crosshair is picked at the start of the next tick, so aim where the point will be by then.
-            return () -> SableSupport.subLevels().toWorld(level, target)
-                .add(SableSupport.subLevels().velocity(level, target).scale(1 / 20.0));
+        Vec3 target = target(level, absolute);
+        SubLevels.Info subLevel = SableSupport.subLevels().at(level, block);
+        if (subLevel != null) {
+            return () -> SableSupport.subLevels().toWorld(level, target).add(lead(level, target, subLevel.id()));
         }
         return () -> target;
+    }
+
+    /** For whole coordinates the centre of the block's shape (a lever's base, not the air above it), else the point. */
+    private static Vec3 target(Level level, Position absolute) {
+        boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
+            && absolute.z() == Math.floor(absolute.z());
+        return whole ? shapeCentre(level, BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
+            : new Vec3(absolute.x(), absolute.y(), absolute.z());
+    }
+
+    /**
+     * How far a point aboard moves, as the player sees it, until the crosshair is picked at the start of the next tick:
+     * nothing when the player stands on or rides the same sub-level, which carries them both.
+     */
+    private static Vec3 lead(Level level, Vec3 point, UUID subLevel) {
+        SubLevels subLevels = SableSupport.subLevels();
+        SubLevels.Info carrier = subLevels.carrying(player());
+        if (carrier != null && carrier.id().equals(subLevel)) {
+            return Vec3.ZERO;
+        }
+        Vec3 velocity = subLevels.velocity(level, point);
+        return (carrier == null ? velocity : velocity.subtract(carrier.velocity())).scale(1 / 20.0);
     }
 
     private static Vec3 shapeCentre(Level level, BlockPos pos) {
@@ -412,14 +436,26 @@ final class ActionCommands {
         closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
         BlockPos aboard = args.has("any") ? null : plotBlock(context, args, "target");
+        Level level = minecraft().level;
+        Vec3 plotPoint = aboard == null ? null : target(level, context.resolve(args.position("target")));
+        Supplier<Vec3> now = aboard == null ? null : () -> SableSupport.subLevels().toWorld(level, plotPoint);
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
         KeyMapping use = options().keyUse;
         KeyMapping shift = options().keyShift;
+        Runnable press = () -> {
+            if (hold != null) {
+                InputState.hold(session, use);
+            } else {
+                click(use);
+            }
+        };
         return new Action() {
             private int step;
             private int held;
+            private int aimed;
+            private AimedClick click;
             private Fields hit;
 
             @Override
@@ -440,22 +476,13 @@ final class ActionCommands {
                         return null;
                     }
                 }
+                if (step == 1 && aboard != null) {
+                    return pressAboard();
+                }
                 if (step == 1) {
                     step++;
-                    if (aboard != null) {
-                        CommandException obstructed = obstruction(aboard);
-                        if (obstructed != null) {
-                            release();
-                            throw obstructed;
-                        }
-                        lookAt(target.get());
-                    }
                     hit = hit();
-                    if (hold != null) {
-                        InputState.hold(session, use);
-                    } else {
-                        click(use);
-                    }
+                    press.run();
                     return null;
                 }
                 if (hold != null && ++held < hold.ticks()) {
@@ -465,7 +492,31 @@ final class ActionCommands {
                 return Result.ok(hit);
             }
 
+            /**
+             * A block aboard moves, and the game picks the crosshair's hit a tick after the aim: press only on a tick
+             * whose hit is the target, re-aiming until then.
+             */
+            private Result pressAboard() throws CommandException {
+                if (click != null && click.fired()) {
+                    // Pressed during this tick's key handling, on the hit still in place now.
+                    hit = hit();
+                    step++;
+                    return null;
+                }
+                if (click != null && ++aimed >= MAX_AIM_TICKS) {
+                    release();
+                    CommandException obstructed = obstruction(aboard);
+                    throw obstructed != null ? obstructed : new CommandException("out_of_reach", Rel.of(aboard)
+                        .toString());
+                }
+                click = AimedClick.arm(aboard, now, press);
+                return null;
+            }
+
             private void release() {
+                if (click != null) {
+                    click.disarm();
+                }
                 InputState.release(use);
                 if (sneak) {
                     InputState.release(shift);

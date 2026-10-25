@@ -137,8 +137,16 @@ releases. The approach, in layers:
   position it projects the centre of the block's shape through the
   sub-level's logical pose on every tick, so `face` and `use` track a moving
   sub-level.
-  - The game picks the crosshair's target at the start of the next tick, so
-    the aim leads by one tick of the point's velocity.
+  - The game works out the crosshair's hit early in each tick and handles
+    key clicks later in the same tick. A `use` at a plot position hooks both
+    points: just before the hit is worked out, it turns the player towards
+    the block as the sub-level lies at that moment; just before key handling,
+    it presses only if that hit is the target. The press so goes to exactly
+    the hit that was checked, at any speed. It re-aims for up to 10 ticks.
+  - Predicting instead (aiming a tick ahead by the target's velocity) missed
+    for a player riding the ship, who moves with it, and while a client's
+    view of a ship was still speeding up after a push. `face` still leads by
+    the velocity relative to the player, which needs no hook.
   - A floor lever fills only the bottom of its cell, which is why the aim
     goes at the shape's centre rather than the cell's. The same change
     applies to world blocks.

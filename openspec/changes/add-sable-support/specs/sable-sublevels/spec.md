@@ -77,22 +77,32 @@ SHALL refuse a plot position and point to `sable:tp`.
 
 ### Requirement: Aiming follows a sub-level
 `face` and `use` at a plot position SHALL aim at that block where its sub-level
-is on each tick, so a moving or turning sub-level doesn't throw the aim off.
-When the crosshair ends on another block, `use` SHALL fail with `err
-obstructed <block> <position>`, naming what is in the way instead of using it.
-`use <pos> any` SHALL skip that check and click whatever the crosshair ends on.
-
-#### Scenario: Seat behind a wall panel
-- **WHEN** an agent runs `use <plot position of a seat>` and a wall panel of
-  the same ship covers the seat from where the player stands
-- **THEN** the result is `err obstructed` with the wall panel's id and plot
-  position, and nothing is used
+is on each tick, so a moving or turning sub-level doesn't throw the aim off,
+whether the player stands beside it or rides it.
 
 #### Scenario: Use while the ship moves
 - **WHEN** an agent runs `use <plot position of a lever>` on a ship under way,
   with a clear line of sight
 - **THEN** the lever is used, although its world position changed during the
   aim
+
+#### Scenario: Use while riding the ship
+- **WHEN** an agent seated aboard a ship flying at speed runs `use <plot
+  position of a lever aboard>`
+- **THEN** the lever is used on the first try
+
+### Requirement: Use clicks only its target aboard
+`use` at a plot position SHALL click only on a tick when the crosshair rests on
+the target. When the crosshair keeps ending on another block for half a
+second, it SHALL fail with `err obstructed <block> <position>`, naming what is
+in the way instead of using it. `use <pos> any` SHALL skip that check and click
+whatever the crosshair ends on.
+
+#### Scenario: Seat behind a wall panel
+- **WHEN** an agent runs `use <plot position of a seat>` and a wall panel of
+  the same ship covers the seat from where the player stands
+- **THEN** the result is `err obstructed` with the wall panel's id and plot
+  position, and nothing is used
 
 #### Scenario: Key on a multi-block panel
 - **WHEN** an agent runs `use <point on a touch key> any` and another block of
