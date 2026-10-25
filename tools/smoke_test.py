@@ -19,6 +19,12 @@ import sys
 import time
 
 CLIENT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blockpilot.py")
+# Read-only commands that must not move, turn or reselect anything, nor make the client send packets.
+PERCEPTION = ["status", "look 8", "find grass_block 4 2", "block ~0,-1,0", "block ~0,-1,0 side=server",
+              "blocks ~-1,-1,-1 ~1,0,1", "screen", "worlds", "servers", "sounds limit=1", "messages limit=1",
+              "particles", "log mark", "help look"]
+# What a client sends on its own while standing still: position reminders, keep-alives, chunk batch acks.
+BACKGROUND_PACKETS = {"move_player_pos", "move_player_status_only", "keep_alive", "chunk_batch_received"}
 SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1,0 side=server",
                  "blocks ~0,-1,0 ~1,-1,1", "worlds", "snapshot list", "tick query", "log mark",
                  "server time query day", "sample status every 1t x2", "wait status until ok", "help status",
@@ -39,6 +45,22 @@ def shape(result):
     fields = sorted(key for key in result if key != "rows")
     rows = sorted({key for row in result.get("rows", []) for key in row})
     return " ".join(fields) + (" rows[" + " ".join(rows) + "]" if rows else "")
+
+
+def check_perception_is_passive(game_dir):
+    """Runs every perception command across a few dozen ticks; returns a problem, or None if nothing changed."""
+    script = "inv; status; perf start passive; " + "; ".join(f"{query}; wait 2t" for query in PERCEPTION) \
+        + "; perf stop; status; inv"
+    code, output = run(game_dir, script)
+    if code != 0:
+        return f"exit {code}: {output.strip()}"
+    statuses = [re.sub(r" daytime\d+", "", line) for line in output.splitlines() if line.startswith("ok pos ")]
+    if len(statuses) < 2 or len(set(statuses)) != 1:
+        return f"status changed: {statuses}"
+    if "\nok same\n" not in output + "\n":
+        return "the inventory or selected slot changed"
+    sent = set(re.findall(r"^  out (\S+) ", output, re.MULTILINE)) - BACKGROUND_PACKETS
+    return f"perception sent packets: {sorted(sent)}" if sent else None
 
 
 def write_shapes(game_dir, path):
@@ -109,6 +131,12 @@ def main():
             print(f"FAIL {name}: exit {code}, missing {missing}\n    " + output.strip().replace("\n", "\n    "))
         else:
             print(f"pass {name}")
+    problem = check_perception_is_passive(args.game_dir)
+    if problem:
+        failures += 1
+        print(f"FAIL perception is passive: {problem}")
+    else:
+        print("pass perception is passive")
     code, output = run(args.game_dir, "status; inv", as_json=True)
     try:
         reply = json.loads(output.splitlines()[0])
@@ -125,7 +153,7 @@ def main():
     else:
         failures += 1
         print(f"FAIL clean up: {output.strip()}")
-    total = len(steps) + 2 + (1 if args.shapes else 0)
+    total = len(steps) + 3 + (1 if args.shapes else 0)
     print(f"{total - failures}/{total} passed")
     return 1 if failures else 0
 
