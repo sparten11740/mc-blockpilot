@@ -13,6 +13,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.path.Navigator;
+import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.mixin.KeyMappingAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -183,8 +185,10 @@ final class ActionCommands {
         return fields;
     }
 
-    /** A point to look at: an entity's center, a block's center for whole coordinates, else the exact point. */
-    /** The point a position or entity argument names; an entity's centre follows it. */
+    /**
+     * The point a position or entity argument names: an entity's centre, a block's centre for whole coordinates, else
+     * the exact point. An entity's centre follows it, and a point in a sub-level's plot follows the sub-level.
+     */
     static Supplier<Vec3> point(CommandContext context, Args args, String name) throws CommandException {
         if (args.type(name) == ArgType.ENTITY) {
             Entity entity = minecraft().level.getEntity(args.entity(name).id());
@@ -198,6 +202,10 @@ final class ActionCommands {
             && absolute.z() == Math.floor(absolute.z());
         Vec3 target = whole ? Vec3.atCenterOf(BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
             : new Vec3(absolute.x(), absolute.y(), absolute.z());
+        Level level = minecraft().level;
+        if (SableSupport.subLevels().at(level, BlockPos.containing(target)) != null) {
+            return () -> SableSupport.subLevels().toWorld(level, target);
+        }
         return () -> target;
     }
 
@@ -356,7 +364,11 @@ final class ActionCommands {
             target = () -> entity.isRemoved() ? null : entity.position();
         } else {
             Position absolute = context.resolve(args.position("target"));
-            Vec3 goal = Vec3.atBottomCenterOf(BlockPos.containing(absolute.x(), absolute.y(), absolute.z()));
+            BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
+            if (SableSupport.subLevels().at(minecraft().level, block) != null) {
+                throw new CommandException("syntax", "goto can't walk onto a sub-level; use sable:tp " + absolute);
+            }
+            Vec3 goal = Vec3.atBottomCenterOf(block);
             target = () -> goal;
         }
         return new Navigator(context.sessionId(), target, near);

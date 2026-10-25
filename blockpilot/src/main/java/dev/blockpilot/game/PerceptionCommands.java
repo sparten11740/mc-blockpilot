@@ -82,7 +82,8 @@ final class PerceptionCommands {
                 Sides.NAMES)
             .help("one block: id, non-default properties, block entity type")
             .field("id", "block id").field("props", "non-default state properties").field("be", "block entity type")
-            .example("block ~0,-1,0"));
+            .field("sub", "with Sable: the sub-level whose plot holds the block")
+            .field("world", "with Sable: where that block is in the world").example("block ~0,-1,0"));
         registry.register(CommandSpec.query("blocks", this::blocks).needsWorld().group("perception")
             .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION)
             .option("side", "server: read the integrated server's level (cheats on)", Sides.NAMES)
@@ -180,7 +181,7 @@ final class PerceptionCommands {
         if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && level != null) {
             String id = Ids.of(level.getBlockState(block.getBlockPos()));
             fields.put("aim", id, "aim:" + id).bare("aim_pos", Rel.of(block.getBlockPos()));
-            Rel.sub(fields, block.getBlockPos());
+            Rel.sub(fields, level, block.getBlockPos());
             fields.put("face", block.getDirection().getName(), "face:" + block.getDirection().getName())
                 .hidden("aim_at", Rel.absolute(hit.getLocation()));
         } else if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
@@ -386,11 +387,14 @@ final class PerceptionCommands {
 
     private Result block(CommandContext context, Args args) throws CommandException {
         BlockPos pos = Rel.block(context.resolve(args.position("pos")));
+        String printed = Rel.of(pos).toString();
         return Sides.read(args, (level, server) -> {
             if (!Sides.loaded(level, pos)) {
-                throw new CommandException("unloaded", Rel.of(pos).toString());
+                throw new CommandException("unloaded", printed);
             }
-            return Result.ok(describe(level, pos));
+            Fields fields = describe(level, pos);
+            Rel.sub(fields, level, pos);
+            return Result.ok(fields);
         });
     }
 

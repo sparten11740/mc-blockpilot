@@ -42,12 +42,11 @@ public final class Rel {
     }
 
     /** For a block in a sub-level's plot, adds {@code sub=<name> world=<x,y,z>}: where its centre is in the world. */
-    public static void sub(Fields fields, BlockPos pos) {
-        SubLevels.Info subLevel = aboard(pos);
+    public static void sub(Fields fields, Level level, BlockPos pos) {
+        SubLevels.Info subLevel = SableSupport.subLevels().at(level, pos);
         if (subLevel != null) {
             fields.put("sub", subLevel.name())
-                .put("world", absolute(SableSupport.subLevels().toWorld(Minecraft.getInstance().level,
-                    Vec3.atCenterOf(pos))));
+                .put("world", absolute(SableSupport.subLevels().toWorld(level, Vec3.atCenterOf(pos))));
         }
     }
 
