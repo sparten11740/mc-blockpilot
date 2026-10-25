@@ -33,6 +33,12 @@ public final class SableSupport {
             started.off("Sable is not installed");
             return;
         }
+        // Targets for a Minecraft version Sable had no release for are built without the compat package.
+        if (SableSupport.class.getClassLoader().getResource(COMPAT.replace('.', '/') + ".class") == null) {
+            started.off("this Blockpilot build has no Sable integration");
+            Blockpilot.LOGGER.warn("Sable integration {}", started.status());
+            return;
+        }
         String version = System.getProperty(VERSION_PROPERTY, ClientPlatform.versionOf("sablecompanion"));
         String problem = SableIntegration.versionProblem(version);
         if (problem != null) {
