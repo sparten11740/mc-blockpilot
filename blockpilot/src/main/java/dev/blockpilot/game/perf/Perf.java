@@ -34,6 +34,11 @@ public final class Perf {
             entry[1]++;
         }
 
+        /** Time from a step of a call that is counted when it completes. */
+        synchronized void addTime(String type, long nanos) {
+            byType.computeIfAbsent(type, key -> new long[2])[0] += nanos;
+        }
+
         synchronized long calls() {
             return byType.values().stream().mapToLong(entry -> entry[1]).sum();
         }
@@ -232,6 +237,13 @@ public final class Perf {
         }
     }
 
+    /** Ends an earlier step of a render that {@link #renderEnd} completes. */
+    public static void renderStepEnd(String type) {
+        if (active && !RENDER_STARTS.isEmpty()) {
+            renderers.addTime(type, System.nanoTime() - RENDER_STARTS.pop());
+        }
+    }
+
     public static void entityRenderStart() {
         if (active) {
             ENTITY_RENDER_STARTS.push(System.nanoTime());
@@ -241,6 +253,13 @@ public final class Perf {
     public static void entityRenderEnd(String type) {
         if (active && !ENTITY_RENDER_STARTS.isEmpty()) {
             entityRenderers.add(type, System.nanoTime() - ENTITY_RENDER_STARTS.pop());
+        }
+    }
+
+    /** Ends an earlier step of an entity render that {@link #entityRenderEnd} completes. */
+    public static void entityRenderStepEnd(String type) {
+        if (active && !ENTITY_RENDER_STARTS.isEmpty()) {
+            entityRenderers.addTime(type, System.nanoTime() - ENTITY_RENDER_STARTS.pop());
         }
     }
 

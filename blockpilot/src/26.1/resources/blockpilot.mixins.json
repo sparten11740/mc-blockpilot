@@ -1,0 +1,41 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.blockpilot.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractContainerScreenAccessor",
+    "AbstractWidgetAccessor",
+    "BlockEntityRenderDispatcherMixin",
+    "BoundTickingBlockEntityMixin",
+    "CameraMixin",
+    "ChunkMapAccessor",
+    "ConnectionMixin",
+    "EntityRenderDispatcherMixin",
+    "EntityTickMixin",
+    "FrameMixin",
+    "GameRendererMixin",
+    "GraphicsPresetMixin",
+    "GuiMixin",
+    "InputConstantsMixin",
+    "InputKeyAccessor",
+    "KeyMappingAccessor",
+    "KeyboardHandlerMixin",
+    "MinecraftMixin",
+    "MouseHandlerMixin",
+    "NativeImageInvoker",
+    "PacketDecoderMixin",
+    "PacketEncoderMixin",
+    "ParticleEngineAccessor",
+    "ParticleEngineMixin",
+    "ParticleGroupMixin",
+    "ParticleMixin",
+    "QuadParticleGroupMixin",
+    "RebuildTaskMixin",
+    "SelectionListAccessor",
+    "SoundEngineMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

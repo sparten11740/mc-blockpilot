@@ -23,7 +23,7 @@ public final class PixelCommands {
     private static final double DEFAULT_RADIUS = 0.5;
     private static volatile Projection camera;
 
-    /** Called by the level renderer with the matrices of the frame it is about to draw. */
+    /** Called by the renderer with the matrices of the frame it is about to draw. */
     public static void recordFrame(Vec3 position, Matrix4f view, Matrix4f projection) {
         camera = new Projection(position.x, position.y, position.z, view.get(new float[16]),
             projection.get(new float[16]));

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 
 /** The capture summary, fed the way the instrumentation mixins feed it. */
@@ -21,6 +22,27 @@ class PerfTest {
         assertEquals(0, client.getAsJsonArray("entity_renderers").size());
         assertEquals(0, client.getAsJsonObject("particles").getAsJsonArray("renders").size());
         assertEquals(0, client.getAsJsonArray("render_stages").size());
+    }
+
+    @Test
+    void aRenderInTwoStepsCountsAsOneCall() {
+        Perf.start("steps");
+        Perf.renderStart();
+        Perf.renderStepEnd("chest");
+        Perf.renderStart();
+        Perf.renderEnd("chest");
+        Perf.renderStart();
+        Perf.renderStepEnd("sign");
+        Perf.entityRenderStart();
+        Perf.entityRenderStepEnd("cow");
+        Perf.entityRenderStart();
+        Perf.entityRenderEnd("cow");
+        JsonObject client = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("client");
+        Map<String, Integer> renderers = new TreeMap<>();
+        client.getAsJsonArray("block_entity_renderers").forEach(row -> renderers.put(
+            row.getAsJsonObject().get("type").getAsString(), row.getAsJsonObject().get("calls").getAsInt()));
+        assertEquals(Map.of("chest", 1, "sign", 0), renderers);
+        assertEquals(1, client.getAsJsonArray("entity_renderers").get(0).getAsJsonObject().get("calls").getAsInt());
     }
 
     @Test
