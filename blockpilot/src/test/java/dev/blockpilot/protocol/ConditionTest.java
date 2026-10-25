@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class ConditionTest {
     /** The condition of these test tokens, as the parser builds it. */
     private static Condition tests(String... tokens) {
-        return Condition.of(Arrays.stream(tokens).map(Lexicon::test).toList(), false);
+        return Condition.of(Arrays.stream(tokens).map(Lexicon::testShape).toList(), false);
     }
 
     @Test
@@ -60,6 +60,22 @@ class ConditionTest {
         assertFalse(tests("hp==$max_hp").holds(status));
         assertFalse(tests("hp<$missing").holds(status));
         assertEquals("hp=14 max_hp=20", hurt.observed(status).text());
+    }
+
+    @Test
+    void idsMatchWithOrWithoutTheDefaultNamespace() {
+        Result block = Result.ok(new Fields().bare("id", "air"));
+        assertTrue(tests("id==minecraft:air").holds(block));
+        assertFalse(tests("id!=minecraft:air").holds(block));
+        assertTrue(tests("id==air").holds(Result.ok(new Fields().bare("id", "minecraft:air"))));
+        assertFalse(tests("id<air").holds(block));
+    }
+
+    @Test
+    void listIndexesInFieldPaths() {
+        Result rows = Result.ok(new Fields().put("items", List.of("a", "b")));
+        assertTrue(tests("items.1==b").holds(rows));
+        assertFalse(tests("items.5==b").holds(rows));
     }
 
     @Test

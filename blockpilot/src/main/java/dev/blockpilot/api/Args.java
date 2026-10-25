@@ -100,21 +100,19 @@ public final class Args {
         }
     }
 
-    /** A duration option; a bare number counts as seconds, e.g. {@code timeout=30}. */
+    /** A duration option; a plain number counts as seconds, e.g. {@code timeout=30}. */
     public Duration durationOption(String name) throws CommandException {
         String value = options.get(name);
         if (value == null) {
             return null;
         }
-        Duration duration = Duration.parse(value);
-        if (duration != null) {
-            return duration;
+        if (Lexicon.isDuration(value)) {
+            return Duration.parse(value);
         }
-        try {
+        if (Lexicon.isSeconds(value)) {
             return Duration.seconds(Double.parseDouble(value));
-        } catch (NumberFormatException e) {
-            throw new CommandException("syntax", name + "= expects a duration like 20t or 3s, got " + value);
         }
+        throw new CommandException("syntax", name + "= expects a duration like 20t or 3s, got " + value);
     }
 
     public Map<String, String> values() {

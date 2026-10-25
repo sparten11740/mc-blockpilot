@@ -37,8 +37,8 @@ public final class Condition {
         for (Lexicon.Test test : tests) {
             Object actual = lookup(result, test.field());
             String expected = test.operand();
-            if (reference(expected) != null) {
-                Object other = lookup(result, reference(expected));
+            if (test.reference() != null) {
+                Object other = lookup(result, test.reference());
                 expected = other == null ? null : String.valueOf(other);
             }
             if (actual == null || expected == null || !compare(actual, test.comparison(), expected)) {
@@ -48,19 +48,14 @@ public final class Condition {
         return true;
     }
 
-    /** The field a {@code $<field>} value refers to, or null for a literal. */
-    private static String reference(String value) {
-        return value.length() > 1 && value.charAt(0) == '$' ? value.substring(1) : null;
-    }
-
     /** The fields the predicates name, including fields compared against, as last observed; attached to the result. */
     public Fields observed(Result result) {
         Fields fields = new Fields();
         List<String> names = new ArrayList<>();
         for (Lexicon.Test test : tests) {
             names.add(test.field());
-            if (reference(test.operand()) != null) {
-                names.add(reference(test.operand()));
+            if (test.reference() != null) {
+                names.add(test.reference());
             }
         }
         for (String name : names.stream().distinct().toList()) {
@@ -94,7 +89,8 @@ public final class Condition {
         if (value instanceof Map<?, ?> map) {
             return map.get(part);
         }
-        if (value instanceof List<?> list && part.matches("\\d+")) {
+        // Field paths are checked by the parser: a part starting with a digit is a list index that fits an int.
+        if (value instanceof List<?> list && Character.isDigit(part.charAt(0))) {
             int index = Integer.parseInt(part);
             return index < list.size() ? list.get(index) : null;
         }
@@ -115,12 +111,18 @@ public final class Condition {
                 default -> order >= 0;
             };
         }
-        String text = String.valueOf(actual);
+        String text = withoutDefaultNamespace(String.valueOf(actual));
+        String wanted = withoutDefaultNamespace(expected);
         return switch (operator) {
-            case "==" -> text.equals(expected) || text.equals("minecraft:" + expected);
-            case "!=" -> !text.equals(expected) && !text.equals("minecraft:" + expected);
+            case "==" -> text.equals(wanted);
+            case "!=" -> !text.equals(wanted);
             default -> false;
         };
+    }
+
+    /** Ids are printed without {@code minecraft:} and may be written with it. */
+    private static String withoutDefaultNamespace(String value) {
+        return value.startsWith("minecraft:") ? value.substring("minecraft:".length()) : value;
     }
 
     private static Double number(Object value) {

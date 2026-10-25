@@ -244,6 +244,8 @@ class ParserTest {
         assertEquals("col 20: unexpected and", error("assert status a==1 and"));
         assertEquals("col 15: missing a predicate (field==value, field<n or ok)", error("assert status"));
         assertEquals("col 20: unexpected junk", error("assert status hp>5 junk"));
+        assertEquals("col 15: < compares with a number or $field, not max_hp", error("assert status hp<max_hp"));
+        assertEquals("col 15: a value can't hold $ < > = ! & or |, got b|c", error("assert status a==b|c"));
     }
 
     @Test

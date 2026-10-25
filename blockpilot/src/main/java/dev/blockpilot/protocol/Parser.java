@@ -196,7 +196,7 @@ final class Parser {
         }
 
         private static boolean isStopWord(String token) {
-            return STOP_WORDS.contains(token) || token.equals("ok") || Lexicon.test(token) != null;
+            return STOP_WORDS.contains(token) || token.equals("ok") || Lexicon.testShape(token) != null;
         }
 
         /** {@code predicate ( "and"? predicate )*} */
@@ -207,10 +207,15 @@ final class Parser {
             while (index < end) {
                 String token = tokens.get(index).text();
                 boolean joined = any && token.equals("and") && index + 1 < end;
-                String predicate = joined ? tokens.get(index + 1).text() : token;
-                Lexicon.Test test = Lexicon.test(predicate);
-                if (!predicate.equals("ok") && test == null) {
+                Lexer.Token predicate = tokens.get(joined ? index + 1 : index);
+                Lexicon.Test test = Lexicon.testShape(predicate.text());
+                if (!predicate.text().equals("ok") && test == null) {
                     break;
+                }
+                if (test != null && !Lexicon.isTest(predicate.text())) {
+                    throw new SyntaxError(predicate.column(), test.isOrdering()
+                        ? test.comparison() + " compares with a number or $field, not " + test.operand()
+                        : "a value can't hold $ < > = ! & or |, got " + test.operand());
                 }
                 index += joined ? 2 : 1;
                 requireOk |= test == null;

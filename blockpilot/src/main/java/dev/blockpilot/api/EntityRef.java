@@ -2,6 +2,12 @@ package dev.blockpilot.api;
 
 /** An entity reference token, {@code e<id>}, where the id is the entity's network id. */
 public record EntityRef(int id) {
+    public EntityRef {
+        if (id < 0) {
+            throw new IllegalArgumentException("entity ids aren't negative: " + id);
+        }
+    }
+
     @Override
     public String toString() {
         return "e" + id;

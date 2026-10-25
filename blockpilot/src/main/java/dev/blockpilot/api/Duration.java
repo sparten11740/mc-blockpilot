@@ -4,8 +4,19 @@ package dev.blockpilot.api;
 public record Duration(int ticks) {
     public static final int TICKS_PER_SECOND = 20;
 
+    public Duration {
+        if (ticks < 0) {
+            throw new IllegalArgumentException("a duration can't be negative: " + ticks);
+        }
+    }
+
+    /** {@code seconds} rounded to ticks; it must be finite, not negative and at most 2^31 - 1 ticks. */
     public static Duration seconds(double seconds) {
-        return new Duration((int) Math.round(seconds * TICKS_PER_SECOND));
+        double ticks = seconds * TICKS_PER_SECOND;
+        if (!(ticks >= 0 && Math.round(ticks) <= Integer.MAX_VALUE)) {
+            throw new IllegalArgumentException("not a duration in seconds: " + seconds);
+        }
+        return new Duration((int) Math.round(ticks));
     }
 
     public double seconds() {

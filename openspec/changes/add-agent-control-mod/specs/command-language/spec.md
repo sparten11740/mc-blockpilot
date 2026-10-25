@@ -112,7 +112,7 @@ bare-id      ::= path - ( decimal | count | duration | entity | widget
 namespace    ::= [a-z0-9_.-]+
 path         ::= [a-z0-9_./-]+
 tag          ::= "#" id
-pattern      ::= [a-z0-9_.:/*-]* "*" [a-z0-9_.:/*-]*
+pattern      ::= ( [a-z0-9_.:/-]* "*" )+ [a-z0-9_.:/-]*
 ```
 
 #### Scenario: A construct in a script
