@@ -129,15 +129,22 @@ public final class Session {
         }
     }
 
-    /** The buffered events, oldest first, plus a {@code dropped} marker when the buffer overflowed. */
+    /**
+     * The buffered events, oldest first, plus a {@code dropped} marker when the buffer overflowed and a
+     * {@code log_dropped} marker for log entries the rate limit held back since the last report.
+     */
     public synchronized List<Event> drainEvents() {
-        List<Event> drained = new ArrayList<>(events.size() + 1);
+        List<Event> drained = new ArrayList<>(events.size() + 2);
         if (droppedEvents > 0) {
             drained.add(Event.of("dropped", new Fields().bare("count", droppedEvents)));
             droppedEvents = 0;
         }
         drained.addAll(events);
         events.clear();
+        if (logDropped > 0) {
+            drained.add(Event.of("log_dropped", new Fields().bare("count", logDropped)));
+            logDropped = 0;
+        }
         return drained;
     }
 }
