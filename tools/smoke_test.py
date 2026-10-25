@@ -12,6 +12,8 @@ with one result per step, each ok unless the step expects an error.
 
 --shapes writes the JSON structure (field names, row field names) of a set of queries to a file, so runs on two
 loaders can be compared with diff.
+
+Every step goes through the launcher the game writes into <run dir>/blockpilot at start.
 """
 import argparse
 import json
@@ -21,7 +23,6 @@ import subprocess
 import sys
 import time
 
-CLIENT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blockpilot.py")
 # Read-only commands that must not move, turn or reselect anything, nor make the client send packets.
 PERCEPTION = ["status", "look 8", "find grass_block 4 2", "block ~0,-1,0", "block ~0,-1,0 side=server",
               "blocks ~-1,-1,-1 ~1,0,1", "screen", "worlds", "servers", "sounds limit=1", "messages limit=1",
@@ -36,12 +37,18 @@ SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1
                  "messages limit=1", "particles", "nbt e999999"]
 
 
+def launcher(game_dir):
+    if os.name == "nt":
+        return ["cmd", "/c", os.path.join(game_dir, "blockpilot", "blockpilot.cmd")]
+    return [os.path.join(game_dir, "blockpilot", "blockpilot")]
+
+
 def run(game_dir, script, as_json=False, timeout=180):
-    command = [sys.executable, "-I", CLIENT, "--game-dir", game_dir, "--timeout", str(timeout)]
+    command = launcher(game_dir) + ["--game-dir", game_dir, "--timeout", str(timeout)]
     if as_json:
         command.append("--json")
     command.append(script)
-    done = subprocess.run(command, capture_output=True, text=True, timeout=timeout + 30)
+    done = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", timeout=timeout + 30)
     return done.returncode, done.stdout + done.stderr
 
 

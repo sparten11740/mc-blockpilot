@@ -12,14 +12,19 @@ Put the jar for your loader into the client's `mods` folder (or a dev environmen
 Once it is up, `<game dir>/blockpilot/endpoint.json` names the port (25599, or the next free one when several
 instances run) and the token file. The endpoint listens on `127.0.0.1` only and needs the token.
 
-**From a shell** (no setup, Python standard library only):
+**From a shell**: at every start the game writes a launcher, `<game dir>/blockpilot/blockpilot`
+(`blockpilot.cmd` on Windows), that runs Blockpilot's command-line client on the game's own Java with the jar it
+loaded, so it needs no `java` on the path, no Python and no Blockpilot checkout. It stays after the game exits and
+works across restarts; it appears while the game loads, so only the very first start in a directory has to wait
+for the file before using it.
 
 ```sh
-python3 tools/blockpilot.py --game-dir run --wait-ready 300 --wait-world "status; look"
-python3 tools/blockpilot.py --game-dir run --json "inv"
+run/blockpilot/blockpilot --wait-ready 300 --wait-world "status; look"
+run/blockpilot/blockpilot --json "inv"
 ```
 
 `--wait-ready <seconds>` waits for the game to come up, and `--wait-world` also for the player to be in a world.
+`--game-dir <dir>` talks to the game in another directory, and `--help` lists the options.
 Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
 out). When a step failed or was skipped, one line on stderr counts them and says whether anything ran, e.g.
 `blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI returns only once the game
@@ -83,8 +88,9 @@ loom {
 }
 ```
 
-Then `python3 <blockpilot checkout>/tools/blockpilot.py --game-dir run --wait-ready 300 --wait-world "status"`, run
-from that project, returns once the player is in the test world. In this repository the same properties go through Gradle:
+Then `run/blockpilot/blockpilot --wait-ready 300 --wait-world "status"`, run from that project, returns once the
+player is in the test world (on the first start, once the game has written the launcher). In this repository the
+same properties go through Gradle:
 `./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test -Pblockpilot.autocreate=flat` (or
 `26.1-neoforge`, `1.21.1-fabric`, `26.1-fabric`).
 

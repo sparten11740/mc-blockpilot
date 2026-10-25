@@ -9,7 +9,7 @@
 
 - [x] 2.1 Add `ClientPlatform.Services.modPaths()` for NeoForge and Fabric and the pure `Launcher` text builder for `sh` and `.cmd` (D2), with unit tests for paths holding spaces and quotes, the preset `--game-dir` before the caller's arguments and the missing-classpath check; verify the tests pass on both loaders' nodes
 - [x] 2.2 Write the launcher at every client start, atomically, kept after exit, and with a warning instead when no mod path exists (D2); verify on the 1.21.1 and 26.1 NeoForge and the 26.1 Fabric dev clients that `run/blockpilot/blockpilot "status"` works from `env PATH=/usr/bin:/bin`, exits 2 as unreachable after the game exited, runs a rebuilt build after the next start, and exits 2 with the start-once message when a classpath entry it names is gone
-- [ ] 2.3 Switch `tools/smoke_test.py` to the launcher, delete `tools/blockpilot.py`, and rewrite the README's shell-client and dev-environment parts for the launcher (D8); verify the smoke test passes in text and JSON mode on the 1.21.1 and 26.1 NeoForge dev clients, no file in the repository still names `blockpilot.py`, and every shell command the README shows runs as written
+- [x] 2.3 Switch `tools/smoke_test.py` to the launcher, delete `tools/blockpilot.py`, and rewrite the README's shell-client and dev-environment parts for the launcher (D8); verify the smoke test passes in text and JSON mode on the 1.21.1 and 26.1 NeoForge dev clients, no file outside `openspec/` still names `blockpilot.py` (the main spec changes at archive), and every shell command in those README parts runs as written
 
 ## 3. MCP over stdio (agent-endpoint)
 
