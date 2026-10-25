@@ -419,17 +419,20 @@ must keep holding, `every=` how often to check (both default 1t), `timeout=`
 
 ### Requirement: Samples
 `sample <query> every <duration> x<n>` SHALL run a read-only query n times, 1
-to 1,000, every N ticks, at least 1t. With `while <action>`, it SHALL run the
-action and sample beside it until the action ends or n (at most 1,000) samples
-are taken, from before the action's first tick when both run on one side, else
-from the query side's next tick; the line is the action's result, success or
-error, with the samples as its rows. A server-side query is sampled on the
+to 1,000, every N ticks, at least 1t. A server-side query is sampled on the
 server clock: `clock=server` asserts that, and `clock=client` is refused for a
 server-side query.
 
 #### Scenario: Too many samples
 - **WHEN** an agent runs `sample status every 1t x1001`
 - **THEN** the result is `err syntax` naming the 1,000 limit
+
+### Requirement: Sampling beside an action
+With `while <action>`, `sample` SHALL run the action as if written alone and
+sample beside it until the action ends or n (at most 1,000) samples are taken:
+from before the action's first tick when both run on one side, else from the
+query side's next tick. The line is the action's result, success or error, with
+the samples as its rows.
 
 #### Scenario: Sampling a walk
 - **WHEN** an agent runs `sample status every 2t while move forward 3`

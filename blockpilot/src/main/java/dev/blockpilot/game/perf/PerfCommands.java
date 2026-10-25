@@ -55,8 +55,9 @@ public final class PerfCommands {
             .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
             .help("perf start [name] … perf stop: server MSPT/TPS and tick time per block-entity and entity type, "
-                + "client FPS/1% low/frame times, block-entity renderer time per type, section rebuilds, heap/GC, "
-                + "packets per type; summary returned and saved to blockpilot/perf/<name>.json")
+                + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
+                + "render time per type with live counts, render-level stage time (NeoForge), section rebuilds, "
+                + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")
             .example("perf start before"));
     }

@@ -103,25 +103,27 @@ listed under their slot names.
 contents (`s<index>:<item> x<count>`), and interactive widgets (buttons, text
 fields, sliders, toggles) with label, state and GUI-scaled bounds `x,y,w,h`. It
 also reports the GUI scale, the screen size and the cursor position, so pointer
-commands can target any widget, including unlabelled modded widgets. A list
-(an options list, the controls, a world or mod list) is listed with its row
-count, followed by the rows in view: a row's own widgets, or the row itself
-with its label.
+commands can target any widget, including unlabelled modded widgets.
 
 #### Scenario: Crafting table open
 - **WHEN** a crafting table screen is open
 - **THEN** `screen` lists the grid, result and inventory slots with their
   contents
 
-#### Scenario: Rows of the video settings
-- **WHEN** Video Settings is open
-- **THEN** `screen` lists the options list and, as their own `w<i>`, the
-  sliders and buttons of its rows in view, which `click w<i>` reaches
-
 #### Scenario: Modded screen with custom widgets
 - **WHEN** a modded screen with a slider and an unlabelled icon button is open
 - **THEN** both are listed with their kind and bounds, and the icon button with
   its tooltip text when it has one
+
+### Requirement: Rows of lists on screens
+`screen` SHALL list a list widget (an options list, the controls, a world or
+mod list) with its row count, followed by the rows in view as widgets of their
+own: a row's own widgets, or the row itself with its label.
+
+#### Scenario: Rows of the video settings
+- **WHEN** Video Settings is open
+- **THEN** `screen` lists the options list and, as their own `w<i>`, the
+  sliders and buttons of its rows in view, which `click w<i>` reaches
 
 ### Requirement: Screenshot
 `screenshot [width]` (MCP tool `screenshot`) SHALL capture the next rendered
