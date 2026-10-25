@@ -35,6 +35,9 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
+//? if >=26.1 {
+/*import net.minecraft.client.particle.ParticleGroup;
+*///?}
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
@@ -119,9 +122,15 @@ public final class PerfCommands {
     /** The particles alive now, per type; on the client thread. */
     private static Map<String, Integer> liveParticles() {
         Map<String, Integer> live = new HashMap<>();
+        //? if >=26.1 {
+        /*for (ParticleGroup<?> group : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
+            .blockpilot$particles().values()) {
+            for (Particle particle : group.getAll()) {
+        *///?} else {
         for (Queue<Particle> queue : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
             .blockpilot$particles().values()) {
             for (Particle particle : queue) {
+        //?}
                 live.merge(ParticleTag.of(particle), 1, Integer::sum);
             }
         }
@@ -133,7 +142,8 @@ public final class PerfCommands {
         Map<String, Integer> blockEntities = new TreeMap<>();
         Map<String, Integer> entities = new TreeMap<>();
         for (ServerLevel level : server.getAllLevels()) {
-            for (ChunkHolder holder : ((ChunkMapAccessor) level.getChunkSource().chunkMap).blockpilot$chunks()) {
+            for (ChunkHolder holder : ((ChunkMapAccessor) level.getChunkSource().chunkMap).blockpilot$visibleChunks()
+                .values()) {
                 LevelChunk chunk = holder.getTickingChunk();
                 if (chunk != null) {
                     for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {

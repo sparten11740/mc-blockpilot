@@ -13,7 +13,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(KeyboardHandler.class)
 public abstract class KeyboardHandlerMixin implements Injection.Keyboard {
     @Shadow
+    public abstract void keyPress(long window, int key, int scanCode, int action, int modifiers);
+
+    @Shadow
     private void charTyped(long window, int codePoint, int modifiers) {
+    }
+
+    @Override
+    public void blockpilot$keyPress(long window, int key, int scanCode, int action, int modifiers) {
+        keyPress(window, key, scanCode, action, modifiers);
     }
 
     @Override

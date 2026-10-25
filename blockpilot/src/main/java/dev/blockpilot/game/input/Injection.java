@@ -23,6 +23,8 @@ public final class Injection {
 
     /** Implemented by the keyboard handler mixin. */
     public interface Keyboard {
+        void blockpilot$keyPress(long window, int key, int scanCode, int action, int modifiers);
+
         void blockpilot$charTyped(long window, int codePoint, int modifiers);
     }
 
@@ -79,12 +81,16 @@ public final class Injection {
         run(() -> mouse().blockpilot$scroll(window(), 0, amount));
     }
 
+    private static Keyboard keyboard() {
+        return (Keyboard) minecraft().keyboardHandler;
+    }
+
     public static void key(int key, boolean down) {
-        run(() -> minecraft().keyboardHandler.keyPress(window(), key, GLFW.glfwGetKeyScancode(key),
+        run(() -> keyboard().blockpilot$keyPress(window(), key, GLFW.glfwGetKeyScancode(key),
             down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, 0));
     }
 
     public static void typeCharacter(int codePoint) {
-        run(() -> ((Keyboard) minecraft().keyboardHandler).blockpilot$charTyped(window(), codePoint, 0));
+        run(() -> keyboard().blockpilot$charTyped(window(), codePoint, 0));
     }
 }

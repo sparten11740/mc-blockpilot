@@ -5,6 +5,9 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
+//? if >=26.1 {
+/*import dev.blockpilot.mixin.AbstractWidgetAccessor;
+*///?}
 import dev.blockpilot.mixin.SelectionListAccessor;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +31,9 @@ import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
+//? if <26.1 {
 import net.minecraft.client.gui.screens.ReceivingLevelScreen;
+//?}
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -75,8 +80,13 @@ final class Screens {
         if (screen instanceof JoinMultiplayerScreen) {
             return "multiplayer";
         }
+        //? if >=26.1 {
+        /*if (screen instanceof ConnectScreen || screen instanceof LevelLoadingScreen
+            || screen instanceof GenericMessageScreen) {
+        *///?} else {
         if (screen instanceof ConnectScreen || screen instanceof LevelLoadingScreen
             || screen instanceof ReceivingLevelScreen || screen instanceof GenericMessageScreen) {
+        //?}
             return "loading";
         }
         if (screen instanceof DisconnectedScreen) {
@@ -181,9 +191,9 @@ final class Screens {
 
     private static void rows(AbstractSelectionList<?> list, List<Item> out) {
         SelectionListAccessor geometry = (SelectionListAccessor) list;
-        int height = geometry.blockpilot$itemHeight();
         for (int index = 0; index < list.children().size(); index++) {
             int top = geometry.blockpilot$rowTop(index);
+            int height = geometry.blockpilot$rowBottom(index) - top;
             if (top < list.getY() || top + height > list.getBottom()) {
                 continue;
             }
@@ -215,7 +225,12 @@ final class Screens {
             if (!widget.active) {
                 fields.put("active", false, "inactive");
             }
-            if (widget.getTooltip() != null && label.isEmpty()) {
+            //? if >=26.1 {
+            /*boolean tooltip = ((AbstractWidgetAccessor) widget).blockpilot$tooltip().get() != null;
+            *///?} else {
+            boolean tooltip = widget.getTooltip() != null;
+            //?}
+            if (tooltip && label.isEmpty()) {
                 fields.put("tooltip", true, "has_tooltip");
             }
         }
