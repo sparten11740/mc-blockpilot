@@ -200,6 +200,7 @@ public final class Engine {
         registry.register(CommandSpec.action("wait", this::startWait).group("meta").arg("what", ArgType.TEXT)
             .help("wait <Nt|Ns> | wait idle | wait <query> until <field><op><value> [and …] "
                 + "[stable=<Nt>] [every=<Nt>] [timeout=<duration>] [clock=server]; ops == != < <= > >=, or ok; "
+                + "a value $<field> compares with another field (hp<$max_hp); "
                 + "server-side queries are checked at the end of server ticks and report the tick (t<n>)")
             .example("wait block ~1,0,0 until id==air timeout=5s"));
         registry.register(CommandSpec.action("sample", this::startSample).group("meta").arg("what", ArgType.TEXT)

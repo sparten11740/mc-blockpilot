@@ -47,6 +47,16 @@ class ConditionTest {
     }
 
     @Test
+    void comparesTwoFields() throws CommandException {
+        Result status = Result.ok(new Fields().put("hp", 14).put("max_hp", 20));
+        Condition hurt = Condition.parse(List.of("hp<$max_hp"));
+        assertTrue(hurt.holds(status));
+        assertFalse(Condition.parse(List.of("hp==$max_hp")).holds(status));
+        assertFalse(Condition.parse(List.of("hp<$missing")).holds(status));
+        assertEquals("hp=14 max_hp=20", hurt.observed(status).text());
+    }
+
+    @Test
     void rejectsGarbage() {
         assertThrows(CommandException.class, () -> Condition.parse(List.of("banana")));
         assertThrows(CommandException.class, () -> Condition.parse(List.of()));

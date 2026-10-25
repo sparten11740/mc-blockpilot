@@ -12,7 +12,8 @@ import java.util.regex.Pattern;
 
 /**
  * The predicates of {@code wait <query> until …}: {@code <field><op><value>} joined by {@code and}, or {@code ok}.
- * Numbers compare numerically, anything else by text; {@code count} is the number of rows.
+ * Numbers compare numerically, anything else by text; {@code count} is the number of rows; a value written
+ * {@code $<field>} is that field of the same result.
  */
 public final class Condition {
     private static final Pattern PREDICATE = Pattern.compile("([A-Za-z_][\\w.]*)(==|!=|<=|>=|<|>)(.+)");
@@ -57,19 +58,36 @@ public final class Condition {
         }
         for (Predicate predicate : predicates) {
             Object actual = lookup(result, predicate.field());
-            if (actual == null || !compare(actual, predicate.operator(), predicate.value())) {
+            String expected = predicate.value();
+            if (reference(expected) != null) {
+                Object other = lookup(result, reference(expected));
+                expected = other == null ? null : String.valueOf(other);
+            }
+            if (actual == null || expected == null || !compare(actual, predicate.operator(), expected)) {
                 return false;
             }
         }
         return true;
     }
 
-    /** The fields the predicates name, as last observed; attached to the {@code ok} or {@code err timeout} result. */
+    /** The field a {@code $<field>} value refers to, or null for a literal. */
+    private static String reference(String value) {
+        return value.length() > 1 && value.charAt(0) == '$' ? value.substring(1) : null;
+    }
+
+    /** The fields the predicates name, including fields compared against, as last observed; attached to the result. */
     public Fields observed(Result result) {
         Fields fields = new Fields();
+        List<String> names = new ArrayList<>();
         for (Predicate predicate : predicates) {
-            Object value = result == null ? null : lookup(result, predicate.field());
-            fields.put(predicate.field(), value == null ? "none" : value);
+            names.add(predicate.field());
+            if (reference(predicate.value()) != null) {
+                names.add(reference(predicate.value()));
+            }
+        }
+        for (String name : names.stream().distinct().toList()) {
+            Object value = result == null ? null : lookup(result, name);
+            fields.put(name, value == null ? "none" : value);
         }
         return fields;
     }
