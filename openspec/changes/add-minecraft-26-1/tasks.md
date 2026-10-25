@@ -3,7 +3,7 @@
 ## 1. Build (multi-target-build)
 
 - [ ] 1.1 Declare the `26.1-neoforge` and `26.1-fabric` nodes with their properties (D1), copy `src/1.21.1/` to `src/26.1/` with an access widener in the official namespace, and compile the Sable compat package only on nodes with a non-empty `sable_companion_version`; verify both 1.21.1 nodes still pass `check` and both 26.1 nodes configure
-- [ ] 1.2 Add rename rules for the one-for-one renames (D2); verify both 1.21.1 nodes still pass `check` and their generated sources are unchanged
+- [x] 1.2 Add rename rules for the one-for-one renames (D2); verify both 1.21.1 nodes still pass `check` and their generated sources are unchanged
 
 ## 2. Shared code (all capabilities)
 
