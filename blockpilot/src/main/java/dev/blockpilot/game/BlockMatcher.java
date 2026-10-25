@@ -8,7 +8,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,11 +29,8 @@ public final class BlockMatcher implements Predicate<BlockState> {
         if (token.contains("*")) {
             return anyOf(List.of(token));
         }
-        ResourceLocation id = Ids.parse(token);
-        if (!BuiltInRegistries.BLOCK.containsKey(id)) {
-            throw new CommandException("syntax", "unknown block " + token);
-        }
-        Block block = BuiltInRegistries.BLOCK.get(id);
+        Block block = BuiltInRegistries.BLOCK.getOptional(Ids.parse(token))
+            .orElseThrow(() -> new CommandException("syntax", "unknown block " + token));
         return new BlockMatcher(state -> state.is(block));
     }
 

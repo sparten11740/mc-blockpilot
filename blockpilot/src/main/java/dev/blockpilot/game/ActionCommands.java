@@ -584,12 +584,8 @@ final class ActionCommands {
             EntityRef ref = args.entity("target");
             next = () -> minecraft().level.getEntity(ref.id());
         } else {
-            var id = Ids.parse(token);
-            // The entity registry answers unknown ids with its default (pig), so check first.
-            if (!BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
-                throw new CommandException("no_entity", "no entity type " + token);
-            }
-            var type = BuiltInRegistries.ENTITY_TYPE.get(id);
+            var type = BuiltInRegistries.ENTITY_TYPE.getOptional(Ids.parse(token))
+                .orElseThrow(() -> new CommandException("no_entity", "no entity type " + token));
             next = () -> minecraft().level.getEntities(player(), player().getBoundingBox().inflate(16),
                     entity -> entity.getType() == type && entity.isAlive()).stream()
                 .min((a, b) -> Double.compare(a.distanceToSqr(player()), b.distanceToSqr(player()))).orElse(null);
@@ -855,7 +851,7 @@ final class ActionCommands {
             if (slot < 0 || slot > 8) {
                 throw new CommandException("syntax", "hotbar slots are 0-8, not " + slot);
             }
-            player().getInventory().selected = slot;
+            InventoryOps.selectSlot(slot);
         } else {
             InventoryOps.select(InventoryOps.item(args.word("what")));
         }

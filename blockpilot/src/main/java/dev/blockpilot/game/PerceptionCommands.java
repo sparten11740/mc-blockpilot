@@ -28,6 +28,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -47,6 +48,8 @@ import net.minecraft.world.phys.Vec3;
 final class PerceptionCommands {
     private static final int MAX_FIND_RADIUS = 128;
     private static final int MAX_REGION_BLOCKS = 4096;
+    private static final List<EquipmentSlot> ARMOR =
+        List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
 
     private final BlockpilotClient client;
     private BlockMatcher notable;
@@ -323,8 +326,9 @@ final class PerceptionCommands {
         AABB box = new AABB(center).inflate(radius);
         return Sides.read(args, (level, server) -> {
             List<Row> rows = new ArrayList<>();
-            if (matcher == null && BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
-                var type = BuiltInRegistries.ENTITY_TYPE.get(id);
+            var entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
+            if (matcher == null && entityType.isPresent()) {
+                var type = entityType.get();
                 List<Entity> entities = level.getEntities((Entity) null, box,
                     entity -> entity.getType() == type && entity.isAlive() && entity.getId() != player.getId());
                 entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
@@ -332,10 +336,8 @@ final class PerceptionCommands {
                 return Result.ok().withRows(rows);
             }
             if (matcher == null) {
-                if (!BuiltInRegistries.ITEM.containsKey(id)) {
-                    throw new CommandException("syntax", "no block, item or entity type " + what);
-                }
-                var item = BuiltInRegistries.ITEM.get(id);
+                var item = BuiltInRegistries.ITEM.getOptional(id)
+                    .orElseThrow(() -> new CommandException("syntax", "no block, item or entity type " + what));
                 List<Entity> drops = level.getEntities((Entity) null, box,
                     entity -> entity instanceof ItemEntity drop && drop.getItem().is(item));
                 drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
@@ -429,21 +431,20 @@ final class PerceptionCommands {
         Inventory inventory = minecraft().player.getInventory();
         boolean detail = args.has("detail");
         List<Row> rows = new ArrayList<>();
-        for (int slot = 0; slot < inventory.items.size(); slot++) {
-            ItemStack stack = inventory.items.get(slot);
+        for (int slot = 0; slot < Inventory.INVENTORY_SIZE; slot++) {
+            ItemStack stack = inventory.getItem(slot);
             if (!stack.isEmpty()) {
-                String name = (slot == inventory.selected ? "*" : "") + slot;
+                String name = (slot == InventoryOps.selected(inventory) ? "*" : "") + slot;
                 rows.add(Row.of(String.valueOf(slot), Items.describe(name, stack, detail)));
             }
         }
-        String[] armor = {"feet", "legs", "chest", "head"};
-        for (int index = 3; index >= 0; index--) {
-            ItemStack stack = inventory.armor.get(index);
+        for (EquipmentSlot armor : ARMOR) {
+            ItemStack stack = minecraft().player.getItemBySlot(armor);
             if (!stack.isEmpty()) {
-                rows.add(Row.of(armor[index], Items.describe(armor[index], stack, detail)));
+                rows.add(Row.of(armor.getName(), Items.describe(armor.getName(), stack, detail)));
             }
         }
-        ItemStack offhand = inventory.offhand.get(0);
+        ItemStack offhand = minecraft().player.getOffhandItem();
         if (!offhand.isEmpty()) {
             rows.add(Row.of("offhand", Items.describe("offhand", offhand, detail)));
         }

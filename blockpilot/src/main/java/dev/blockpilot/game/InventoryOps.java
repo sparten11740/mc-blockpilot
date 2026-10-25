@@ -28,18 +28,15 @@ final class InventoryOps {
     }
 
     static Item item(String id) throws CommandException {
-        var key = Ids.parse(id);
-        if (!BuiltInRegistries.ITEM.containsKey(key)) {
-            throw new CommandException("syntax", "unknown item " + id);
-        }
-        return BuiltInRegistries.ITEM.get(key);
+        return BuiltInRegistries.ITEM.getOptional(Ids.parse(id))
+            .orElseThrow(() -> new CommandException("syntax", "unknown item " + id));
     }
 
     /** The inventory index (0-35) holding the item, hotbar first, or -1. */
     static int find(Item item) {
         Inventory inventory = player().getInventory();
-        for (int slot = 0; slot < inventory.items.size(); slot++) {
-            if (inventory.items.get(slot).is(item)) {
+        for (int slot = 0; slot < Inventory.INVENTORY_SIZE; slot++) {
+            if (inventory.getItem(slot).is(item)) {
                 return slot;
             }
         }
@@ -50,7 +47,8 @@ final class InventoryOps {
     static int count(Item item) {
         Inventory inventory = player().getInventory();
         int total = 0;
-        for (ItemStack stack : inventory.items) {
+        for (int slot = 0; slot < Inventory.INVENTORY_SIZE; slot++) {
+            ItemStack stack = inventory.getItem(slot);
             if (stack.is(item)) {
                 total += stack.getCount();
             }
@@ -81,10 +79,27 @@ final class InventoryOps {
     static void selectSlot(int slot) {
         Inventory inventory = player().getInventory();
         if (slot < 9) {
-            inventory.selected = slot;
+            selectHotbar(inventory, slot);
         } else {
-            click(menuSlot(slot), inventory.selected, ClickType.SWAP);
+            click(menuSlot(slot), selected(inventory), ClickType.SWAP);
         }
+    }
+
+    /** The selected hotbar slot, 0-8. */
+    static int selected(Inventory inventory) {
+        //? if >=26.1 {
+        /*return inventory.getSelectedSlot();
+        *///?} else {
+        return inventory.selected;
+        //?}
+    }
+
+    private static void selectHotbar(Inventory inventory, int slot) {
+        //? if >=26.1 {
+        /*inventory.setSelectedSlot(slot);
+        *///?} else {
+        inventory.selected = slot;
+        //?}
     }
 
     /** Selects the inventory item that breaks the block fastest, if any beats the empty hand. */
@@ -92,8 +107,8 @@ final class InventoryOps {
         Inventory inventory = player().getInventory();
         int best = -1;
         float bestSpeed = 1.0f;
-        for (int slot = 0; slot < inventory.items.size(); slot++) {
-            ItemStack stack = inventory.items.get(slot);
+        for (int slot = 0; slot < Inventory.INVENTORY_SIZE; slot++) {
+            ItemStack stack = inventory.getItem(slot);
             float speed = stack.isEmpty() ? 1.0f : stack.getDestroySpeed(state);
             if (speed > bestSpeed) {
                 bestSpeed = speed;
@@ -116,9 +131,9 @@ final class InventoryOps {
         }
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < 9; slot++) {
-            ItemStack stack = inventory.items.get(slot);
+            ItemStack stack = inventory.getItem(slot);
             if (stack.isEmpty() || stack.getItem().canAttackBlock(state, player.level(), pos, player)) {
-                inventory.selected = slot;
+                selectHotbar(inventory, slot);
                 return;
             }
         }
