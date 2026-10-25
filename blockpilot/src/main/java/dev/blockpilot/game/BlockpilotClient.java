@@ -8,6 +8,7 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
+import dev.blockpilot.cli.Launcher;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
@@ -30,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -113,6 +115,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         SableSupport.start(registry);
         registry.addExtensions(BlockpilotApi.freeze(engine::broadcast));
         HumanInput.setListener(this::onHumanInput);
+        writeLauncher();
         try {
             Token token = Token.loadOrCreate(directory.resolve("token"));
             McpServer mcp = new McpServer(engine, token, Screenshots::capture, ClientPlatform.modVersion());
@@ -125,6 +128,36 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             Blockpilot.LOGGER.error("Blockpilot could not open its endpoint on {}:{}; agents cannot connect",
                 config.bind, config.port, e);
             endpoint = null;
+        }
+    }
+
+    /**
+     * {@code <gameDir>/blockpilot/blockpilot} ({@code .cmd} on Windows): runs the command-line client on this game's
+     * Java and jar. Rewritten at every start and kept after exit, so it works while the game is down too.
+     */
+    private void writeLauncher() {
+        boolean windows = Launcher.onWindows();
+        Path gameDir = ClientPlatform.gameDir().toAbsolutePath().normalize();
+        Path launcher = gameDir.resolve(Blockpilot.MOD_ID).resolve(Launcher.fileName(windows));
+        // Whatever goes wrong here must not keep the endpoint, which starts next, from coming up.
+        try {
+            List<Path> classpath = ClientPlatform.modPaths().stream().map(path -> path.toAbsolutePath().normalize())
+                .filter(Files::exists).toList();
+            if (classpath.isEmpty()) {
+                Blockpilot.LOGGER.warn("Blockpilot wrote no launcher: the loader names no file it loaded it from");
+                return;
+            }
+            Files.createDirectories(launcher.getParent());
+            Path temporary = launcher.resolveSibling(launcher.getFileName() + ".tmp");
+            Files.writeString(temporary, Launcher.text(windows, Launcher.java(windows), classpath, gameDir,
+                ClientPlatform.modVersion()), StandardCharsets.UTF_8);
+            if (!windows) {
+                Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rwxr-xr-x"));
+            }
+            Files.move(temporary, launcher, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            Blockpilot.LOGGER.info("Blockpilot's command-line client: {}", launcher);
+        } catch (IOException | RuntimeException e) {
+            Blockpilot.LOGGER.warn("Blockpilot could not write its launcher {}", launcher, e);
         }
     }
 

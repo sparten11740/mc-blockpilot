@@ -65,7 +65,8 @@ class LauncherTest {
                 exit /b 2\r
             )\r
             "C:\\Java 21\\bin\\java.exe" "-Dblockpilot.version=1.2" \
-            "-cp" "C:\\mods\\100%% & more.jar;C:\\dev\\classes" "dev.blockpilot.cli.Main" "--game-dir" "C:\\games\\run" %*\r
+            "-cp" "C:\\mods\\100%% & more.jar;C:\\dev\\classes" \
+            "dev.blockpilot.cli.Main" "--game-dir" "C:\\games\\run" %* & exit /b\r
             """, text);
     }
 

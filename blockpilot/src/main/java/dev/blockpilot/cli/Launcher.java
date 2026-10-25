@@ -66,7 +66,9 @@ public final class Launcher {
             .append("    exit /b 2\r\n")
             .append(")\r\n");
         script.append(command.stream().map(Launcher::cmdQuote).collect(Collectors.joining(" ")));
-        return script.append(" %*\r\n").toString();
+        // cmd reads a script line by line from an offset, and the game may rewrite this file while Java runs; exit
+        // on the same line so nothing after it is read, keeping Java's exit code.
+        return script.append(" %* & exit /b\r\n").toString();
     }
 
     private static String shQuote(String word) {

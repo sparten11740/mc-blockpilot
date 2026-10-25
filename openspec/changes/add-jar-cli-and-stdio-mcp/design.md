@@ -61,19 +61,23 @@ executable for all) or `blockpilot.cmd` on Windows. It runs:
   process's own command: on Windows the game often runs `javaw.exe`, which has
   no console.
 - the classpath the loader loaded Blockpilot from, from a new
-  `ClientPlatform.Services.modPaths()`: the mod file's path on NeoForge, the
-  mod container's origin paths on Fabric. In dev runs these are the build
-  folders, which work as classpath entries too. On 1.21.1 NeoForge the loader
-  names only the primary path, which in a dev run is the classes folder.
+  `ClientPlatform.Services.modPaths()`: the mod file's paths on NeoForge; on
+  Fabric the code source of Blockpilot's classes plus the mod container's
+  origin, since a dev run's origin is only the resources folder holding
+  `fabric.mod.json`. In dev runs these are the build folders, which work as
+  classpath entries too. On 1.21.1 NeoForge the loader names only the primary
+  path, which in a dev run is the classes folder.
 - `-Dblockpilot.version=<the version the game reports>`, for D5.
 - `dev.blockpilot.cli.Main --game-dir <absolute game dir>`, then the caller's
   arguments, so a later `--game-dir` wins.
 
-Before starting Java the script checks that every classpath entry exists and
-otherwise exits 2 with "start the game once to update this launcher". The text
-is built by a pure `Launcher` class in the cli package (POSIX single quotes
-with `'\''`, `.cmd` double quotes and `%*`), unit-tested with spaces and
-quotes in paths. It is written to a temporary file and moved into place, so a
+Before starting Java the script checks that Java and every classpath entry
+exist and otherwise exits 2 with "start the game once to update this
+launcher". The text is built by a pure `Launcher` class in the cli package
+(POSIX single quotes with `'\''` and `exec`; `.cmd` double quotes, `%*` and
+`& exit /b` on Java's line, because cmd reads a running script by offset and
+the game may rewrite it meanwhile), unit-tested with spaces and quotes in
+paths. It is written to a temporary file and moved into place, so a
 call never sees half a script, and it is left in place when the game exits.
 When `modPaths()` yields nothing that exists, the game logs a warning and
 writes no launcher.

@@ -2,14 +2,16 @@ package dev.blockpilot.platform.fabric;
 
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
+import java.security.CodeSource;
 //? if >=26.1 {
 /*import java.util.HashSet;
 *///?}
+import java.util.LinkedHashSet;
 import java.util.List;
-//? if >=26.1 {
-/*import java.util.Set;
-*///?}
+import java.util.Set;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -86,11 +88,22 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
 
             @Override
             public List<Path> modPaths() {
-                return FabricLoader.getInstance().getModContainer(Blockpilot.MOD_ID)
+                Set<Path> paths = new LinkedHashSet<>();
+                // The origin is only where fabric.mod.json was found, which in a dev run is the resources folder;
+                // the classes come from wherever these were loaded from.
+                CodeSource classes = FabricClientEntrypoint.class.getProtectionDomain().getCodeSource();
+                if (classes != null) {
+                    try {
+                        paths.add(Path.of(classes.getLocation().toURI()));
+                    } catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
+                        // Not a plain file, as for a jar nested in another.
+                    }
+                }
+                FabricLoader.getInstance().getModContainer(Blockpilot.MOD_ID)
                     .map(ModContainer::getOrigin)
                     .filter(origin -> origin.getKind() == ModOrigin.Kind.PATH)
-                    .map(ModOrigin::getPaths)
-                    .orElse(List.of());
+                    .ifPresent(origin -> paths.addAll(origin.getPaths()));
+                return List.copyOf(paths);
             }
 
             @Override
