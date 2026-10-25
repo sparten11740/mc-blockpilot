@@ -52,6 +52,10 @@ repositories {
         content { includeGroup("org.parchmentmc.data") }
     }
     mavenCentral()
+    // Sable's companion API, which the optional Sable integration compiles against.
+    maven("https://maven.ryanhcode.dev/releases") {
+        content { includeGroupByRegex("dev\\.ryanhcode.*") }
+    }
 }
 
 dependencies {
@@ -67,6 +71,9 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${prop("fabric_api_version")}")
     // @Nullable, which NeoForge brings along and Fabric does not.
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    // Only compiled against: Sable brings the companion when it is installed (see dev.blockpilot.compat.sable).
+    modCompileOnly("dev.ryanhcode.sable-companion:sable-companion-fabric-${prop("minecraft_version")}:"
+        + prop("sable_companion_version")) { isTransitive = false }
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")

@@ -46,9 +46,16 @@ sourceSets.main {
 
 repositories {
     mavenCentral()
+    // Sable's companion API, which the optional Sable integration compiles against.
+    maven("https://maven.ryanhcode.dev/releases") {
+        content { includeGroupByRegex("dev\\.ryanhcode.*") }
+    }
 }
 
 dependencies {
+    // Only compiled against: Sable brings the companion when it is installed (see dev.blockpilot.compat.sable).
+    compileOnly("dev.ryanhcode.sable-companion:sable-companion-common-${prop("minecraft_version")}:"
+        + prop("sable_companion_version")) { isTransitive = false }
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
