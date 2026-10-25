@@ -3,7 +3,7 @@
 ## 1. Client in the jar (dev-integration)
 
 - [x] 1.1 Add the `dev.blockpilot.cli` package with the JSON reader and writer (D4) and its import rule in `ArchitectureTest` (D1); verify the JSON round-trip and malformed-input unit tests pass, and that the import rule fails with a planted `com.google.gson` import in the package and passes without it
-- [ ] 1.2 Port `tools/blockpilot.py` to `dev.blockpilot.cli.Main` (D3) with unit tests for the summary line, text and JSON result parsing and the `quit` pid; verify on the 1.21.1 NeoForge dev client that `java -cp <its classes and resources> dev.blockpilot.cli.Main --game-dir run` matches the Python script's stdout, stderr and exit code for `status; inv`, a failing command, a syntax error, `--json`, `--wait-ready 180 --wait-world` right after `runClient`, a killed game (stale file, exit 2) and `quit` (exit 0 once the process is gone)
+- [x] 1.2 Port `tools/blockpilot.py` to `dev.blockpilot.cli.Main` (D3) with unit tests for the summary line, text and JSON result parsing and the `quit` pid; verify on the 1.21.1 NeoForge dev client that `java -cp <its classes and resources> dev.blockpilot.cli.Main --game-dir run` matches the Python script's stdout, stderr and exit code for `status; inv`, a failing command, a syntax error, `--json`, `--wait-ready 180 --wait-world` right after `runClient`, a killed game (stale file, exit 2) and `quit` (exit 0 once the process is gone)
 
 ## 2. Launcher (dev-integration)
 
