@@ -93,10 +93,12 @@ def main():
     if args.wait_world:
         while True:
             send("status")
-            if not text_reply().startswith("ok menu"):
+            status = text_reply()
+            if not status.startswith("ok menu"):
                 break
             if time.time() >= deadline:
-                print("blockpilot: timed out waiting for a world", file=sys.stderr)
+                print(f"blockpilot: timed out waiting for a world (last status: {status.splitlines()[0]})",
+                      file=sys.stderr)
                 return 2
             time.sleep(1)
     if args.json:
