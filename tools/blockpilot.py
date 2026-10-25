@@ -78,7 +78,7 @@ def main():
         while True:
             raw = stream.readline()
             if not raw:
-                raise SystemExit("blockpilot: connection closed")
+                raise SystemExit("connection closed")
             line = raw.decode("utf-8").rstrip("\n")
             if line == "." or not lines and line.startswith("{"):
                 # A script that runs "fmt json" gets that reply as one JSON line already.
