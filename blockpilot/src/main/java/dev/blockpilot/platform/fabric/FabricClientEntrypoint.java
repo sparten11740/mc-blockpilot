@@ -3,21 +3,40 @@ package dev.blockpilot.platform.fabric;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
 import java.nio.file.Path;
+//? if >=26.1 {
+/*import java.util.HashSet;
+import java.util.Set;
+*///?}
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//? if >=26.1 {
+/*import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+*///?} else {
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+//?}
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+//? if >=26.1 {
+/*import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+*///?} else {
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+//?}
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
+//? if >=26.1 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 
 /** The mod on Fabric: installs the platform and forwards Fabric API's events to the platform hooks. */
 public final class FabricClientEntrypoint implements ClientModInitializer {
+    //? if >=26.1 {
+    /*private final Set<KeyMapping.Category> categories = new HashSet<>();
+    *///?}
+
     @Override
     public void onInitializeClient() {
         ClientPlatform.install(new ClientPlatform.Services() {
@@ -62,7 +81,15 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
 
             @Override
             public void registerKeyMapping(KeyMapping mapping) {
+                //? if >=26.1 {
+                /*// Categories are registered objects here, and Fabric leaves registering them to the mod.
+                if (categories.add(mapping.getCategory())) {
+                    KeyMapping.Category.register(mapping.getCategory().id());
+                }
+                KeyMappingHelper.registerKeyMapping(mapping);
+                *///?} else {
                 KeyBindingHelper.registerKeyBinding(mapping);
+                //?}
             }
         });
         Blockpilot.init();
@@ -70,7 +97,12 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientPlatform.hooks().onLoadComplete());
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ClientPlatform.hooks().onClientStopping());
         ClientTickEvents.END_CLIENT_TICK.register(client -> ClientPlatform.hooks().onClientTickEnd());
+        //? if >=26.1 {
+        /*HudElementRegistry.addLast(ResourceLocation.fromNamespaceAndPath(Blockpilot.MOD_ID, "status"),
+            (graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
+        *///?} else {
         HudRenderCallback.EVENT.register((graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
+        //?}
         ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
             ClientPlatform.hooks().onChatReceived(message));
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {

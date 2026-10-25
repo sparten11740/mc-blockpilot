@@ -32,6 +32,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTickRateManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=26.1 {
+/*import net.minecraft.server.permissions.LevelBasedPermissionSet;
+import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueOutput;
+*///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec2;
@@ -44,6 +50,11 @@ import net.minecraft.world.phys.Vec3;
  */
 final class ServerCommands {
     private static final int MAX_NBT_CHARS = 8192;
+    //? if >=26.1 {
+    /*private static final PermissionSet OWNER = LevelBasedPermissionSet.OWNER;
+    *///?} else {
+    private static final int OWNER = 4;
+    //?}
     private static boolean changedTicking;
 
     void register(CommandRegistry registry) {
@@ -81,7 +92,14 @@ final class ServerCommands {
 
     static ServerLevel serverLevel() {
         ServerPlayer player = serverPlayer();
-        return player != null ? player.serverLevel() : server().overworld();
+        if (player == null) {
+            return server().overworld();
+        }
+        //? if >=26.1 {
+        /*return player.level();
+        *///?} else {
+        return player.serverLevel();
+        //?}
     }
 
     /** Collects what a command tells its source. */
@@ -134,11 +152,11 @@ final class ServerCommands {
             if (player == null) {
                 throw new CommandException("not_in_world");
             }
-            source = player.createCommandSourceStack().withSource(capture).withPermission(4);
+            source = player.createCommandSourceStack().withSource(capture).withPermission(OWNER);
         } else {
             ServerLevel level = server.overworld();
-            source = new CommandSourceStack(capture, Vec3.atLowerCornerOf(level.getSharedSpawnPos()), Vec2.ZERO, level, 4,
-                "Blockpilot", Component.literal("Blockpilot"), server, null);
+            source = new CommandSourceStack(capture, Vec3.atLowerCornerOf(level.getSharedSpawnPos()), Vec2.ZERO, level,
+                OWNER, "Blockpilot", Component.literal("Blockpilot"), server, null);
         }
         source = source.withCallback((ok, result) -> {
             success[0] = ok;
@@ -171,7 +189,14 @@ final class ServerCommands {
             if (entity == null) {
                 throw new CommandException("no_entity", token);
             }
+            //? if >=26.1 {
+            /*TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
+                level.registryAccess());
+            entity.saveWithoutId(output);
+            data = output.buildResult();
+            *///?} else {
             data = entity.saveWithoutId(new CompoundTag());
+            //?}
         } else {
             BlockPos pos = Rel.block(context.resolve(args.position("target")));
             if (!level.isLoaded(pos)) {

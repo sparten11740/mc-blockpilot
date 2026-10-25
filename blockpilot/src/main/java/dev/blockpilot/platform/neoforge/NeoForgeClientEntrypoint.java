@@ -6,6 +6,9 @@ import dev.blockpilot.platform.ClientPlatform;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+//? if >=26.1 {
+/*import java.util.Locale;
+*///?}
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
@@ -79,14 +82,31 @@ public final class NeoForgeClientEntrypoint {
         });
         Blockpilot.init();
 
-        modEventBus.addListener(RegisterKeyMappingsEvent.class, event -> keyMappings.forEach(event::register));
+        modEventBus.addListener(RegisterKeyMappingsEvent.class, event -> {
+            //? if >=26.1 {
+            /*keyMappings.stream().map(KeyMapping::getCategory).distinct().forEach(event::registerCategory);
+            *///?}
+            keyMappings.forEach(event::register);
+        });
         modEventBus.addListener(FMLLoadCompleteEvent.class, event -> ClientPlatform.hooks().onLoadComplete());
 
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> ClientPlatform.hooks().onClientTickEnd());
         // Between the first and the last listener of a stage run all its other handlers, which a capture times.
+        //? if >=26.1 {
+        /*// Each stage is its own event class here, named after the stage (AfterSky is after_sky).
+        List.of(RenderLevelStageEvent.AfterSky.class, RenderLevelStageEvent.AfterOpaqueBlocks.class,
+            RenderLevelStageEvent.AfterOpaqueFeatures.class, RenderLevelStageEvent.AfterTranslucentFeatures.class,
+            RenderLevelStageEvent.AfterTranslucentBlocks.class, RenderLevelStageEvent.AfterTranslucentParticles.class,
+            RenderLevelStageEvent.AfterWeather.class, RenderLevelStageEvent.AfterLevel.class).forEach(stage -> {
+                String name = stage.getSimpleName().replaceAll("(?<=[a-z])(?=[A-Z])", "_").toLowerCase(Locale.ROOT);
+                NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, stage, event -> Perf.stageStart());
+                NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, stage, event -> Perf.stageEnd(name));
+            });
+        *///?} else {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLevelStageEvent.class, event -> Perf.stageStart());
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderLevelStageEvent.class,
             event -> Perf.stageEnd(event.getStage().toString().replace("minecraft:", "")));
+        //?}
         NeoForge.EVENT_BUS.addListener(RenderGuiEvent.Post.class,
             event -> ClientPlatform.hooks().onHudRender(event.getGuiGraphics()));
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class,

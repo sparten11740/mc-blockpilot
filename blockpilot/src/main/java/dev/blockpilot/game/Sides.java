@@ -9,10 +9,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+//? if >=26.1 {
+/*import net.minecraft.server.permissions.Permissions;
+*///?}
 import net.minecraft.world.level.Level;
 
 /**
@@ -52,7 +56,7 @@ public final class Sides {
         if (server == null) {
             throw new CommandException("no_server");
         }
-        if (!minecraft.player.hasPermissions(2)) {
+        if (!cheats(minecraft.player)) {
             throw new CommandException("no_cheats");
         }
         ServerLevel level = server.getLevel(minecraft.level.dimension());
@@ -74,5 +78,14 @@ public final class Sides {
         } catch (TimeoutException e) {
             throw new CommandException("timeout", "the server did not answer within " + SERVER_READ_SECONDS + "s");
         }
+    }
+
+    /** Whether the player may use cheats (command level 2), which reads on the integrated server need. */
+    static boolean cheats(LocalPlayer player) {
+        //? if >=26.1 {
+        /*return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        *///?} else {
+        return player.hasPermissions(2);
+        //?}
     }
 }

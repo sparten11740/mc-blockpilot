@@ -21,6 +21,9 @@ import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+//? if >=26.1 {
+/*import net.minecraft.client.multiplayer.ClientLevel;
+*///?}
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.ServerList;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
@@ -192,13 +195,25 @@ final class SessionCommands {
         boolean local = minecraft.isLocalServer();
         if (minecraft.level != null) {
             leaving = true;
+            //? if >=26.1 {
+            /*minecraft.level.disconnect(ClientLevel.DEFAULT_QUIT_MESSAGE);
+            *///?} else {
             minecraft.level.disconnect();
+            //?}
         }
+        //? if >=26.1 {
+        /*if (local) {
+            minecraft.disconnectWithSavingScreen();
+        } else {
+            minecraft.disconnectWithProgressScreen();
+        }
+        *///?} else {
         if (local) {
             minecraft.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
         } else {
             minecraft.disconnect();
         }
+        //?}
         minecraft.setScreen(new TitleScreen());
     }
 

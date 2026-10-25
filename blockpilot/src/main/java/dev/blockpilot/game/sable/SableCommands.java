@@ -21,6 +21,9 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+//? if >=26.1 {
+/*import java.util.Set;
+*///?}
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -209,7 +212,11 @@ final class SableCommands {
             if (player == null) {
                 throw new CommandException("not_in_world");
             }
+            //? if >=26.1 {
+            /*ServerLevel level = player.level();
+            *///?} else {
             ServerLevel level = player.serverLevel();
+            //?}
             SubLevels subLevels = SableSupport.subLevels();
             SubLevels.Info info = subLevels.at(level, block);
             if (info == null) {
@@ -220,7 +227,11 @@ final class SableCommands {
                 throw new CommandException("no_room", "no free spot within " + TP_REACH + " blocks of " + target);
             }
             Vec3 at = subLevels.toWorld(level, Vec3.atBottomCenterOf(spot));
+            //? if >=26.1 {
+            /*player.teleportTo(level, at.x, at.y, at.z, Set.of(), player.getYRot(), player.getXRot(), false);
+            *///?} else {
             player.teleportTo(level, at.x, at.y, at.z, player.getYRot(), player.getXRot());
+            //?}
             done[0] = Result.ok(new Fields().bare("at", Rel.absolute(at)).put("plot", Rel.absolute(spot))
                 .put("sub", info.name()));
             return null;

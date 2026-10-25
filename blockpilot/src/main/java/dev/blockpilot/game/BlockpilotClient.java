@@ -39,6 +39,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+//? if >=26.1 {
+/*import net.minecraft.resources.ResourceLocation;
+*///?}
 import net.minecraft.server.MinecraftServer;
 import org.lwjgl.glfw.GLFW;
 
@@ -52,7 +55,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     /** The player's switch for agent control; agents can't press it (see InputCommands). */
     private final KeyMapping toggleKey = new KeyMapping("key.blockpilot.toggle", GLFW.GLFW_KEY_F8,
+        //? if >=26.1 {
+        /*new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(Blockpilot.MOD_ID, Blockpilot.MOD_ID)));
+        *///?} else {
         "key.categories.blockpilot");
+        //?}
     // Set up on the loader's load-complete thread, then used on the client and server threads.
     private volatile Config config;
     private volatile Engine engine;
@@ -335,7 +342,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             if (minecraft.getSingleplayerServer() == null) {
                 return "no_server";
             }
-            if (!minecraft.player.hasPermissions(2)) {
+            if (!Sides.cheats(minecraft.player)) {
                 return "no_cheats";
             }
         }
