@@ -3,8 +3,10 @@ package dev.blockpilot.protocol;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import java.util.List;
 
 /**
  * The README's extension examples ("Extending it"), copied verbatim so they are compiled and run; only Aerolarge's own
@@ -17,6 +19,16 @@ final class ReadmeSnippets {
     /** Stands in for Aerolarge's landing gear. */
     static final class Gear {
         static boolean isExtended() {
+            return true;
+        }
+    }
+
+    /** Stands in for Aerolarge's flaps, which settle at once. */
+    static final class Flaps {
+        static void move(String side, double degrees, int ticks) {
+        }
+
+        static boolean settled() {
             return true;
         }
     }
@@ -50,6 +62,18 @@ final class ReadmeSnippets {
                     ? Result.ok(new Fields().put("blocks", build.count(), "blocks=" + build.count()))
                     : null;
             }).onServer().arg("blueprint", ArgType.TEXT).help("builds a blueprint at the player"));
+
+        BlockpilotApi.register("aerolarge", CommandSpec.action("flaps", (context, args) -> {
+                double degrees = args.word("op").equals("retract") ? 0 : args.number("degrees", 0);
+                Duration over = args.has("ticks") ? args.duration("ticks") : new Duration(1);
+                Flaps.move(args.option("side"), degrees, over.ticks());
+                return () -> Flaps.settled() ? Result.ok() : null;
+            })
+            .form(form -> form.keyword("op", "set").arg("degrees", ArgType.NUMBER)
+                .optionalArg("ticks", ArgType.DURATION))
+            .form(form -> form.keyword("op", "retract"))
+            .option("side", "one wing only", List.of("left", "right"))
+            .help("moves the flaps").example("aerolarge:flaps set 15 20t"));
     }
 
     static void emit(String id) {

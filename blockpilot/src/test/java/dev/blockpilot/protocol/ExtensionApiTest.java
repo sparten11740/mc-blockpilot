@@ -74,6 +74,12 @@ class ExtensionApiTest {
 
         Session session = engine.openSession();
         assertEquals("ok speed=5", Formatter.text(engine.submit(session, null, "sample:info").join()));
+        CompletableFuture<Reply> flaps = engine.submit(session, null, "aerolarge:flaps set 15 20t side=left");
+        engine.tickClient();
+        assertEquals("ok", Formatter.text(flaps.join()));
+        assertEquals("err syntax col 24: side= takes left|right, got up; aerolarge:flaps set <degrees> [ticks] "
+            + "[side=left|right]", Formatter.text(engine.submit(session, null, "aerolarge:flaps set 15 side=up")
+            .join()));
 
         // wait … until works on extension queries.
         CompletableFuture<Reply> wait = engine.submit(session, null, "wait sample:info until speed<1 timeout=1s");

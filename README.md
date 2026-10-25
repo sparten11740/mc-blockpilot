@@ -95,6 +95,13 @@ reply (`tick query`, `sample` rows, waits, `sounds`, `messages` and their `since
 server's game time in singleplayer, else the client's. `help`, `help <command|group>` and `help errors` give the full
 reference.
 
+The language has a grammar, written in EBNF in the `command-language` spec, and a recursive-descent parser that
+follows it; `help grammar` prints it, with one production per command generated from that command's declaration. A
+whole script is parsed before any of it runs, so a typo in its last step stops it before the first one acts: that
+step answers `err syntax col <n>: <hint>`, naming what the command takes there, and every other step `skip`. Common
+slips get a pointed hint, e.g. `id=air` in a predicate (predicates compare with `==`), `hp < 10` (a predicate is one
+token), or `wait 5` (a duration needs its unit).
+
 ```
 > select iron_pickaxe; mine #logs x3; inv
 ok hand:iron_pickaxe
@@ -107,7 +114,7 @@ ok
 
 | Group | Commands |
 | --- | --- |
-| perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r] [limit]`, `block <pos>`, `blocks <from> <to>`, `inv [detail]` |
+| perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r [limit]]`, `block <pos>`, `blocks <from> <to>`, `inv [detail]` |
 | observe | `screenshot [width] [burst=n every=Nt] [hud=off]`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=]`, `particles [since=]`, `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>` |
 | movement | `face <pos\|e<id>>`, `turn <yaw> <pitch> [Nt]`, `move <dir> <blocks\|Nt>`, `jump`, `sneak on\|off`, `sprint on\|off`, `fly on\|off`, `goto <pos\|e<id>> [near=]` |
 | interact | `use [target] [sneak] [hold=Nt]`, `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
@@ -118,7 +125,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| meta | `help`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]` |
+| meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]` |
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
 on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world
@@ -129,7 +136,7 @@ than after a fresh launch; relaunch the client when a test needs full isolation.
 ## Extending it
 
 Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile
-against the API only (`compileOnly("dev.blockpilot:blockpilot-api:1.0.0")`, from mavenLocal as above) and register
+against the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.0.0")`, from mavenLocal as above) and register
 them during mod loading, in a class only touched when Blockpilot is installed:
 
 ```java
@@ -159,10 +166,56 @@ BlockpilotApi.register("aerolarge", CommandSpec.action("build", (context, args) 
     }).onServer().arg("blueprint", ArgType.TEXT).help("builds a blueprint at the player"));
 ```
 
+A command declares its arguments as one or more forms, matched in order against a call's tokens; the first that
+takes them all wins. A form is a sequence of keywords (`keyword`, bound to a name such as `op`), slots of one or more
+slot types (`arg`, `optionalArg`; the first type that matches is used), optional groups (`optional`, taken when their
+first part fits) and, last, free text (`ArgType.TEXT`). Options declare the slot types of their value, so a bad value
+fails before the script runs, and a name ending in `:*` declares a family such as `rule:<name>=…`. A command with a
+single form can declare its parts on the spec itself, as `build` does above:
+
+```java
+BlockpilotApi.register("aerolarge", CommandSpec.action("flaps", (context, args) -> {
+        double degrees = args.word("op").equals("retract") ? 0 : args.number("degrees", 0);
+        Duration over = args.has("ticks") ? args.duration("ticks") : new Duration(1);
+        Flaps.move(args.option("side"), degrees, over.ticks());
+        return () -> Flaps.settled() ? Result.ok() : null;
+    })
+    .form(form -> form.keyword("op", "set").arg("degrees", ArgType.NUMBER)
+        .optionalArg("ticks", ArgType.DURATION))
+    .form(form -> form.keyword("op", "retract"))
+    .option("side", "one wing only", List.of("left", "right"))
+    .help("moves the flaps").example("aerolarge:flaps set 15 20t"));
+```
+
+`help aerolarge:flaps` shows both forms, and `help grammar` prints `aerolarge.flaps-command ::= "aerolarge:flaps" (
+"set" number duration? | "retract" )`. `args.type(name)` tells which slot type a token was taken as; the typed
+accessors (`position`, `entity`, `integer`, `duration`, `point`, `uuid`, `index`, …) check it. Registration throws
+`IllegalArgumentException` for a declaration the grammar can't reach (a name or option name it can't write, a keyword
+such as `then`, two slots with one name, a type an earlier one always takes first, or an optional slot that would take
+the next part's token), and freezes the spec. An example that doesn't parse, or doesn't start with the command's
+`<namespace>:<name>`, gets the command refused with a logged error.
+
 Extensions can emit events too: `BlockpilotApi.emit("aerolarge", "assembled", new Fields().put("uuid", id,
 "uuid=" + id))` reaches every session as `! aerolarge:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of
-`blockpilot-api`, bumps its minor version for additions and its major version for breaking changes. Registrations
-made after mod loading has finished are refused.
+`blockpilot-api`, bumps its minor version for additions and its major version for breaking changes; declare the range
+of Blockpilot versions your integration supports in your mod's metadata. Registrations made after mod loading has
+finished are refused.
+
+### Upgrading from blockpilot-api 1.x
+
+2.0.0 replaces single-shape commands with forms and checks declarations, so a 1.x integration needs recompiling and
+these changes:
+
+- `arg` and `optionalArg` take one or more types; `choice(name, optional, words…)` is `keyword(name, words…)` or
+  `optionalKeyword(name, words…)`, and further ways to write a command are `form(…)`s.
+- `ArgType.CHOICE` is `KEYWORD`; `POINT`, `WIDGET`, `MENU_SLOT`, `UUID`, `ID`, `TAG`, `PATTERN` and `SECONDS` are new,
+  and `WORD` no longer takes option- or predicate-shaped tokens such as `a=b` or `hp<5`.
+- `Args.kind` is `Args.type`, and the accessors throw `IllegalStateException` when asked for a type the slot didn't
+  take; `Args` is built from `Args.Value`s. `CommandSpec.options()` maps names to `CommandSpec.Option`s.
+- Options are typed with `option(name, description, types…)` or `option(name, description, words, types…)`; one
+  declared without types takes any value, which the handler checks (`intOption`, `numberOption`, `durationOption`).
+  Every action takes `timeout=` already and can't declare it.
+- A registered spec can't change; invalid declarations throw at registration.
 
 ## Building
 
