@@ -62,6 +62,7 @@ final class PerceptionCommands {
             .field("time", "time of day").field("hp", "health").field("max_hp", "maximum health")
             .field("food", "food level").field("level", "xp level").field("hand", "held item")
             .field("aim", "block or entity under the crosshair")
+            .field("hit", "where the crosshair meets the block, u,v,w in its own frame as face/use … at take it")
             .field("sub", "with Sable: the sub-level the aimed block is aboard; its position prints absolute")
             .field("world", "with Sable: where that block is in the world").field("vel", "velocity, blocks per tick")
             .field("on_ground", "standing on something").field("vehicle", "what the player rides")
@@ -189,12 +190,26 @@ final class PerceptionCommands {
             fields.put("aim", id, "aim:" + id).bare("aim_pos", Rel.of(block.getBlockPos()));
             Rel.sub(fields, level, block.getBlockPos());
             fields.put("face", block.getDirection().getName(), "face:" + block.getDirection().getName())
-                .hidden("aim_at", Rel.absolute(hit.getLocation()));
+                .put("hit", hitPoint(level, block)).hidden("aim_at", Rel.absolute(hit.getLocation()));
         } else if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
             fields.put("aim", Ids.of(entity.getEntity()), "aim:" + Ids.of(entity.getEntity()))
                 .bare("aim_entity", new EntityRef(entity.getEntity().getId()))
                 .hidden("aim_at", Rel.absolute(hit.getLocation()));
         }
+    }
+
+    /** Where the crosshair meets the block, in the block's own frame as {@code face/use … at} take it. */
+    private static Position hitPoint(Level level, BlockHitResult hit) {
+        BlockPos pos = hit.getBlockPos();
+        Vec3 location = hit.getLocation();
+        BlockFrame.Point point = frame(level, pos).fromBlock(new BlockFrame.Point(location.x - pos.getX(),
+            location.y - pos.getY(), location.z - pos.getZ()));
+        return Position.absolute(withinBlock(point.x()), withinBlock(point.y()), withinBlock(point.z()));
+    }
+
+    /** Two decimals, kept inside the block against rounding at its faces. */
+    private static double withinBlock(double coordinate) {
+        return Numbers.round(Mth.clamp(coordinate, 0, 1));
     }
 
     private static void flag(Fields fields, boolean set, String name) {
