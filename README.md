@@ -29,6 +29,10 @@ out).
 claude mcp add --transport http blockpilot http://127.0.0.1:25599/mcp --header "Authorization: Bearer $(cat run/config/blockpilot/token)"
 ```
 
+The port is in `endpoint.json` (another game may already hold 25599). As a baseline, a Claude Code session that
+created a survival world, mined four logs, collected the drops, crafted planks and a crafting table and placed it
+needed six `run` calls and about 1,300 characters (roughly 500 tokens) of tool input and output, with no screenshots.
+
 **Line protocol** (`nc 127.0.0.1 25599`): send `auth <token>`, then one script per line, optionally prefixed with
 `#<id> `. Text replies end with a line holding only `.`; after `fmt json` each reply is one JSON line. `sub on` pushes
 events as they happen.
