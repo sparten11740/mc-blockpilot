@@ -2,13 +2,12 @@ package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * The predicates of {@code wait <query> until …}, {@code assert} and {@code if}: {@code <field><op><value>} joined by
@@ -16,21 +15,24 @@ import java.util.regex.Pattern;
  * rows; a value written {@code $<field>} is that field of the same result.
  */
 public final class Condition {
-    private static final Pattern PREDICATE = Pattern.compile("([A-Za-z_][\\w.]*)(==|!=|<=|>=|<|>)(.+)");
-
-    private record Predicate(String field, String operator, String value) {
-    }
-
-    private final List<Predicate> predicates;
+    private final List<Lexicon.Test> tests;
     private final boolean requireOk;
 
-    private Condition(List<Predicate> predicates, boolean requireOk) {
-        this.predicates = predicates;
+    private Condition(List<Lexicon.Test> tests, boolean requireOk) {
+        this.tests = List.copyOf(tests);
         this.requireOk = requireOk;
     }
 
+    /** At least one test, or {@code requireOk}. */
+    static Condition of(List<Lexicon.Test> tests, boolean requireOk) {
+        if (tests.isEmpty() && !requireOk) {
+            throw new IllegalArgumentException("a condition needs a test or ok");
+        }
+        return new Condition(tests, requireOk);
+    }
+
     public static Condition parse(List<String> tokens) throws CommandException {
-        List<Predicate> predicates = new ArrayList<>();
+        List<Lexicon.Test> tests = new ArrayList<>();
         boolean requireOk = false;
         for (String token : tokens) {
             if (token.equals("and")) {
@@ -40,30 +42,30 @@ public final class Condition {
                 requireOk = true;
                 continue;
             }
-            Matcher matcher = PREDICATE.matcher(token);
-            if (!matcher.matches()) {
+            Lexicon.Test test = Lexicon.test(token);
+            if (test == null) {
                 throw new CommandException("syntax", "predicate expected (field==value, field<n, ok), got " + token);
             }
-            predicates.add(new Predicate(matcher.group(1), matcher.group(2), matcher.group(3)));
+            tests.add(test);
         }
-        if (predicates.isEmpty() && !requireOk) {
+        if (tests.isEmpty() && !requireOk) {
             throw new CommandException("syntax", "wait … until needs at least one predicate");
         }
-        return new Condition(predicates, requireOk);
+        return new Condition(tests, requireOk);
     }
 
     public boolean holds(Result result) {
         if (!result.isOk()) {
             return false;
         }
-        for (Predicate predicate : predicates) {
-            Object actual = lookup(result, predicate.field());
-            String expected = predicate.value();
+        for (Lexicon.Test test : tests) {
+            Object actual = lookup(result, test.field());
+            String expected = test.operand();
             if (reference(expected) != null) {
                 Object other = lookup(result, reference(expected));
                 expected = other == null ? null : String.valueOf(other);
             }
-            if (actual == null || expected == null || !compare(actual, predicate.operator(), expected)) {
+            if (actual == null || expected == null || !compare(actual, test.comparison(), expected)) {
                 return false;
             }
         }
@@ -77,17 +79,17 @@ public final class Condition {
 
     /** Whether a token reads as a predicate (or {@code and}/{@code ok}), so it can be split off a query's arguments. */
     static boolean isPredicate(String token) {
-        return token.equals("and") || token.equals("ok") || PREDICATE.matcher(token).matches();
+        return token.equals("and") || token.equals("ok") || Lexicon.test(token) != null;
     }
 
     /** The fields the predicates name, including fields compared against, as last observed; attached to the result. */
     public Fields observed(Result result) {
         Fields fields = new Fields();
         List<String> names = new ArrayList<>();
-        for (Predicate predicate : predicates) {
-            names.add(predicate.field());
-            if (reference(predicate.value()) != null) {
-                names.add(reference(predicate.value()));
+        for (Lexicon.Test test : tests) {
+            names.add(test.field());
+            if (reference(test.operand()) != null) {
+                names.add(reference(test.operand()));
             }
         }
         for (String name : names.stream().distinct().toList()) {

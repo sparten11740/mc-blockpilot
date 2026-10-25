@@ -125,12 +125,18 @@ the most tokens.
 ### Requirement: Options
 Options SHALL be written `<name>=<value>` and may stand anywhere after the
 command name and before any text, each at most once. A command takes only the
-options it declares, and every action also takes `timeout=`.
+options it declares, and every action also takes `timeout=`. Where text may
+start, a token counts as an option only when the command declares it, so text
+can begin with `name=value`.
 
 #### Scenario: Option position doesn't matter
 - **WHEN** an agent runs `mine timeout=90 #logs x6` or `mine #logs x6
   timeout=90`
 - **THEN** both mean the same
+
+#### Scenario: Text that looks like an option
+- **WHEN** an agent runs `chat a=b`
+- **THEN** the chat message is `a=b`
 
 #### Scenario: Option given twice
 - **WHEN** an agent runs `mine #logs timeout=9 timeout=90`
