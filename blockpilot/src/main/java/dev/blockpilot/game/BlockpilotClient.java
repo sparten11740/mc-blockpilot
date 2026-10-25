@@ -161,7 +161,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             // A loader or mod may reload the logging setup, which drops our appender.
             LogCapture.install();
         }
-        Focus.setKeepActive(enabled && engine.sessionCount() > 0);
+        boolean agentInControl = enabled && engine.sessionCount() > 0;
+        Focus.setKeepActive(agentInControl);
+        ActionCommands.holdFlight(agentInControl);
         InputState.reassert();
         events.tick();
         engine.tickClient();

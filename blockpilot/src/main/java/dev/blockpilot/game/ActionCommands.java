@@ -43,6 +43,8 @@ import net.minecraft.world.phys.Vec3;
  */
 final class ActionCommands {
     private static final int MINE_SEARCH_RADIUS = 32;
+    /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
+    private static boolean holdFlight;
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
@@ -66,7 +68,8 @@ final class ActionCommands {
             .help("holds or releases sprint").example("sprint on"));
         registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("movement")
             .choice("state", false, "on", "off")
-            .help("starts or stops flying where the game mode allows it (creative, spectator)").example("fly on"));
+            .help("starts or stops flying where the game mode allows it (creative, spectator); fly on holds through "
+                + "landings and teleports until fly off").example("fly on"));
         registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("movement")
             .arg("target", ArgType.TARGET).option("near", "stop within this many blocks")
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
@@ -110,6 +113,24 @@ final class ActionCommands {
 
     static Minecraft minecraft() {
         return Minecraft.getInstance();
+    }
+
+    /**
+     * Called every client tick: after {@code fly on}, flight that a landing or a teleport ended (vanilla stops
+     * flying on touching the ground) is turned back on, until {@code fly off}, leaving the world, a game mode that
+     * can't fly, or the agent losing control (disconnected or toggled off), so a human is never put back in the air.
+     */
+    static void holdFlight(boolean agentInControl) {
+        LocalPlayer player = player();
+        if (!holdFlight) {
+            return;
+        }
+        if (!agentInControl || player == null || !player.getAbilities().mayfly) {
+            holdFlight = false;
+        } else if (!player.getAbilities().flying) {
+            player.getAbilities().flying = true;
+            player.onUpdateAbilities();
+        }
     }
 
     static net.minecraft.client.Options options() {
@@ -305,7 +326,8 @@ final class ActionCommands {
         if (!player.getAbilities().mayfly) {
             throw new CommandException("syntax", "flying needs creative or spectator mode");
         }
-        player.getAbilities().flying = args.word("state").equals("on");
+        holdFlight = args.word("state").equals("on");
+        player.getAbilities().flying = holdFlight;
         player.onUpdateAbilities();
         return () -> Result.ok(new Fields().put("flying", player.getAbilities().flying,
             player.getAbilities().flying ? "flying" : "not flying"));
