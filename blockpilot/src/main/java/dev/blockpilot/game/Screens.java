@@ -1,5 +1,6 @@
 package dev.blockpilot.game;
 
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
@@ -133,6 +134,20 @@ final class Screens {
             rows.add(Row.of("w" + index, widget(index, widgets.get(index))));
         }
         return Result.ok(fields).withRows(rows, more);
+    }
+
+    /** The centre of widget {@code w<index>} as {@code screen} numbers them, in GUI coordinates. */
+    static double[] widgetCentre(Screen screen, int index) throws CommandException {
+        List<GuiEventListener> widgets = new ArrayList<>();
+        collect(screen, widgets);
+        if (index >= widgets.size()) {
+            throw new CommandException("syntax", widgets.isEmpty() ? "the screen has no widgets"
+                : "the screen has widgets w0-w" + (widgets.size() - 1));
+        }
+        if (!(widgets.get(index) instanceof LayoutElement element)) {
+            throw new CommandException("syntax", "w" + index + " has no bounds; use x,y");
+        }
+        return new double[] {element.getX() + element.getWidth() / 2.0, element.getY() + element.getHeight() / 2.0};
     }
 
     private static void collect(ContainerEventHandler parent, List<GuiEventListener> out) {

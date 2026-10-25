@@ -36,15 +36,16 @@ final class InputCommands {
         registry.register(CommandSpec.action("drag", this::drag).group("input").arg("button", ArgType.WORD)
             .arg("from", ArgType.WORD).arg("to", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
             .help("in-world: drag <button> <dx> <dy> [Nt] (hold, move, release); on a screen: "
-                + "drag <button> <x1,y1> <x2,y2> [Nt]").example("drag right 0 -120 30t"));
+                + "drag <button> <x1,y1|w<i>> <x2,y2|w<i>> [Nt]").example("drag right 0 -120 30t"));
         registry.register(CommandSpec.action("cursor", this::cursor).group("gui").arg("at", ArgType.WORD)
-            .help("moves the cursor to GUI coordinates x,y on the open screen").example("cursor 120,80"));
+            .help("moves the cursor to GUI coordinates x,y (or widget w<i>'s centre) on the open screen")
+            .example("cursor 120,80"));
         registry.register(CommandSpec.action("click", this::click).group("gui").arg("at", ArgType.WORD)
             .optionalArg("button", ArgType.WORD)
-            .help("click <x,y> [left|right|middle] on a screen; click s<index> [left|right|shift|0-8] on a "
-                + "container slot").example("click s0 shift"));
+            .help("click <x,y|w<index>> [left|right|middle] on a screen (w<index>: that widget's centre, as screen "
+                + "lists it); click s<index> [left|right|shift|0-8] on a container slot").example("click w0"));
         registry.register(CommandSpec.action("scroll", this::scroll).group("input").arg("amount", ArgType.NUMBER)
-            .optionalArg("at", ArgType.WORD).help("scrolls by n notches (positive up), optionally at x,y")
+            .optionalArg("at", ArgType.WORD).help("scrolls by n notches (positive up), optionally at x,y or w<i>")
             .example("scroll -2"));
         registry.register(CommandSpec.action("key", this::key).group("input")
             .choice("op", false, "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
@@ -85,6 +86,10 @@ final class InputCommands {
     }
 
     private static double[] guiPoint(String token) throws CommandException {
+        if (token.matches("w\\d{1,5}")) {
+            requireScreen();
+            return Screens.widgetCentre(minecraft().screen, Integer.parseInt(token.substring(1)));
+        }
         String[] parts = token.split(",");
         try {
             if (parts.length == 2) {
@@ -93,7 +98,7 @@ final class InputCommands {
         } catch (NumberFormatException e) {
             // Falls through to the syntax error.
         }
-        throw new CommandException("syntax", "x,y expected, got " + token);
+        throw new CommandException("syntax", "x,y or w<index> expected, got " + token);
     }
 
     /** GUI-scaled coordinates to the window's screen pixels, which the mouse handler works in. */
@@ -276,7 +281,7 @@ final class InputCommands {
         requireScreen();
         String at = args.word("at");
         String modifier = args.has("button") ? args.word("button") : "left";
-        if (at.matches("s\\d+")) {
+        if (at.matches("s\\d{1,5}")) {
             var player = minecraft().player;
             if (player == null) {
                 throw new CommandException("not_in_world");
