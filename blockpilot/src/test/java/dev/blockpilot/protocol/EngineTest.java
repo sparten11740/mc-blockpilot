@@ -167,6 +167,21 @@ class EngineTest {
     }
 
     @Test
+    void consecutiveServerQueriesAnswerInOneServerTick() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> reply = engine.submit(session, null, "probe; probe; probe; counter; probe");
+        tick(1);
+        assertFalse(reply.isDone());
+        counter.set(7);
+        engine.tickServer();
+        assertFalse(reply.isDone());
+        // The client query and the server query after it each need their own tick.
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok value=7\nok value=7\nok value=7\nok value=7\nok value=7", text(reply));
+    }
+
+    @Test
     void serverActionsAreCancelledOnTheServerThread() {
         Session first = engine.openSession();
         Session second = engine.openSession();

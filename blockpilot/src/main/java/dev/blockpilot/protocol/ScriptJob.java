@@ -43,7 +43,8 @@ final class ScriptJob implements CommandContext {
      */
     private final ReentrantLock lock = new ReentrantLock();
     private int index;
-    private int gatedIndex = -1;
+    /** The last command whose gate passed; commands up to it may run on either thread without a client tick. */
+    private int gatedThrough = -1;
     private Running running;
     private volatile String activity;
     /** A cancel that arrived on the thread already inside this job's step; applied when that step ends. */
@@ -121,7 +122,7 @@ final class ScriptJob implements CommandContext {
             CommandSpec spec = entry.spec();
             Affinity needed = spec.runsOnServer() ? Affinity.SERVER : Affinity.CLIENT;
             // The gate reads client state, so it is checked on the client thread before anything else runs.
-            if (gatedIndex != index) {
+            if (gatedThrough < index) {
                 if (affinity != Affinity.CLIENT) {
                     return false;
                 }
@@ -130,7 +131,7 @@ final class ScriptJob implements CommandContext {
                     finish(Result.error(gate));
                     continue;
                 }
-                gatedIndex = index;
+                gatedThrough = gateQueriesAfter(index);
             }
             if (needed != affinity) {
                 return false;
@@ -159,6 +160,24 @@ final class ScriptJob implements CommandContext {
         }
         complete();
         return true;
+    }
+
+    /**
+     * Gates the queries that follow {@code from} up to the next action (or the first gate that fails), so a run of
+     * server-side queries is answered in one server tick instead of one per client tick. Queries change nothing, so
+     * their gates still hold when they run; what follows an action is gated after it. Returns the last gated index.
+     */
+    private int gateQueriesAfter(int from) {
+        int last = from;
+        while (last + 1 < commands.size()) {
+            CommandRegistry.Entry next = engine.registry().resolve(commands.get(last + 1).name());
+            boolean query = next != null && next.spec().kind() == CommandSpec.Kind.QUERY;
+            if (!query || engine.game().gate(next.spec()) != null) {
+                break;
+            }
+            last++;
+        }
+        return last;
     }
 
     private Result tickRunning() {
