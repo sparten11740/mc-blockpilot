@@ -25,9 +25,7 @@ class GrammarTest {
         while (!Files.exists(root.resolve("settings.gradle.kts"))) {
             root = root.getParent();
         }
-        Path archived = root.resolve("openspec/specs/command-language/spec.md");
-        Path change = root.resolve("openspec/changes/add-agent-control-mod/specs/command-language/spec.md");
-        String spec = Files.readString(Files.exists(archived) ? archived : change);
+        String spec = Files.readString(root.resolve("openspec/specs/command-language/spec.md"));
         int start = spec.indexOf("```ebnf\n") + "```ebnf\n".length();
         return spec.substring(start, spec.indexOf("```", start));
     }
