@@ -43,6 +43,8 @@ class EngineTest {
         registry.register(CommandSpec.query("probe", (context, args) ->
             Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
         registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
+        registry.register(CommandSpec.action("roll", (context, args) -> new Steps(args.integer("ticks", 3),
+            args.word("name"))).onServer().arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
         engine = new Engine(registry, game);
     }
 
@@ -125,6 +127,21 @@ class EngineTest {
         assertEquals("#1 ok\nok value=2", text(walk));
         assertEquals("#2 ok", text(jump));
         assertEquals(List.of("a", "a", "b"), log);
+    }
+
+    @Test
+    void actionsOfBothThreadsRunInQueueOrder() {
+        CompletableFuture<Reply> walk = engine.submit(engine.openSession(), null, "walk a 2");
+        CompletableFuture<Reply> roll = engine.submit(engine.openSession(), null, "roll s 2");
+        CompletableFuture<Reply> jump = engine.submit(engine.openSession(), null, "walk b 1");
+        for (int index = 0; index < 6; index++) {
+            engine.tickClient();
+            engine.tickServer();
+        }
+        assertEquals(List.of("a", "a", "s", "s", "b"), log);
+        assertEquals("ok", text(walk));
+        assertEquals("ok", text(roll));
+        assertEquals("ok", text(jump));
     }
 
     @Test

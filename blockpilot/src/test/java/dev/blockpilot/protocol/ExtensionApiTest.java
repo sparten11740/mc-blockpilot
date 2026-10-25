@@ -11,10 +11,13 @@ import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -40,6 +43,23 @@ class ExtensionApiTest {
                 cancelled.set(true);
             }
         }));
+        // Server-thread commands, which record whether they ran inside a server tick.
+        AtomicBoolean inServerTick = new AtomicBoolean();
+        List<String> calls = new ArrayList<>();
+        BlockpilotApi.register("sample", CommandSpec.query("depth", (context, args) -> {
+            calls.add("depth " + inServerTick.get());
+            return Result.ok(new Fields().put("depth", 3, "depth=3"));
+        }).onServer().field("depth", "blocks"));
+        BlockpilotApi.register("sample", CommandSpec.action("build", (context, args) -> {
+            calls.add("start " + inServerTick.get());
+            int[] remaining = {2};
+            return () -> {
+                calls.add("tick " + inServerTick.get());
+                return --remaining[0] <= 0 ? Result.ok() : null;
+            };
+        }).onServer());
+
+        ReadmeSnippets.register();
 
         CommandRegistry registry = new CommandRegistry();
         FakeGame game = new FakeGame();
@@ -70,6 +90,57 @@ class ExtensionApiTest {
         engine.submit(engine.openSession(), null, "stop").join();
         assertEquals("err cancelled", Formatter.text(spin.join()));
         assertTrue(cancelled.get());
+
+        // A server-thread action starts and ticks only on server ticks, once the gate passed on a client tick.
+        Runnable tickBoth = () -> {
+            game.time++;
+            engine.tickClient();
+            inServerTick.set(true);
+            engine.tickServer();
+            inServerTick.set(false);
+        };
+        CompletableFuture<Reply> build = engine.submit(session, null, "sample:build");
+        for (int tick = 0; tick < 5 && !build.isDone(); tick++) {
+            tickBoth.run();
+        }
+        assertEquals("ok", Formatter.text(build.join()));
+        assertEquals(List.of("start true", "tick true", "tick true"), calls);
+
+        // Server-clock sampling of a server-thread extension query: rows 40 server ticks apart.
+        calls.clear();
+        CompletableFuture<Reply> sample = engine.submit(session, null, "sample sample:depth every 40t x3 clock=server");
+        for (int tick = 0; tick < 200 && !sample.isDone(); tick++) {
+            tickBoth.run();
+        }
+        String samples = Formatter.text(sample.join());
+        assertTrue(samples.startsWith("ok samples=3"), samples);
+        List<Long> ticks = new ArrayList<>();
+        Matcher matcher = Pattern.compile("t(\\d+) depth=3").matcher(samples);
+        while (matcher.find()) {
+            ticks.add(Long.parseLong(matcher.group(1)));
+        }
+        assertEquals(List.of(40L, 40L), List.of(ticks.get(1) - ticks.get(0), ticks.get(2) - ticks.get(1)));
+        assertTrue(calls.stream().allMatch(call -> call.equals("depth true")), calls.toString());
+
+        // Without an integrated server the gate refuses, and the handler is never called.
+        calls.clear();
+        game.serverGate = "no_server";
+        CompletableFuture<Reply> refused = engine.submit(session, null, "sample:build");
+        tickBoth.run();
+        assertEquals("err no_server", Formatter.text(refused.join()));
+        assertEquals(List.of(), calls);
+        game.serverGate = null;
+
+        // The README's examples work as documented.
+        assertEquals("ok extended=true", Formatter.text(engine.submit(session, null, "aerolarge:gear").join()));
+        CompletableFuture<Reply> readmeBuild = engine.submit(session, null, "aerolarge:build hangar");
+        for (int tick = 0; tick < 5 && !readmeBuild.isDone(); tick++) {
+            tickBoth.run();
+        }
+        assertEquals("ok blocks=42", Formatter.text(readmeBuild.join()));
+        ReadmeSnippets.emit("abc");
+        assertEquals("ok extended=true\n! aerolarge:assembled uuid=abc",
+            Formatter.text(engine.submit(session, null, "aerolarge:gear").join()));
 
         // Events and JSON output.
         engine.submit(session, null, "fmt json").join();

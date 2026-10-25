@@ -15,6 +15,8 @@ final class FakeGame implements GameBridge {
     final List<Runnable> serverTasks = new ArrayList<>();
     /** The gate's answer for commands that need a world; null lets them run. */
     String worldGate;
+    /** The gate's answer for commands that need the integrated server; null lets them run. */
+    String serverGate;
     /** The game time the fake reports; tests advance it. */
     long time;
     /** Whether the fake has finished loading; queued actions wait while false. */
@@ -37,6 +39,9 @@ final class FakeGame implements GameBridge {
 
     @Override
     public String gate(CommandSpec spec) {
+        if (spec.needsIntegratedServer() && serverGate != null) {
+            return serverGate;
+        }
         return spec.needsWorldLoaded() ? worldGate : null;
     }
 
