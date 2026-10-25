@@ -246,7 +246,7 @@ final class ActionCommands {
             case "left" -> options().keyLeft;
             default -> options().keyRight;
         };
-        Duration duration = args.duration("amount");
+        Duration duration = args.type("amount") == ArgType.DURATION ? args.duration("amount") : null;
         double blocks = duration == null ? args.number("amount", 0) : 0;
         int session = context.sessionId();
         Vec3 start = player().position();
