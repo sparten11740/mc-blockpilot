@@ -20,7 +20,7 @@
 
 ## 4. Integration checks
 
-- [ ] 4.1 Build all four jars; verify each holds `dev/blockpilot/cli`, `ArchitectureTest` passes on every node, `java -cp <jar> dev.blockpilot.cli.Main --help` runs on Java 21 for the 1.21.1 jars and on Java 25 for the 26.1 jars, and the smoke test passes on the 1.21.1 and 26.1 Fabric dev clients too
+- [x] 4.1 Build all four jars; verify each holds `dev/blockpilot/cli`, `ArchitectureTest` passes on every node, `java -cp <jar> dev.blockpilot.cli.Main --help` runs on Java 21 for the 1.21.1 jars and on Java 25 for the 26.1 jars, and the smoke test passes on the 1.21.1 and 26.1 Fabric dev clients too
 - [ ] 4.2 Load Blockpilot as a jar in a fresh NeoForge 1.21.1 MDK project and a fresh Fabric 1.21.1 example-mod project through mavenLocal, as the README describes; verify in both that the launcher appears in `run/blockpilot`, runs `status` with no `java` on `PATH`, and serves `tools/list` and a `run` call over stdio
 
 ## Workflow follow-up
