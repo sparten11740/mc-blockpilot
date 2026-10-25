@@ -4,8 +4,10 @@ import dev.blockpilot.api.CommandException;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 /** Registry ids as agents read and write them: without the {@code minecraft:} namespace, others kept. */
@@ -30,7 +32,15 @@ public final class Ids {
     }
 
     public static String of(Entity entity) {
-        return of(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
+        return of(entity.getType());
+    }
+
+    public static String of(EntityType<?> type) {
+        return of(BuiltInRegistries.ENTITY_TYPE.getKey(type));
+    }
+
+    public static String of(BlockEntityType<?> type) {
+        return of(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(type));
     }
 
     /** Parses an id with or without its namespace; fails with {@code err syntax} when malformed. */

@@ -380,7 +380,7 @@ final class PerceptionCommands {
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity != null) {
-            String type = Ids.of(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType()));
+            String type = Ids.of(blockEntity.getType());
             fields.put("be", type, "be:" + type);
         }
         return fields;

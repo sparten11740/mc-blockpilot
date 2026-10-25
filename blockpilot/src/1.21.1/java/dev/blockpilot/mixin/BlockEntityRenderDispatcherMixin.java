@@ -5,7 +5,6 @@ import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.perf.Perf;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,7 +26,7 @@ public abstract class BlockEntityRenderDispatcherMixin {
     private void blockpilot$end(BlockEntity blockEntity, float partialTick, PoseStack poseStack,
         MultiBufferSource buffers, CallbackInfo info) {
         if (Perf.active) {
-            Perf.renderEnd(Ids.of(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType())));
+            Perf.renderEnd(Ids.of(blockEntity.getType()));
         }
     }
 }

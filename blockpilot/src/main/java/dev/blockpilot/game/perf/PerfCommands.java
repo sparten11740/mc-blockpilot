@@ -38,7 +38,6 @@ import net.minecraft.client.particle.Particle;
 //? if >=26.1 {
 /*import net.minecraft.client.particle.ParticleGroup;
 *///?}
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -147,8 +146,7 @@ public final class PerfCommands {
                 LevelChunk chunk = holder.getTickingChunk();
                 if (chunk != null) {
                     for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                        blockEntities.merge(Ids.of(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType())), 1,
-                            Integer::sum);
+                        blockEntities.merge(Ids.of(blockEntity.getType()), 1, Integer::sum);
                     }
                 }
             }

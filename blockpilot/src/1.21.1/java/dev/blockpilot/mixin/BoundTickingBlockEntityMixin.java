@@ -2,7 +2,6 @@ package dev.blockpilot.mixin;
 
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.perf.Perf;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,7 +28,7 @@ public abstract class BoundTickingBlockEntityMixin {
     private void blockpilot$end(CallbackInfo info) {
         if (Perf.active) {
             Perf.blockEntityEnd(blockEntity.getLevel() != null && blockEntity.getLevel().isClientSide(),
-                Ids.of(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType())));
+                Ids.of(blockEntity.getType()));
         }
     }
 }
