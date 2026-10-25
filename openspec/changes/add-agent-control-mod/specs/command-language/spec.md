@@ -150,8 +150,10 @@ only the session that sets it.
 `wait <query> until <predicate> [and <predicate>…]` SHALL re-run a read-only
 command until every predicate over its result holds. A predicate is
 `<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of
-rows. Options after `until`: `stable=<Nt>` (consecutive matches needed, default
-1), `every=<Nt>` (default 1t), `timeout=<duration>` (default 60s).
+rows. A value written `$<field>` is that other field of the same result, so two
+fields can be compared. Options after `until`: `stable=<Nt>` (consecutive
+matches needed, default 1), `every=<Nt>` (default 1t), `timeout=<duration>`
+(default 60s).
 
 #### Scenario: Wait for a block change
 - **WHEN** an agent runs `wait block 0,-60,0 until id==air`
@@ -172,6 +174,42 @@ rows. Options after `until`: `stable=<Nt>` (consecutive matches needed, default
 #### Scenario: Action used as condition
 - **WHEN** an agent runs `wait mine ~0,-1,0 until ok`
 - **THEN** the result is `err syntax` because `mine` is not a read-only command
+
+#### Scenario: Two fields compared
+- **WHEN** an agent runs `wait status until hp<$max_hp`
+- **THEN** the wait returns once the player has taken damage, whatever their
+  maximum health is
+
+### Requirement: Assertions
+`assert <query> <predicate> [and <predicate>…]` SHALL run a read-only command
+once and check the predicates of `wait … until` against its result: `ok` with
+the observed fields when they hold, otherwise `err assert_failed` with them
+(and the query's error code if it failed). The predicates are the trailing
+tokens; the query runs on the thread and behind the gate it would have on its
+own. `?assert` is soft like any command.
+
+#### Scenario: Script as a test
+- **WHEN** an agent runs `use 10,64,5; wait block 12,60,5 until id==air
+  timeout=8s; assert block 14,65,5 props.lit==true; status`
+- **THEN** the third line is `ok props.lit=true` when the lamp is lit, or `err
+  assert_failed props.lit=false` followed by `skip` when it is not
+
+### Requirement: Conditionals
+`if <query> <predicate> [and …] then <command>` SHALL run the command when the
+predicates hold, with its result standing for the `if`; otherwise the result is
+`ok false` with the observed fields. The query is checked as for `assert`. A
+`?if` makes its command soft too. `assert` and `if` only work as commands of a
+script, not inside `wait` or `sample`.
+
+#### Scenario: Conditional action
+- **WHEN** an agent runs `if block ~0,-1,0 id==grass_block then place torch
+  ~0,0,1`
+- **THEN** the torch is placed only on grass, and otherwise the line is `ok
+  false id=dirt`
+
+#### Scenario: Assert inside wait
+- **WHEN** an agent runs `wait assert status hp>5 until ok`
+- **THEN** the result is `err syntax`
 
 ### Requirement: In-band help
 `help` SHALL list command groups. `help <command|group|errors>` SHALL return

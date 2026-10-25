@@ -178,6 +178,17 @@ The grammar is defined in the `command-language` spec. Implementation notes:
   evaluates the predicates against the `Result` fields (or `count` for rows),
   counting consecutive matches for `stable`. `help <command>` shows the field
   list from the registry, so the predicates an agent can write are discoverable.
+  A `$<field>` literal is looked up in the same result before comparing.
+- **Assertions and conditionals:** `assert` and `if` are registered like other
+  commands (for help and argument shape), but the script runner evaluates them
+  itself. It splits off the trailing predicate tokens (and for `if` the command
+  after `then`), and runs the inner query with that query's own thread and gate,
+  so `assert` over a server-side query runs on the server thread. When an `if`
+  holds, its command takes the `if`'s place in the script, is gated afresh and
+  runs as if written there. A script counts as having an action when an `if`
+  would run one, so it queues like any other action script. The registered
+  handlers only answer `err syntax`, which is all `wait` or `sample` around them
+  would get, and both reject them up front.
 - **Reply budget:** every list output has a hard cap (e.g. `look` lists at most
   24 entities and 24 block groups, then prints `+N more`), so a crowded area
   can't blow up an agent's context.

@@ -86,6 +86,12 @@
 - [ ] 9.4 Run an end-to-end MCP session from Claude Code (join a world, gather wood, craft planks and a crafting table, place it); verify it finishes with only `run`/`help`/`screenshot` calls, and record total tokens used in the README as a baseline
 - [x] 9.5 Run `openspec validate add-agent-control-mod --strict`; verify it passes
 
+## 10. Script checks (Aerolarge feedback, command-language)
+
+- [ ] 10.1 Let predicates compare two fields (`$<field>` on the right-hand side, also in `wait … until`) and report the referenced field among the observed values; verify with `ConditionTest`
+- [ ] 10.2 Add `assert <query> <predicates>` and `if <query> <predicates> then <command>`, evaluated by the script runner with the inner query's thread and gate (`err assert_failed`, `ok false`, the `then` command gated and run in place, `?` soft forms, rejected inside `wait` and `sample`); verify with `EngineTest` cases for each, including a server-side query and an `if` whose command is an action
+- [ ] 10.3 Document `assert`/`if` in help, the cheat sheet and the README; verify in game that `assert block ~0,-1,0 id==grass_block` passes on grass and fails on stone, and that `if … then place …` places only when the predicate holds
+
 ## Workflow follow-up
 
 - Archive the change once 1.21.1 NeoForge and Fabric are verified.
