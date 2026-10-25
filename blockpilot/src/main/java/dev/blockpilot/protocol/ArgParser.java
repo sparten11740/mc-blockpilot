@@ -1,10 +1,11 @@
 package dev.blockpilot.protocol;
 
-import dev.blockpilot.api.ArgSpec;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Form;
+import dev.blockpilot.api.Slot;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,18 +20,22 @@ public final class ArgParser {
 
     public static Args parse(CommandSpec spec, RawCommand command) throws CommandException {
         Map<String, String> values = new LinkedHashMap<>();
+        Map<String, ArgType> kinds = new LinkedHashMap<>();
         Map<String, String> options = new LinkedHashMap<>();
         List<RawCommand.Token> tokens = command.tokens();
+        String usage = spec.usages(spec.name()).get(0);
         int index = 0;
-        for (ArgSpec arg : spec.args()) {
+        for (Form.Element element : spec.forms().get(0).elements()) {
+            Slot arg = (Slot) element;
             index = skipOptions(spec, tokens, index, options);
-            if (arg.type() == ArgType.TEXT) {
+            if (arg.isText()) {
                 String text = command.restFrom(index);
                 if (text.isEmpty() && !arg.optional()) {
-                    throw new CommandException("syntax", "missing " + arg.usage() + " in " + spec.usage(spec.name()));
+                    throw new CommandException("syntax", "missing " + arg.usage() + " in " + usage);
                 }
                 if (!text.isEmpty()) {
                     values.put(arg.name(), text);
+                    kinds.put(arg.name(), ArgType.TEXT);
                 }
                 index = tokens.size();
                 break;
@@ -39,22 +44,24 @@ public final class ArgParser {
                 if (arg.optional()) {
                     continue;
                 }
-                throw new CommandException("syntax", "missing " + arg.usage() + " in " + spec.usage(spec.name()));
+                throw new CommandException("syntax", "missing " + arg.usage() + " in " + usage);
             }
             String token = tokens.get(index).text();
-            if (arg.accepts(token)) {
+            ArgType kind = arg.match(token);
+            if (kind != null) {
                 values.put(arg.name(), token);
+                kinds.put(arg.name(), kind);
                 index++;
             } else if (!arg.optional()) {
-                throw new CommandException("syntax", arg.usage() + " expected, got " + token);
+                throw new CommandException("syntax", arg.expectation() + " expected, got " + token);
             }
         }
         index = skipOptions(spec, tokens, index, options);
         if (index < tokens.size()) {
             throw new CommandException("syntax", "unexpected " + tokens.get(index).text() + " in "
-                + spec.usage(spec.name()));
+                + usage);
         }
-        return new Args(values, options);
+        return new Args(values, kinds, options);
     }
 
     private static int skipOptions(CommandSpec spec, List<RawCommand.Token> tokens, int index,

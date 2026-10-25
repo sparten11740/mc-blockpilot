@@ -42,8 +42,8 @@ public final class Lexicon {
         return isNumbered(token, 'w');
     }
 
-    /** {@code slot ::= "s" digits} */
-    public static boolean isSlot(String token) {
+    /** {@code menu-slot ::= "s" digits} */
+    public static boolean isMenuSlot(String token) {
         return isNumbered(token, 's');
     }
 

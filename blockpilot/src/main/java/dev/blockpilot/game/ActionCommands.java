@@ -48,7 +48,7 @@ final class ActionCommands {
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
-            .arg("target", ArgType.TARGET)
+            .arg("target", ArgType.POSITION, ArgType.ENTITY)
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
                 + "returns what the crosshair then hits").example("face 12.5,70.2,-3.4"));
         registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
@@ -71,11 +71,11 @@ final class ActionCommands {
             .help("starts or stops flying where the game mode allows it (creative, spectator); fly on holds through "
                 + "landings and teleports until fly off").example("fly on"));
         registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("movement")
-            .arg("target", ArgType.TARGET).option("near", "stop within this many blocks")
+            .arg("target", ArgType.POSITION, ArgType.ENTITY).option("near", "stop within this many blocks")
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
             .field("took", "seconds").example("goto 120,64,-30"));
         registry.register(CommandSpec.action("use", this::use).needsWorld().group("interact")
-            .optionalArg("target", ArgType.TARGET).choice("sneak", true, "sneak")
+            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).choice("sneak", true, "sneak")
             .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)")
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit")
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));

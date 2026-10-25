@@ -1,15 +1,23 @@
 package dev.blockpilot.api;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** The parsed arguments and {@code name=value} options of one command. */
+/** The parsed arguments and {@code name=value} options of one command, with the type each argument matched. */
 public final class Args {
     private final Map<String, String> values;
+    private final Map<String, ArgType> kinds;
     private final Map<String, String> options;
 
-    public Args(Map<String, String> values, Map<String, String> options) {
+    public Args(Map<String, String> values, Map<String, ArgType> kinds, Map<String, String> options) {
         this.values = values;
+        this.kinds = kinds;
         this.options = options;
+    }
+
+    /** The type the argument was matched as, or null when it is absent. */
+    public ArgType kind(String name) {
+        return kinds.get(name);
     }
 
     public boolean has(String name) {
@@ -61,6 +69,17 @@ public final class Args {
 
     public String option(String name) {
         return options.get(name);
+    }
+
+    /** The options of a family ({@code rule:*}): name after the prefix → value, in the order given. */
+    public Map<String, String> family(String prefix) {
+        Map<String, String> family = new LinkedHashMap<>();
+        options.forEach((name, value) -> {
+            if (name.startsWith(prefix + ":")) {
+                family.put(name.substring(prefix.length() + 1), value);
+            }
+        });
+        return family;
     }
 
     public double numberOption(String name, double fallback) throws CommandException {

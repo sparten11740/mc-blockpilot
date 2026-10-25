@@ -406,7 +406,7 @@ public final class Engine {
                 predicates.add(token);
             }
         }
-        Args waitOptions = new Args(Map.of(), options);
+        Args waitOptions = new Args(Map.of(), Map.of(), options);
         Duration stable = waitOptions.durationOption("stable");
         Duration every = waitOptions.durationOption("every");
         Duration timeout = waitOptions.durationOption("timeout");

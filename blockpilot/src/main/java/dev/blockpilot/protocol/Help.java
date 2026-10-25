@@ -48,7 +48,7 @@ public final class Help {
         List<Row> rows = new ArrayList<>();
         for (CommandRegistry.Entry member : group) {
             rows.add(Row.of(member.qualifiedName(), new Fields()
-                .bare("usage", member.spec().usage(member.qualifiedName()))
+                .bare("usage", String.join(" | ", member.spec().usages(member.qualifiedName())))
                 .put("help", member.spec().help(), member.spec().help().isEmpty() ? "" : "— " + member.spec().help())));
         }
         return Result.ok().withRows(rows);
@@ -79,7 +79,10 @@ public final class Help {
     private Result command(CommandRegistry.Entry entry) {
         CommandSpec spec = entry.spec();
         List<Row> rows = new ArrayList<>();
-        rows.add(Row.of("usage", new Fields().bare("usage", spec.usage(entry.qualifiedName()))));
+        List<String> usages = spec.usages(entry.qualifiedName());
+        for (int form = 0; form < usages.size(); form++) {
+            rows.add(Row.of(form == 0 ? "usage" : "usage " + form, new Fields().bare("usage", usages.get(form))));
+        }
         if (!spec.help().isEmpty()) {
             rows.add(Row.of("help", new Fields().bare("help", spec.help())));
         }

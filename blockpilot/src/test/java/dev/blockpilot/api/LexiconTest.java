@@ -39,7 +39,7 @@ class LexiconTest {
     void numberedReferences() {
         assertTrue(Lexicon.isEntity("e812"));
         assertTrue(Lexicon.isWidget("w0"));
-        assertTrue(Lexicon.isSlot("s35"));
+        assertTrue(Lexicon.isMenuSlot("s35"));
         assertTrue(Lexicon.isCount("x6"));
         assertTrue(Lexicon.isEntity("e2147483647"));
         assertFalse(Lexicon.isEntity("e2147483648"));
@@ -48,7 +48,7 @@ class LexiconTest {
         assertFalse(Lexicon.isEntity("e12a"));
         assertFalse(Lexicon.isEntity("x12"));
         assertFalse(Lexicon.isWidget("w"));
-        assertFalse(Lexicon.isSlot("slot"));
+        assertFalse(Lexicon.isMenuSlot("slot"));
         assertFalse(Lexicon.isCount("x1.5"));
     }
 

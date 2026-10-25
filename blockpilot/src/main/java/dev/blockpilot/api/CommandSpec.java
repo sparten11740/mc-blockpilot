@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Everything Blockpilot knows about one command: its grammar, whether it only reads (query) or acts (action), the
@@ -27,7 +28,7 @@ public final class CommandSpec {
     private final String name;
     private final Kind kind;
     private String group = "misc";
-    private final List<ArgSpec> args = new ArrayList<>();
+    private final List<Form> forms = new ArrayList<>();
     private final Map<String, String> options = new LinkedHashMap<>();
     private final Map<String, String> fields = new LinkedHashMap<>();
     private String help = "";
@@ -63,22 +64,46 @@ public final class CommandSpec {
         return this;
     }
 
-    public CommandSpec arg(String argName, ArgType type) {
-        args.add(new ArgSpec(argName, type, false, List.of()));
+    private Form firstForm() {
+        if (forms.isEmpty()) {
+            forms.add(new Form());
+        }
+        return forms.get(0);
+    }
+
+    /** Adds a slot to the command's first form; see {@link Form#arg}. */
+    public CommandSpec arg(String argName, ArgType type, ArgType... more) {
+        firstForm().arg(argName, type, more);
         return this;
     }
 
-    public CommandSpec optionalArg(String argName, ArgType type) {
-        args.add(new ArgSpec(argName, type, true, List.of()));
+    public CommandSpec optionalArg(String argName, ArgType type, ArgType... more) {
+        firstForm().optionalArg(argName, type, more);
         return this;
     }
 
-    public CommandSpec choice(String argName, boolean optional, String... values) {
-        args.add(new ArgSpec(argName, ArgType.CHOICE, optional, List.of(values)));
+    /** Adds a keyword to the command's first form. */
+    public CommandSpec choice(String argName, boolean optional, String... words) {
+        if (optional) {
+            firstForm().optionalKeyword(argName, words);
+        } else {
+            firstForm().keyword(argName, words);
+        }
         return this;
     }
 
-    /** A {@code name=value} option, with what it means for help. */
+    /** Adds another way to write the command; calls are matched against the forms in order. */
+    public CommandSpec form(Consumer<Form> build) {
+        Form form = new Form();
+        build.accept(form);
+        forms.add(form);
+        return this;
+    }
+
+    /**
+     * A {@code name=value} option, with what it means for help. A name ending in {@code :*}, like {@code rule:*},
+     * declares a family: {@code rule:<name>=<value>} for any identifier name.
+     */
     public CommandSpec option(String optionName, String description) {
         options.put(optionName, description);
         return this;
@@ -137,8 +162,9 @@ public final class CommandSpec {
         return group;
     }
 
-    public List<ArgSpec> args() {
-        return Collections.unmodifiableList(args);
+    /** The forms in the order calls are matched; a command without arguments has one empty form. */
+    public List<Form> forms() {
+        return forms.isEmpty() ? List.of(new Form()) : Collections.unmodifiableList(forms);
     }
 
     public Map<String, String> options() {
@@ -181,15 +207,18 @@ public final class CommandSpec {
         return action;
     }
 
-    /** The grammar as help shows it, e.g. {@code goto <target> [near=<r>]}. */
-    public String usage(String qualifiedName) {
-        StringBuilder out = new StringBuilder(qualifiedName);
-        for (ArgSpec arg : args) {
-            out.append(' ').append(arg.usage());
-        }
+    /** Each form as help shows it, e.g. {@code goto <target> [near=…]}. */
+    public List<String> usages(String qualifiedName) {
+        StringBuilder optionUsage = new StringBuilder();
         for (String option : options.keySet()) {
-            out.append(" [").append(option).append("=…]");
+            optionUsage.append(" [").append(option.endsWith(":*") ? option.replace(":*", ":<name>") : option)
+                .append("=…]");
         }
-        return out.toString();
+        List<String> usages = new ArrayList<>();
+        for (Form form : forms()) {
+            String body = form.usage();
+            usages.add(qualifiedName + (body.isEmpty() ? "" : " " + body) + optionUsage);
+        }
+        return usages;
     }
 }

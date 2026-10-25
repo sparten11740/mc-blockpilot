@@ -43,7 +43,7 @@ public final class ObservationCommands {
             .example("screenshot burst=8 every=10t"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .choice("op", false, "at", "reset").optionalArg("pos", ArgType.POSITION)
-            .choice("look", true, "look").optionalArg("target", ArgType.TARGET)
+            .choice("look", true, "look").optionalArg("target", ArgType.POSITION, ArgType.ENTITY)
             .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
                 + "camera reset: back to the player's view. The player keeps acting normally")
             .example("camera at ~10,5,10 look ~0,1,0"));
