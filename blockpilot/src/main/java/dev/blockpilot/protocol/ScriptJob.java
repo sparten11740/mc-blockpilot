@@ -54,7 +54,8 @@ final class ScriptJob implements CommandContext {
         this.engine = engine;
         this.session = session;
         this.id = id;
-        this.commands = commands;
+        // An if that holds puts its command in its place.
+        this.commands = new ArrayList<>(commands);
     }
 
     CompletableFuture<Reply> future() {
@@ -119,6 +120,17 @@ final class ScriptJob implements CommandContext {
                 finish(Result.error("syntax", "unknown command " + command.name() + "; try help"));
                 continue;
             }
+            Check check;
+            try {
+                check = engine.check(entry.spec(), command);
+                if (check != null) {
+                    // A check runs where its query would, behind its gate.
+                    entry = checkedQuery(check);
+                }
+            } catch (CommandException e) {
+                finish(e.toResult());
+                continue;
+            }
             CommandSpec spec = entry.spec();
             Affinity needed = spec.runsOnServer() ? Affinity.SERVER : Affinity.CLIENT;
             // The gate reads client state, so it is checked on the client thread before anything else runs.
@@ -139,6 +151,10 @@ final class ScriptJob implements CommandContext {
             boolean full = spec.isDiffable() && command.has("full");
             RawCommand effective = full ? command.without("full") : command;
             try {
+                if (check != null) {
+                    runCheck(check, spec);
+                    continue;
+                }
                 Args args = ArgParser.parse(spec, effective);
                 if (spec.kind() == CommandSpec.Kind.QUERY) {
                     Result result = spec.queryHandler().run(this, args);
@@ -162,6 +178,31 @@ final class ScriptJob implements CommandContext {
         return true;
     }
 
+    private CommandRegistry.Entry checkedQuery(Check check) throws CommandException {
+        CommandRegistry.Entry query = engine.registry().resolve(check.query().name());
+        if (query == null || query.spec().kind() != CommandSpec.Kind.QUERY || engine.isCheck(query.spec())) {
+            throw new CommandException("syntax", check.query().name() + " is not a read-only command");
+        }
+        return query;
+    }
+
+    /** Runs an assert or if; an if that holds puts its command in its place, to be gated and run next. */
+    private void runCheck(Check check, CommandSpec query) throws CommandException {
+        Args args = ArgParser.parse(query, check.query());
+        Result result;
+        try {
+            result = query.queryHandler().run(this, args);
+        } catch (CommandException e) {
+            result = e.toResult();
+        }
+        if (check.runsCommand(result)) {
+            commands.set(index, check.then());
+            gatedThrough = index - 1;
+            return;
+        }
+        finish(check.verdict(result));
+    }
+
     /**
      * Gates the queries that follow {@code from} up to the next action (or the first gate that fails), so a run of
      * server-side queries is answered in one server tick instead of one per client tick. Queries change nothing, so
@@ -171,7 +212,9 @@ final class ScriptJob implements CommandContext {
         int last = from;
         while (last + 1 < commands.size()) {
             CommandRegistry.Entry next = engine.registry().resolve(commands.get(last + 1).name());
-            boolean query = next != null && next.spec().kind() == CommandSpec.Kind.QUERY;
+            // Checks are gated by their own query when they come up (and an if may run an action).
+            boolean query = next != null && next.spec().kind() == CommandSpec.Kind.QUERY
+                && !engine.isCheck(next.spec());
             if (!query || engine.game().gate(next.spec()) != null) {
                 break;
             }
@@ -292,11 +335,27 @@ final class ScriptJob implements CommandContext {
 
     boolean hasAction() {
         for (RawCommand command : commands) {
-            CommandRegistry.Entry entry = engine.registry().resolve(command.name());
-            if (entry != null && entry.spec().kind() == CommandSpec.Kind.ACTION) {
+            if (isAction(command)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** An action, or an if whose command is one, so the script queues like other scripts with actions. */
+    private boolean isAction(RawCommand command) {
+        CommandRegistry.Entry entry = engine.registry().resolve(command.name());
+        if (entry == null) {
+            return false;
+        }
+        try {
+            Check check = engine.check(entry.spec(), command);
+            if (check != null) {
+                return check.then() != null && isAction(check.then());
+            }
+        } catch (CommandException e) {
+            return false;
+        }
+        return entry.spec().kind() == CommandSpec.Kind.ACTION;
     }
 }

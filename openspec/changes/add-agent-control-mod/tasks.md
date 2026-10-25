@@ -88,8 +88,8 @@
 
 ## 10. Script checks (Aerolarge feedback, command-language)
 
-- [ ] 10.1 Let predicates compare two fields (`$<field>` on the right-hand side, also in `wait … until`) and report the referenced field among the observed values; verify with `ConditionTest`
-- [ ] 10.2 Add `assert <query> <predicates>` and `if <query> <predicates> then <command>`, evaluated by the script runner with the inner query's thread and gate (`err assert_failed`, `ok false`, the `then` command gated and run in place, `?` soft forms, rejected inside `wait` and `sample`); verify with `EngineTest` cases for each, including a server-side query and an `if` whose command is an action
+- [x] 10.1 Let predicates compare two fields (`$<field>` on the right-hand side, also in `wait … until`) and report the referenced field among the observed values; verify with `ConditionTest`
+- [x] 10.2 Add `assert <query> <predicates>` and `if <query> <predicates> then <command>`, evaluated by the script runner with the inner query's thread and gate (`err assert_failed`, `ok false`, the `then` command gated and run in place, `?` soft forms, rejected inside `wait` and `sample`); verify with `EngineTest` cases for each, including a server-side query and an `if` whose command is an action
 - [ ] 10.3 Document `assert`/`if` in help, the cheat sheet and the README; verify in game that `assert block ~0,-1,0 id==grass_block` passes on grass and fails on stone, and that `if … then place …` places only when the predicate holds
 
 ## Workflow follow-up

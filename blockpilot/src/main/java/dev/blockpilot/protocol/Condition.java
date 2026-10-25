@@ -11,9 +11,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The predicates of {@code wait <query> until …}: {@code <field><op><value>} joined by {@code and}, or {@code ok}.
- * Numbers compare numerically, anything else by text; {@code count} is the number of rows; a value written
- * {@code $<field>} is that field of the same result.
+ * The predicates of {@code wait <query> until …}, {@code assert} and {@code if}: {@code <field><op><value>} joined by
+ * {@code and}, or {@code ok}. Numbers compare numerically, anything else by text; {@code count} is the number of
+ * rows; a value written {@code $<field>} is that field of the same result.
  */
 public final class Condition {
     private static final Pattern PREDICATE = Pattern.compile("([A-Za-z_][\\w.]*)(==|!=|<=|>=|<|>)(.+)");
@@ -73,6 +73,11 @@ public final class Condition {
     /** The field a {@code $<field>} value refers to, or null for a literal. */
     private static String reference(String value) {
         return value.length() > 1 && value.charAt(0) == '$' ? value.substring(1) : null;
+    }
+
+    /** Whether a token reads as a predicate (or {@code and}/{@code ok}), so it can be split off a query's arguments. */
+    static boolean isPredicate(String token) {
+        return token.equals("and") || token.equals("ok") || PREDICATE.matcher(token).matches();
     }
 
     /** The fields the predicates name, including fields compared against, as last observed; attached to the result. */

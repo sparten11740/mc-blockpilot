@@ -342,4 +342,72 @@ class EngineTest {
         assertEquals(1, registry.namespace("sable").size());
         assertTrue(Formatter.text(isolated.submit(session, null, "help sable").join()).contains("sable:info"));
     }
+
+    @Test
+    void assertPassesOrStopsTheScript() {
+        Session session = engine.openSession();
+        assertEquals("ok value=0\nerr assert_failed value=0\nskip",
+            text(engine.submit(session, null, "assert counter value==0; assert counter value>0; counter")));
+        assertEquals("err assert_failed value=0\nok value=0",
+            text(engine.submit(session, null, "?assert counter value>0; counter")));
+    }
+
+    @Test
+    void assertReportsTheQueryError() {
+        assertEquals("err assert_failed fail no_item",
+            text(engine.submit(engine.openSession(), null, "assert fail ok")));
+    }
+
+    @Test
+    void anIfThatHoldsRunsItsCommandInPlace() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> reply = engine.submit(session, null, "if counter value==0 then walk a 2; counter");
+        assertFalse(reply.isDone());
+        tick(2);
+        assertEquals("ok\nok value=2", text(reply));
+        assertEquals(List.of("a", "a"), log);
+    }
+
+    @Test
+    void anIfThatDoesNotHoldReportsTheObservedValues() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null,
+            "if counter value>5 then walk a 2; counter");
+        tick(1);
+        assertEquals("ok false value=0\nok value=0", text(reply));
+        assertTrue(log.isEmpty());
+    }
+
+    @Test
+    void aSoftIfMakesItsCommandSoft() {
+        assertEquals("err no_item torch\nok value=0",
+            text(engine.submit(engine.openSession(), null, "?if counter value==0 then fail; counter")));
+    }
+
+    @Test
+    void checksRunTheirQueryOnItsThread() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "assert probe value==3");
+        tick(1);
+        assertFalse(reply.isDone());
+        counter.set(3);
+        engine.tickServer();
+        assertEquals("ok value=3", text(reply));
+    }
+
+    @Test
+    void checksAreGatedByTheirQuery() {
+        game.worldGate = "not_in_world";
+        assertEquals("err not_in_world", text(engine.submit(engine.openSession(), null, "assert world ok")));
+    }
+
+    @Test
+    void checksNeedAQueryAPredicateAndOnlyRunInScripts() {
+        Session session = engine.openSession();
+        assertEquals("err syntax " + Check.ASSERT_USAGE, text(engine.submit(session, null, "assert counter")));
+        assertEquals("err syntax " + Check.IF_USAGE, text(engine.submit(session, null, "if counter value==0")));
+        assertEquals("err syntax walk is not a read-only command",
+            text(engine.submit(session, null, "assert walk a value==0")));
+        CompletableFuture<Reply> wait = engine.submit(session, null, "wait assert counter value==0 until ok");
+        tick(1);
+        assertEquals("err syntax assert is not a read-only command", text(wait));
+    }
 }

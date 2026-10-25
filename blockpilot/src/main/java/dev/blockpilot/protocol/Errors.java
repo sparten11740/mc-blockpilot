@@ -17,6 +17,7 @@ public final class Errors {
         CODES.put("interrupted", "the player pressed a key or moved the mouse; agent actions stop");
         CODES.put("cancelled", "stopped by stop, or the session closed");
         CODES.put("timeout", "the action or wait ran out of time; the last values are attached");
+        CODES.put("assert_failed", "the assert's predicates did not hold; the observed values are attached");
         CODES.put("no_item", "the item is not in the inventory");
         CODES.put("no_entity", "no entity with that reference is loaded");
         CODES.put("no_block", "no matching block found");

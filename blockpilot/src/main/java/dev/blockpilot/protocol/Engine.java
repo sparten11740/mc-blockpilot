@@ -42,6 +42,16 @@ public final class Engine {
     private final AtomicInteger nextSessionId = new AtomicInteger(1);
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
+    private final CommandSpec assertSpec = CommandSpec.query("assert", Engine::onlyInScripts).group("meta")
+        .arg("what", ArgType.TEXT)
+        .help(Check.ASSERT_USAGE + ": runs the read-only query once; ok with the observed fields when the predicates "
+            + "(as in wait … until) hold, else err assert_failed; ?assert goes on")
+        .example("assert block ~0,-1,0 id==grass_block");
+    private final CommandSpec ifSpec = CommandSpec.query("if", Engine::onlyInScripts).group("meta")
+        .arg("what", ArgType.TEXT)
+        .help(Check.IF_USAGE + ": runs the command when the predicates hold (its result is the line), else ok false "
+            + "with the observed fields")
+        .example("if block ~0,-1,0 id==grass_block then place torch ~0,0,1");
 
     public Engine(CommandRegistry registry, GameBridge game) {
         this.registry = registry;
@@ -60,6 +70,18 @@ public final class Engine {
 
     public Help help() {
         return help;
+    }
+
+    /** The parsed check when the command is {@code assert} or {@code if}, else null. */
+    Check check(CommandSpec spec, RawCommand command) throws CommandException {
+        if (spec == assertSpec) {
+            return Check.parse(command, false);
+        }
+        return spec == ifSpec ? Check.parse(command, true) : null;
+    }
+
+    boolean isCheck(CommandSpec spec) {
+        return spec == assertSpec || spec == ifSpec;
     }
 
     public Session openSession() {
@@ -203,6 +225,8 @@ public final class Engine {
                 + "a value $<field> compares with another field (hp<$max_hp); "
                 + "server-side queries are checked at the end of server ticks and report the tick (t<n>)")
             .example("wait block ~1,0,0 until id==air timeout=5s"));
+        registry.register(assertSpec);
+        registry.register(ifSpec);
         registry.register(CommandSpec.action("sample", this::startSample).group("meta").arg("what", ArgType.TEXT)
             .help("sample <query> every <Nt> x<n> [clock=client|server]: runs the read-only query n times (max "
                 + "1000), every N ticks, one row per run with the game tick and the query's fields")
@@ -210,6 +234,11 @@ public final class Engine {
     }
 
     static final int MAX_SAMPLES = 1000;
+
+    /** The script runner evaluates assert and if itself; only wait and sample around them get here. */
+    private static Result onlyInScripts(CommandContext context, Args args) throws CommandException {
+        throw new CommandException("syntax", "assert and if only work as commands of a script");
+    }
 
     private Action startSample(CommandContext context, Args args) throws CommandException {
         List<RawCommand.Token> tokens = RawCommand.of("sample " + args.text("what")).tokens();
@@ -229,7 +258,7 @@ public final class Engine {
         }
         RawCommand queryCommand = RawCommand.of(query.toString());
         CommandRegistry.Entry entry = registry.resolve(queryCommand.name());
-        if (entry == null || entry.spec().kind() != CommandSpec.Kind.QUERY) {
+        if (entry == null || entry.spec().kind() != CommandSpec.Kind.QUERY || isCheck(entry.spec())) {
             throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
         }
         Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
@@ -355,7 +384,7 @@ public final class Engine {
         if (entry == null) {
             throw new CommandException("syntax", "unknown command " + queryCommand.name());
         }
-        if (entry.spec().kind() != CommandSpec.Kind.QUERY) {
+        if (entry.spec().kind() != CommandSpec.Kind.QUERY || isCheck(entry.spec())) {
             throw new CommandException("syntax", queryCommand.name() + " is not a read-only command");
         }
         Args queryArgs = ArgParser.parse(entry.spec(), queryCommand);
