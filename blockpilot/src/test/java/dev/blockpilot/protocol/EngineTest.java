@@ -290,7 +290,22 @@ class EngineTest {
         assertEquals("err syntax col 8: walk is not a read-only command", text(action));
         assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> every "
             + "<duration> x<n> [clock=server|client] | sample <query> every <duration> [x<n>] [clock=server|client] "
-            + "while <action>", text(huge));
+            + "while <action|wait>", text(huge));
+    }
+
+    @Test
+    void aSampleRunsBesideAWait() {
+        // Spec scenario "Sampling across a wait".
+        CompletableFuture<Reply> wait = engine.submit(engine.openSession(), null, "sample counter every 20t while wait "
+            + "200t");
+        for (int index = 0; index < 250 && !wait.isDone(); index++) {
+            game.time++;
+            tick(1);
+        }
+        Result result = wait.join().results().get(0);
+        assertTrue(result.isOk());
+        assertEquals(10, result.rows().size());
+        assertEquals(1L, result.rows().get(0).fields().get("tick"));
     }
 
     @Test

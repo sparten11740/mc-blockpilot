@@ -16,10 +16,10 @@ record Construct(String name, List<String> usages, String help, String example) 
                 + "tick (t<n>)",
             "wait block ~1,0,0 until id==air timeout=5s"),
         new Construct("sample", List.of("sample <query> every <duration> x<n> [clock=server|client]",
-            "sample <query> every <duration> [x<n>] [clock=server|client] while <action>"),
+            "sample <query> every <duration> [x<n>] [clock=server|client] while <action|wait>"),
             "runs the read-only query n times (x1 to x1000), every N ticks (1t or more), one row per run with the "
-                + "game tick and the query's fields; with while, runs the action and samples beside it until it ends, "
-                + "and the line is the action's result with the samples as rows",
+                + "game tick and the query's fields; with while, runs the action or wait and samples beside it until "
+                + "it ends, and the line is its result with the samples as rows",
             "sample status every 1t x20"),
         new Construct("assert", List.of("assert <query> <predicate> [and …]"),
             "runs the read-only query once; ok with the observed fields when the predicates (as in wait) hold, "

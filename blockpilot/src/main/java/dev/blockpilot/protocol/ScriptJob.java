@@ -197,8 +197,7 @@ final class ScriptJob implements CommandContext {
             case Statement.If check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
             case Statement.WaitUntil wait -> new Placement(wait.query().entry().spec(), true, Affinity.CLIENT);
             case Statement.Sample sample -> sample.during() == null
-                ? new Placement(sample.query().entry().spec(), true, Affinity.CLIENT)
-                : new Placement(sample.during().entry().spec(), true, affinity(sample.during()));
+                ? new Placement(sample.query().entry().spec(), true, Affinity.CLIENT) : placement(sample.during());
             case Statement.WaitTicks wait -> new Placement(null, true, Affinity.CLIENT);
             case Statement.WaitIdle wait -> new Placement(null, true, Affinity.CLIENT);
         };
@@ -237,7 +236,7 @@ final class ScriptJob implements CommandContext {
         }
     }
 
-    /** A sample on its own, or beside its {@code while} action, which then runs as if written alone. */
+    /** A sample on its own, or beside its {@code while} action or wait, which then runs as if written alone. */
     private void sample(Statement.Sample sample) throws CommandException {
         Engine.Sampler sampler = engine.sample(this, sample);
         if (sample.during() == null) {
@@ -246,7 +245,7 @@ final class ScriptJob implements CommandContext {
         }
         sampling = sampler;
         samplingAffinity = sampler.onServerClock() ? Affinity.SERVER : Affinity.CLIENT;
-        runCall(sample.during());
+        run(sample.during());
     }
 
     private void runCall(Statement.Call call) throws CommandException {

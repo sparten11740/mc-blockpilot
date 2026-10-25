@@ -490,7 +490,7 @@ class ParserTest {
             + "clock=server")).count());
         assertErrorAt("sample status every x20", "x20", "a duration like 20t or 3s expected, got x20");
         assertErrorAt("sample status every", null, "missing a duration like 20t or 3s");
-        assertErrorAt("sample status every 1t", null, "missing a count x<n> or while <action>");
+        assertErrorAt("sample status every 1t", null, "missing a count x<n> or while <action|wait>");
         assertErrorAt("sample status every 0t x5", "0t", "a sample is taken every 1t or more");
         assertErrorAt("sample status every 1t x0", "x0", "a sample is taken x1 to x1000 times, not x0");
         // Spec scenario "Too many samples".
@@ -511,20 +511,35 @@ class ParserTest {
         Statement.Sample walk = assertInstanceOf(Statement.Sample.class, statement("sample status every 2t while "
             + "mine #logs x3"));
         assertEquals(1000, walk.count());
-        assertEquals("mine", walk.during().entry().qualifiedName());
-        assertEquals(3, walk.during().args().count("count", 1));
+        Statement.Call mine = assertInstanceOf(Statement.Call.class, walk.during());
+        assertEquals("mine", mine.entry().qualifiedName());
+        assertEquals(3, mine.args().count("count", 1));
         Statement.Sample capped = assertInstanceOf(Statement.Sample.class, statement("sample status every 2t x5 "
             + "clock=client while mine"));
         assertEquals(5, capped.count());
         assertNull(assertInstanceOf(Statement.Sample.class, statement("sample status every 2t x5")).during());
-        assertErrorAt("sample status every 2t while", null, "missing an action after while");
-        assertErrorAt("sample status every 2t while wait 5t", "wait", "while takes an action, not wait");
+        assertErrorAt("sample status every 2t while", null, "missing an action or wait after while");
+        assertErrorAt("sample status every 2t while assert status hp>0", "assert", "while takes an action or a wait, "
+            + "not assert");
         // Spec scenario "Something other than an action after while".
-        assertErrorAt("sample status every 2t while look", "look", "while takes an action; look is a query");
+        assertErrorAt("sample status every 2t while look", "look", "while takes an action or a wait; look is a query");
         assertErrorAt("sample status every 2t while nope", "nope", "unknown command nope; try help");
         assertErrorAt("sample status every 2t clock=server while mine", "clock", "clock=server doesn't fit status, "
             + "which runs on the client");
         assertErrorAt("sample status every 2t extra while mine", "extra", "unexpected extra");
+    }
+
+    @Test
+    void aSampleCanRunBesideAWait() {
+        assertEquals(new Statement.WaitTicks(Duration.parse("200t")), assertInstanceOf(Statement.Sample.class,
+            statement("sample status every 20t while wait 200t")).during());
+        assertInstanceOf(Statement.WaitIdle.class, assertInstanceOf(Statement.Sample.class,
+            statement("sample status every 2t while wait idle")).during());
+        Statement.WaitUntil until = assertInstanceOf(Statement.WaitUntil.class, assertInstanceOf(Statement.Sample.class,
+            statement("sample status every 2t x10 while wait status until hp<10 timeout=5s")).during());
+        assertEquals("status", until.query().entry().qualifiedName());
+        assertErrorAt("sample status every 2t while wait", null, "missing a duration, idle or <query> until "
+            + "<predicate>");
     }
 
     @Test

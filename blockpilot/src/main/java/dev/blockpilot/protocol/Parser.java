@@ -229,28 +229,32 @@ final class Parser {
                     throw error(countColumn, "a sample is taken x1 to x" + MAX_SAMPLES + " times, not " + times);
                 }
             } else if (beside == end) {
-                throw expected("a count x<n> or while <action>", end);
+                throw expected("a count x<n> or while <action|wait>", end);
             }
             checkClock(query, options(beside, SAMPLE_OPTIONS));
             if (beside == end) {
                 return new Statement.Sample(query, every, count, null);
             }
             index++;
-            return new Statement.Sample(query, every, count, besideAction(end));
+            return new Statement.Sample(query, every, count, beside(end));
         }
 
-        /** The action after {@code while}. */
-        private Statement.Call besideAction(int end) throws SyntaxError {
+        /** The action or wait after {@code while}. */
+        private Statement beside(int end) throws SyntaxError {
             if (index == end) {
-                throw error(column(index), "missing an action after while");
+                throw error(column(index), "missing an action or wait after while");
             }
             int column = column(index);
+            if (text(index).equals("wait")) {
+                return waitStatement(end);
+            }
             if (Construct.named(text(index)) != null) {
-                throw error(column, "while takes an action, not " + text(index));
+                throw error(column, "while takes an action or a wait, not " + text(index));
             }
             Statement.Call action = call(end, false);
             if (action.entry().spec().kind() != CommandSpec.Kind.ACTION) {
-                throw error(column, "while takes an action; " + action.entry().qualifiedName() + " is a query");
+                throw error(column, "while takes an action or a wait; " + action.entry().qualifiedName()
+                    + " is a query");
             }
             return action;
         }
