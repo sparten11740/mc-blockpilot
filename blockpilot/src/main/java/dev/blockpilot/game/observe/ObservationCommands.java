@@ -15,17 +15,20 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Screenshots;
+import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 /** Queries over the sound, message and particle logs. */
@@ -159,34 +162,50 @@ public final class ObservationCommands {
             CameraControl.reset();
             return () -> Result.ok();
         }
+        Level level = Minecraft.getInstance().level;
         Position at = context.resolve(args.position("pos"));
         Vec3 position = new Vec3(at.x(), at.y(), at.z());
-        Supplier<Vec3> target;
+        CameraControl.Point target;
         if (!args.has("target")) {
             var player = Minecraft.getInstance().player;
-            target = () -> player.getEyePosition();
+            target = partialTick -> player.getEyePosition();
         } else if (args.type("target") == ArgType.ENTITY) {
-            Entity entity = Minecraft.getInstance().level.getEntity(args.entity("target").id());
+            Entity entity = level.getEntity(args.entity("target").id());
             if (entity == null) {
                 throw new CommandException("no_entity", args.word("target"));
             }
-            target = () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
+            target = partialTick -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
         } else {
             Position look = context.resolve(args.position("target"));
-            Vec3 point = new Vec3(look.x(), look.y(), look.z());
-            target = () -> point;
+            target = rendered(level, new Vec3(look.x(), look.y(), look.z()));
         }
-        CameraControl.place(new CameraControl.Placement(position, target));
+        CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
         // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
         Position atAbsolute = Rel.absolute(position);
         return ActionSupport.afterFrames(2, () -> {
-            Vec3 looking = target.get();
+            Vec3 looking = target.at(1);
             Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
             if (looking != null) {
                 fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
             }
             return Result.ok(fields);
         });
+    }
+
+    /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
+    private static CameraControl.Point rendered(Level level, Vec3 point) {
+        if (SableSupport.subLevels().at(level, BlockPos.containing(point)) == null) {
+            return partialTick -> point;
+        }
+        Vec3[] last = {point};
+        return partialTick -> {
+            try {
+                last[0] = SableSupport.subLevels().toWorldRendered(level, point, partialTick);
+            } catch (CommandFailure e) {
+                // Thrown on the render thread, where it must not escape; the camera stays where it was last drawn.
+            }
+            return last[0];
+        };
     }
 
     private static long since(Args args, long fallback) throws CommandException {

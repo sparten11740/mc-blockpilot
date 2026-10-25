@@ -15,7 +15,7 @@
 ## 3. Aim and camera follow a sub-level (sable-sublevels)
 
 - [x] 3.1 Make `face` and `use` targets at plot positions project through the logical pose every tick, and make `use` fail with `err obstructed <id> <position>` when the crosshair ends on another block; verify in game with Sable: a lever used while the ship moves, and a seat behind a wall panel giving `err obstructed` with the panel
-- [ ] 3.2 Make the camera placement's position a supplier, and project plot positions for `camera at` and `look` through the render pose each frame; verify in game with Sable that a screenshot burst of a chase camera on a moving ship keeps the ship in place in the frame
+- [x] 3.2 Make the camera placement's position a supplier, and project plot positions for `camera at` and `look` through the render pose each frame; verify in game with Sable that a screenshot burst of a chase camera on a moving ship keeps the ship in place in the frame
 
 ## 4. The `sable:` commands (sable-sublevels)
 

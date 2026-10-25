@@ -30,9 +30,9 @@ public abstract class CameraMixin {
         if (placement == null) {
             return;
         }
-        Vec3 at = placement.position();
+        Vec3 at = placement.position().at(partialTick);
         setPosition(at.x, at.y, at.z);
-        float[] angles = placement.angles();
+        float[] angles = placement.angles(partialTick);
         setRotation(angles[0], angles[1]);
         detached = true;
     }
