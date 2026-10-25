@@ -37,17 +37,12 @@ public record Position(double x, double y, double z, boolean relative) {
 
     /** Parses {@code x,y,z} or {@code ~dx,dy,dz}; returns null when the token is not a position. */
     public static Position parse(String token) {
+        if (!Lexicon.isPosition(token)) {
+            return null;
+        }
         boolean relative = token.startsWith("~");
-        String body = relative ? token.substring(1) : token;
-        String[] parts = body.split(",", -1);
-        if (parts.length != 3) {
-            return null;
-        }
-        try {
-            return new Position(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]),
-                Double.parseDouble(parts[2]), relative);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        String[] parts = (relative ? token.substring(1) : token).split(",");
+        return new Position(Double.parseDouble(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]),
+            relative);
     }
 }

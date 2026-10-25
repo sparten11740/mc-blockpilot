@@ -70,7 +70,7 @@ token-char   ::= "\;" | [^#x20#x9#xA#xD;]
 identifier   ::= [A-Za-z_] [A-Za-z0-9_]*
 digits       ::= [0-9]+
 
-/* Slot types */
+/* Slot types; whole numbers, also in references and counts, fit 32 bits */
 position     ::= "~"? decimal "," decimal "," decimal
 point        ::= decimal "," decimal
 entity       ::= "e" digits
@@ -83,7 +83,7 @@ integer      ::= "-"? digits
 number       ::= decimal
 decimal      ::= "-"? digits ( "." digits )?
 count        ::= "x" digits
-duration     ::= digits "t" | decimal "s"
+duration     ::= digits "t" | digits ( "." digits )? "s"
 id           ::= ( namespace ":" )? path
 namespace    ::= [a-z0-9_.-]+
 path         ::= [a-z0-9_./-]+

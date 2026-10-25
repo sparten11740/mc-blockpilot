@@ -19,19 +19,10 @@ public record Duration(int ticks) {
 
     /** Parses {@code <n>t} or {@code <n>s}; returns null when the token is not a duration. */
     public static Duration parse(String token) {
-        if (token.length() < 2) {
+        if (!Lexicon.isDuration(token)) {
             return null;
         }
-        char unit = token.charAt(token.length() - 1);
         String number = token.substring(0, token.length() - 1);
-        try {
-            return switch (unit) {
-                case 't' -> new Duration(Integer.parseInt(number));
-                case 's' -> seconds(Double.parseDouble(number));
-                default -> null;
-            };
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        return token.endsWith("t") ? new Duration(Integer.parseInt(number)) : seconds(Double.parseDouble(number));
     }
 }

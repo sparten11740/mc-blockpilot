@@ -95,7 +95,7 @@
 
 ## 11. Grammar and parser (command-language, extension-api)
 
-- [ ] 11.1 Add the API lexicon: one hand-written recognizer per lexical production of the grammar, used by `Position.parse`, `Duration.parse` and `EntityRef.parse`; verify with tests of accepted and rejected input for every production
+- [x] 11.1 Add the API lexicon: one hand-written recognizer per lexical production of the grammar, used by `Position.parse`, `Duration.parse` and `EntityRef.parse`; verify with tests of accepted and rejected input for every production; verified with `LexiconTest` (every production, accepted and rejected input) at 100% of lines and branches
 - [ ] 11.2 Add forms to `CommandSpec` (keywords bound to names, slots with one or more slot types, optional groups, text last; registration checks), the new slot types (point, widget, slot, uuid, id, tag, pattern), the matched type in `Args`, and bump `blockpilot-api` to 2.0.0; verify with registry tests and the README snippets
 - [ ] 11.3 Add the lexer and the recursive-descent parser producing the syntax tree (constructs, calls, embedded queries, options anywhere and once, greedy optional parts, form choice and the furthest error, columns); verify with tests for every production and every error path
 - [ ] 11.4 Run scripts from the syntax tree: parse whole scripts first (non-soft syntax errors run nothing), run constructs from their nodes, and remove `RawCommand`, `ScriptParser`, `ArgParser` and `Check`; verify with `EngineTest`, including the parse-before-run and soft-syntax-error scenarios

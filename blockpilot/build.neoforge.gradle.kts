@@ -123,6 +123,8 @@ tasks.test {
     useJUnitPlatform()
 }
 
+apply(from = treeDir.resolve("coverage.gradle.kts"))
+
 // mavenLocal() coordinates for other mods' dev environments: dev.blockpilot:blockpilot-neoforge:<version>+<minecraft>.
 publishing {
     publications {
