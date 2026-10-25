@@ -13,6 +13,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.FrameCapture;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Screenshots;
@@ -144,7 +145,7 @@ public final class ObservationCommands {
                     tiles.add(frame);
                 } else {
                     try (frame) {
-                        Path file = Screenshots.save(frame.asByteArray(), frames > 1 ? "_" + rows.size() : "");
+                        Path file = Screenshots.save(FrameCapture.png(frame), frames > 1 ? "_" + rows.size() : "");
                         fields.bare("file", file.toString());
                     }
                 }

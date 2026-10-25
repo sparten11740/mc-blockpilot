@@ -10,11 +10,11 @@ import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.FrameCapture;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -42,8 +42,7 @@ public final class PixelCommands {
 
     private Result pixels(CommandContext context, Args args) throws CommandException {
         Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
-        Minecraft minecraft = Minecraft.getInstance();
-        try (NativeImage image = Screenshot.takeScreenshot(minecraft.getMainRenderTarget())) {
+        try (NativeImage image = FrameCapture.read()) {
             PixelStats.Frame frame = new PixelStats.Frame() {
                 @Override
                 public int width() {
@@ -57,7 +56,7 @@ public final class PixelCommands {
 
                 @Override
                 public int abgr(int x, int y) {
-                    return image.getPixelRGBA(x, y);
+                    return FrameCapture.abgr(image, x, y);
                 }
             };
             Fields fields = new Fields();
