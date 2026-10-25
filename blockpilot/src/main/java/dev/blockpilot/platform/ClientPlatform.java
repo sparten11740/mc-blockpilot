@@ -52,9 +52,6 @@ public final class ClientPlatform {
         default void onClientStopping() {
         }
 
-        default void onServerStarted(MinecraftServer server) {
-        }
-
         default void onServerTickEnd(MinecraftServer server) {
         }
 
