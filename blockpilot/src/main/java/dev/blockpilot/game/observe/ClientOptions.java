@@ -3,6 +3,7 @@ package dev.blockpilot.game.observe;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Numbers;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -12,18 +13,24 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
-import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.PrioritizeChunkUpdates;
+//? if >=26.1 {
+/*import net.minecraft.client.GraphicsPreset;
+import net.minecraft.server.level.ParticleStatus;
+*///?} else {
+import net.minecraft.client.GraphicsStatus;
+import net.minecraft.client.ParticleStatus;
+//?}
 
 /**
  * The client options agents may change, by their {@code options.txt} names, and the originals of the ones they
  * changed. Values go through {@link OptionInstance#set}, so vanilla's update hooks run, plus what the video settings
  * screen does after some changes (rebuilding the chunks for graphics, reloading textures for mipmaps); nothing saves
- * {@code options.txt}. Client thread only.
+ * {@code options.txt}. An option can change others (a graphics preset sets a dozen, and changing one of those makes the
+ * preset custom); those count as changed by the agent too. Client thread only.
  */
 public final class ClientOptions {
     /** One option, read and written as text. */
@@ -322,13 +329,23 @@ public final class ClientOptions {
     private record Original(String text, Runnable restore) {
     }
 
+    /** In restore order: a graphics preset comes first, as restoring it sets the options it covers. */
     private static final Map<String, Setting> SETTINGS = new LinkedHashMap<>();
-    private static final Map<String, Original> ORIGINALS = new LinkedHashMap<>();
+    private static final Map<String, Original> ORIGINALS = new HashMap<>();
+    /** Unlisted options an agent change changed along the way, with how to put each back. */
+    private static final Map<OptionInstance<?>, Runnable> UNLISTED = new LinkedHashMap<>();
+    private static boolean changing;
 
     static {
         List<Setting> settings = List.of(
+            //? if >=26.1 {
+            /*new Choice<>("graphicsPreset", Options::graphicsPreset, GraphicsPreset.class),
+            new Toggle("cutoutLeaves", Options::cutoutLeaves),
+            new Toggle("improvedTransparency", Options::improvedTransparency),
+            *///?} else {
             new Choice<>("graphicsMode", Options::graphicsMode, GraphicsStatus.class)
                 .afterChange(value -> Minecraft.getInstance().levelRenderer.allChanged()),
+            //?}
             new Choice<>("particles", Options::particles, ParticleStatus.class),
             new Whole("renderDistance", Options::renderDistance),
             new Whole("simulationDistance", Options::simulationDistance),
@@ -380,18 +397,40 @@ public final class ClientOptions {
         return original == null ? null : original.text();
     }
 
-    /** Sets the option from text, remembering its original the first time. */
+    /** Sets the option from text, remembering the original of every option that changes the first time. */
     static void set(Setting setting, String text) throws CommandException {
-        Original before = new Original(setting.value(), setting.snapshot());
-        setting.set(text);
-        ORIGINALS.putIfAbsent(setting.name(), before);
+        Map<String, Original> before = new LinkedHashMap<>();
+        SETTINGS.values().forEach(each -> before.put(each.name(), new Original(each.value(), each.snapshot())));
+        changing = true;
+        try {
+            setting.set(text);
+        } finally {
+            changing = false;
+        }
+        before.forEach((name, original) -> {
+            if (!original.text().equals(SETTINGS.get(name).value())) {
+                ORIGINALS.putIfAbsent(name, original);
+            }
+        });
     }
 
-    /** Puts back every option agents changed; returns their names. */
+    /** Called from a mixin before the game sets an option as a side effect of another (a graphics preset). */
+    public static <T> void beforeSideEffect(OptionInstance<T> option) {
+        boolean listed = SETTINGS.values().stream()
+            .anyMatch(setting -> setting instanceof Instance<?> instance && instance.instance() == option);
+        if (changing && !listed) {
+            T value = option.get();
+            UNLISTED.putIfAbsent(option, () -> option.set(value));
+        }
+    }
+
+    /** Puts back every option agents changed, in list order, then the unlisted ones; returns the listed names. */
     public static List<String> restoreAll() {
-        List<String> restored = List.copyOf(ORIGINALS.keySet());
-        ORIGINALS.values().forEach(original -> original.restore().run());
+        List<String> restored = SETTINGS.keySet().stream().filter(ORIGINALS::containsKey).toList();
+        restored.forEach(name -> ORIGINALS.get(name).restore().run());
+        UNLISTED.values().forEach(Runnable::run);
         ORIGINALS.clear();
+        UNLISTED.clear();
         return restored;
     }
 }

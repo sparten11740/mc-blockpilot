@@ -31,10 +31,11 @@ public final class OptionCommands {
             .help("option: the video options and their values; option <name>: its value and what it takes; option "
                 + "<name> <value>: sets it and answers once the chunks have rebuilt (settled=<s>, or unsettled "
                 + "pending=<n> at timeout=, default 20s); option reset: puts back what agents changed, as leave, "
-                + "quitting, the agent-control key and shutdown do. Names as in options.txt (graphicsMode, "
-                + "renderDistance, particles, …) plus hud on|off. Never written to options.txt")
+                + "quitting, the agent-control key and shutdown do, with the options the game changed along with them. "
+                + "Names as in options.txt (renderDistance, particles, …) plus hud on|off. Never written to "
+                + "options.txt")
             .field("was", "the value before the first agent change").field("takes", "the accepted values")
-            .field("settled", "seconds until the chunks were rebuilt").example("option graphicsMode fast"));
+            .field("settled", "seconds until the chunks were rebuilt").example("option renderDistance 8"));
     }
 
     private Action option(CommandContext context, Args args) throws CommandException {
@@ -104,7 +105,11 @@ public final class OptionCommands {
                 return Result.ok(answer.get().put("settled", seconds, "settled=" + Numbers.format(seconds) + "s"));
             }
             if (ticks >= timeoutTicks) {
+                //? if >=26.1 {
+                /*int pending = dispatcher.getCompileQueueSize();
+                *///?} else {
                 int pending = dispatcher.getToBatchCount() + dispatcher.getToUpload();
+                //?}
                 return Result.ok(answer.get().put("unsettled", true, "unsettled")
                     .put("pending", pending, "pending=" + pending));
             }
