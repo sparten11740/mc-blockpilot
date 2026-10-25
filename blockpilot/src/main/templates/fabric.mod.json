@@ -10,7 +10,8 @@
     "client": ["dev.blockpilot.platform.fabric.FabricClientEntrypoint"]
   },
   "mixins": [<%= mixin_configs.collect { '"' + it + '"' }.join(", ") %>],
-  "depends": {
+<% if (access_widener) { %>  "accessWidener": "${access_widener}",
+<% } %>  "depends": {
     "fabricloader": ">=${fabric_loader_min_version}",
     "fabric-api": ">=${fabric_api_version}",
     "minecraft": "${minecraft_version_range}",

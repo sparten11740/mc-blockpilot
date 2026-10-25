@@ -112,7 +112,7 @@ sourceSets.main {
 neoForge.ideSyncTask(generateModMetadata)
 
 tasks.processResources {
-    exclude("$modId-fabric.mixins.json")
+    exclude("$modId-fabric.mixins.json", "$modId.accesswidener")
 }
 
 tasks.withType<JavaCompile>().configureEach {

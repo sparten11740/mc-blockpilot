@@ -20,6 +20,8 @@ val treeDir = parent!!.projectDir
 val mixinConfigs = listOf("$modId.mixins.json", "$modId-fabric.mixins.json").filter { config ->
     listOf("main", prop("version_sources")).any { treeDir.resolve("src/$it/resources/$config").exists() }
 }
+// Opens vanilla types NeoForge already makes public; one per version range, as the names differ between versions.
+val accessWidener = treeDir.resolve("src/${prop("version_sources")}/resources/$modId.accesswidener")
 
 version = "${treeProp("mod_version")}+$minecraft-fabric"
 group = treeProp("mod_group_id")
@@ -77,6 +79,9 @@ dependencies {
 }
 
 loom {
+    if (accessWidener.exists()) {
+        accessWidenerPath = accessWidener
+    }
     runs {
         named("client") {
             runDirectory = layout.projectDirectory.dir("run")
@@ -99,6 +104,7 @@ val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata"
         "minecraft_version_range" to prop("minecraft_version_range"),
         "java_version" to prop("java_version"),
         "mixin_configs" to mixinConfigs,
+        "access_widener" to if (accessWidener.exists()) accessWidener.name else "",
     )
     inputs.properties(properties)
     expand(properties)

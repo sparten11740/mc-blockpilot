@@ -1,0 +1,4 @@
+accessWidener v2 named
+# OptionInstance.values() hands out this package-private type; its validator checks a value before option sets it.
+# NeoForge makes it public already.
+accessible class net/minecraft/client/OptionInstance$ValueSet

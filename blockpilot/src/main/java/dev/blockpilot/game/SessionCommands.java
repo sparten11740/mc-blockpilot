@@ -9,6 +9,7 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -173,11 +174,18 @@ final class SessionCommands {
         return String.join(": ", parts);
     }
 
-    /** Leaves the current game the way the pause menu's button does (saving singleplayer worlds). */
+    /** Set while a world exit Blockpilot started is pending, so it isn't taken for the player leaving. */
+    private static boolean leaving;
+
+    /**
+     * Leaves the current game the way the pause menu's button does (saving singleplayer worlds). Used by Blockpilot's
+     * own world switches, which keep agent option changes.
+     */
     static void disconnect() {
         Minecraft minecraft = minecraft();
         boolean local = minecraft.isLocalServer();
         if (minecraft.level != null) {
+            leaving = true;
             minecraft.level.disconnect();
         }
         if (local) {
@@ -193,7 +201,15 @@ final class SessionCommands {
             throw new CommandException("not_in_world");
         }
         disconnect();
+        ClientOptions.restoreAll();
         return () -> minecraft().level == null ? Result.ok() : null;
+    }
+
+    /** Called when the world has gone; true when Blockpilot left it (and the flag is cleared). */
+    static boolean leftByBlockpilot() {
+        boolean ours = leaving;
+        leaving = false;
+        return ours;
     }
 
     private Action respawn() throws CommandException {

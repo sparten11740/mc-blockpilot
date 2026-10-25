@@ -79,12 +79,18 @@ the plain `hideGui` field. Vanilla's own name-to-option walk
 that change what is rendered. Values are parsed from the current value's type:
 booleans as `on|off`, enums by lower-case constant name (filtered through the
 option's validator), numbers checked by the validator, whose range is found by
-bisecting it, so out-of-range errors can name it. Setting goes through
-`OptionInstance.set`, which runs vanilla's update hook (e.g. `allChanged` for
-graphics mode) without the video screen's Fabulous warning. The first change
-of each option records its original. Restoring sets the originals back the same
-way. Nothing calls `Options.save`, so `options.txt` only changes if the player
-saves the video screen.
+bisecting it, so out-of-range errors can name it. Some validators clamp instead
+of refusing, so a whole number counts only if it comes back unchanged. Setting
+goes through `OptionInstance.set`, which runs the option's update hook, and then
+does what the video screen does on top for the two options whose hooks are
+empty: `levelRenderer.allChanged()` after a graphics mode change, and the mip
+level update and texture reload after a mipmap change. The Fabulous warning
+screen is skipped; on a GPU that can't do Fabulous the validator refuses it.
+Vanilla's `OptionInstance.ValueSet` is package-private; NeoForge opens it, and
+on Fabric a per-version access widener does. The first change of each option
+records its original. Restoring sets the originals back the same way. Nothing
+calls `Options.save`, so `options.txt` only changes if the player saves the
+video screen.
 
 After a change the action waits until `SectionRenderDispatcher.isQueueEmpty()`
 has held for 3 consecutive client ticks (at least 2 ticks after the change, so

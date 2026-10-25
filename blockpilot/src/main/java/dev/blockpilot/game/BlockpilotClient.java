@@ -13,6 +13,7 @@ import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.game.observe.CameraControl;
+import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
@@ -59,6 +60,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile boolean enabled = true;
     private long ticks;
     private boolean autoJoined;
+    private boolean wasInWorld;
 
     private BlockpilotClient() {
     }
@@ -132,6 +134,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onClientStopping() {
+        try {
+            ClientOptions.restoreAll();
+        } catch (RuntimeException e) {
+            // An option's update hook failing must not break shutdown; nothing writes the changed values anyway.
+            Blockpilot.LOGGER.warn("Could not restore the options agents changed", e);
+        }
         if (endpoint != null) {
             endpoint.stop();
         }
@@ -153,9 +161,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             enabled = !enabled;
             if (!enabled) {
                 engine.stopAll("disabled");
+                ClientOptions.restoreAll();
+                CameraControl.reset();
             }
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
+        restoreOnWorldExit();
         Perf.clientTick();
         if (++ticks % 200 == 0) {
             // A loader or mod may reload the logging setup, which drops our appender.
@@ -167,6 +178,15 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         InputState.reassert();
         events.tick();
         engine.tickClient();
+    }
+
+    /** Agent option changes end when the player leaves the world (Blockpilot's own world switches keep them). */
+    private void restoreOnWorldExit() {
+        boolean inWorld = Minecraft.getInstance().level != null;
+        if (wasInWorld && !inWorld && !SessionCommands.leftByBlockpilot()) {
+            ClientOptions.restoreAll();
+        }
+        wasInWorld = inWorld;
     }
 
     @Override
