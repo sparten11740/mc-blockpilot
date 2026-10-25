@@ -86,8 +86,11 @@ A script is commands separated by `;`; each command answers with one result line
 after a failure) plus indented rows. Positions are `x,y,z` or `~dx,dy,dz` (relative to the player's block), entities
 `e<id>`, counts `x<n>`, durations `20t` or `3s`, options `name=value`. Ids drop the `minecraft:` namespace. Repeating
 `look`, `inv` or `screen` in a session reports only what changed (`full` forces everything). Game events (hurt, got,
-chat, actionbar, screen, died, …) arrive as `! …` lines with the next reply. `help`, `help <command|group>` and
-`help errors` give the full reference.
+chat, actionbar, screen, died, …) arrive as `! …` lines with the next reply. A script stops at the first `err`
+unless the command is written `?cmd`, which reports its error and goes on (handy for probes). Every tick number in a
+reply (`tick query`, `sample` rows, waits, `sounds`, `messages` and their `since=`) is the same clock: the integrated
+server's game time in singleplayer, else the client's. `help`, `help <command|group>` and `help errors` give the full
+reference.
 
 ```
 > select iron_pickaxe; mine #logs x3; inv
@@ -102,19 +105,23 @@ ok
 | Group | Commands |
 | --- | --- |
 | perception | `status` (one line: position, health, crosshair target, velocity, vehicle, camera angles…), `look [r]`, `find <block\|#tag\|*pattern\|entity> [r] [limit]`, `block <pos>`, `blocks <from> <to>`, `inv [detail]` |
-| observe | `screenshot [width] [burst=n every=Nt] [hud=off]`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=]`, `particles [since=]` |
+| observe | `screenshot [width] [burst=n every=Nt] [hud=off]`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=]`, `particles [since=]`, `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>` |
 | movement | `face <pos\|e<id>>`, `turn <yaw> <pitch> [Nt]`, `move <dir> <blocks\|Nt>`, `jump`, `sneak on\|off`, `sprint on\|off`, `fly on\|off`, `goto <pos\|e<id>> [near=]` |
 | interact | `use [target] [sneak] [hold=Nt]`, `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
 | inventory | `select <slot\|item>`, `swap <a> <b>`, `drop <item\|slot> [n]`, `offhand <item>`, `equip <item>` |
-| gui | `screen`, `cursor <x,y>`, `click <x,y\|s<slot>> [button]`, `close` |
+| gui | `screen`, `cursor <x,y\|w<i>>`, `click <x,y\|w<i>\|s<slot>> [button]` (`w<i>`: a widget's centre, as `screen` numbers them), `close` |
 | input | `mouse down\|up\|click <button>`, `mouse move <dx> <dy> [Nt]`, `drag <button> …`, `scroll <n>`, `key down\|up\|press <key\|key.mapping>`, `type <text>`, `release` |
 | talk | `chat <text>`, `cmd <command>` |
-| session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `respawn`, `create world <name> [flat\|void\|normal] …` |
-| integrated | `server <command> [as=player]` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query` |
+| session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
+| integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| meta | `help`, `fmt text\|json`, `sub on\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value>`, `sample <query> every <Nt> x<n>` |
+| meta | `help`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `sample <query> every <Nt> x<n> [clock=server]` |
 
-`server`, `nbt` and `tick` need a singleplayer world with commands allowed (cheats on); `create world` makes one.
+The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
+on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world
+can't use them to cheat. `snapshot restore` leaves the world, copies the save back and rejoins, the same as quitting
+to the title screen and loading it again. Mods that keep static state across worlds may therefore behave differently
+than after a fresh launch; relaunch the client when a test needs full isolation.
 
 ## Extending it
 
@@ -134,6 +141,25 @@ BlockpilotApi.register("aerolarge", CommandSpec.query("gear", (context, args) ->
 ```
 
 `aerolarge:gear` is then available, e.g. `wait aerolarge:gear until extended==true timeout=10s`.
+
+Handlers run on the client thread. A command that touches the server world declares `onServer()`: its query runs at
+the end of a server tick, and its action starts, ticks and is cancelled on the server thread. It needs the same
+cheats world as `server`, and its queries work with `sample … clock=server`:
+
+```java
+BlockpilotApi.register("aerolarge", CommandSpec.action("build", (context, args) -> {
+        Build build = Build.start(args.text("blueprint"));
+        // null while still running; the result ends the action.
+        return () -> build.done()
+            ? Result.ok(new Fields().put("blocks", build.count(), "blocks=" + build.count()))
+            : null;
+    }).onServer().arg("blueprint", ArgType.TEXT).help("builds a blueprint at the player"));
+```
+
+Extensions can emit events too: `BlockpilotApi.emit("aerolarge", "assembled", new Fields().put("uuid", id,
+"uuid=" + id))` reaches every session as `! aerolarge:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of
+`blockpilot-api`, bumps its minor version for additions and its major version for breaking changes. Registrations
+made after mod loading has finished are refused.
 
 ## Building
 
