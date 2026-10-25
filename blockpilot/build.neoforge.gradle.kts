@@ -15,6 +15,9 @@ fun repoProp(name: String) = rootProject.property(name).toString()
 val modId = treeProp("mod_id")
 val minecraft = prop("minecraft_version")
 val treeDir = parent!!.projectDir
+// Sable publishes its companion API for some Minecraft versions only; a node without one (or built with an empty
+// -Psable_companion_version=) leaves the Sable integration out, and the game then runs as without Sable.
+val withSable = findProperty("sable_companion_version")?.toString().orEmpty().isNotEmpty()
 // The mixin configs this build ships: the one both loaders share (on versions that have one) and the loader's own.
 val mixinConfigs = listOf("$modId.mixins.json", "$modId-neoforge.mixins.json").filter { config ->
     listOf("main", prop("version_sources")).any { treeDir.resolve("src/$it/resources/$config").exists() }
@@ -39,6 +42,9 @@ java {
 sourceSets.main {
     // The other loader's half of the mod (its entry points, event wiring and mixins) is left out of this build.
     java.exclude("dev/blockpilot/platform/fabric/**")
+    if (!withSable) {
+        java.exclude("dev/blockpilot/compat/sable/**")
+    }
     // What differs too much between Minecraft versions for inline conditions (mixins): one copy per range.
     java.srcDir(treeDir.resolve("src/${prop("version_sources")}/java"))
     resources.srcDir(treeDir.resolve("src/${prop("version_sources")}/resources"))
@@ -54,8 +60,10 @@ repositories {
 
 dependencies {
     // Only compiled against: Sable brings the companion when it is installed (see dev.blockpilot.compat.sable).
-    compileOnly("dev.ryanhcode.sable-companion:sable-companion-common-${prop("minecraft_version")}:"
-        + prop("sable_companion_version")) { isTransitive = false }
+    if (withSable) {
+        compileOnly("dev.ryanhcode.sable-companion:sable-companion-common-${prop("minecraft_version")}:"
+            + prop("sable_companion_version")) { isTransitive = false }
+    }
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
