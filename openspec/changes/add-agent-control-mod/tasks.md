@@ -105,6 +105,12 @@
 - [x] 11.9 Fix what the grammar, parser, lexicon and test reviews found: the revised grammar (disjoint bare ids, value limits, strict predicate operands, construct options, request and auth lines), Unicode blanks, `if` nesting, text after optional parts, `full` anywhere, typed and checked option values, frozen and validated declarations, type-checked `Args`, errors that name skipped optional slots and hint at likely mistakes; verify with the differential spec test, the fuzz test, columns computed from the script text, and `./gradlew check` at 100% for the parser classes; verified with `SpecGrammarTest`, the fuzz tests, `ParserTest`'s computed columns and `check` at 100% on both loaders, and the hints in game on NeoForge
 - [ ] 11.8 Update the README (grammar, forms in the extension API) and tell the Aerolarge agent; verify in game on NeoForge and Fabric that the README's examples run
 
+## 12. Third round (Aerolarge feedback)
+
+- [x] 12.1 Make `move <dir> <blocks>` fail with `err stuck moved=<n>` after 20 ticks without progress; verified in game on NeoForge (`move forward 16` into a wall gives `err stuck moved=1.8`)
+- [x] 12.2 List a screen's list widgets with their row count and the rows in view (a row's own widgets, or the row with its label) as `w<i>`; verified in game on NeoForge on Video Settings (rows' sliders and buttons, renumbered after `scroll`) and the language list (plain rows)
+- [x] 12.3 Add `sample <query> every <duration> [x<n>] while <action>` (the action runs as written alone, samples beside it on the query's clock, the action's result with the samples as rows, also on errors); verified with `ParserTest`, `EngineTest` (same clock, server clock beside a client action, timeout, stop) and in game on NeoForge (`sample status every 4t while move forward 3`)
+
 ## Workflow follow-up
 
 - Archive the change once 1.21.1 NeoForge and Fabric are verified.

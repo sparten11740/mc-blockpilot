@@ -228,7 +228,7 @@ public final class Engine {
             .field("stopped", "number of scripts cancelled").example("stop"));
     }
 
-    Action sample(CommandContext context, Statement.Sample sample) {
+    Sampler sample(CommandContext context, Statement.Sample sample) {
         Statement.Call query = sample.query();
         return new Sampler(context, query.entry().spec(), query.args(), sample.every().ticks(), sample.count(),
             query.entry().spec().runsOnServer());
@@ -246,7 +246,7 @@ public final class Engine {
     }
 
     /** {@code sample}: runs a query every N ticks and collects one row per run. */
-    private final class Sampler implements Action, SelfTimed, ServerClocked {
+    final class Sampler implements Action, SelfTimed, ServerClocked {
         private final CommandContext context;
         private final CommandSpec query;
         private final Args args;
@@ -291,8 +291,19 @@ public final class Engine {
                 }
                 rows.add(Row.of(String.valueOf(rows.size()), fields));
             }
-            return rows.size() >= count ? Result.ok(new Fields().put("samples", rows.size(), "samples=" + rows.size()))
-                .withRows(rows) : null;
+            return done() ? Result.ok(samples()).withRows(rows) : null;
+        }
+
+        boolean done() {
+            return rows.size() >= count;
+        }
+
+        List<Row> rows() {
+            return rows;
+        }
+
+        Fields samples() {
+            return new Fields().put("samples", rows.size(), "samples=" + rows.size());
         }
 
         @Override

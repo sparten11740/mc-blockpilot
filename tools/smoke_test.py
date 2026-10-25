@@ -107,6 +107,11 @@ def main():
         ("side=server read", "block ~3,0,0 side=server; find chest 8 side=server", [r"ok chest", r"chest ~3,0,0"]),
         ("attack", "server as=player summon minecraft:cow ~3 ~ ~2; wait 5t; attack cow", [r"killed 1"]),
         ("goto", "goto ~6,0,4; status", [r"ok \d+(\.\d+)?s"]),
+        ("move", "turn -90 0; move forward 2; move back 5t", [r"ok moved 2\.\d", r"ok moved \d"]),
+        ("move into a wall", "server as=player fill ~2 ~ ~-1 ~2 ~1 ~1 stone; wait 3t; ?move forward 8; "
+                             "server as=player fill ~-2 ~ ~-2 ~3 ~2 ~2 air", [r"err stuck moved="], True),
+        ("sample while moving", "sample status every 2t while move back 2", [r"ok moved \d.* samples=\d",
+                                                                            r"^  t\d+ pos "]),
         ("look and find", "look 8; find grass_block 4 2", [r"^ok", r"grass_block"]),
         ("region dump", "blocks ~-1,-1,-1 ~1,0,1", [r"a=grass_block", r"y-61:"]),
         ("raw input", "key press key.inventory; wait 3t; screen; close; mouse move 40 0 4t",
@@ -123,10 +128,11 @@ def main():
         ("snapshot", "snapshot save s1; snapshot list; snapshot restore s1", [r"saved s1", r"restored s1"]),
     ]
     failures = 0
-    for name, script, expectations in steps:
+    for name, script, expectations, *expected_error in steps:
         code, output = run(args.game_dir, script)
         missing = [pattern for pattern in expectations if not re.search(pattern, output, re.MULTILINE)]
-        if code != 0 or missing:
+        # A step that checks an error reply exits non-zero, as every reply with an err line does.
+        if (code != 0 and not expected_error) or missing:
             failures += 1
             print(f"FAIL {name}: exit {code}, missing {missing}\n    " + output.strip().replace("\n", "\n    "))
         else:

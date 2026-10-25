@@ -53,7 +53,9 @@ wait         ::= "wait" blank+ ( duration | "idle" | query blank+ "until"
 wait-option  ::= ( "stable=" | "every=" ) duration
                | "timeout=" ( duration | seconds ) | clock
 sample       ::= "sample" blank+ query blank+ "every" blank+ duration
-                 blank+ count ( blank+ clock )?
+                 ( blank+ count ( blank+ clock )? ( blank+ beside )?
+                 | ( blank+ clock )? blank+ beside )
+beside       ::= "while" blank+ call
 clock        ::= "clock=" ( "server" | "client" )
 assert       ::= "assert" blank+ query blank+ predicates
 if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
@@ -417,13 +419,26 @@ must keep holding, `every=` how often to check (both default 1t), `timeout=`
 
 ### Requirement: Samples
 `sample <query> every <duration> x<n>` SHALL run a read-only query n times, 1
-to 1,000, every N ticks, at least 1t. A server-side query is sampled on the
+to 1,000, every N ticks, at least 1t. With `while <action>`, it SHALL run the
+action and sample beside it until the action ends or n (at most 1,000) samples
+are taken, from before the action's first tick when both run on one side, else
+from the query side's next tick; the line is the action's result, success or
+error, with the samples as its rows. A server-side query is sampled on the
 server clock: `clock=server` asserts that, and `clock=client` is refused for a
 server-side query.
 
 #### Scenario: Too many samples
 - **WHEN** an agent runs `sample status every 1t x1001`
 - **THEN** the result is `err syntax` naming the 1,000 limit
+
+#### Scenario: Sampling a walk
+- **WHEN** an agent runs `sample status every 2t while move forward 3`
+- **THEN** the result is the move's `ok moved 3.0`, with one row of `status`
+  fields every 2 ticks from before the first step to the end of the walk
+
+#### Scenario: Something other than an action after while
+- **WHEN** an agent runs `sample status every 2t while look`
+- **THEN** the result is `err syntax` saying `while` takes an action
 
 ### Requirement: Assertions
 `assert <query> <predicate> [and <predicate>…]` SHALL run a read-only command

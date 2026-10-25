@@ -52,6 +52,9 @@ final class ScriptJob implements CommandContext {
     /** The last statement whose gate passed; statements up to it may run on either thread without a client tick. */
     private int gatedThrough = -1;
     private Running running;
+    /** A sample taken beside the running action, on its own clock. */
+    private Engine.Sampler sampling;
+    private Affinity samplingAffinity;
     private volatile String activity;
     /** A cancel that arrived on the thread already inside this job's step; applied when that step ends. */
     private String pendingCancel;
@@ -108,6 +111,17 @@ final class ScriptJob implements CommandContext {
     private boolean advance(Affinity affinity) {
         while (index < lines.size()) {
             if (running != null) {
+                if (sampling != null && samplingAffinity == affinity && !sampling.done()) {
+                    try {
+                        sampling.tick();
+                    } catch (RuntimeException e) {
+                        running.action().cancel();
+                        engine.game().releaseInputs();
+                        running = null;
+                        finish(crash("sample", null, e));
+                        continue;
+                    }
+                }
                 if (running.affinity() != affinity) {
                     return false;
                 }
@@ -161,7 +175,9 @@ final class ScriptJob implements CommandContext {
             case Statement.Assert check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
             case Statement.If check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
             case Statement.WaitUntil wait -> new Placement(wait.query().entry().spec(), true, Affinity.CLIENT);
-            case Statement.Sample sample -> new Placement(sample.query().entry().spec(), true, Affinity.CLIENT);
+            case Statement.Sample sample -> sample.during() == null
+                ? new Placement(sample.query().entry().spec(), true, Affinity.CLIENT)
+                : new Placement(sample.during().entry().spec(), true, affinity(sample.during()));
             case Statement.WaitTicks wait -> new Placement(null, true, Affinity.CLIENT);
             case Statement.WaitIdle wait -> new Placement(null, true, Affinity.CLIENT);
         };
@@ -196,8 +212,20 @@ final class ScriptJob implements CommandContext {
             case Statement.WaitTicks wait -> start(engine.waitTicks(wait), "wait", null, null);
             case Statement.WaitIdle wait -> start(() -> Result.ok(), "wait", null, null);
             case Statement.WaitUntil wait -> start(engine.waitUntil(this, wait), "wait", null, null);
-            case Statement.Sample sample -> start(engine.sample(this, sample), "sample", null, null);
+            case Statement.Sample sample -> sample(sample);
         }
+    }
+
+    /** A sample on its own, or beside its {@code while} action, which then runs as if written alone. */
+    private void sample(Statement.Sample sample) throws CommandException {
+        Engine.Sampler sampler = engine.sample(this, sample);
+        if (sample.during() == null) {
+            start(sampler, "sample", null, null);
+            return;
+        }
+        sampling = sampler;
+        samplingAffinity = sampler.onServerClock() ? Affinity.SERVER : Affinity.CLIENT;
+        runCall(sample.during());
     }
 
     private void runCall(Statement.Call call) throws CommandException {
@@ -311,6 +339,12 @@ final class ScriptJob implements CommandContext {
     }
 
     private void finish(Result result) {
+        if (sampling != null) {
+            List<Row> rows = new ArrayList<>(result.rows() == null ? List.of() : result.rows());
+            rows.addAll(sampling.rows());
+            result = result.with(sampling.samples()).withRows(rows);
+            sampling = null;
+        }
         results.add(result);
         boolean soft = lines.get(index).soft();
         index++;
@@ -360,6 +394,7 @@ final class ScriptJob implements CommandContext {
             running = null;
             activity = null;
         }
+        sampling = null;
         if (index < lines.size()) {
             // A cancelled script stops even at a soft (?) statement.
             results.add(Result.error(code));

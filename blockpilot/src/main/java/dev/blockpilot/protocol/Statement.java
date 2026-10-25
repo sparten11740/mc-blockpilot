@@ -19,7 +19,8 @@ sealed interface Statement {
     record WaitUntil(Call query, Condition condition, int stable, int every, Duration timeout) implements Statement {
     }
 
-    record Sample(Call query, Duration every, int count) implements Statement {
+    /** {@code during}: the action sampled beside, or null; {@code count} caps the samples. */
+    record Sample(Call query, Duration every, int count, Call during) implements Statement {
     }
 
     record Assert(Call query, Condition condition) implements Statement {

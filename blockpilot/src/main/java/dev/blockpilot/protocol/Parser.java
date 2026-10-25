@@ -216,14 +216,43 @@ final class Parser {
             if (every.ticks() < 1) {
                 throw error(interval, "a sample is taken every 1t or more");
             }
-            int countColumn = column(index);
-            String times = expectToken(ArgType.COUNT, end);
-            int count = Integer.parseInt(times.substring(1));
-            if (count < 1 || count > MAX_SAMPLES) {
-                throw error(countColumn, "a sample is taken x1 to x" + MAX_SAMPLES + " times, not " + times);
+            int beside = index;
+            while (beside < end && !text(beside).equals("while")) {
+                beside++;
             }
-            checkClock(query, options(end, SAMPLE_OPTIONS));
-            return new Statement.Sample(query, every, count);
+            int count = MAX_SAMPLES;
+            if (index < beside && ArgType.COUNT.matches(text(index))) {
+                int countColumn = column(index);
+                String times = text(index++);
+                count = Integer.parseInt(times.substring(1));
+                if (count < 1 || count > MAX_SAMPLES) {
+                    throw error(countColumn, "a sample is taken x1 to x" + MAX_SAMPLES + " times, not " + times);
+                }
+            } else if (beside == end) {
+                throw expected("a count x<n> or while <action>", end);
+            }
+            checkClock(query, options(beside, SAMPLE_OPTIONS));
+            if (beside == end) {
+                return new Statement.Sample(query, every, count, null);
+            }
+            index++;
+            return new Statement.Sample(query, every, count, besideAction(end));
+        }
+
+        /** The action after {@code while}. */
+        private Statement.Call besideAction(int end) throws SyntaxError {
+            if (index == end) {
+                throw error(column(index), "missing an action after while");
+            }
+            int column = column(index);
+            if (Construct.named(text(index)) != null) {
+                throw error(column, "while takes an action, not " + text(index));
+            }
+            Statement.Call action = call(end, false);
+            if (action.entry().spec().kind() != CommandSpec.Kind.ACTION) {
+                throw error(column, "while takes an action; " + action.entry().qualifiedName() + " is a query");
+            }
+            return action;
         }
 
         private Statement assertion(int end) throws SyntaxError {

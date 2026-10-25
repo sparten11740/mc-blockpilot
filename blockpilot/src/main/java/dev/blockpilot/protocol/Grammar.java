@@ -49,7 +49,9 @@ final class Grammar {
         wait-option  ::= ( "stable=" | "every=" ) duration
                        | "timeout=" ( duration | seconds ) | clock
         sample       ::= "sample" blank+ query blank+ "every" blank+ duration
-                         blank+ count ( blank+ clock )?
+                         ( blank+ count ( blank+ clock )? ( blank+ beside )?
+                         | ( blank+ clock )? blank+ beside )
+        beside       ::= "while" blank+ call
         clock        ::= "clock=" ( "server" | "client" )
         assert       ::= "assert" blank+ query blank+ predicates
         if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+

@@ -40,6 +40,9 @@ class EngineTest {
         registry.register(CommandSpec.action("walk", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
         registry.register(CommandSpec.query("world", (context, args) -> Result.ok()).needsWorld());
+        registry.register(CommandSpec.query("boom", (context, args) -> {
+            throw new IllegalStateException("boom");
+        }));
         registry.register(CommandSpec.query("probe", (context, args) ->
             Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
         registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
@@ -268,7 +271,61 @@ class EngineTest {
         tick(2);
         assertEquals("err syntax col 8: walk is not a read-only command", text(action));
         assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> every "
-            + "<duration> x<n> [clock=server|client]", text(huge));
+            + "<duration> x<n> [clock=server|client] | sample <query> every <duration> [x<n>] [clock=server|client] "
+            + "while <action>", text(huge));
+    }
+
+    @Test
+    void aSampleRunsBesideItsAction() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> walk = engine.submit(session, null, "sample counter every 1t while walk a 3");
+        for (int index = 0; index < 10 && !walk.isDone(); index++) {
+            game.time++;
+            tick(1);
+        }
+        // Each sample is taken before the action's tick, so the first shows the state before it started.
+        assertEquals("ok samples=3\n  t1 value=0\n  t2 value=1\n  t3 value=2", text(walk));
+        CompletableFuture<Reply> capped = engine.submit(session, null, "sample counter every 2t x2 while walk b 6");
+        tick(10);
+        assertEquals(List.of(3, 5), capped.join().results().get(0).rows().stream()
+            .map(row -> ((Number) row.fields().get("value")).intValue()).toList());
+    }
+
+    @Test
+    void aSampleBesideAFailingActionKeepsItsRows() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> walk = engine.submit(session, null,
+            "sample counter every 1t while walk a 100 timeout=2t; counter");
+        tick(5);
+        Result result = walk.join().results().get(0);
+        assertEquals("timeout", result.code());
+        assertEquals(2, result.rows().size());
+        assertEquals("skip", text(walk).lines().reduce((first, second) -> second).orElseThrow());
+    }
+
+    @Test
+    void aSampleThatCrashesCancelsItsAction() {
+        CompletableFuture<Reply> walk = engine.submit(engine.openSession(), null,
+            "sample boom every 1t while walk a 3");
+        tick(2);
+        assertEquals("err internal sample boom samples=0", text(walk));
+        assertTrue(log.contains("a cancelled"), log.toString());
+    }
+
+    @Test
+    void aServerQueryIsSampledOnTheServerClockBesideAClientAction() {
+        Session session = engine.openSession();
+        // The action starts and takes its first step on the client; the server takes its first sample after that.
+        CompletableFuture<Reply> walk = engine.submit(session, null, "sample probe every 1t while walk a 3");
+        for (int index = 0; index < 5 && !walk.isDone(); index++) {
+            engine.tickServer();
+            engine.tickClient();
+        }
+        assertEquals(2, walk.join().results().get(0).rows().size());
+        CompletableFuture<Reply> stopped = engine.submit(session, null, "sample counter every 1t while walk c 100");
+        tick(2);
+        engine.submit(engine.openSession(), null, "stop").join();
+        assertEquals("err cancelled", text(stopped));
     }
 
     @Test
