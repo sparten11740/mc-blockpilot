@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
@@ -20,21 +21,51 @@ import net.minecraft.client.Screenshot;
  */
 public final class Screenshots {
     private static final DateTimeFormatter NAMES = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSS");
+    /** Frames begun; each begins with the ticks due, then renders. */
+    private static volatile long frames;
+    /** Captures waiting for a frame rendered after they were asked for; client thread only. */
+    private static final List<Runnable> waiting = new ArrayList<>();
 
     private Screenshots() {
     }
 
-    /** From any thread: the PNG of the next frame boundary. */
+    public static long frames() {
+        return frames;
+    }
+
+    /** Called as each frame begins, when the frame before it has been rendered. Client thread. */
+    public static void onFrame() {
+        frames++;
+        if (!waiting.isEmpty()) {
+            List<Runnable> due = List.copyOf(waiting);
+            waiting.clear();
+            due.forEach(Runnable::run);
+        }
+    }
+
+    /**
+     * From any thread: the PNG of a frame rendered after the call. The call may come while a frame is being rendered,
+     * so the capture waits until the frame after that one has been rendered too.
+     */
     public static CompletableFuture<byte[]> capture(int width) {
         CompletableFuture<byte[]> result = new CompletableFuture<>();
-        Minecraft.getInstance().execute(() -> {
+        long target = frames + 2;
+        Minecraft.getInstance().execute(() -> waitFor(target, () -> {
             try {
                 result.complete(captureNow(width));
             } catch (IOException | RuntimeException e) {
                 result.completeExceptionally(e);
             }
-        });
+        }));
         return result;
+    }
+
+    private static void waitFor(long target, Runnable capture) {
+        if (frames >= target) {
+            capture.run();
+        } else {
+            waiting.add(() -> waitFor(target, capture));
+        }
     }
 
     /** On the client thread: the last rendered frame as PNG. */

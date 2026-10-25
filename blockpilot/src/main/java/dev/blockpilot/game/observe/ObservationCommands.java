@@ -96,18 +96,23 @@ public final class ObservationCommands {
         boolean hudBefore = options.hideGui;
         List<Row> rows = new ArrayList<>();
         List<NativeImage> tiles = new ArrayList<>();
-        // With the HUD hidden, the first capture waits a tick so a frame without it has been rendered.
-        int delay = hideHud ? 1 : 0;
-        int[] elapsed = {0};
+        // The first capture is of a frame rendered after this request, so it shows what the commands before it did
+        // (and, with the HUD hidden, no HUD). A frame renders after its ticks, so by any tick of a later frame the
+        // last rendered frame is such a frame.
+        long requested = Screenshots.frames();
+        int[] elapsed = {-1};
         return new Action() {
             @Override
             public Result tick() throws CommandException {
                 if (hideHud) {
                     options.hideGui = true;
                 }
-                int tick = elapsed[0]++;
+                if (elapsed[0] < 0 && Screenshots.frames() == requested) {
+                    return null;
+                }
+                int tick = ++elapsed[0];
                 try {
-                    if (tick >= delay && (tick - delay) % interval == 0) {
+                    if (tick % interval == 0) {
                         capture();
                     }
                     if (rows.size() < frames) {

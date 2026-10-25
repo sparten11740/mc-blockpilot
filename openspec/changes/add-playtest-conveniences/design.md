@@ -103,7 +103,9 @@ See proposal.md for why. The current state these decisions build on:
 - **What:** a frame counter goes up at each frame boundary (the existing frame
   hook). The `screenshot` action notes the counter when it starts. It captures
   on the first tick where the counter has moved on, i.e. from the frame
-  rendered after the request. The MCP tool's capture waits the same way.
+  rendered after the request. The MCP tool's request comes from a network
+  thread, possibly while a frame is rendering, so it waits for two frame
+  boundaries instead of one.
 - **Bursts:** later frames keep their `every=` spacing. With `hud=off` the
   existing one-tick wait already satisfies the rule.
 - **Cost:** at most one frame of latency.
