@@ -22,7 +22,7 @@
 
 - [x] 4.1 Run `tools/smoke_test.py` in text and JSON mode on the 26.1 NeoForge and Fabric dev clients; verify every step passes and the JSON shapes match the 1.21.1 jar of the same loader
 - [x] 4.2 Build all four jars; verify their names, that the Fabric jars hold no NeoForge classes and no jar holds `dev/ryanhcode` classes, that each metadata file names its own Minecraft version range, and that the `dev.blockpilot.api` classes in the 26.1 jars have the same public signatures as the `blockpilot-api` jar
-- [ ] 4.3 Update the README (targets, dev-environment snippets for 26.1, the container and `craft` commands with the crafting gap, the 26.1 option names, Sable on 26.1, the build layout and the add-a-target notes); verify every command, option and version it names matches the build
+- [x] 4.3 Update the README (targets, dev-environment snippets for 26.1, the container and `craft` commands with the crafting gap, the 26.1 option names, Sable on 26.1, the build layout and the add-a-target notes); verify every command, option and version it names matches the build
 
 ## Workflow follow-up
 

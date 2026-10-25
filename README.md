@@ -1,10 +1,10 @@
 # Blockpilot
 
 A Minecraft mod that lets AI agents and scripts observe and control the game through a fast, token-efficient local
-interface. It runs in the client, for NeoForge and Fabric on 1.21.1, built from one source tree with
-[Stonecutter](https://stonecutter.kikugie.dev/) the same way as Ultrasplosive. Agents play the game, or play-test a mod
-under development: real input (clicks, holds, drags, keys), screenshots, structured results, condition waits, the
-integrated server's commands with captured output, sound/message logs and performance captures.
+interface. It runs in the client, for NeoForge and Fabric on Minecraft 1.21.1 and 26.1 (26.1.2), built from one
+source tree with [Stonecutter](https://stonecutter.kikugie.dev/) the same way as Ultrasplosive. Agents play the game, or
+play-test a mod under development: real input (clicks, holds, drags, keys), screenshots, structured results, condition
+waits, the integrated server's commands with captured output, sound/message logs and performance captures.
 
 ## Using it
 
@@ -46,7 +46,8 @@ A line in the top-left corner shows when an agent is active and what it is doing
 ### In another mod's dev environment
 
 `./gradlew publishToMavenLocal` publishes `dev.blockpilot:blockpilot-neoforge` and `blockpilot-fabric` (version
-`<mod version>+<minecraft>`, e.g. `0.1.0-alpha.1+1.21.1`) and `dev.blockpilot:blockpilot-api`. In the other project,
+`<mod version>+<minecraft>`, e.g. `0.1.0-alpha.1+1.21.1` or `0.1.0-alpha.1+26.1.2`) and `dev.blockpilot:blockpilot-api`,
+the same for every target. In the other project,
 add `mavenLocal()` to the repositories and Blockpilot as a runtime-only dependency. `blockpilot.autojoin` joins that
 world on launch, and `blockpilot.autocreate=flat|void|normal` creates it first if it is missing.
 
@@ -66,7 +67,7 @@ neoForge {
 }
 ```
 
-Fabric Loom:
+Fabric Loom (for 26.1, whose Loom doesn't remap mods, `localRuntime` instead of `modLocalRuntime`):
 
 ```kotlin
 dependencies {
@@ -84,7 +85,8 @@ loom {
 
 Then `python3 <blockpilot checkout>/tools/blockpilot.py --game-dir run --wait-ready 300 --wait-world "status"`, run
 from that project, returns once the player is in the test world. In this repository the same properties go through Gradle:
-`./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test -Pblockpilot.autocreate=flat`.
+`./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test -Pblockpilot.autocreate=flat` (or
+`26.1-neoforge`, `1.21.1-fabric`, `26.1-fabric`).
 
 ## The command language
 
@@ -124,7 +126,7 @@ ok
 | observe | `screenshot [width] [burst=n every=Nt [sheet]] [crop=x0,y0,x1,y1] [hud=off]` (`sheet`: one PNG of the burst in a labelled grid), `pixels [[name=]x0,y0,x1,y1\|[name=]@<pos>]… [r=]` (mean rgb and luma, max and p90 luma of parts of the last frame), `option [<name> [<value>]]`, `option reset`, `camera at <pos> [look <pos\|e<id>>]` / `camera reset`, `sounds [since=] [match=] [limit=]`, `messages [since=] [kind=] [match=]` (`match=*engaged*`: whole text, any case), `particles [since=]`, `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>` |
 | movement | `face <pos\|e<id>> [at <u,v,w>]`, `turn <yaw> <pitch> [Nt]`, `move <dir> <blocks\|Nt>` (by blocks, `err stuck` after 20 ticks without progress), `jump`, `sneak on\|off`, `sprint on\|off`, `fly on\|off`, `goto <pos\|e<id>> [near=]` |
 | interact | `use [target [at <u,v,w>]] [any] [sneak] [hold=Nt]` (`at`: a point inside the block, each 0 to 1 in the frame of its model facing north, turned with the block, as `status` shows it in `hit=`), `attack [e<id>\|type] [x<n>]`, `mine [pos\|block\|#tag] [x<n>]`, `place <item> <pos>` |
-| inventory | `select <slot\|item>`, `swap <a> <b>`, `drop <item\|slot> [n]`, `offhand <item>`, `equip <item>` |
+| inventory | `select <slot\|item>`, `swap <a> <b>`, `drop <item\|slot> [n]`, `offhand <item>`, `equip <item>`, `open <pos>`, `take <item\|s<i>> [n]`, `put <item\|s<i>> [n]`, `craft <item> [x<n>]` (through the recipe book, in the 2x2 grid or at a table within 4 blocks; from 26.1 a client on a remote server knows only unlocked recipes, so there `craft` finds only those) |
 | gui | `screen` (lists rows of lists as `w<i>` too), `cursor <x,y\|w<i>>`, `click <x,y\|w<i>\|s<slot>> [button]` (`w<i>`: a widget's centre, as `screen` numbers them), `close` |
 | input | `mouse down\|up\|click <button>`, `mouse move <dx> <dy> [Nt]`, `drag <button> …`, `scroll <n>`, `key down\|up\|press <key\|key.mapping>`, `type <text>`, `release` |
 | talk | `chat <text>`, `cmd <command>` |
@@ -137,7 +139,9 @@ ok
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
 written to `options.txt`, and are put back when the player or the agent leaves the world, when the player turns agent
 control off (F8) and when the game closes; Blockpilot's own world switches (`join`, `create world`, snapshots) keep
-them. The log names what was put back.
+them. The log names what was put back. Names are those of the running version's `options.txt`: from 26.1, where Fast,
+Fancy and Fabulous became presets, `graphicsPreset`, `cutoutLeaves` and `improvedTransparency` take the place of
+`graphicsMode`. A preset sets a dozen other options; `option reset` puts those back too.
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
 on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world
@@ -176,7 +180,8 @@ Blockpilot talks to Sable only through its published
 and nothing has to be installed; `help sable` says why the `sable:` commands are missing. Companion versions 1.x from
 1.6 are supported (Sable 2.0.5 and 2.0.6 ship 1.6.0). With any other version the integration stays off, and the log
 and `help sable` name the version found. Tested with Sable 2.0.6 (companion 1.6.0), Create 6.0.10 and Create
-Aeronautics 1.3.2 on NeoForge 1.21.1.
+Aeronautics 1.3.2 on NeoForge 1.21.1. Sable has no release for 26.1 yet, so the 26.1 jars are built without the
+integration; with a Sable installed they run as without it, and `help sable` says the build has no Sable integration.
 
 ## Extending it
 
@@ -269,21 +274,25 @@ these changes:
 ```
 
 Gradle runs on JDK 25 and fetches the JDK each build needs. Every jar lands in `build/libs/`, tagged with the Minecraft
-version and loader, e.g. `blockpilot-0.1.0-alpha.1+1.21.1-neoforge.jar`. `./gradlew :blockpilot:1.21.1-neoforge:runClient`
-(or `-fabric`) starts a dev client.
+version and loader, e.g. `blockpilot-0.1.0-alpha.1+1.21.1-neoforge.jar` or `blockpilot-0.1.0-alpha.1+26.1.2-fabric.jar`.
+`./gradlew :blockpilot:1.21.1-neoforge:runClient` (or `1.21.1-fabric`, `26.1-neoforge`, `26.1-fabric`) starts a dev
+client.
 
 The mod is one source tree built once per Minecraft version and loader: each build is a subproject named
 `<minecraft>-<loader>` under `blockpilot/versions/` with its own `gradle.properties`. Loader-specific code lives in
 `dev.blockpilot.platform.neoforge` and `.fabric` and only goes into that loader's jar; the rest reaches the loader
 through `ClientPlatform`. `dev.blockpilot.api` and `dev.blockpilot.protocol` are free of Minecraft classes (enforced
-by a test); `dev.blockpilot.game` holds the commands. Code that differs between builds is marked with Stonecutter
-comments such as `//? if neoforge {`; mixins, whose targets differ most between versions, live in `src/1.21.1/`.
+by a test); `dev.blockpilot.game` holds the commands. The sources are checked in for `1.21.1-neoforge`. Code that
+differs between builds is marked with Stonecutter comments such as `//? if neoforge {` or `//? if >=26.1 {`, and plain
+renames (`ResourceLocation` to `Identifier`, …) are rules in `blockpilot/stonecutter.gradle.kts`. What differs most
+between versions lives in `src/1.21.1/` and `src/26.1/`: the mixins, and a few classes with the same name and methods
+in each (`CraftingRecipes`, `FrameCapture`).
 
-To add a target such as 26.1: add `target("26.1", "neoforge", "fabric")` in `settings.gradle.kts`, create
-`blockpilot/versions/26.1-{neoforge,fabric}/gradle.properties` (with `version_sources=26.1`), add rename rules in
-`blockpilot/stonecutter.gradle.kts`, and copy `src/1.21.1/` to `src/26.1/`, updating the mixins and the few
-version-sensitive calls (input callbacks moved to records in 1.21.9, recipe placement in 1.21.2, entity NBT saving in
-1.21.6).
+To add a target: add it with `target(...)` in `settings.gradle.kts`, create
+`blockpilot/versions/<minecraft>-{neoforge,fabric}/gradle.properties` (with `version_sources`), copy the nearest
+`src/<version>/`, and add rename rules and `//? if` blocks for what changed, as was done for 26.1. A rename rule's new
+text must not already appear in the shared sources: switching versions applies the rules backwards, which would
+rename that text too. Set `sable_companion_version` only for versions Sable publishes its companion API for.
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 
