@@ -9,7 +9,6 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
-import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -203,7 +202,7 @@ final class SessionCommands {
             throw new CommandException("not_in_world");
         }
         disconnect();
-        ClientOptions.restoreAll();
+        BlockpilotClient.restoreOptions("the agent left the world");
         return () -> minecraft().level == null ? Result.ok() : null;
     }
 

@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -136,7 +137,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onClientStopping() {
         try {
-            ClientOptions.restoreAll();
+            restoreOptions("the game is closing");
         } catch (RuntimeException e) {
             // An option's update hook failing must not break shutdown; nothing writes the changed values anyway.
             Blockpilot.LOGGER.warn("Could not restore the options agents changed", e);
@@ -162,7 +163,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             enabled = !enabled;
             if (!enabled) {
                 engine.stopAll("disabled");
-                ClientOptions.restoreAll();
+                restoreOptions("agent control turned off");
                 CameraControl.reset();
             }
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
@@ -183,11 +184,18 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         engine.tickClient();
     }
 
+    static void restoreOptions(String reason) {
+        List<String> restored = ClientOptions.restoreAll();
+        if (!restored.isEmpty()) {
+            Blockpilot.LOGGER.info("Restored the options agents changed, as {}: {}", reason, String.join(" ", restored));
+        }
+    }
+
     /** Agent option changes end when the player leaves the world (Blockpilot's own world switches keep them). */
     private void restoreOnWorldExit() {
         boolean inWorld = Minecraft.getInstance().level != null;
         if (wasInWorld && !inWorld && !SessionCommands.leftByBlockpilot()) {
-            ClientOptions.restoreAll();
+            restoreOptions("the world was left");
         }
         wasInWorld = inWorld;
     }
