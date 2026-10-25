@@ -21,6 +21,9 @@ public interface GameBridge {
     /** Null when actions may run, otherwise the error code that stops them ({@code disabled}). */
     String actionGate();
 
+    /** Whether the integrated server is paused (singleplayer behind a pause screen), so it runs no ticks. */
+    boolean serverPaused();
+
     /** Resolves a {@code ~} position against the player's block position. */
     Position resolve(Position position) throws CommandException;
 

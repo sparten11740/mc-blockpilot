@@ -13,6 +13,7 @@ public final class Errors {
         CODES.put("not_in_world", "the command needs a loaded world");
         CODES.put("no_server", "the command needs the integrated server (singleplayer or LAN host)");
         CODES.put("no_cheats", "the command needs a world that allows commands (cheats on)");
+        CODES.put("paused", "the singleplayer game is paused, so commands that need server ticks can't run");
         CODES.put("disabled", "agent control is switched off with the toggle key");
         CODES.put("interrupted", "the player pressed a key or moved the mouse; agent actions stop");
         CODES.put("cancelled", "stopped by stop, or the session closed");

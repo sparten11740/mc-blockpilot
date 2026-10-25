@@ -186,6 +186,16 @@ releases. The approach, in layers:
 - **CLI:** after the reply, when any line is `err` or `skip`, one stderr line
   counts them, e.g. `blockpilot: 1 err, 5 skip (nothing after the error ran)`.
   The exit code rule stays as specified in `add-test-harness`.
+- **Paused server:** a paused integrated server runs no ticks, so a command
+  that runs on its thread or waits on its clock never advances, not even
+  towards its timeout. The actions queued behind it wait too, including the
+  `click` that would close the pause screen.
+  - On each client tick, a script waiting on server-clock work while the
+    server is paused fails that step with `err paused`.
+  - A running server action is cancelled on the server thread, which still
+    runs tasks while paused.
+  - Failing fast was chosen over letting GUI actions jump the queue, which
+    would break the queue's order.
 
 ## Risks / Trade-offs
 

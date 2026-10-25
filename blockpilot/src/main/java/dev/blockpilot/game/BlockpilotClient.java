@@ -333,6 +333,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public boolean serverPaused() {
+        var server = Minecraft.getInstance().getSingleplayerServer();
+        return server != null && server.isPaused();
+    }
+
+    @Override
     public Position resolve(Position position) throws CommandException {
         if (!position.relative()) {
             return position;

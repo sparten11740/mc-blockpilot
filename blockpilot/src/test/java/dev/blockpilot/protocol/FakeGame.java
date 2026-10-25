@@ -21,6 +21,8 @@ final class FakeGame implements GameBridge {
     long time;
     /** Whether the fake has finished loading; queued actions wait while false. */
     boolean ready = true;
+    /** Whether the fake's integrated server is paused. */
+    boolean serverPaused;
 
     @Override
     public void runOnClient(Runnable task) {
@@ -43,6 +45,11 @@ final class FakeGame implements GameBridge {
     @Override
     public String actionGate() {
         return actionGate;
+    }
+
+    @Override
+    public boolean serverPaused() {
+        return serverPaused;
     }
 
     @Override

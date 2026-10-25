@@ -32,6 +32,7 @@
 - [ ] 5.3 Name the camera's block in `camera at`'s reply and add `inside=<id>` when it is a full solid block; verify in game with the camera in a stone wall and in the air
 - [ ] 5.4 Add `blocks <pos1> <pos2> grid` (one id per cell, rows per layer bottom-up, north to south, west to east); verify in game with the two-by-two scenario in text and JSON
 - [ ] 5.5 Print a stderr summary from `tools/blockpilot.py` when lines are `err` or `skip` (counts, and whether nothing ran); verify by running a script with a syntax error (summary on stderr, exit code 1) and a clean one (no summary, exit 0)
+- [x] 5.6 Fail a script step that waits on server ticks with `err paused` while the integrated server is paused, cancelling a running server action on the server thread; verify with an `EngineTest` case (a running server action and a waiting server query both fail, the action is cancelled on the server thread) and in game that `server` behind the open game menu fails at once and a following `click` on Back to Game runs
 
 ## 6. Integration checks
 

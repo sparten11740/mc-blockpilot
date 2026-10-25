@@ -218,6 +218,24 @@ class EngineTest {
     }
 
     @Test
+    void aPausedServerFailsWhatWaitsOnItsTicks() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> spin = engine.submit(session, null, "spin; counter");
+        tick(1);
+        engine.tickServer();
+        CompletableFuture<Reply> probe = engine.submit(engine.openSession(), null, "probe");
+        game.serverPaused = true;
+        tick(1);
+        assertEquals("err paused the singleplayer game is paused, so the server runs no ticks; close the pause screen "
+            + "first\nskip", text(spin));
+        assertEquals("err paused the singleplayer game is paused, so the server runs no ticks; close the pause screen "
+            + "first", text(probe));
+        assertFalse(log.contains("spin cancelled"));
+        game.serverTasks.forEach(Runnable::run);
+        assertTrue(log.contains("spin cancelled"));
+    }
+
+    @Test
     void serverActionsAreCancelledOnTheServerThread() {
         Session first = engine.openSession();
         Session second = engine.openSession();

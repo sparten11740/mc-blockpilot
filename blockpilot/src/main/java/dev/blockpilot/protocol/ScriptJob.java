@@ -123,6 +123,13 @@ final class ScriptJob implements CommandContext {
                     }
                 }
                 if (running.affinity() != affinity) {
+                    if (stalled(affinity)) {
+                        // A paused server still runs tasks, only no ticks.
+                        engine.game().runOnServer(running.action()::cancel);
+                        running = null;
+                        finish(paused());
+                        continue;
+                    }
                     return false;
                 }
                 Result result = tickRunning();
@@ -154,6 +161,10 @@ final class ScriptJob implements CommandContext {
                 gatedThrough = gateQueriesAfter(index);
             }
             if (placement.affinity() != affinity) {
+                if (stalled(affinity)) {
+                    finish(paused());
+                    continue;
+                }
                 return false;
             }
             try {
@@ -166,6 +177,16 @@ final class ScriptJob implements CommandContext {
         }
         complete();
         return true;
+    }
+
+    /** Waiting on the server clock while the client ticks on and the server, paused, runs no ticks. */
+    private boolean stalled(Affinity affinity) {
+        return affinity == Affinity.CLIENT && engine.game().serverPaused();
+    }
+
+    private static Result paused() {
+        return Result.error("paused", "the singleplayer game is paused, so the server runs no ticks; close the pause "
+            + "screen first");
     }
 
     private static Placement placement(Statement statement) {
