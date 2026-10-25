@@ -28,6 +28,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 
 /** The mod on NeoForge: installs the platform and forwards NeoForge's events to the platform hooks. */
 @Mod(value = Blockpilot.MOD_ID, dist = Dist.CLIENT)
@@ -73,6 +74,20 @@ public final class NeoForgeClientEntrypoint {
             @Override
             public Path gameDir() {
                 return FMLPaths.GAMEDIR.get();
+            }
+
+            @Override
+            public List<Path> modPaths() {
+                IModFileInfo file = ModList.get().getModFileById(Blockpilot.MOD_ID);
+                if (file == null) {
+                    return List.of();
+                }
+                //? if >=26.1 {
+                /*return List.copyOf(file.getFile().getContents().getContentRoots());
+                *///?} else {
+                // This FML names only the primary path: the jar, or in a dev run the classes folder.
+                return List.of(file.getFile().getFilePath());
+                //?}
             }
 
             @Override

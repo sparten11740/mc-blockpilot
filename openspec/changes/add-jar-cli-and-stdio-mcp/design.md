@@ -63,7 +63,9 @@ executable for all) or `blockpilot.cmd` on Windows. It runs:
 - the classpath the loader loaded Blockpilot from, from a new
   `ClientPlatform.Services.modPaths()`: the mod file's path on NeoForge, the
   mod container's origin paths on Fabric. In dev runs these are the build
-  folders, which work as classpath entries too.
+  folders, which work as classpath entries too. On 1.21.1 NeoForge the loader
+  names only the primary path, which in a dev run is the classes folder.
+- `-Dblockpilot.version=<the version the game reports>`, for D5.
 - `dev.blockpilot.cli.Main --game-dir <absolute game dir>`, then the caller's
   arguments, so a later `--game-dir` wins.
 
@@ -101,8 +103,10 @@ including the `run` cheat sheet, input schemas), the supported protocol
 versions and the instructions text, as JSON built with D4's writer.
 `McpServer` parses it once into Gson, and the stdio server sends it as it is,
 so both transports list the same tools. `Help.cheatSheet()` reads from it. The
-`serverInfo` version is the jar's version, from a resource the build writes,
-so it is right in jars and in dev folders alike.
+`serverInfo` version is the `blockpilot.version` property the launcher sets
+from what the game reports. A resource in the jar would do for jars, but a
+1.21.1 NeoForge dev run puts only the classes folder on the launcher's
+classpath, not the resources.
 
 ### D6. The stdio server relays tool calls to the game's `/mcp`
 

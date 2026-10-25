@@ -5,7 +5,10 @@ import dev.blockpilot.platform.ClientPlatform;
 import java.nio.file.Path;
 //? if >=26.1 {
 /*import java.util.HashSet;
-import java.util.Set;
+*///?}
+import java.util.List;
+//? if >=26.1 {
+/*import java.util.Set;
 *///?}
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -25,6 +28,8 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.ModOrigin;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 //? if >=26.1 {
@@ -77,6 +82,15 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             @Override
             public Path gameDir() {
                 return FabricLoader.getInstance().getGameDir();
+            }
+
+            @Override
+            public List<Path> modPaths() {
+                return FabricLoader.getInstance().getModContainer(Blockpilot.MOD_ID)
+                    .map(ModContainer::getOrigin)
+                    .filter(origin -> origin.getKind() == ModOrigin.Kind.PATH)
+                    .map(ModOrigin::getPaths)
+                    .orElse(List.of());
             }
 
             @Override

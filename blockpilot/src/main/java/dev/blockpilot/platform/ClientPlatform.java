@@ -1,6 +1,8 @@
 package dev.blockpilot.platform;
 
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -30,6 +32,9 @@ public final class ClientPlatform {
         Path configDir();
 
         Path gameDir();
+
+        /** The jar, or in a dev run the folders, the loader loaded this mod from. */
+        List<Path> modPaths();
 
         /** Registers a key mapping; must be called while the mod is being constructed. */
         void registerKeyMapping(KeyMapping mapping);
@@ -114,6 +119,11 @@ public final class ClientPlatform {
 
     public static Path gameDir() {
         return services().gameDir();
+    }
+
+    /** Only plain files and folders: a jar nested in another mod's jar has none. */
+    public static List<Path> modPaths() {
+        return services().modPaths().stream().filter(path -> path.getFileSystem() == FileSystems.getDefault()).toList();
     }
 
     public static void registerKeyMapping(KeyMapping mapping) {
