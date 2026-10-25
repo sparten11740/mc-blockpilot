@@ -26,8 +26,10 @@ CLIENT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blockpilot.py
 PERCEPTION = ["status", "look 8", "find grass_block 4 2", "block ~0,-1,0", "block ~0,-1,0 side=server",
               "blocks ~-1,-1,-1 ~1,0,1", "screen", "worlds", "servers", "sounds limit=1", "messages limit=1",
               "particles", "log mark", "help look"]
-# What a client sends on its own while standing still: position reminders, keep-alives, chunk batch acks.
-BACKGROUND_PACKETS = {"move_player_pos", "move_player_status_only", "keep_alive", "chunk_batch_received"}
+# What a client sends on its own while standing still: position reminders, keep-alives, chunk batch acks, and from
+# 26.1 on the end of every client tick.
+BACKGROUND_PACKETS = {"move_player_pos", "move_player_status_only", "keep_alive", "chunk_batch_received",
+                      "client_tick_end"}
 SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1,0 side=server",
                  "blocks ~0,-1,0 ~1,-1,1", "worlds", "snapshot list", "tick query", "log mark",
                  "server time query day", "sample status every 1t x2", "wait status until ok", "help status",
