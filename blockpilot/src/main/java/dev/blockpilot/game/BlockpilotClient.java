@@ -305,13 +305,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
-    public long gameTime(boolean server) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (server) {
-            MinecraftServer integrated = minecraft.getSingleplayerServer();
-            return integrated == null ? -1 : integrated.overworld().getGameTime();
-        }
-        return minecraft.level == null ? -1 : minecraft.level.getGameTime();
+    public long gameTime() {
+        return GameClock.now();
     }
 
     @Override

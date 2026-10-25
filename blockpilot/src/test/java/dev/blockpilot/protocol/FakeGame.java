@@ -46,7 +46,7 @@ final class FakeGame implements GameBridge {
     }
 
     @Override
-    public long gameTime(boolean server) {
+    public long gameTime() {
         return time;
     }
 

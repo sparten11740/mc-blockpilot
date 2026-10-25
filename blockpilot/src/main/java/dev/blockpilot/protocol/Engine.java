@@ -294,7 +294,7 @@ public final class Engine {
         @Override
         public Result tick() {
             if (elapsed++ % interval == 0) {
-                long time = game.gameTime(serverClock);
+                long time = game.gameTime();
                 Fields fields = new Fields().put("tick", time, "t" + time);
                 Result result;
                 String gate = serverClock ? null : game.gate(query);
@@ -453,7 +453,7 @@ public final class Engine {
                 if (matches >= stable) {
                     Fields fields = new Fields().bare("elapsed", new Duration(elapsed).seconds() + "s");
                     if (serverClock) {
-                        long time = game.gameTime(true);
+                        long time = game.gameTime();
                         fields.put("tick", time, "t" + time);
                     }
                     return Result.ok(fields).with(condition.observed(last));

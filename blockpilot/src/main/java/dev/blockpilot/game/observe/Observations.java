@@ -2,6 +2,7 @@ package dev.blockpilot.game.observe;
 
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.game.GameClock;
 import dev.blockpilot.game.Ids;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -12,7 +13,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -50,10 +50,9 @@ public final class Observations {
         events = sink;
     }
 
-    /** The client level's game time, or -1 outside a world. */
+    /** The current tick (see {@link GameClock}), or -1 outside a world. */
     public static long tick() {
-        var level = Minecraft.getInstance().level;
-        return level == null ? -1 : level.getGameTime();
+        return GameClock.now();
     }
 
     public static synchronized void sound(SoundInstance sound) {
