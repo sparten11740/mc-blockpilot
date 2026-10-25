@@ -89,15 +89,17 @@ releases. The approach, in layers:
   that Sable ships for it (1.6.0 for 1.21.1). A node without a Sable build
   compiles without the compat package and behaves as without Sable.
 - **Version gate at start-up:**
-  - Read the companion version actually loaded (its jar manifest's
-    `Implementation-Version`), falling back to Sable's mod version.
+  - Read the companion version actually loaded. The companion is a mod
+    (`sablecompanion`) on both loaders, so the loader reports its version. No
+    version found counts as unsupported.
   - Accept the major version compiled against, at or above the pinned minor:
     1.x from 1.6 on. Additions within a major don't break existing calls.
   - Anything else turns the integration off. The log and `help sable` name the
     version found and the range supported, and the game runs as without Sable.
-- **Probe:** before switching on, a few harmless calls are made (resolving
-  `INSTANCE`, asking whether a plot chunk exists). This catches an
-  implementation that loads but doesn't link.
+- **Probe:** before switching on, `INSTANCE` is resolved and must be Sable's
+  implementation, not the companion's default. This catches a companion that
+  loads without Sable's implementation. Calls that need a world can't be made
+  at start-up, so the run-time guard covers them.
 - **Run-time linkage guard:**
   - Every compat method catches `LinkageError` (`NoSuchMethodError`,
     `NoClassDefFoundError`, `AbstractMethodError`, …).

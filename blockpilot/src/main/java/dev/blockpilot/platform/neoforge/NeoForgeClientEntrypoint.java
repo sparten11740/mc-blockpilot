@@ -56,6 +56,13 @@ public final class NeoForgeClientEntrypoint {
             }
 
             @Override
+            public String versionOf(String modId) {
+                return ModList.get().getModContainerById(modId)
+                    .map(container -> container.getModInfo().getVersion().toString())
+                    .orElse(null);
+            }
+
+            @Override
             public Path configDir() {
                 return FMLPaths.CONFIGDIR.get();
             }

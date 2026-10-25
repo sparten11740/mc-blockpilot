@@ -51,6 +51,11 @@ public final class Help {
             }
         }
         boolean meta = name.equals(CONSTRUCT_GROUP) && !namespaceOnly;
+        String disabled = registry.disabledReason(name);
+        if (group.isEmpty() && disabled != null) {
+            return Result.ok().withRows(List.of(Row.of(name, new Fields().bare("namespace", name)
+                .put("status", disabled, disabled))));
+        }
         if (group.isEmpty() && !meta) {
             return Result.error("syntax", "no help topic " + topic + "; try help");
         }

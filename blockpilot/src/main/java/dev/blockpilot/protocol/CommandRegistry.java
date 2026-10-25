@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,7 @@ public final class CommandRegistry {
 
     private final Map<String, Entry> commands = new LinkedHashMap<>();
     private final Map<String, List<Entry>> namespaces = new TreeMap<>();
+    private final Map<String, String> disabled = new ConcurrentHashMap<>();
 
     public void register(CommandSpec spec) {
         spec.freeze();
@@ -73,19 +75,30 @@ public final class CommandRegistry {
         }
     }
 
+    /** Hides a namespace's commands until restart; {@code help <namespace>} then gives the reason. */
+    public void disable(String namespace, String reason) {
+        disabled.put(namespace, reason);
+    }
+
+    /** Null unless the namespace is disabled. */
+    public String disabledReason(String namespace) {
+        return disabled.get(namespace);
+    }
+
     public Entry resolve(String name) {
-        return commands.get(name);
+        Entry entry = commands.get(name);
+        return entry == null || disabled.containsKey(entry.namespace()) ? null : entry;
     }
 
     public Collection<Entry> all() {
-        return commands.values();
+        return commands.values().stream().filter(entry -> !disabled.containsKey(entry.namespace())).toList();
     }
 
     public List<Entry> namespace(String namespace) {
-        return namespaces.getOrDefault(namespace, List.of());
+        return disabled.containsKey(namespace) ? List.of() : namespaces.getOrDefault(namespace, List.of());
     }
 
     public Collection<String> namespaces() {
-        return namespaces.keySet();
+        return namespaces.keySet().stream().filter(namespace -> !disabled.containsKey(namespace)).toList();
     }
 }

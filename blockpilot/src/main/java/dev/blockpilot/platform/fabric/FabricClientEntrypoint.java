@@ -44,6 +44,13 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             }
 
             @Override
+            public String versionOf(String modId) {
+                return FabricLoader.getInstance().getModContainer(modId)
+                    .map(container -> container.getMetadata().getVersion().getFriendlyString())
+                    .orElse(null);
+            }
+
+            @Override
             public Path configDir() {
                 return FabricLoader.getInstance().getConfigDir();
             }

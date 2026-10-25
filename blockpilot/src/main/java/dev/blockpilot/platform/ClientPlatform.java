@@ -24,6 +24,9 @@ public final class ClientPlatform {
 
         boolean isModLoaded(String modId);
 
+        /** Null when no mod with that id is loaded. */
+        String versionOf(String modId);
+
         Path configDir();
 
         Path gameDir();
@@ -99,6 +102,10 @@ public final class ClientPlatform {
 
     public static boolean isModLoaded(String modId) {
         return services().isModLoaded(modId);
+    }
+
+    public static String versionOf(String modId) {
+        return services().versionOf(modId);
     }
 
     public static Path configDir() {

@@ -16,6 +16,7 @@ import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
+import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Config;
@@ -100,6 +101,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         Observations.setEventSink(engine::broadcast);
         LogCapture.setSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
+        SableSupport.start(registry);
         registry.addExtensions(BlockpilotApi.freeze(engine::broadcast));
         HumanInput.setListener(this::onHumanInput);
         try {
