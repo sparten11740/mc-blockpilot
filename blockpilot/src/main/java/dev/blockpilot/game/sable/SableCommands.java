@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -44,7 +45,7 @@ final class SableCommands {
             .help("the sub-levels within radius (default " + DEFAULT_RADIUS + ") of the player, nearest first")
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("dist", "blocks from the player").field("speed", "blocks per second")
-            .field("size", "blocks along x, y and z as built").example("sable:list 64"));
+            .field("size", "blocks along x, y and z of its plot bounds").example("sable:list 64"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD)
             .help("one sub-level's pose, velocity and bounds; " + REFERENCE)
@@ -52,9 +53,18 @@ final class SableCommands {
             .field("yaw", "degrees turned from how it was built; 90 is a quarter turn west")
             .field("pitch", "degrees, nose down positive").field("roll", "degrees, right side down positive")
             .field("speed", "blocks per second").field("vel", "blocks per second along x, y and z")
-            .field("box", "world bounds").field("plot", "plot bounds")
+            .field("box", "world bounds").field("plot", "plot bounds, looser while it is turned")
             .field("rides", "the player stands on or rides it")
             .example("sable:info here"));
+        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("world", SableCommands::world)
+            .needsWorld().arg("pos", ArgType.POSITION)
+            .help("where a point in a sub-level's plot is in the world now")
+            .field("world", "world position").field("sub", "the sub-level whose plot holds the point")
+            .example("sable:world 20481032.5,129.5,20481033.5"));
+        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("plot", SableCommands::plot)
+            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("pos", ArgType.POSITION)
+            .help("the point in a sub-level's plot that is at a world position now; " + REFERENCE)
+            .field("plot", "plot position").field("sub", "the sub-level").example("sable:plot here ~0,1,0"));
     }
 
     private static Result list(CommandContext context, Args args) {
@@ -86,6 +96,29 @@ final class SableCommands {
             .put("box", bounds(info.worldBounds()), "box=" + boundsText(info.worldBounds()))
             .put("plot", bounds(info.plotBounds()), "plot=" + boundsText(info.plotBounds()))
             .put("rides", rides));
+    }
+
+    private static Result world(CommandContext context, Args args) throws CommandException {
+        Level level = Minecraft.getInstance().level;
+        Position point = context.resolve(args.position("pos"));
+        Vec3 plot = new Vec3(point.x(), point.y(), point.z());
+        SubLevels.Info info = SableSupport.subLevels().at(level, BlockPos.containing(plot));
+        if (info == null) {
+            throw new CommandException("no_sublevel", point + " is in no sub-level's plot");
+        }
+        return Result.ok(new Fields().bare("world", Rel.absolute(SableSupport.subLevels().toWorld(level, plot)))
+            .put("sub", info.name()));
+    }
+
+    private static Result plot(CommandContext context, Args args) throws CommandException {
+        SubLevels.Info info = resolve(args, "sub");
+        Position point = context.resolve(args.position("pos"));
+        Vec3 plot = SableSupport.subLevels().toPlot(Minecraft.getInstance().level, info.id(),
+            new Vec3(point.x(), point.y(), point.z()));
+        if (plot == null) {
+            throw new CommandException("no_sublevel", info.id().toString());
+        }
+        return Result.ok(new Fields().bare("plot", Rel.absolute(plot)).put("sub", info.name()));
     }
 
     /** The sub-level an argument names: {@code here}, a UUID or a name; fails when it names none, or a name several. */

@@ -16,7 +16,10 @@ import net.minecraft.world.phys.Vec3;
  * a frame or tick hook, must catch.
  */
 public interface SubLevels {
-    /** A sub-level as it lies now; angles in Minecraft's yaw, pitch and roll, velocity in blocks per second. */
+    /**
+     * A sub-level as it lies now; angles in Minecraft's yaw, pitch and roll, velocity in blocks per second. The plot
+     * bounds come from the world bounds turned back, so they hold the sub-level but grow while it is turned.
+     */
     record Info(UUID id, String name, Vec3 position, Vec3 velocity, float yaw, float pitch, float roll,
         AABB worldBounds, AABB plotBounds) {
     }
