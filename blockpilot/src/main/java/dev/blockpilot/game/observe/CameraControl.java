@@ -48,11 +48,15 @@ public final class CameraControl {
         }
         options.hideGui = true;
         placement = value;
+        // Until the next frame records them, report the placed camera's own angles, not the previous view's.
+        float[] angles = value.angles();
+        rendered = new Angles(angles[0], angles[1], 0);
     }
 
     /** Back to the player's view, restoring the GUI setting. Client thread. */
     public static void reset() {
         placement = null;
+        rendered = null;
         if (hiddenGuiBefore != null) {
             Minecraft.getInstance().options.hideGui = hiddenGuiBefore;
             hiddenGuiBefore = null;
