@@ -50,6 +50,37 @@ def connect(game_dir, deadline, timeout):
             time.sleep(1)
 
 
+def summary(results):
+    """One stderr line when steps failed or were skipped, else None; results are (kind, code, argument) tuples."""
+    errors = [result for result in results if result[0] == "err"]
+    skips = sum(1 for result in results if result[0] == "skip")
+    if not errors and not skips:
+        return None
+    line = f"blockpilot: {len(errors)} err, {skips} skip"
+    # The parser refuses a script with a syntax error: that step answers "err syntax col <n>: …", every other skip.
+    if len(errors) == 1 and errors[0][1] == "syntax" and errors[0][2].startswith("col ") and 1 + skips == len(results):
+        return line + " (a syntax error, so nothing ran)"
+    return line + " (nothing after the error ran)" if skips else line
+
+
+def text_results(reply):
+    """(kind, code, argument) per result line of a text reply; rows are indented and events start with !."""
+    results = []
+    for line in reply.splitlines():
+        if line.startswith((" ", "!")) or not line:
+            continue
+        words = line.split(" ", 3)
+        if words[0].startswith("#"):
+            words = words[1:]
+        results.append((words[0], words[1] if len(words) > 1 else "", " ".join(words[2:])))
+    return results
+
+
+def json_results(reply):
+    return [("skip", "", "") if result.get("skip") else ("ok", "", "") if result.get("ok")
+            else ("err", result.get("err", ""), result.get("arg", "")) for result in json.loads(reply)["results"]]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("script", help="commands separated by ;")
@@ -107,12 +138,11 @@ def main():
     send(args.script.replace("\n", "; "))
     reply = stream.readline().decode("utf-8").rstrip("\n") if args.json else text_reply()
     print(reply)
-    if reply.startswith("{"):
-        results = json.loads(reply)["results"]
-        return 0 if all(result.get("ok") for result in results) else 1
-    words = [line.split() for line in reply.splitlines()]
-    failed = any(w[:1] == ["err"] or (w[:1] and w[0].startswith("#") and w[1:2] == ["err"]) for w in words)
-    return 1 if failed else 0
+    results = json_results(reply) if reply.startswith("{") else text_results(reply)
+    line = summary(results)
+    if line:
+        print(line, file=sys.stderr)
+    return 1 if any(result[0] == "err" for result in results) else 0
 
 
 if __name__ == "__main__":
