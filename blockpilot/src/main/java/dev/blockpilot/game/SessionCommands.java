@@ -30,8 +30,10 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.LevelSummary;
 import net.minecraft.world.level.storage.WorldData;
 
-/** Getting into and out of games: listing saves and servers, joining, leaving, respawning. */
+/** Getting into and out of games: listing saves and servers, joining, leaving, quitting, respawning. */
 final class SessionCommands {
+    private static final int QUIT_DELAY_TICKS = 5;
+
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("worlds", (context, args) -> worlds()).group("session")
             .help("singleplayer saves, most recently played first").example("worlds"));
@@ -44,6 +46,9 @@ final class SessionCommands {
             .example("join world New World"));
         registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
             .help("saves and quits singleplayer or disconnects, back to the title screen").example("leave"));
+        registry.register(CommandSpec.action("quit", (context, args) -> quit()).group("session")
+            .help("leaves the world as leave does, answers with the game's process id, then closes the game")
+            .field("pid", "the game's process id; it exits shortly after the reply").example("quit"));
         registry.register(CommandSpec.action("respawn", (context, args) -> respawn()).needsWorld().group("session")
             .help("respawns from the death screen").example("respawn"));
     }
@@ -204,6 +209,21 @@ final class SessionCommands {
         disconnect();
         BlockpilotClient.restoreOptions("the agent left the world");
         return () -> minecraft().level == null ? Result.ok() : null;
+    }
+
+    private Action quit() {
+        if (minecraft().level != null) {
+            disconnect();
+            BlockpilotClient.restoreOptions("the agent quit the game");
+        }
+        return () -> {
+            if (minecraft().level != null) {
+                return null;
+            }
+            // The reply goes out on the endpoint's threads; closing a few ticks later lets it leave first.
+            BlockpilotClient.get().closeAfter(QUIT_DELAY_TICKS);
+            return Result.ok(new Fields().put("pid", ProcessHandle.current().pid()));
+        };
     }
 
     /** Called when the world has gone; true when Blockpilot left it (and the flag is cleared). */

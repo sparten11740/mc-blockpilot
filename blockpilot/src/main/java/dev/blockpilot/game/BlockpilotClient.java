@@ -63,6 +63,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private long ticks;
     private boolean autoJoined;
     private boolean wasInWorld;
+    /** Ticks until the game closes after {@code quit}, or -1. */
+    private int closeIn = -1;
     private final AgentPresence presence = new AgentPresence();
 
     private BlockpilotClient() {
@@ -184,6 +186,14 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         InputState.reassert();
         events.tick();
         engine.tickClient();
+        if (closeIn > 0 && --closeIn == 0) {
+            Minecraft.getInstance().stop();
+        }
+    }
+
+    /** Closes the game after that many ticks, as its Quit Game button does. */
+    void closeAfter(int ticks) {
+        closeIn = ticks;
     }
 
     static void restoreOptions(String reason) {
