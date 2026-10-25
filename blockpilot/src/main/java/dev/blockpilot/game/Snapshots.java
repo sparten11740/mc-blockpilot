@@ -42,7 +42,7 @@ final class Snapshots {
                 + "save and restore leave the world, copy, and join it again")
             .example("snapshot save base"));
         registry.register(CommandSpec.action("delete", this::delete).group("session")
-            .choice("what", false, "world").arg("folder", ArgType.TEXT)
+            .keyword("what", "world").arg("folder", ArgType.TEXT)
             .help("delete world <folder>: removes a test world made by create world (and its snapshots); other "
                 + "saves are refused").example("delete world aerolarge-test"));
     }

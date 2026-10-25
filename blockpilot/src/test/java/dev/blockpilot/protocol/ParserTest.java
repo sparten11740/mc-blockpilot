@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.blockpilot.api.Action;
 import dev.blockpilot.api.ArgType;
+import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Result;
@@ -26,13 +27,13 @@ class ParserTest {
     ParserTest() {
         registry.register(CommandSpec.query("status", QUERY));
         registry.register(CommandSpec.query("look", QUERY).optionalArg("radius", ArgType.INT).diffable());
-        registry.register(CommandSpec.query("inv", QUERY).choice("detail", true, "detail").diffable());
+        registry.register(CommandSpec.query("inv", QUERY).optionalKeyword("detail", "detail").diffable());
         registry.register(CommandSpec.query("block", QUERY).arg("pos", ArgType.POSITION).option("side", "where"));
         registry.register(CommandSpec.query("probe", QUERY).onServer());
         registry.register(CommandSpec.query("note", QUERY).form(form -> form.optionalText("text")));
         registry.register(CommandSpec.action("mine", ACTION)
             .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID)
-            .optionalArg("count", ArgType.COUNT).option("near", "distance"));
+            .optionalArg("count", ArgType.COUNT).option("near", "distance", ArgType.NUMBER));
         registry.register(CommandSpec.action("mouse", ACTION)
             .form(form -> form.keyword("op", "down", "up").keyword("button", "left", "right", "middle"))
             .form(form -> form.keyword("op", "click").keyword("button", "left", "right", "middle")
@@ -46,12 +47,12 @@ class ParserTest {
         registry.register(CommandSpec.action("chat", ACTION).arg("text", ArgType.TEXT));
         registry.register(CommandSpec.action("server", ACTION).arg("command", ArgType.TEXT).option("as", "who")
             .onServer());
-        registry.register(CommandSpec.action("create", ACTION).choice("what", false, "world")
-            .arg("name", ArgType.WORD).choice("preset", true, "flat", "void").option("seed", "seed")
+        registry.register(CommandSpec.action("create", ACTION).keyword("what", "world")
+            .arg("name", ArgType.WORD).optionalKeyword("preset", "flat", "void").option("seed", "seed")
             .option("rule:*", "game rule"));
         registry.register(CommandSpec.query("nest", QUERY)
-            .form(form -> form.optional(outer -> outer.optional(inner -> inner.keyword("x", "x"))
-                .arg("n", ArgType.INT))));
+            .form(form -> form.optional(outer -> outer.keyword("x", "x")
+                .optional(inner -> inner.arg("n", ArgType.INT)))));
         registry.register(CommandSpec.query("solo", QUERY).form(form -> { }).form(form -> form.keyword("op", "a")));
         registry.register(CommandSpec.query("duo", QUERY).form(form -> form.keyword("op", "a")).form(form -> { }));
         registry.register(CommandSpec.query("twin", QUERY)
@@ -108,11 +109,11 @@ class ParserTest {
         Statement.Call mine = call("mine #logs x6");
         assertEquals("mine", mine.entry().qualifiedName());
         assertEquals("#logs", mine.args().word("target"));
-        assertEquals(ArgType.TAG, mine.args().kind("target"));
-        assertEquals(ArgType.COUNT, mine.args().kind("count"));
-        assertEquals(ArgType.POSITION, call("mine ~0,-1,0").args().kind("target"));
-        assertEquals(ArgType.PATTERN, call("mine *ore*").args().kind("target"));
-        assertEquals(ArgType.ID, call("mine create:cogwheel").args().kind("target"));
+        assertEquals(ArgType.TAG, mine.args().type("target"));
+        assertEquals(ArgType.COUNT, mine.args().type("count"));
+        assertEquals(ArgType.POSITION, call("mine ~0,-1,0").args().type("target"));
+        assertEquals(ArgType.PATTERN, call("mine *ore*").args().type("target"));
+        assertEquals(ArgType.ID, call("mine create:cogwheel").args().type("target"));
         assertFalse(call("mine").args().has("target"));
     }
 
@@ -135,40 +136,56 @@ class ParserTest {
     @Test
     void optionalGroupsAreTakenWhenTheirFirstPartFits() {
         Statement.Call looking = call("camera at 1,2,3 look e5");
-        assertEquals(ArgType.ENTITY, looking.args().kind("target"));
+        assertEquals(ArgType.ENTITY, looking.args().type("target"));
         assertFalse(call("camera at 1,2,3").args().has("look"));
         assertEquals("reset", call("camera reset").args().word("op"));
         assertEquals("col 22: missing <target> (a position x,y,z or ~dx,dy,dz or an entity e<id>); camera at <pos> "
             + "[look <target>]", error("camera at 1,2,3 look"));
-        assertEquals("x", call("nest x 5").args().word("x"));
-        assertEquals("col 6: unexpected 5; nest [[x] <n>]", error("nest 5"));
-        assertFalse(call("nest").args().has("n"));
+        assertEquals("5", call("nest x 5").args().word("n"));
+        assertFalse(call("nest x").args().has("n"));
+        assertEquals("col 6: unexpected 5; nest [x [<n>]]", error("nest 5"));
+        assertFalse(call("nest").args().has("x"));
     }
 
     @Test
     void optionsStandAnywhereOnceEach() {
         Statement.Call mine = call("mine timeout=90 #logs near=3 x6");
-        assertEquals(Map.of("timeout", "90", "near", "3"), mine.args().options());
-        assertEquals("col 22: timeout= given twice; mine [target] [count] [near=…]",
+        assertEquals(Map.of("timeout", new Args.Value("90", ArgType.SECONDS), "near", new Args.Value("3",
+            ArgType.NUMBER)), mine.args().options());
+        assertEquals("col 22: timeout= given twice; mine [target] [count] [near=number]",
             error("mine #logs timeout=9 timeout=90"));
         assertEquals("col 8: unknown option foo= (takes none); status", error("status foo=1"));
         // Only actions take timeout=.
         assertEquals("col 6: unknown option timeout= (takes none); look [radius]", error("look timeout=5"));
         assertEquals("col 13: unknown option bogus= (takes side=); block <pos> [side=…]",
             error("block 1,2,3 bogus=1"));
-        assertEquals("col 6: unknown option rule:x= (takes near=, timeout=); mine [target] [count] [near=…]",
+        assertEquals("col 6: unknown option rule:x= (takes near=, timeout=); mine [target] [count] [near=number]",
             error("mine rule:x=1"));
         assertEquals("col 8: unknown option bogus= (takes timeout=); camera at <pos> [look <target>] | "
             + "camera reset", error("camera bogus=1"));
         Statement.Call create = call("create world w1 flat rule:doDaylightCycle=false seed=5");
         assertEquals(Map.of("doDaylightCycle", "false"), create.args().family("rule"));
         assertEquals("5", create.args().option("seed"));
+        assertEquals("col 8: unknown option bogus= (takes seed=, rule:<name>=, timeout=); create world <name> "
+            + "[flat|void] [seed=…] [rule:<name>=…]", error("create bogus=1 world w1"));
+    }
+
+    @Test
+    void optionValuesAreCheckedBeforeRunning() {
+        List<Parser.Line> lines = parser.script("status; mine near=abc");
+        assertNull(lines.get(0).error());
+        assertEquals("col 6: near= takes a number, got abc; mine [target] [count] [near=number]",
+            lines.get(1).error());
+        assertEquals("col 6: timeout= takes a duration like 20t or 3s or seconds like 30 or 0.5, got -5; mine "
+            + "[target] [count] [near=number]", error("mine timeout=-5"));
+        assertEquals(ArgType.DURATION, call("mine timeout=5s").args().optionType("timeout"));
+        assertEquals(ArgType.TEXT, call("block 1,2,3 side=anything").args().optionType("side"));
     }
 
     @Test
     void textTakesTheRestOfTheStep() {
         assertEquals("hello  world", call("chat hello  world  ").args().text("text"));
-        assertEquals(ArgType.TEXT, call("chat hi").args().kind("text"));
+        assertEquals(ArgType.TEXT, call("chat hi").args().type("text"));
         assertEquals("a=b c", call("chat a=b c").args().text("text"));
         assertEquals("hi; there", call("chat hi\\; there").args().text("text"));
         Statement.Call server = call("server as=player time set day");
@@ -293,7 +310,7 @@ class ParserTest {
         CommandRegistry.Entry mine = registry.resolve("mine");
         assertEquals("#logs", Parser.example(mine, "mine #logs x3").args().word("target"));
         Parser.SyntaxError wrong = assertThrows(Parser.SyntaxError.class, () -> Parser.example(mine, "mine 1,2"));
-        assertEquals("col 6: unexpected 1,2; mine [target] [count] [near=…]", wrong.getMessage());
+        assertEquals("col 6: unexpected 1,2; mine [target] [count] [near=number]", wrong.getMessage());
         assertThrows(Parser.SyntaxError.class, () -> Parser.example(mine, "mine; mine"));
         assertThrows(Parser.SyntaxError.class, () -> Parser.example(mine, " "));
     }

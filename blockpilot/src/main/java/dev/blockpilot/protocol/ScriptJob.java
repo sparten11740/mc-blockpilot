@@ -293,7 +293,7 @@ final class ScriptJob implements CommandContext {
         if (!result.isOk() || rows == null) {
             return result;
         }
-        String key = call.entry().qualifiedName() + " " + call.args().values() + call.args().options();
+        String key = call.entry().qualifiedName() + " " + call.args().arguments() + call.args().options();
         List<Row> previous = session.swapRows(key, rows);
         if (previous == null || call.full()) {
             return result;

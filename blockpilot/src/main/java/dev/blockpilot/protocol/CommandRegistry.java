@@ -23,6 +23,7 @@ public final class CommandRegistry {
     private final Map<String, List<Entry>> namespaces = new TreeMap<>();
 
     public void register(CommandSpec spec) {
+        spec.freeze();
         String problem = exampleProblem(spec);
         if (problem != null) {
             throw new IllegalStateException("Example of built-in command " + spec.name() + " does not parse: "
@@ -46,7 +47,10 @@ public final class CommandRegistry {
         }
     }
 
-    /** Adds extension commands; the first registration of a name wins, later ones are logged and ignored. */
+    /**
+     * Adds extension commands; the first registration of a name wins, later ones are logged and ignored, and so is
+     * one whose example doesn't parse.
+     */
     public void addExtensions(Collection<BlockpilotApi.Registration> registrations) {
         for (BlockpilotApi.Registration registration : registrations) {
             String name = registration.qualifiedName();
@@ -58,7 +62,9 @@ public final class CommandRegistry {
             }
             String problem = exampleProblem(registration.spec());
             if (problem != null) {
-                LOGGER.warn("Example of {} (from {}) does not parse: {}", name, registration.registrant(), problem);
+                LOGGER.error("Example of {} (from {}) does not parse, so the command is ignored: {}", name,
+                    registration.registrant(), problem);
+                continue;
             }
             Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec());
             commands.put(name, entry);

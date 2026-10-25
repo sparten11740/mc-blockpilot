@@ -56,27 +56,29 @@ final class ActionCommands {
             .help("sets the camera to yaw/pitch (degrees), optionally smoothed over a duration")
             .example("turn 90 20 10t"));
         registry.register(CommandSpec.action("move", this::move).needsWorld().group("movement")
-            .choice("dir", false, "forward", "back", "left", "right").arg("amount", ArgType.NUMBER, ArgType.DURATION)
+            .keyword("dir", "forward", "back", "left", "right").arg("amount", ArgType.NUMBER, ArgType.DURATION)
             .help("holds a movement key for <blocks> or <Nt> ticks").example("move forward 3"));
         registry.register(CommandSpec.action("jump", (context, args) -> pulse(context, options().keyJump, 2, "jump"))
             .needsWorld().group("movement").help("one jump").example("jump"));
         registry.register(CommandSpec.action("sneak", (context, args) -> toggle(context, options().keyShift,
-            args.word("state"))).needsWorld().group("movement").choice("state", false, "on", "off")
+            args.word("state"))).needsWorld().group("movement").keyword("state", "on", "off")
             .help("holds or releases sneak").example("sneak on"));
         registry.register(CommandSpec.action("sprint", (context, args) -> toggle(context, options().keySprint,
-            args.word("state"))).needsWorld().group("movement").choice("state", false, "on", "off")
+            args.word("state"))).needsWorld().group("movement").keyword("state", "on", "off")
             .help("holds or releases sprint").example("sprint on"));
         registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("movement")
-            .choice("state", false, "on", "off")
+            .keyword("state", "on", "off")
             .help("starts or stops flying where the game mode allows it (creative, spectator); fly on holds through "
                 + "landings and teleports until fly off").example("fly on"));
         registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("movement")
-            .arg("target", ArgType.POSITION, ArgType.ENTITY).option("near", "stop within this many blocks")
+            .arg("target", ArgType.POSITION, ArgType.ENTITY)
+            .option("near", "stop within this many blocks", ArgType.NUMBER)
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
             .field("took", "seconds").example("goto 120,64,-30"));
         registry.register(CommandSpec.action("use", this::use).needsWorld().group("interact")
-            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).choice("sneak", true, "sneak")
-            .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)")
+            .optionalArg("target", ArgType.POSITION, ArgType.ENTITY).optionalKeyword("sneak", "sneak")
+            .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)",
+                ArgType.DURATION, ArgType.SECONDS)
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit")
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
@@ -180,7 +182,7 @@ final class ActionCommands {
     /** A point to look at: an entity's center, a block's center for whole coordinates, else the exact point. */
     /** The point a position or entity argument names; an entity's centre follows it. */
     static Supplier<Vec3> point(CommandContext context, Args args, String name) throws CommandException {
-        if (args.kind(name) == ArgType.ENTITY) {
+        if (args.type(name) == ArgType.ENTITY) {
             Entity entity = minecraft().level.getEntity(args.entity(name).id());
             if (entity == null) {
                 throw new CommandException("no_entity", args.word(name));
@@ -329,7 +331,7 @@ final class ActionCommands {
 
     private Action navigate(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        boolean entityTarget = args.kind("target") == ArgType.ENTITY;
+        boolean entityTarget = args.type("target") == ArgType.ENTITY;
         double near = args.numberOption("near", entityTarget ? 2 : 0);
         Supplier<Vec3> target;
         if (entityTarget) {
@@ -430,7 +432,7 @@ final class ActionCommands {
         String token = args.word("target");
         int wanted = args.count("count", 1);
         Supplier<Entity> next;
-        if (args.kind("target") == ArgType.ENTITY) {
+        if (args.type("target") == ArgType.ENTITY) {
             EntityRef ref = args.entity("target");
             next = () -> minecraft().level.getEntity(ref.id());
         } else {
@@ -511,7 +513,7 @@ final class ActionCommands {
             }
             return new Dig(session, () -> blockHit.getBlockPos(), 1, false, null);
         }
-        if (args.kind("target") == ArgType.POSITION) {
+        if (args.type("target") == ArgType.POSITION) {
             BlockPos pos = Rel.block(context.resolve(args.position("target")));
             if (Vec3.atCenterOf(pos).distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
                 throw new CommandException("out_of_reach", Rel.of(pos).toString());
@@ -700,7 +702,7 @@ final class ActionCommands {
 
     private Action select(CommandContext context, Args args) throws CommandException {
         closeScreen();
-        if (args.kind("what") == ArgType.INT) {
+        if (args.type("what") == ArgType.INT) {
             int slot = args.integer("what", 0);
             if (slot < 0 || slot > 8) {
                 throw new CommandException("syntax", "hotbar slots are 0-8, not " + slot);
@@ -727,7 +729,7 @@ final class ActionCommands {
         closeScreen();
         String what = args.word("what");
         int menuSlot;
-        if (args.kind("what") != ArgType.ID) {
+        if (args.type("what") != ArgType.ID) {
             menuSlot = InventoryOps.menuSlotOf(what);
         } else {
             int index = InventoryOps.find(InventoryOps.item(what));

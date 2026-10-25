@@ -48,9 +48,10 @@ final class ServerCommands {
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("server", this::server).onServer().group("integrated")
-            .arg("command", ArgType.TEXT).option("as", "player: run as the player, at the player's position")
+            .arg("command", ArgType.TEXT).option("as", "player: run as the player, at the player's position",
+                List.of("player"))
             .option("settle", "server ticks to wait before answering so the client has the changes (default 2t; "
-                + "0t for pure probes)")
+                + "0t for pure probes)", ArgType.DURATION, ArgType.SECONDS)
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
                 + "every feedback line; options go before the command (server as=player settle=0t <command>)")
             .field("result", "the command's return value").field("success", "true/false")
@@ -164,8 +165,8 @@ final class ServerCommands {
         String token = args.word("target");
         ServerLevel level = serverLevel();
         CompoundTag data;
-        if (args.kind("target") != ArgType.POSITION) {
-            Entity entity = args.kind("target") == ArgType.ENTITY ? level.getEntity(args.entity("target").id())
+        if (args.type("target") != ArgType.POSITION) {
+            Entity entity = args.type("target") == ArgType.ENTITY ? level.getEntity(args.entity("target").id())
                 : findEntity(UUID.fromString(token));
             if (entity == null) {
                 throw new CommandException("no_entity", token);

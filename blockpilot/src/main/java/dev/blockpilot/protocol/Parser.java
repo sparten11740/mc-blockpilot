@@ -123,8 +123,7 @@ final class Parser {
                     matcher.elements(spec.forms().get(form).elements());
                     matcher.finish();
                     index = end;
-                    return new Statement.Call(entry,
-                        new Args(matcher.values, matcher.kinds, matcher.options), matcher.full);
+                    return new Statement.Call(entry, new Args(matcher.arguments, matcher.options), matcher.full);
                 } catch (Mismatch mismatch) {
                     best = Mismatch.better(best, mismatch.withUsage(usages.get(form)));
                 }
@@ -280,7 +279,7 @@ final class Parser {
             if (Lexicon.isDuration(value)) {
                 return Duration.parse(value);
             }
-            if (seconds && Lexicon.isDecimal(value) && !value.startsWith("-")) {
+            if (seconds && Lexicon.isSeconds(value)) {
                 return Duration.seconds(Double.parseDouble(value));
             }
             String name = option.text().substring(0, option.text().indexOf('='));
@@ -328,9 +327,8 @@ final class Parser {
             private final CommandSpec spec;
             private final int end;
             private int position;
-            private final Map<String, String> values = new LinkedHashMap<>();
-            private final Map<String, ArgType> kinds = new LinkedHashMap<>();
-            private final Map<String, String> options = new LinkedHashMap<>();
+            private final Map<String, Args.Value> arguments = new LinkedHashMap<>();
+            private final Map<String, Args.Value> options = new LinkedHashMap<>();
             private boolean full;
 
             Matcher(CommandSpec spec, int from, int end) {
@@ -346,7 +344,7 @@ final class Parser {
                         case Slot slot -> slot(slot);
                         case Form.Group group -> {
                             options(false);
-                            if (position < end && fits(group)) {
+                            if (position < end && group.first().match(tokens.get(position).text()) != null) {
                                 elements(group.elements());
                             }
                         }
@@ -358,8 +356,7 @@ final class Parser {
                 options(false);
                 ArgType type = position < end ? slot.match(tokens.get(position).text()) : null;
                 if (type != null) {
-                    values.put(slot.name(), tokens.get(position).text());
-                    kinds.put(slot.name(), type);
+                    arguments.put(slot.name(), new Args.Value(tokens.get(position).text(), type));
                     position++;
                 } else if (!slot.optional()) {
                     throw expectation(slot.expectation());
@@ -371,20 +368,11 @@ final class Parser {
                 int to = end < tokens.size() ? tokens.get(end).offset() : source.length();
                 String text = position < end ? source.substring(tokens.get(position).offset(), to).strip() : "";
                 if (!text.isEmpty()) {
-                    values.put(slot.name(), text);
-                    kinds.put(slot.name(), ArgType.TEXT);
+                    arguments.put(slot.name(), new Args.Value(text, ArgType.TEXT));
                     position = end;
                 } else if (!slot.optional()) {
                     throw expectation("<" + slot.name() + "> (text)");
                 }
-            }
-
-            /** Whether the group's first part takes the next token (groups never hold text). */
-            private boolean fits(Form.Group group) {
-                return switch (group.elements().get(0)) {
-                    case Slot slot -> slot.match(tokens.get(position).text()) != null;
-                    case Form.Group inner -> fits(inner);
-                };
             }
 
             void finish() throws Mismatch {
@@ -409,40 +397,35 @@ final class Parser {
                         return;
                     }
                     String name = token.substring(0, equals);
-                    if (!declared(name)) {
+                    CommandSpec.Option option = spec.findOption(name);
+                    if (option == null) {
                         if (textMayFollow) {
                             return;
                         }
+                        List<String> names = optionNames();
                         throw new Mismatch(position, null, token, "unknown option " + name + "= ("
-                            + (takesOptions() ? "takes " + String.join("=, ", optionNames()) + "=" : "takes none")
-                            + ")");
+                            + (names.isEmpty() ? "takes none" : "takes " + String.join("=, ", names) + "=") + ")");
                     }
-                    if (options.put(name, token.substring(equals + 1)) != null) {
+                    String value = token.substring(equals + 1);
+                    ArgType type = option.value().isText() ? ArgType.TEXT : option.value().match(value);
+                    if (type == null) {
+                        throw new Mismatch(position, null, token, name + "= takes " + option.expectation()
+                            + ", got " + value);
+                    }
+                    if (options.put(name, new Args.Value(value, type)) != null) {
                         throw new Mismatch(position, null, token, name + "= given twice");
                     }
                     position++;
                 }
             }
 
-            private boolean declared(String name) {
-                int colon = name.indexOf(':');
-                return spec.options().containsKey(name)
-                    || colon > 0 && spec.options().containsKey(name.substring(0, colon) + ":*")
-                    || isAction() && name.equals("timeout");
-            }
-
-            private boolean isAction() {
-                return spec.kind() == CommandSpec.Kind.ACTION;
-            }
-
-            private boolean takesOptions() {
-                return !spec.options().isEmpty() || isAction();
-            }
-
             private List<String> optionNames() {
-                List<String> names = new ArrayList<>(spec.options().keySet());
-                if (isAction()) {
-                    names.add("timeout");
+                List<String> names = new ArrayList<>();
+                for (CommandSpec.Option option : spec.options().values()) {
+                    names.add(option.usageName());
+                }
+                if (spec.kind() == CommandSpec.Kind.ACTION) {
+                    names.add(CommandSpec.TIMEOUT.name());
                 }
                 return names;
             }

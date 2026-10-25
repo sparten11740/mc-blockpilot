@@ -163,9 +163,10 @@ one of `ok`, `until`, `every`, `then`, `and` and `full`.
 ### Requirement: Unambiguous forms
 Registration SHALL reject forms whose parts can't all be reached: two slots of
 one form with the same name, a slot type that an earlier type of the same slot
-always takes first (any type after `word`, `integer` after `number`), an
-optional slot whose types could take a token the next part is meant for, and
-an optional group whose first part is optional.
+always takes first (any type after `word`, `integer` or `seconds` after
+`number`), an optional slot whose types could take a token the next part is
+meant for (text, which takes any token, excepted), and an optional group whose
+first part is optional.
 
 #### Scenario: Optional word before a number
 - **WHEN** an extension declares a form `[name:word] <amount:integer>`

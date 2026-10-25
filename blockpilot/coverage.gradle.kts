@@ -1,5 +1,5 @@
-// The command language's lexer, lexicon, parser and grammar printer are covered completely by the unit tests (design
-// D13): check fails below 100% of their lines and branches. Applied by both loaders' builds.
+// The command language's lexer, lexicon, parser, grammar printer and declaration API are covered completely by the
+// unit tests (design D13): check fails below 100% of their lines and branches. Applied by both loaders' builds.
 import java.math.BigDecimal
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -7,7 +7,13 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 apply(plugin = "jacoco")
 
 val parserClasses = listOf(
+    "dev.blockpilot.api.ArgType*",
+    "dev.blockpilot.api.Args*",
+    "dev.blockpilot.api.CommandSpec*",
+    "dev.blockpilot.api.Form*",
     "dev.blockpilot.api.Lexicon*",
+    "dev.blockpilot.api.Point*",
+    "dev.blockpilot.api.Slot*",
     "dev.blockpilot.protocol.Lexer*",
     "dev.blockpilot.protocol.Parser*",
     "dev.blockpilot.protocol.Grammar*",

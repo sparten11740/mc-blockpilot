@@ -16,14 +16,16 @@ public enum ArgType {
     NUMBER("number", "a number", Lexicon::isDecimal),
     COUNT("count", "a count x<n>", Lexicon::isCount),
     DURATION("duration", "a duration like 20t or 3s", Lexicon::isDuration),
+    /** A plain number of seconds, as {@code timeout=30} takes it. */
+    SECONDS("seconds", "seconds like 30 or 0.5", Lexicon::isSeconds),
     ID("id", "an id like stone or create:cogwheel", Lexicon::isId),
     TAG("tag", "a tag like #logs", Lexicon::isTag),
     PATTERN("pattern", "a pattern like *ore*", Lexicon::isPattern),
     WORD("word", "a word", Lexicon::isWord),
     /** The rest of the step as written; only as a form's last slot. */
-    TEXT("text", "text", token -> false),
+    TEXT("text", "text", null),
     /** One of the slot's words. */
-    CHOICE("choice", "one of the listed words", token -> false);
+    KEYWORD("keyword", "one of the listed words", null);
 
     private final String production;
     private final String description;
@@ -44,8 +46,27 @@ public enum ArgType {
         return description;
     }
 
-    /** Whether a token is of this type; {@link #TEXT} and {@link #CHOICE} are matched by their slot. */
+    /** Whether the type is one token's shape; text and keywords are matched by their slot. */
+    public boolean isToken() {
+        return matcher != null;
+    }
+
     public boolean matches(String token) {
+        if (matcher == null) {
+            throw new UnsupportedOperationException(production + " is matched by its slot, not by token");
+        }
         return matcher.test(token);
+    }
+
+    /** Whether every token of the other type is also of this one, so written first this one takes them all. */
+    public boolean hides(ArgType other) {
+        return isToken() && other.isToken() && this != other
+            && (this == WORD || this == NUMBER && (other == INT || other == SECONDS));
+    }
+
+    /** Whether some token is of both types; all other token types are disjoint. */
+    public boolean overlaps(ArgType other) {
+        return isToken() && other.isToken() && (this == other || hides(other) || other.hides(this)
+            || this == INT && other == SECONDS || this == SECONDS && other == INT);
     }
 }

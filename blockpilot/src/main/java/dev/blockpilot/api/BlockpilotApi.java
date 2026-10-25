@@ -35,8 +35,14 @@ public final class BlockpilotApi {
     /**
      * Registers a command, invoked as {@code <namespace>:<name>}. The namespace is normally the registering mod's
      * id; a compat module registers under the id of the mod it integrates and passes its own id as registrant.
+     * A declaration the grammar can't reach throws {@link IllegalArgumentException}, and the spec can't change
+     * afterwards.
      */
     public static synchronized void register(String namespace, String registrant, CommandSpec spec) {
+        if (namespace == null || !Lexicon.isNamespace(namespace)) {
+            throw new IllegalArgumentException("a namespace is [a-z0-9_.-]+, not " + namespace);
+        }
+        spec.freeze();
         if (frozen) {
             LOGGER.error("{} registered {}:{} after mod loading finished; it is ignored", registrant, namespace,
                 spec.name());

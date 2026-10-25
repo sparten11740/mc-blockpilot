@@ -42,8 +42,10 @@ final class TestWorlds {
             .form(form -> form.keyword("what", "world").arg("name", ArgType.WORD)
                 .optionalKeyword("preset", PRESETS.toArray(String[]::new))
                 .optionalKeyword("difficulty", "peaceful", "easy", "hard"))
-            .option("difficulty", "peaceful, easy, normal or hard ('normal' alone is the world type)")
-            .option("mode", "creative, survival, adventure or spectator").option("seed", "the world seed")
+            .option("difficulty", "the difficulty; written alone, normal is the world type",
+                List.of("peaceful", "easy", "normal", "hard"))
+            .option("mode", "the game mode (default creative)",
+                List.of("creative", "survival", "adventure", "spectator")).option("seed", "the world seed")
             .option("rule:*", "a game rule, e.g. rule:doDaylightCycle=false")
             .help("a new world with cheats on, joined when ready (defaults flat, peaceful, creative)")
             .example("create world aerolarge-test flat peaceful rule:doDaylightCycle=false"));

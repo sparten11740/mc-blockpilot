@@ -21,10 +21,11 @@ public final class LogCommands {
             .form(form -> { })
             .form(form -> form.keyword("op", "mark"))
             .form(form -> form.keyword("op", "detail").arg("seq", ArgType.INT))
-            .option("level", "lowest level shown: error, warn (default), info")
-            .option("since", "a mark: only entries logged after it")
+            .option("level", "lowest level shown (default warn)", List.of("error", "warn", "info"))
+            .option("since", "a mark: only entries logged after it", ArgType.INT)
             .option("grep", "only entries whose message contains this text (case-insensitive)")
-            .option("logger", "only loggers whose name starts with this").option("limit", "newest n (default 50)")
+            .option("logger", "only loggers whose name starts with this")
+            .option("limit", "newest n (default 50)", ArgType.INT)
             .help("log [level=] [since=] [grep=] [logger=] [limit=]: recent log entries (INFO and above are kept, "
                 + "5000 at most), oldest first; log mark: the current position for since=; log detail <seq>: "
                 + "the full stack trace of an entry. sub log <level> streams them as events")

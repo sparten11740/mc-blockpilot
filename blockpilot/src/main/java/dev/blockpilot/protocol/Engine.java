@@ -184,7 +184,7 @@ public final class Engine {
             Session session = sessions.get(context.sessionId());
             session.setFormat(args.word("format").equals("json") ? Session.Format.JSON : Session.Format.TEXT);
             return Result.ok();
-        }).group("meta").choice("format", false, "text", "json")
+        }).group("meta").keyword("format", "text", "json")
             .help("sets this session's reply format; text is compact, json is one object per reply")
             .example("fmt json"));
         registry.register(CommandSpec.query("sub", (context, args) -> {

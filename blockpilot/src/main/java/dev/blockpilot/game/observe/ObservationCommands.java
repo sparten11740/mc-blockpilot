@@ -33,9 +33,10 @@ public final class ObservationCommands {
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("screenshot", this::screenshot).group("observe")
-            .optionalArg("width", ArgType.INT).option("burst", "number of frames (max 60)")
-            .option("every", "ticks between burst frames, e.g. 10t")
-            .option("hud", "off: hide the GUI, crosshair and hand while capturing")
+            .optionalArg("width", ArgType.INT).option("burst", "number of frames (max 60)", ArgType.INT)
+            .option("every", "ticks between burst frames, e.g. 10t", ArgType.DURATION)
+            .option("hud", "off: hide the GUI, crosshair and hand while capturing",
+                List.of("on", "off"))
             .help("saves the last rendered frame as PNG (default 512 wide) and returns its path; with burst=n "
                 + "every=Nt it saves n frames, one every N ticks, starting now. Works with the window in the "
                 + "background. MCP also has a screenshot tool").field("file", "absolute path")
@@ -48,19 +49,21 @@ public final class ObservationCommands {
                 + "camera reset: back to the player's view. The player keeps acting normally")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
-            .option("since", "first tick to include (use the tick of a previous reply)")
-            .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*")
-            .option("limit", "most recent n (default 50)")
+            .option("since", "first tick to include (use the tick of a previous reply)", ArgType.INT)
+            .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*", ArgType.PATTERN,
+                ArgType.ID)
+            .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted)")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .example("sounds since=1200 match=*gear*"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
-            .option("since", "first tick to include").option("kind", "chat, actionbar, title or subtitle")
-            .option("limit", "most recent n (default 50)")
+            .option("since", "first tick to include", ArgType.INT)
+            .option("kind", "which messages", List.of("chat", "actionbar", "title", "subtitle"))
+            .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("chat, action-bar, title and subtitle messages with their tick").field("tick", "current tick")
             .field("count", "matching messages").example("messages kind=actionbar"));
         registry.register(CommandSpec.query("particles", this::particles).group("observe")
-            .option("since", "first tick to include (default: the last 20 ticks)")
+            .option("since", "first tick to include (default: the last 20 ticks)", ArgType.INT)
             .help("particles spawned per type over a window (the last 1200 ticks are kept)")
             .field("tick", "current tick").field("total", "all particles in the window").example("particles since=1200"));
     }
@@ -129,7 +132,7 @@ public final class ObservationCommands {
         if (!args.has("target")) {
             var player = Minecraft.getInstance().player;
             target = () -> player.getEyePosition();
-        } else if (args.kind("target") == ArgType.ENTITY) {
+        } else if (args.type("target") == ArgType.ENTITY) {
             Entity entity = Minecraft.getInstance().level.getEntity(args.entity("target").id());
             if (entity == null) {
                 throw new CommandException("no_entity", args.word("target"));

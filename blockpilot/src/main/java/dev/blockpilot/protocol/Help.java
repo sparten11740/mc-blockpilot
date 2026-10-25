@@ -105,8 +105,8 @@ public final class Help {
         }
         rows.add(Row.of("kind", new Fields().put("kind", spec.kind().name().toLowerCase(),
             spec.kind() == CommandSpec.Kind.QUERY ? "query (read-only)" : "action (runs in the action queue)")));
-        spec.options().forEach((name, meaning) ->
-            rows.add(Row.of("option " + name, new Fields().put("option", name, name + "= — " + meaning))));
+        spec.options().forEach((name, option) -> rows.add(Row.of("option " + name, new Fields().put("option", name,
+            option.usageName() + "=" + option.valueUsage() + " — " + option.description()))));
         if (!spec.fields().isEmpty()) {
             List<String> fields = new ArrayList<>();
             spec.fields().forEach((name, meaning) -> fields.add(name + " (" + meaning + ")"));

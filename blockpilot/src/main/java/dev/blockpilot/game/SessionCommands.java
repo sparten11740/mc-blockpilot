@@ -125,7 +125,7 @@ final class SessionCommands {
             ServerList list = new ServerList(minecraft());
             list.load();
             ServerData data = null;
-            int index = args.kind("name") == ArgType.INT ? args.integer("name", -1) : -1;
+            int index = args.type("name") == ArgType.INT ? args.integer("name", -1) : -1;
             if (index >= 0 && index < list.size()) {
                 data = list.get(index);
                 address = data.ip;

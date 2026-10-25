@@ -9,6 +9,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Point;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.Injection;
 import dev.blockpilot.game.input.InputState;
@@ -60,7 +61,7 @@ final class InputCommands {
             .optionalArg("at", ArgType.POINT, ArgType.WIDGET)
             .help("scrolls by n notches (positive up), optionally at x,y or w<i>").example("scroll -2"));
         registry.register(CommandSpec.action("key", this::key).group("input")
-            .choice("op", false, "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
+            .keyword("op", "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
             .help("a key by name (w, space, left_shift, e, f5, escape, enter) or key mapping id (key.use, "
                 + "key.inventory, a mod's mapping); press = down then up after Nt (default 1t)")
             .example("key press key.inventory"));
@@ -96,12 +97,11 @@ final class InputCommands {
     /** A {@code x,y} point or widget {@code w<i>}'s centre, in GUI units, on the open screen. */
     private static double[] guiPoint(Args args, String name) throws CommandException {
         requireScreen();
-        String token = args.word(name);
-        if (args.kind(name) == ArgType.WIDGET) {
-            return Screens.widgetCentre(minecraft().screen, Integer.parseInt(token.substring(1)));
+        if (args.type(name) == ArgType.WIDGET) {
+            return Screens.widgetCentre(minecraft().screen, args.index(name, 0));
         }
-        String[] parts = token.split(",");
-        return new double[] {Double.parseDouble(parts[0]), Double.parseDouble(parts[1])};
+        Point point = args.point(name);
+        return new double[] {point.x(), point.y()};
     }
 
     /** GUI-scaled coordinates to the window's screen pixels, which the mouse handler works in. */
@@ -268,7 +268,7 @@ final class InputCommands {
             if (player == null) {
                 throw new CommandException("not_in_world");
             }
-            int slot = Integer.parseInt(args.word("slot").substring(1));
+            int slot = args.index("slot", 0);
             String modifier = args.has("mode") ? args.word("mode") : "left";
             var menu = player.containerMenu;
             if (slot >= menu.slots.size()) {

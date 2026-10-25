@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Result;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.Level;
  * client's, on the server thread, so it sees chunks the client has not loaded (and never loads any).
  */
 final class Sides {
+    static final List<String> NAMES = List.of("client", "server");
     private static final long SERVER_READ_SECONDS = 5;
 
     /** A read that may fail with a command error. */
@@ -44,9 +46,6 @@ final class Sides {
         Minecraft minecraft = Minecraft.getInstance();
         if (side == null || side.equals("client")) {
             return read.apply(minecraft.level, false);
-        }
-        if (!side.equals("server")) {
-            throw new CommandException("syntax", "side=client or side=server");
         }
         MinecraftServer server = minecraft.getSingleplayerServer();
         if (server == null) {

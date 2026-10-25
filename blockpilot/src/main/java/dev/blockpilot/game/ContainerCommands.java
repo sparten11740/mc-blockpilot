@@ -155,8 +155,8 @@ final class ContainerCommands {
         int wanted = args.has("count") ? args.integer("count", 0) : Integer.MAX_VALUE;
         Item item = null;
         Integer onlySlot = null;
-        if (args.kind("what") == ArgType.MENU_SLOT) {
-            onlySlot = Integer.parseInt(what.substring(1));
+        if (args.type("what") == ArgType.MENU_SLOT) {
+            onlySlot = args.index("what", 0);
             if (onlySlot >= menu.slots.size()) {
                 throw new CommandException("syntax", "the menu has slots s0-s" + (menu.slots.size() - 1));
             }
