@@ -7,6 +7,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -25,6 +27,16 @@ final class Sides {
     }
 
     private Sides() {
+    }
+
+    /**
+     * Whether the chunk holding the position is loaded on that side; never loads or generates it. Call it on that
+     * side's thread: off its thread the server's chunk cache answers null. (On the client, {@code Level.hasChunkAt}
+     * answers true for every chunk.)
+     */
+    static boolean loaded(Level level, BlockPos pos) {
+        return level.getChunkSource().getChunkNow(SectionPos.blockToSectionCoord(pos.getX()),
+            SectionPos.blockToSectionCoord(pos.getZ())) != null;
     }
 
     static Result read(Args args, Read read) throws CommandException {

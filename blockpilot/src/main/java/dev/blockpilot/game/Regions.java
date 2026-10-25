@@ -53,7 +53,7 @@ final class Regions {
     }
 
     private static String symbol(Level level, BlockPos pos, Map<String, String> palette) {
-        if (!level.hasChunkAt(pos)) {
+        if (!Sides.loaded(level, pos)) {
             return "?";
         }
         BlockState state = level.getBlockState(pos);

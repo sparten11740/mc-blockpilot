@@ -382,7 +382,7 @@ final class PerceptionCommands {
     private Result block(CommandContext context, Args args) throws CommandException {
         BlockPos pos = Rel.block(context.resolve(args.position("pos")));
         return Sides.read(args, (level, server) -> {
-            if (!level.hasChunkAt(pos)) {
+            if (!Sides.loaded(level, pos)) {
                 throw new CommandException("unloaded", Rel.of(pos).toString());
             }
             return Result.ok(describe(level, pos));
