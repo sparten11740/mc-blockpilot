@@ -13,6 +13,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.game.sable.SableSupport;
@@ -29,6 +30,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /** Queries over the sound, message and particle logs. */
@@ -54,6 +56,7 @@ public final class ObservationCommands {
             .form(form -> form.keyword("op", "reset"))
             .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
                 + "camera reset: back to the player's view. The player keeps acting normally")
+            .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
             .option("since", "first tick to include (use the tick of a previous reply)", ArgType.INT)
@@ -182,9 +185,16 @@ public final class ObservationCommands {
         CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
         // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
         Position atAbsolute = Rel.absolute(position);
+        BlockPos cell = BlockPos.containing(position);
         return ActionSupport.afterFrames(2, () -> {
             Vec3 looking = target.at(1);
-            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+            BlockState block = level.getBlockState(cell);
+            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute)
+                .put("block", Ids.of(block), "in:" + Ids.of(block));
+            if (block.isCollisionShapeFullBlock(level, cell)) {
+                // The view starts inside a solid block, which shows its faces from within or nothing at all.
+                fields.put("inside", Ids.of(block));
+            }
             if (looking != null) {
                 fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
             }
