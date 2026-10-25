@@ -22,7 +22,7 @@ public final class Errors {
         CODES.put("no_entity", "no entity with that reference is loaded");
         CODES.put("no_block", "no matching block found");
         CODES.put("no_path", "no walkable path to the target through loaded chunks");
-        CODES.put("stuck", "the player stopped making progress along the path");
+        CODES.put("stuck", "the player stopped making progress (goto along its path, move by distance)");
         CODES.put("out_of_reach", "the target is beyond reach and the command does not walk");
         CODES.put("no_recipe", "no crafting recipe for that item");
         CODES.put("missing", "ingredients missing for the recipe");

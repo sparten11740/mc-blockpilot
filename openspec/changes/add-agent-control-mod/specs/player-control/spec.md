@@ -55,11 +55,17 @@ swim, and climb ladders/vines. It SHALL NOT break or place blocks. It fails with
 The mod SHALL provide `move <forward|back|left|right> <blocks|Nt>`, `jump`,
 `sneak on|off`, `sprint on|off`, `face <pos|e<id>>` (aim at the target's center
 or a block face), and `turn <yaw> <pitch> [Nt]` (set absolute rotation,
-optionally smoothed over N ticks).
+optionally smoothed over N ticks). A move by distance SHALL fail with `err
+stuck moved=<blocks>` once the player has made no progress for 20 ticks.
 
 #### Scenario: Face a block
 - **WHEN** an agent runs `face ~2,0,1`
 - **THEN** the crosshair target afterwards is that block
+
+#### Scenario: Walking into a wall
+- **WHEN** an agent runs `move forward 16` facing a wall
+- **THEN** the result is `err stuck moved=0` about a second later, not a
+  timeout
 
 ### Requirement: Block interaction
 The mod SHALL provide `mine <pos>`, `mine <block|#tag> x<n>` (find, walk to and

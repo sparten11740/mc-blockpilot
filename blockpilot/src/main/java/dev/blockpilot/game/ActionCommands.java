@@ -43,6 +43,9 @@ import net.minecraft.world.phys.Vec3;
  */
 final class ActionCommands {
     private static final int MINE_SEARCH_RADIUS = 32;
+    /** A move by distance fails when the player hasn't got this far from where it last progressed in that long. */
+    private static final double MOVE_PROGRESS = 0.1;
+    private static final int MOVE_STUCK_TICKS = 20;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
     private static boolean holdFlight;
 
@@ -57,7 +60,8 @@ final class ActionCommands {
             .example("turn 90 20 10t"));
         registry.register(CommandSpec.action("move", this::move).needsWorld().group("movement")
             .keyword("dir", "forward", "back", "left", "right").arg("amount", ArgType.NUMBER, ArgType.DURATION)
-            .help("holds a movement key for <blocks> or <Nt> ticks").example("move forward 3"));
+            .help("holds a movement key for <blocks> or <Nt> ticks; by blocks it fails with err stuck after 20 ticks "
+                + "without progress").field("moved", "blocks moved").example("move forward 3"));
         registry.register(CommandSpec.action("jump", (context, args) -> pulse(context, options().keyJump, 2, "jump"))
             .needsWorld().group("movement").help("one jump").example("jump"));
         registry.register(CommandSpec.action("sneak", (context, args) -> toggle(context, options().keyShift,
@@ -251,19 +255,29 @@ final class ActionCommands {
         int session = context.sessionId();
         Vec3 start = player().position();
         int[] ticks = {0};
+        Vec3[] progress = {start};
+        int[] sinceProgress = {0};
         return new Action() {
             @Override
-            public Result tick() {
+            public Result tick() throws CommandException {
                 InputState.hold(session, key);
                 ticks[0]++;
-                double moved = Math.hypot(player().getX() - start.x, player().getZ() - start.z);
-                boolean done = duration != null ? ticks[0] >= duration.ticks() : moved >= blocks;
+                Vec3 position = player().position();
+                double distance = Math.hypot(position.x - start.x, position.z - start.z);
+                double moved = Math.round(distance * 10) / 10.0;
+                if (Math.hypot(position.x - progress[0].x, position.z - progress[0].z) >= MOVE_PROGRESS) {
+                    progress[0] = position;
+                    sinceProgress[0] = 0;
+                } else if (duration == null && ++sinceProgress[0] >= MOVE_STUCK_TICKS) {
+                    InputState.release(key);
+                    throw new CommandException("stuck", null, new Fields().put("moved", moved, "moved=" + moved));
+                }
+                boolean done = duration != null ? ticks[0] >= duration.ticks() : distance >= blocks;
                 if (!done) {
                     return null;
                 }
                 InputState.release(key);
-                return Result.ok(new Fields().put("moved", Math.round(moved * 10) / 10.0,
-                    "moved " + Math.round(moved * 10) / 10.0));
+                return Result.ok(new Fields().put("moved", moved, "moved " + moved));
             }
 
             @Override
