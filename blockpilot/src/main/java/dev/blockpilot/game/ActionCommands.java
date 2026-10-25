@@ -591,7 +591,7 @@ final class ActionCommands {
         Supplier<BlockPos> nearest = () -> {
             BlockPos center = player().blockPosition();
             BlockPos[] best = {null};
-            PerceptionCommands.scan(minecraft().level, center, MINE_SEARCH_RADIUS, matcher, false, (pos, state) -> {
+            BlockScan.around(minecraft().level, center, MINE_SEARCH_RADIUS, matcher, false, (pos, state) -> {
                 if (!tried.contains(pos) && (best[0] == null || pos.distSqr(center) < best[0].distSqr(center))) {
                     best[0] = pos.immutable();
                 }

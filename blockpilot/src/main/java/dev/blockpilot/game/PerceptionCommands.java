@@ -18,7 +18,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -35,8 +34,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
@@ -234,7 +231,7 @@ final class PerceptionCommands {
         Map<String, int[]> counts = new LinkedHashMap<>();
         Map<String, BlockPos> nearest = new LinkedHashMap<>();
         BlockPos center = player.blockPosition();
-        scan(minecraft.level, center, radius, notable(), true, (pos, state) -> {
+        BlockScan.around(minecraft.level, center, radius, notable(), true, (pos, state) -> {
             String id = Ids.of(state);
             counts.computeIfAbsent(id, key -> new int[1])[0]++;
             BlockPos best = nearest.get(id);
@@ -290,59 +287,6 @@ final class PerceptionCommands {
         return Row.of("e" + entity.getId(), fields);
     }
 
-    /** Visits matching blocks in loaded chunks within the cube, skipping sections whose palette can't match. */
-    static void scan(Level level, BlockPos center, int radius, BlockMatcher matcher, boolean withBlockEntities,
-        BiConsumer<BlockPos, BlockState> visitor) {
-        int minX = center.getX() - radius;
-        int maxX = center.getX() + radius;
-        int minY = Math.max(level.getMinBuildHeight(), center.getY() - radius);
-        int maxY = Math.min(level.getMaxBuildHeight() - 1, center.getY() + radius);
-        int minZ = center.getZ() - radius;
-        int maxZ = center.getZ() + radius;
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int chunkX = minX >> 4; chunkX <= maxX >> 4; chunkX++) {
-            for (int chunkZ = minZ >> 4; chunkZ <= maxZ >> 4; chunkZ++) {
-                LevelChunk chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
-                if (chunk == null) {
-                    continue;
-                }
-                if (withBlockEntities) {
-                    for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                        BlockPos pos = blockEntity.getBlockPos();
-                        if (inside(pos, minX, maxX, minY, maxY, minZ, maxZ)
-                            && !matcher.test(blockEntity.getBlockState())) {
-                            visitor.accept(pos, blockEntity.getBlockState());
-                        }
-                    }
-                }
-                LevelChunkSection[] sections = chunk.getSections();
-                for (int index = 0; index < sections.length; index++) {
-                    LevelChunkSection section = sections[index];
-                    int sectionY = (chunk.getMinSection() + index) << 4;
-                    if (section.hasOnlyAir() || sectionY + 15 < minY || sectionY > maxY
-                        || !section.getStates().maybeHas(matcher)) {
-                        continue;
-                    }
-                    for (int y = Math.max(minY, sectionY); y <= Math.min(maxY, sectionY + 15); y++) {
-                        for (int x = Math.max(minX, chunkX << 4); x <= Math.min(maxX, (chunkX << 4) + 15); x++) {
-                            for (int z = Math.max(minZ, chunkZ << 4); z <= Math.min(maxZ, (chunkZ << 4) + 15); z++) {
-                                BlockState state = section.getBlockState(x & 15, y & 15, z & 15);
-                                if (matcher.test(state)) {
-                                    visitor.accept(cursor.set(x, y, z), state);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean inside(BlockPos pos, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
-        return pos.getX() >= minX && pos.getX() <= maxX && pos.getY() >= minY && pos.getY() <= maxY
-            && pos.getZ() >= minZ && pos.getZ() <= maxZ;
-    }
-
     private Result find(CommandContext context, Args args) throws CommandException {
         LocalPlayer player = minecraft().player;
         String what = args.word("what");
@@ -375,7 +319,7 @@ final class PerceptionCommands {
                 return Result.ok().withRows(rows);
             }
             List<BlockPos> found = new ArrayList<>();
-            scan(level, center, radius, matcher, false, (pos, state) -> found.add(pos.immutable()));
+            BlockScan.around(level, center, radius, matcher, false, (pos, state) -> found.add(pos.immutable()));
             found.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
             for (BlockPos pos : found.subList(0, Math.min(limit, found.size()))) {
                 rows.add(Row.of(pos.toShortString(), new Fields().bare("block", Ids.of(level.getBlockState(pos)))
