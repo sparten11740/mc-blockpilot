@@ -2,7 +2,7 @@
 
 ## 1. Server commands from the player (server-bridge)
 
-- [ ] 1.1 Build `server`'s default source at the player (D1), say where it runs in `help server` and the README, and add a smoke step that moves the player 40 blocks from the spawn, runs `server setblock ~ ~-1 ~` without `as=player` and reads that block back; verify on the 1.21.1 NeoForge dev client, away from the spawn, that the spec's scenarios hold, the Nether one included
+- [x] 1.1 Build `server`'s default source at the player (D1), say where it runs in `help server` and the README, and add a smoke step that moves the player 40 blocks from the spawn, runs `server setblock ~ ~-1 ~` without `as=player` and reads that block back; verify on the 1.21.1 NeoForge dev client, away from the spawn, that the spec's scenarios hold, the Nether one included
 
 ## 2. Use on its target (player-control)
 

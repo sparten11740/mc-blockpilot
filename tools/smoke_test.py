@@ -136,6 +136,9 @@ def main():
         ("server-side nbt", "nbt ~3,0,0 path=Items[0].count", [r"ok 3"]),
         ("side=server read", "block ~3,0,0 side=server; find chest 8 side=server", [r"ok chest", r"chest ~3,0,0"]),
         ("attack", "server as=player summon minecraft:cow ~3 ~ ~2; wait 5t; attack cow", [r"killed 1"]),
+        ("server runs at the player", "server as=player tp @s ~40 ~ ~; server setblock ~ ~-1 ~ minecraft:gold_block; "
+                                      "block ~0,-1,0; server setblock ~ ~-1 ~ minecraft:grass_block; "
+                                      "server as=player tp @s ~-40 ~ ~", [r"ok gold_block"]),
         ("goto", "goto ~6,0,4; status", [r"ok \d+(\.\d+)?s"]),
         ("move", "turn -90 0; move forward 2; move back 5t", [r"ok moved 2\.\d", r"ok moved \d"]),
         ("move into a wall", "server as=player fill ~2 ~ ~-1 ~2 ~1 ~1 stone; wait 3t; ?move forward 8; "

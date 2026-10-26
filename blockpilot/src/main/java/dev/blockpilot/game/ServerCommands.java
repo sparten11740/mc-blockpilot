@@ -64,7 +64,9 @@ final class ServerCommands {
             .option("settle", "server ticks to wait before answering so the client has the changes (default 2t; "
                 + "0t for pure probes)", ArgType.DURATION, ArgType.SECONDS)
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
-                + "every feedback line; options go before the command (server as=player settle=0t <command>)")
+                + "every feedback line; it runs as the server, at the player's position, rotation and dimension, so "
+                + "~ and @p count from the player; options go before the command (server as=player settle=0t "
+                + "<command>)")
             .field("result", "the command's return value").field("success", "true/false")
             .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
@@ -154,9 +156,13 @@ final class ServerCommands {
             }
             source = player.createCommandSourceStack().withSource(capture).withPermission(OWNER);
         } else {
-            ServerLevel level = server.overworld();
-            source = new CommandSourceStack(capture, Vec3.atLowerCornerOf(level.getSharedSpawnPos()), Vec2.ZERO, level,
-                OWNER, "Blockpilot", Component.literal("Blockpilot"), server, null);
+            // The server's own source, so @s is no one, but where the player is, so ~ and @p count from there.
+            ServerPlayer player = serverPlayer();
+            ServerLevel level = serverLevel();
+            Vec3 at = player == null ? Vec3.atLowerCornerOf(level.getSharedSpawnPos()) : player.position();
+            Vec2 facing = player == null ? Vec2.ZERO : player.getRotationVector();
+            source = new CommandSourceStack(capture, at, facing, level, OWNER, "Blockpilot",
+                Component.literal("Blockpilot"), server, null);
         }
         source = source.withCallback((ok, result) -> {
             success[0] = ok;
