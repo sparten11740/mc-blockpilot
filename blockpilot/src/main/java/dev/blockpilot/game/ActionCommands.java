@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -59,7 +60,7 @@ final class ActionCommands {
     private static final String WITHIN_BLOCK_HELP = "at u,v,w aims at that point of the block, each 0 to 1 in the "
         + "frame its model is drawn in facing north (u west to east, v up, w north to south), turned with the block's "
         + "facing; status shows hit=u,v,w for the point under the crosshair";
-    /** How long {@code use} re-aims at a block aboard for the crosshair to rest on it before it gives up. */
+    /** How long {@code use} re-aims at its target for the crosshair to rest on it before it gives up. */
     private static final int MAX_AIM_TICKS = 10;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
     private static boolean holdFlight;
@@ -100,10 +101,11 @@ final class ActionCommands {
             .option("hold", "keep the use key down for a duration (eat, draw a bow, charge)",
                 ArgType.DURATION, ArgType.SECONDS)
             .help("right-clicks: aims first if given a target, else whatever the crosshair hits; returns the hit. "
-                + "At a block aboard a sub-level it fails with err obstructed when another block is in the way; any "
-                + "clicks it anyway (a multi-block panel whose mod takes the click on any of its blocks). The server "
-                + "gets the game's own crosshair hit: where the aimed look ray first meets a block's shape, which the "
-                + "reply reports as aim and hit=. " + WITHIN_BLOCK_HELP)
+                + "At a block (not air) or an entity it clicks only once the crosshair rests on it, and after half a "
+                + "second fails with err obstructed naming what is in the way, or err out_of_reach; any clicks "
+                + "whatever the crosshair ends on (a multi-block panel whose mod takes the click on any of its "
+                + "blocks). The server gets the game's own crosshair hit: where the aimed look ray first meets a "
+                + "block's shape, which the reply reports as aim and hit=. " + WITHIN_BLOCK_HELP)
             .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
             .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
@@ -275,28 +277,53 @@ final class ActionCommands {
             : shape.bounds().getCenter().add(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    /** The block a position argument names when it lies in a sub-level's plot, else null. */
-    static BlockPos plotBlock(CommandContext context, Args args, String name) throws CommandException {
-        if (!args.has(name) || args.type(name) != ArgType.POSITION) {
-            return null;
-        }
-        Position absolute = context.resolve(args.position(name));
-        BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
-        return SableSupport.subLevels().at(minecraft().level, block) == null ? null : block;
+    /** A target {@code use} clicks only while the crosshair rests on it: the test of a hit, where to aim, its name. */
+    private record Checked(Predicate<HitResult> on, Supplier<Vec3> aim, String name) {
     }
 
-    /** Null when the crosshair rests on the target block, else why {@code use} must not click. */
-    private static CommandException obstruction(BlockPos target) {
-        HitResult hit = minecraft().hitResult;
-        if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK) {
-            BlockPos pos = block.getBlockPos();
-            return pos.equals(target) ? null
-                : new CommandException("obstructed", Ids.of(minecraft().level.getBlockState(pos)) + " " + Rel.of(pos));
+    /**
+     * The block or entity {@code use}'s target names, to check the crosshair against; null without a target, and for a
+     * block without a shape (air), where the position only sets the aim. The aim has no lead: the click turns the
+     * player just before the game picks the hit, when the target is where the pick sees it.
+     */
+    private static Checked checked(CommandContext context, Args args) throws CommandException {
+        if (!args.has("target")) {
+            return null;
         }
-        if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
+        Level level = minecraft().level;
+        if (args.type("target") == ArgType.ENTITY) {
+            int id = args.entity("target").id();
+            Entity entity = level.getEntity(id);
+            if (entity == null) {
+                throw new CommandException("no_entity", args.word("target"));
+            }
+            return new Checked(hit -> hit instanceof EntityHitResult on && hit.getType() == HitResult.Type.ENTITY
+                && on.getEntity().getId() == id, () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter(),
+                "e" + id);
+        }
+        Position absolute = context.resolve(args.position("target"));
+        BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
+        if (level.getBlockState(block).getShape(level, block).isEmpty()) {
+            return null;
+        }
+        Vec3 point = target(level, absolute, args);
+        Supplier<Vec3> aim = SableSupport.subLevels().at(level, block) == null ? () -> point
+            : () -> SableSupport.subLevels().toWorld(level, point);
+        return new Checked(hit -> hit instanceof BlockHitResult on && hit.getType() == HitResult.Type.BLOCK
+            && on.getBlockPos().equals(block), aim, Rel.of(block).toString());
+    }
+
+    /** Why {@code use} gave up on its target: what the crosshair rests on instead, or that it is out of reach. */
+    private static CommandException obstruction(Checked target) {
+        HitResult hit = minecraft().hitResult;
+        if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && !target.on().test(hit)) {
+            BlockPos pos = block.getBlockPos();
+            return new CommandException("obstructed", Ids.of(minecraft().level.getBlockState(pos)) + " " + Rel.of(pos));
+        }
+        if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY && !target.on().test(hit)) {
             return new CommandException("obstructed", Ids.of(entity.getEntity()) + " e" + entity.getEntity().getId());
         }
-        return new CommandException("out_of_reach", Rel.of(target).toString());
+        return new CommandException("out_of_reach", target.name());
     }
 
     static void lookAt(Vec3 point) {
@@ -464,10 +491,7 @@ final class ActionCommands {
     private Action use(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
-        BlockPos aboard = args.has("any") ? null : plotBlock(context, args, "target");
-        Level level = minecraft().level;
-        Vec3 plotPoint = aboard == null ? null : target(level, context.resolve(args.position("target")), args);
-        Supplier<Vec3> now = aboard == null ? null : () -> SableSupport.subLevels().toWorld(level, plotPoint);
+        Checked checked = args.has("any") ? null : checked(context, args);
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
@@ -491,7 +515,7 @@ final class ActionCommands {
             public Result tick() throws CommandException {
                 if (step == 0) {
                     step++;
-                    if (target != null) {
+                    if (target != null && checked == null) {
                         Vec3 point = target.get();
                         if (point == null) {
                             throw new CommandException("no_entity", args.word("target"));
@@ -501,12 +525,13 @@ final class ActionCommands {
                     if (sneak) {
                         InputState.hold(session, shift);
                     }
-                    if (target != null || sneak) {
+                    // A checked target is aimed at by the click itself; only the sneak key needs a tick to register.
+                    if (sneak || target != null && checked == null) {
                         return null;
                     }
                 }
-                if (step == 1 && aboard != null) {
-                    return pressAboard();
+                if (step == 1 && checked != null) {
+                    return pressChecked();
                 }
                 if (step == 1) {
                     step++;
@@ -526,10 +551,10 @@ final class ActionCommands {
             }
 
             /**
-             * A block aboard moves, and the game picks the crosshair's hit a tick after the aim: press only on a tick
-             * whose hit is the target, re-aiming until then.
+             * The target may move or be covered, and the game picks the crosshair's hit a tick after the aim: press
+             * only on a tick whose hit is the target, re-aiming until then.
              */
-            private Result pressAboard() throws CommandException {
+            private Result pressChecked() throws CommandException {
                 if (click != null && click.fired()) {
                     // Pressed during this tick's key handling, on the hit still in place now.
                     hit = hit();
@@ -538,11 +563,13 @@ final class ActionCommands {
                 }
                 if (click != null && ++aimed >= MAX_AIM_TICKS) {
                     release();
-                    CommandException obstructed = obstruction(aboard);
-                    throw obstructed != null ? obstructed : new CommandException("out_of_reach", Rel.of(aboard)
-                        .toString());
+                    throw obstruction(checked);
                 }
-                click = AimedClick.arm(aboard, now, press);
+                if (checked.aim().get() == null) {
+                    release();
+                    throw new CommandException("no_entity", args.word("target"));
+                }
+                click = AimedClick.arm(checked.on(), checked.aim(), press);
                 return null;
             }
 
