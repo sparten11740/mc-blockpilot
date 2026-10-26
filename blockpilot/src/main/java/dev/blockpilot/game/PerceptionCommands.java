@@ -96,7 +96,7 @@ final class PerceptionCommands {
             .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION).optionalKeyword("grid", "grid")
             .option("side", "server: read the integrated server's level (cheats on)", Sides.NAMES)
             .help("a region (max 4096 blocks): palette, then Y layers bottom-up, rows north to south, RLE, . = air; "
-                + "with grid, one block id per cell instead, a line per Y layer and row")
+                + "with grid, one symbol per cell instead of runs, a line per Y layer and row")
             .example("blocks ~-2,-1,-2 ~2,0,2"));
         registry.register(CommandSpec.query("inv", this::inventory).needsWorld().diffable().group("perception")
             .optionalKeyword("detail", "detail")

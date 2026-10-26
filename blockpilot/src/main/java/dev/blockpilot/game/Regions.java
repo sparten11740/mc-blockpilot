@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * Region dumps for {@code blocks}: a palette of one-character symbols, then one section per Y layer (bottom up),
  * one row per Z (north to south), X west to east, runs of the same symbol written as {@code <count><symbol>}. The grid
- * form spells every cell out instead.
+ * form writes every cell's symbol instead of runs.
  */
 final class Regions {
     private static final String SYMBOLS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -47,28 +47,31 @@ final class Regions {
             rows.add(Row.of("y" + y, new Fields().put("y", y, "y" + y + ":").put("rows", lines,
                 String.join(" ", lines))));
         }
-        List<String> entries = new ArrayList<>();
-        palette.forEach((state, symbol) -> entries.add(symbol + "=" + state));
-        return Result.ok(new Fields().put("palette", palette, String.join(" ", entries)).hidden("from",
-            Rel.absolute(min)).hidden("to", Rel.absolute(max))).withRows(rows);
+        return Result.ok(header(palette, min, max)).withRows(rows);
     }
 
-    /** One row per Y layer (bottom up) and Z (north to south), one block id per cell west to east; ? is unloaded. */
+    /** One row per Y layer (bottom up) and Z (north to south), one symbol per cell west to east. */
     static Result grid(Level level, BlockPos min, BlockPos max) {
+        Map<String, String> palette = new LinkedHashMap<>();
         List<Row> rows = new ArrayList<>();
         for (int y = min.getY(); y <= max.getY(); y++) {
             for (int z = min.getZ(); z <= max.getZ(); z++) {
                 List<String> cells = new ArrayList<>();
                 for (int x = min.getX(); x <= max.getX(); x++) {
-                    BlockPos pos = new BlockPos(x, y, z);
-                    cells.add(Sides.loaded(level, pos) ? Ids.of(level.getBlockState(pos)) : "?");
+                    cells.add(symbol(level, new BlockPos(x, y, z), palette));
                 }
                 rows.add(Row.of("y" + y + " z" + z, new Fields().put("y", y, "y" + y).put("z", z, "z" + z + ":")
                     .put("cells", cells, String.join(" ", cells))));
             }
         }
-        return Result.ok(new Fields().hidden("from", Rel.absolute(min)).hidden("to", Rel.absolute(max)))
-            .withRows(rows);
+        return Result.ok(header(palette, min, max)).withRows(rows);
+    }
+
+    private static Fields header(Map<String, String> palette, BlockPos min, BlockPos max) {
+        List<String> entries = new ArrayList<>();
+        palette.forEach((state, symbol) -> entries.add(symbol + "=" + state));
+        return new Fields().put("palette", palette, String.join(" ", entries)).hidden("from", Rel.absolute(min))
+            .hidden("to", Rel.absolute(max));
     }
 
     private static String symbol(Level level, BlockPos pos, Map<String, String> palette) {

@@ -19,7 +19,7 @@
 - [x] 4.1 Report a cut `find` radius as `radius=128`, and say in `help find` and the README that it searches a cube and that `sable:find` finds blocks aboard (D7); verify on the dev client that `find grass_block 400` carries `radius=128` in text and JSON and `find grass_block 64` doesn't
 - [x] 4.2 Let `since=` on `sounds`, `messages` and `particles` take a duration (D7), with a unit test for turning a duration into a tick, help and README; verify on the dev client that `sounds since=3s` lists a sound from 40 ticks ago and not one from 100 ticks ago
 - [x] 4.3 Add `t<tick>` to a single `screenshot`'s reply (D7) and to the smoke test's check of it; verify the reply in text and JSON on the dev client
-- [ ] 4.4 Write `blocks … grid` as the palette line and one symbol per cell (D7), with help and README; verify on the dev client that a region of modded and vanilla blocks prints each block state once, in the palette, and rows of single symbols
+- [x] 4.4 Write `blocks … grid` as the palette line and one symbol per cell (D7), with help and README; verify on the dev client that a region of modded and vanilla blocks prints each block state once, in the palette, and rows of single symbols
 
 ## 5. Integration checks
 
