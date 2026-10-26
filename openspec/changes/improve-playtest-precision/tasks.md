@@ -7,7 +7,7 @@
 ## 2. Use on its target (player-control)
 
 - [x] 2.1 Let `AimedClick` test any hit and arm it for world blocks with a shape and for entities (D2), with `help use` and the README; verify on the dev client that `use` at a lever behind glass fails `obstructed` naming the glass, that a clear lever and a villager are used, that `use` at air still clicks what is aimed at, and that a lever aboard a moving sub-level still works
-- [ ] 2.2 Add `off_target` to `use … any` (D3) and `sneak_item` to `use … sneak` (D4), with help and README; verify on the dev client that `any` at a lever behind glass reports `off_target=<lever>`, an on-target `any` doesn't, and a sneaking `use` on a chest with cobblestone in hand reports `sneak_item=cobblestone` and opens no screen
+- [x] 2.2 Add `off_target` to `use … any` (D3) and `sneak_item` to `use … sneak` (D4), with help and README; verify on the dev client that `any` at a lever behind glass reports `off_target=<lever>`, an on-target `any` doesn't, and a sneaking `use` on a chest with cobblestone in hand reports `sneak_item=cobblestone` and opens no screen
 
 ## 3. Boarding (sable-sublevels)
 

@@ -104,9 +104,14 @@ final class ActionCommands {
                 + "At a block (not air) or an entity it clicks only once the crosshair rests on it, and after half a "
                 + "second fails with err obstructed naming what is in the way, or err out_of_reach; any clicks "
                 + "whatever the crosshair ends on (a multi-block panel whose mod takes the click on any of its "
-                + "blocks). The server gets the game's own crosshair hit: where the aimed look ray first meets a "
-                + "block's shape, which the reply reports as aim and hit=. " + WITHIN_BLOCK_HELP)
-            .field("aim", "what was clicked").example("use ~1,0,0 sneak"));
+                + "blocks), adding off_target when that was not the target. The server gets the game's own crosshair "
+                + "hit: where the aimed look ray first meets a block's shape, which the reply reports as aim and hit=. "
+                + "Sneaking with an item in either hand, the game skips the block's own use and uses the item, which "
+                + "the reply names as sneak_item. " + WITHIN_BLOCK_HELP)
+            .field("aim", "what was clicked")
+            .field("off_target", "with any: the target, when the click went to something else")
+            .field("sneak_item", "with sneak: the item in hand that took the click instead of the block")
+            .example("use ~1,0,0 sneak"));
         registry.register(CommandSpec.action("attack", this::attack).needsWorld().group("interact")
             .optionalArg("target", ArgType.ENTITY, ArgType.ID).optionalArg("count", ArgType.COUNT)
             .help("left-clicks the crosshair, or fights e<id> / the nearest of an entity type until it dies, "
@@ -205,6 +210,13 @@ final class ActionCommands {
         return fields;
     }
 
+    /** The main hand's item, else the off hand's, or null with both hands empty. */
+    private static String heldItem() {
+        ItemStack main = player().getMainHandItem();
+        ItemStack off = player().getOffhandItem();
+        return !main.isEmpty() ? Ids.of(main) : !off.isEmpty() ? Ids.of(off) : null;
+    }
+
     /**
      * The point a position or entity argument names: an entity's centre, with {@code at <u,v,w>} that point of the
      * block, for whole coordinates the centre of the block's shape (a lever's base, not the air above it), else the
@@ -277,8 +289,11 @@ final class ActionCommands {
             : shape.bounds().getCenter().add(pos.getX(), pos.getY(), pos.getZ());
     }
 
-    /** A target {@code use} clicks only while the crosshair rests on it: the test of a hit, where to aim, its name. */
-    private record Checked(Predicate<HitResult> on, Supplier<Vec3> aim, String name) {
+    /**
+     * A target {@code use} clicks only while the crosshair rests on it: the test of a hit, where to aim, and its name
+     * as a reply prints it then.
+     */
+    private record Checked(Predicate<HitResult> on, Supplier<Vec3> aim, Supplier<Object> name) {
     }
 
     /**
@@ -299,7 +314,7 @@ final class ActionCommands {
             }
             return new Checked(hit -> hit instanceof EntityHitResult on && hit.getType() == HitResult.Type.ENTITY
                 && on.getEntity().getId() == id, () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter(),
-                "e" + id);
+                () -> "e" + id);
         }
         Position absolute = context.resolve(args.position("target"));
         BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
@@ -310,7 +325,7 @@ final class ActionCommands {
         Supplier<Vec3> aim = SableSupport.subLevels().at(level, block) == null ? () -> point
             : () -> SableSupport.subLevels().toWorld(level, point);
         return new Checked(hit -> hit instanceof BlockHitResult on && hit.getType() == HitResult.Type.BLOCK
-            && on.getBlockPos().equals(block), aim, Rel.of(block).toString());
+            && on.getBlockPos().equals(block), aim, () -> Rel.of(block));
     }
 
     /** Why {@code use} gave up on its target: what the crosshair rests on instead, or that it is out of reach. */
@@ -323,7 +338,7 @@ final class ActionCommands {
         if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY && !target.on().test(hit)) {
             return new CommandException("obstructed", Ids.of(entity.getEntity()) + " e" + entity.getEntity().getId());
         }
-        return new CommandException("out_of_reach", target.name());
+        return new CommandException("out_of_reach", String.valueOf(target.name().get()));
     }
 
     static void lookAt(Vec3 point) {
@@ -491,13 +506,19 @@ final class ActionCommands {
     private Action use(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Supplier<Vec3> target = args.has("target") ? point(context, args, "target") : null;
-        Checked checked = args.has("any") ? null : checked(context, args);
+        Checked aimedAt = checked(context, args);
+        Checked checked = args.has("any") ? null : aimedAt;
         boolean sneak = args.has("sneak");
         Duration hold = args.durationOption("hold");
         int session = context.sessionId();
         KeyMapping use = options().keyUse;
         KeyMapping shift = options().keyShift;
+        String[] sneakItem = {null};
         Runnable press = () -> {
+            if (sneak) {
+                // Read before the press: using the item may use it up.
+                sneakItem[0] = heldItem();
+            }
             if (hold != null) {
                 InputState.hold(session, use);
             } else {
@@ -541,7 +562,7 @@ final class ActionCommands {
                 if (hit == null) {
                     // The game handled the click during this tick, on the hit still in place now; read at the
                     // press it could be a tick older, which shows on a moving target.
-                    hit = hit();
+                    hit = clicked();
                 }
                 if (hold != null && ++held < hold.ticks()) {
                     return null;
@@ -557,7 +578,7 @@ final class ActionCommands {
             private Result pressChecked() throws CommandException {
                 if (click != null && click.fired()) {
                     // Pressed during this tick's key handling, on the hit still in place now.
-                    hit = hit();
+                    hit = clicked();
                     step++;
                     return null;
                 }
@@ -571,6 +592,18 @@ final class ActionCommands {
                 }
                 click = AimedClick.arm(checked.on(), checked.aim(), press);
                 return null;
+            }
+
+            /** The hit the click went to, and whether that was off the target or went to the held item. */
+            private Fields clicked() {
+                Fields fields = hit();
+                if (aimedAt != null && !aimedAt.on().test(minecraft().hitResult)) {
+                    fields.put("off_target", aimedAt.name().get());
+                }
+                if (sneakItem[0] != null) {
+                    fields.put("sneak_item", sneakItem[0]);
+                }
+                return fields;
             }
 
             private void release() {
