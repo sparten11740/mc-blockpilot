@@ -60,7 +60,8 @@ public final class ObservationCommands {
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
-            .option("since", "first tick to include (use the tick of a previous reply)", ArgType.INT)
+            .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
+                + "now, e.g. 60t", ArgType.INT, ArgType.DURATION)
             .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*", ArgType.PATTERN,
                 ArgType.ID)
             .option("limit", "most recent n (default 50)", ArgType.INT)
@@ -68,7 +69,8 @@ public final class ObservationCommands {
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .example("sounds since=1200 match=*gear*"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
-            .option("since", "first tick to include", ArgType.INT)
+            .option("since", "first tick to include, or a duration back from now, e.g. 60t", ArgType.INT,
+                ArgType.DURATION)
             .option("kind", "which messages", List.of("chat", "actionbar", "title", "subtitle"))
             .option("match", "only messages whose whole text fits this pattern, ignoring case; * stands for any run "
                 + "of characters, spaces included, e.g. *gear*refused*")
@@ -76,7 +78,8 @@ public final class ObservationCommands {
             .help("chat, action-bar, title and subtitle messages with their tick").field("tick", "current tick")
             .field("count", "matching messages").example("messages kind=actionbar"));
         registry.register(CommandSpec.query("particles", this::particles).group("observe")
-            .option("since", "first tick to include (default: the last 20 ticks)", ArgType.INT)
+            .option("since", "first tick to include, or a duration back from now (default: the last 20 ticks)",
+                ArgType.INT, ArgType.DURATION)
             .help("particles spawned per type over a window (the last 1200 ticks are kept)")
             .field("tick", "current tick").field("total", "all particles in the window").example("particles since=1200"));
     }
@@ -227,12 +230,7 @@ public final class ObservationCommands {
     }
 
     private static long since(Args args, long fallback) throws CommandException {
-        String value = args.option("since");
-        try {
-            return value == null ? fallback : Long.parseLong(value);
-        } catch (NumberFormatException e) {
-            throw new CommandException("syntax", "since= expects a tick number");
-        }
+        return Since.tick(args, Observations.tick(), fallback);
     }
 
     private static Pattern glob(String pattern) {
