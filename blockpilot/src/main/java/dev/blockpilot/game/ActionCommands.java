@@ -888,6 +888,11 @@ final class ActionCommands {
             menuSlot = InventoryOps.menuSlot(index);
         }
         ItemStack stack = player().inventoryMenu.getSlot(menuSlot).getItem();
+        if (stack.isEmpty()) {
+            throw new CommandException("no_item", "slot " + what + " is empty");
+        }
+        // Read before throwing: a throw empties this same stack.
+        String item = Ids.of(stack);
         int count = Math.min(args.integer("count", stack.getCount()), stack.getCount());
         if (count >= stack.getCount()) {
             InventoryOps.click(menuSlot, 1, ClickType.THROW);
@@ -896,7 +901,7 @@ final class ActionCommands {
                 InventoryOps.click(menuSlot, 0, ClickType.THROW);
             }
         }
-        return () -> Result.ok(new Fields().bare("item", Ids.of(stack)).put("count", count, "x" + count));
+        return () -> Result.ok(new Fields().bare("item", item).put("count", count, "x" + count));
     }
 
     private Action offhand(CommandContext context, Args args) throws CommandException {
