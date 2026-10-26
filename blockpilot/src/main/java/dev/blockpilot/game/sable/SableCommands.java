@@ -15,6 +15,7 @@ import dev.blockpilot.game.BlockMatcher;
 import dev.blockpilot.game.BlockScan;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
+import dev.blockpilot.game.Shapes;
 import dev.blockpilot.game.Sides;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,15 +28,17 @@ import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
@@ -103,11 +106,14 @@ final class SableCommands {
             .field("block", "block id").field("at", "plot position").field("world", "world position")
             .example("sable:find here *door* 3"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.action("tp", SableCommands::teleport)
-            .onServer().arg("pos", ArgType.POSITION)
+            .needsServer().arg("pos", ArgType.POSITION)
             .help("puts the player aboard: on a free spot within " + TP_REACH + " blocks of a block in a sub-level's "
-                + "plot, standing on that sub-level (cheats on)")
+                + "plot, standing on that sub-level (cheats on); the nearest spot from which the block is in sight, "
+                + "else the nearest, with hidden")
             .field("at", "where the player stands, world position").field("plot", "that spot's plot position")
-            .field("sub", "the sub-level").example("sable:tp 20481032,129,20481033"));
+            .field("sub", "the sub-level").field("dist", "blocks from the player's eyes to the block's centre")
+            .field("hidden", "no free spot within reach has the block in sight")
+            .example("sable:tp 20481032,129,20481033"));
     }
 
     private static Result list(CommandContext context, Args args) throws CommandException {
@@ -217,59 +223,92 @@ final class SableCommands {
     private static Action teleport(CommandContext context, Args args) throws CommandException {
         Position target = context.resolve(args.position("pos"));
         BlockPos block = BlockPos.containing(target.x(), target.y(), target.z());
-        Minecraft minecraft = Minecraft.getInstance();
-        MinecraftServer server = minecraft.getSingleplayerServer();
-        UUID playerId = minecraft.player.getUUID();
+        UUID playerId = Minecraft.getInstance().player.getUUID();
+        // The server step runs now; the client sees the player's new place a tick or two later.
+        Result done = Sides.onServer((level, server) -> board(level, playerId, block));
         int[] ticks = {0};
-        Result[] done = {null};
-        return () -> {
-            if (ticks[0]++ > 0) {
-                // The client sees the player's new place a tick or two later.
-                return ticks[0] > TP_SETTLE_TICKS ? done[0] : null;
-            }
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-            if (player == null) {
-                throw new CommandException("not_in_world");
-            }
-            //? if >=26.1 {
-            /*ServerLevel level = player.level();
-            *///?} else {
-            ServerLevel level = player.serverLevel();
-            //?}
-            SubLevels subLevels = SableSupport.subLevels();
-            SubLevels.Info info = subLevels.at(level, block);
-            if (info == null) {
-                throw new CommandException("no_sublevel", target + " is in no sub-level's plot");
-            }
-            BlockPos spot = freeSpot(level, block, subLevels);
-            if (spot == null) {
-                throw new CommandException("no_room", "no free spot within " + TP_REACH + " blocks of " + target);
-            }
-            Vec3 at = subLevels.toWorld(level, Vec3.atBottomCenterOf(spot));
-            //? if >=26.1 {
-            /*player.teleportTo(level, at.x, at.y, at.z, Set.of(), player.getYRot(), player.getXRot(), false);
-            *///?} else {
-            player.teleportTo(level, at.x, at.y, at.z, player.getYRot(), player.getXRot());
-            //?}
-            done[0] = Result.ok(new Fields().bare("at", Rel.absolute(at)).put("plot", Rel.absolute(spot))
-                .put("sub", info.name()));
-            return null;
-        };
+        return () -> !done.isOk() || ++ticks[0] > TP_SETTLE_TICKS ? done : null;
     }
 
-    /** The nearest spot with room for the player, standing on a block of the same sub-level. */
-    private static BlockPos freeSpot(Level level, BlockPos target, SubLevels subLevels) {
+    /** On the server thread: puts the player on the best free spot next to the block aboard, see {@link #freeSpot}. */
+    private static Result board(Level serverLevel, UUID playerId, BlockPos block) throws CommandException {
+        ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
+        if (player == null) {
+            throw new CommandException("not_in_world");
+        }
+        //? if >=26.1 {
+        /*ServerLevel level = player.level();
+        *///?} else {
+        ServerLevel level = player.serverLevel();
+        //?}
+        SubLevels subLevels = SableSupport.subLevels();
+        SubLevels.Info info = subLevels.at(level, block);
+        if (info == null) {
+            throw new CommandException("no_sublevel", Rel.absolute(block) + " is in no sub-level's plot");
+        }
+        double eyeHeight = player.getEyeHeight(Pose.STANDING);
+        Spot spot = freeSpot(level, block, subLevels, eyeHeight);
+        if (spot == null) {
+            throw new CommandException("no_room", "no free spot within " + TP_REACH + " blocks of "
+                + Rel.absolute(block));
+        }
+        Vec3 at = subLevels.toWorld(level, Vec3.atBottomCenterOf(spot.pos()));
+        //? if >=26.1 {
+        /*player.teleportTo(level, at.x, at.y, at.z, Set.of(), player.getYRot(), player.getXRot(), false);
+        *///?} else {
+        player.teleportTo(level, at.x, at.y, at.z, player.getYRot(), player.getXRot());
+        //?}
+        // A sub-level moves as one piece, so the distance in its plot is the distance in the world.
+        double dist = eyes(spot.pos(), eyeHeight).distanceTo(Vec3.atCenterOf(block));
+        Fields fields = new Fields().bare("at", Rel.absolute(at)).put("plot", Rel.absolute(spot.pos()))
+            .put("sub", info.name()).put("dist", tenths(dist));
+        if (!spot.seen()) {
+            fields.put("hidden", true, "hidden");
+        }
+        return Result.ok(fields);
+    }
+
+    private record Spot(BlockPos pos, boolean seen) {
+    }
+
+    /**
+     * The nearest spot next to the block with room for the player, standing on a block of the same sub-level, from
+     * whose eyes the block is in sight; else the nearest spot, not seen. Never the block's own cell, which a block
+     * without collision (a lever, a pressure plate) leaves free. Sight stops at any outline shape, glass too: the line
+     * a click needs.
+     */
+    private static Spot freeSpot(Level level, BlockPos target, SubLevels subLevels, double eyeHeight) {
         List<BlockPos> spots = new ArrayList<>();
         BlockPos.betweenClosed(target.offset(-TP_REACH, -TP_REACH, -TP_REACH), target.offset(TP_REACH, TP_REACH,
             TP_REACH)).forEach(pos -> spots.add(pos.immutable()));
         spots.sort(Comparator.comparingDouble(pos -> pos.distSqr(target)));
+        BlockPos nearest = null;
         for (BlockPos spot : spots) {
-            if (passable(level, spot) && passable(level, spot.above()) && !passable(level, spot.below())
-                && subLevels.at(level, spot.below()) != null) {
-                return spot;
+            if (!spot.equals(target) && passable(level, spot) && passable(level, spot.above())
+                && !passable(level, spot.below()) && subLevels.at(level, spot.below()) != null) {
+                if (sees(level, eyes(spot, eyeHeight), target)) {
+                    return new Spot(spot, true);
+                }
+                if (nearest == null) {
+                    nearest = spot;
+                }
             }
         }
-        return null;
+        return nearest == null ? null : new Spot(nearest, false);
+    }
+
+    private static Vec3 eyes(BlockPos spot, double eyeHeight) {
+        return Vec3.atBottomCenterOf(spot).add(0, eyeHeight, 0);
+    }
+
+    /**
+     * Whether the first outline shape on the line from the eyes to the centre of the block's shape is the block's own.
+     * The centre of the shape, not of the block: a lever's shape ends below the block's centre.
+     */
+    private static boolean sees(Level level, Vec3 eyes, BlockPos target) {
+        BlockHitResult hit = level.clip(new ClipContext(eyes, Shapes.centre(level, target), ClipContext.Block.OUTLINE,
+            ClipContext.Fluid.NONE, CollisionContext.empty()));
+        return hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(target);
     }
 
     private static boolean passable(Level level, BlockPos pos) {

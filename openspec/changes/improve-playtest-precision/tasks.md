@@ -11,7 +11,7 @@
 
 ## 3. Boarding (sable-sublevels)
 
-- [ ] 3.1 Move `sable:tp` to the client thread with its server part in one submitted task (D6), prefer spots in sight of the block and report `dist` and `hidden` (D5), with help and the README's Sable section; verify on the dev client with Sable that a lever inside a cabin next to its window boards the player inside without `hidden`, that a walled-in block reports `hidden`, and that the existing scenario still holds
+- [x] 3.1 Move `sable:tp` to the client thread with its server part in one submitted task (D6), prefer spots in sight of the block and report `dist` and `hidden` (D5), with help and the README's Sable section; verify on the dev client with Sable that a lever inside a cabin next to its window boards the player inside without `hidden`, that a walled-in block reports `hidden`, and that the existing scenario still holds
 - [ ] 3.2 Add `sable:tp <sub-level> <block|#tag|*pattern>` (D6) with help and README; verify on the dev client that it boards next to the nearest match by UUID, name and `here`, answering with its `block` and `target`, also once the client has dropped the sub-level, and fails `no_block` without moving the player when nothing matches
 
 ## 4. Perception and observation replies (game-perception, client-observation)

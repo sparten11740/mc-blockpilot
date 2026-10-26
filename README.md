@@ -198,7 +198,9 @@ works with them:
     `sable:info ship brief` only heading, pitch, roll, speed, climb rate and `agl`, e.g. for
     `sample sable:info ship brief every 10t x20` over a take-off.
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions.
-  - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on).
+  - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the
+    nearest from which the block is in sight, so inside a hull rather than on it, else the nearest with `hidden`.
+    `dist` is how far the player's eyes are from the block.
   - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to
     plot.
 

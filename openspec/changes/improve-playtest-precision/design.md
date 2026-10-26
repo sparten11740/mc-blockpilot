@@ -63,11 +63,12 @@ only with `sneak` and an item in hand.
 ### D5. `sable:tp` checks sight in the plot
 
 The plot holds all of a sub-level's blocks, so sight is a ray in the server
-level from the spot's eye height to the block's centre, stopping at outline
-shapes. A spot sees the block when the first shape the ray meets is the
-block's. The candidate spots are tested nearest first, so the cost stays at
-one ray per spot up to the first that sees it. `dist` is measured in the plot
-too; the sub-level moves as one piece, so distances are the same in the world.
+level from the spot's eye height to the centre of the block's shape (a
+lever's shape ends below the block's centre), stopping at outline shapes. A
+spot sees the block when the first shape the ray meets is the block's. The
+candidate spots are tested nearest first, so the cost stays at one ray per
+spot up to the first that sees it. `dist` is measured in the plot too; the
+sub-level moves as one piece, so distances are the same in the world.
 Outline shapes, not light, decide sight, so glass hides a block: that is the
 line a click needs.
 

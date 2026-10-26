@@ -22,7 +22,8 @@ import net.minecraft.world.level.Level;
 
 /**
  * {@code side=server} on read-only queries: the same read against the integrated server's level instead of the
- * client's, on the server thread, so it sees chunks the client has not loaded (and never loads any).
+ * client's, on the server thread, so it sees chunks the client has not loaded (and never loads any). Client-thread
+ * actions also do their one server step through it.
  */
 public final class Sides {
     public static final List<String> NAMES = List.of("client", "server");
@@ -49,10 +50,18 @@ public final class Sides {
 
     public static Result read(Args args, Read read) throws CommandException {
         String side = args.option("side");
-        Minecraft minecraft = Minecraft.getInstance();
         if (side == null || side.equals("client")) {
-            return read.apply(minecraft.level, false);
+            return read.apply(Minecraft.getInstance().level, false);
         }
+        return onServer(read);
+    }
+
+    /**
+     * Runs on the integrated server's level in the player's dimension, on the server thread, and waits for it up to
+     * the usual limit; its command errors come back as error results.
+     */
+    public static Result onServer(Read read) throws CommandException {
+        Minecraft minecraft = Minecraft.getInstance();
         MinecraftServer server = minecraft.getSingleplayerServer();
         if (server == null) {
             throw new CommandException("no_server");

@@ -44,7 +44,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * Commands that act as the player: they turn the camera, hold movement keys and click use/attack through the
@@ -261,7 +260,7 @@ final class ActionCommands {
         }
         boolean whole = absolute.x() == Math.floor(absolute.x()) && absolute.y() == Math.floor(absolute.y())
             && absolute.z() == Math.floor(absolute.z());
-        return whole ? shapeCentre(level, BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
+        return whole ? Shapes.centre(level, BlockPos.containing(absolute.x(), absolute.y(), absolute.z()))
             : new Vec3(absolute.x(), absolute.y(), absolute.z());
     }
 
@@ -281,12 +280,6 @@ final class ActionCommands {
 
     private static boolean outsideBlock(double coordinate) {
         return coordinate < 0 || coordinate > 1;
-    }
-
-    private static Vec3 shapeCentre(Level level, BlockPos pos) {
-        VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
-        return shape.isEmpty() ? Vec3.atCenterOf(pos)
-            : shape.bounds().getCenter().add(pos.getX(), pos.getY(), pos.getZ());
     }
 
     /**
