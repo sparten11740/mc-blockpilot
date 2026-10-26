@@ -46,10 +46,11 @@ public final class ObservationCommands {
             .option("hud", "off: hide the GUI, crosshair and hand while capturing",
                 List.of("on", "off"))
             .option("crop", "x0,y0,x1,y1: only that part of each frame, in fractions from the top left")
-            .help("saves the last rendered frame as PNG (default 512 wide) and returns its path; with burst=n "
-                + "every=Nt it saves n frames, one every N ticks, starting now, and with sheet one PNG of them in a "
-                + "grid, each labelled #<n> t<tick>. Works with the window in the background. MCP also has a "
-                + "screenshot tool").field("file", "absolute path")
+            .help("saves the last rendered frame as PNG (default 512 wide) and returns its path and the tick it was "
+                + "captured on; with burst=n every=Nt it saves n frames, one every N ticks, starting now, and with "
+                + "sheet one PNG of them in a grid, each labelled #<n> t<tick>. Works with the window in the "
+                + "background. MCP also has a screenshot tool").field("file", "absolute path")
+            .field("tick", "the tick the frame was captured on")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
@@ -130,7 +131,9 @@ public final class ObservationCommands {
                     }
                     cancel();
                     if (frames == 1) {
-                        return Result.ok(new Fields().bare("file", rows.get(0).fields().get("file")));
+                        Fields frame = rows.get(0).fields();
+                        return Result.ok(new Fields().bare("file", frame.get("file"))
+                            .put("tick", frame.get("tick"), "t" + frame.get("tick")));
                     }
                     return Result.ok(fields.put("frames", rows.size(), "frames=" + rows.size())).withRows(rows);
                 } catch (IOException e) {

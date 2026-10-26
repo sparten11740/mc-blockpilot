@@ -150,6 +150,7 @@ def main():
         ("raw input", "key press key.inventory; wait 3t; screen; close; mouse move 40 0 4t",
          [r"creative_inventory|inventory"]),
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
+        ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
         ("screenshot burst", "screenshot burst=2 every=5t 256", [r"frames=2"]),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
