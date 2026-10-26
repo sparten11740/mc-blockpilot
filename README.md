@@ -158,7 +158,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `quit` (leaves, answers `ok pid=<pid>` and closes the game), `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines; runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as the player), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>` (see [With Sable](#with-sable)) |
+| sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
 
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
@@ -200,7 +200,9 @@ works with them:
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the
     nearest from which the block is in sight, so inside a hull rather than on it, else the nearest with `hidden`.
-    `dist` is how far the player's eyes are from the block.
+    `dist` is how far the player's eyes are from the block. `sable:tp ship *seat*` does the same next to the
+    matching block aboard nearest the player, named in the reply as `block` and `target`; it reads the server's copy,
+    so it also boards a ship that has flown out of the client's sight, without carrying a plot position along.
   - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to
     plot.
 
