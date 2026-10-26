@@ -80,8 +80,11 @@ final class PerceptionCommands {
                 .optional(range -> range.arg("radius", ArgType.INT).optionalArg("limit", ArgType.INT)))
             .option("side", "server: read the integrated server's level (cheats on), incl. chunks the client lacks",
                 Sides.NAMES)
-            .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks")
-            .field("count", "matches").example("find #logs 32 3"));
+            .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks within a cube "
+                + "reaching radius blocks each way from the player (default 32, max " + MAX_FIND_RADIUS + "); with "
+                + "Sable, blocks aboard a sub-level are in its plot, which sable:find searches")
+            .field("count", "matches").field("radius", "the radius searched, when the one asked for was over the max")
+            .example("find #logs 32 3"));
         registry.register(CommandSpec.query("block", this::block).needsWorld().group("perception")
             .arg("pos", ArgType.POSITION).option("side", "server: read the integrated server's level (cheats on)",
                 Sides.NAMES)
@@ -317,14 +320,15 @@ final class PerceptionCommands {
     private Result find(CommandContext context, Args args) throws CommandException {
         LocalPlayer player = minecraft().player;
         String what = args.word("what");
-        int radius = Mth.clamp(args.integer("radius", 32), 1, MAX_FIND_RADIUS);
+        int asked = args.integer("radius", 32);
+        int radius = Mth.clamp(asked, 1, MAX_FIND_RADIUS);
         int limit = Mth.clamp(args.integer("limit", 5), 1, 100);
         var id = args.type("what") == ArgType.ID ? Ids.parse(what) : null;
         BlockMatcher matcher = id != null && !BuiltInRegistries.BLOCK.containsKey(id) ? null : BlockMatcher.parse(what);
         BlockPos center = player.blockPosition();
         Vec3 eyes = player.position();
         AABB box = new AABB(center).inflate(radius);
-        return Sides.read(args, (level, server) -> {
+        Result found = Sides.read(args, (level, server) -> {
             List<Row> rows = new ArrayList<>();
             var entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
             if (matcher == null && entityType.isPresent()) {
@@ -344,15 +348,17 @@ final class PerceptionCommands {
                 drops.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity, server)));
                 return Result.ok().withRows(rows);
             }
-            List<BlockPos> found = new ArrayList<>();
-            BlockScan.around(level, center, radius, matcher, false, (pos, state) -> found.add(pos.immutable()));
-            found.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
-            for (BlockPos pos : found.subList(0, Math.min(limit, found.size()))) {
+            List<BlockPos> blocks = new ArrayList<>();
+            BlockScan.around(level, center, radius, matcher, false, (pos, state) -> blocks.add(pos.immutable()));
+            blocks.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
+            for (BlockPos pos : blocks.subList(0, Math.min(limit, blocks.size()))) {
                 rows.add(Row.of(pos.toShortString(), new Fields().bare("block", Ids.of(level.getBlockState(pos)))
                     .bare("at", Rel.of(pos)).hidden("at_abs", Rel.absolute(pos))));
             }
             return Result.ok().withRows(rows);
         });
+        return asked > MAX_FIND_RADIUS && found.isOk()
+            ? Result.ok(new Fields().put("radius", radius)).withRows(found.rows()) : found;
     }
 
     private Result block(CommandContext context, Args args) throws CommandException {
