@@ -5,11 +5,11 @@
 ### Requirement: Camera placement
 `camera at <pos> [look <pos|e<id>>]` SHALL render the view from the given world
 point, facing the given target, with the player model visible, until `camera
-reset`, or `camera off`, which does the same. The reply gives the camera's
-absolute position and look point. While placed, the player still moves and
-acts as usual, and the GUI and hand are hidden as with F1, until the reset
-restores them. Leaving the world, by any means, and turning agent control off
-with the agent-control key reset the camera.
+reset` (or `camera off`). The reply gives the camera's absolute position and
+look point. While placed, the player still moves and acts as usual, and the GUI
+and hand are hidden as with F1, until the reset restores them. Leaving the
+world, by any means, and turning agent control off with the agent-control key
+reset the camera.
 
 #### Scenario: Outside view of the airliner
 - **WHEN** an agent runs `camera at 40,90,-20 look e812; screenshot`
