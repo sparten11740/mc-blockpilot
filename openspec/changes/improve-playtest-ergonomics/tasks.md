@@ -27,7 +27,7 @@
 
 ## 6. Integration checks
 
-- [ ] 6.1 Build the four jars and run the smoke test on the 1.21.1 NeoForge dev client; verify all node tests pass and the smoke test passes in text and JSON mode
+- [x] 6.1 Build the four jars and run the smoke test on the 1.21.1 NeoForge dev client; verify all node tests pass and the smoke test passes in text and JSON mode
 
 ## Workflow follow-up
 
