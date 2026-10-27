@@ -3,7 +3,7 @@
 ## 1. Loader view and values
 
 - [x] 1.1 Add the `ModConfigs` view to `ClientPlatform.Services`, with the NeoForge implementation (walks the registered `ModConfigSpec` files; `set` changes the value in memory and posts `ModConfigEvent.Reloading` to the owning mod) and the Fabric one reporting no config system (D1, D2, D3); verify that all four targets compile
-- [ ] 1.2 Parse a value's text by its default's type (booleans, whole and decimal numbers, enum names, text, comma-separated lists) and describe what a key takes, in the game layer with unit tests (D4); verify by the tests
+- [x] 1.2 Parse a value's text by its default's type (booleans, whole and decimal numbers, enum names, text, comma-separated lists) and describe what a key takes, in the game layer with unit tests (D4); verify by the tests
 
 ## 2. The config command (mod-config)
 
