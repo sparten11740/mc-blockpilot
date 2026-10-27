@@ -4,6 +4,7 @@ import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.game.GameClock;
 import dev.blockpilot.game.Ids;
+import dev.blockpilot.mixin.AbstractSoundInstanceAccessor;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -26,8 +27,25 @@ public final class Observations {
     static final int MESSAGES = 500;
     static final int PARTICLE_TICKS = 1200;
 
-    /** One sound start; {@code ui} sounds play at the listener (menus, many item sounds), not at a position. */
-    public record Sound(long tick, String id, String category, Vec3 position, boolean ui, float volume, float pitch) {
+    /**
+     * One sound start; {@code ui} sounds play at the listener (menus, many item sounds), not at a position. Volume and
+     * pitch are what it plays with; the asked ones are those it was played with, before its resource scaled them, and
+     * null for a sound instance of a mod's own kind.
+     */
+    public record Sound(long tick, String id, String category, Vec3 position, boolean ui, float volume, float pitch,
+        Float askedVolume, Float askedPitch) {
+        /** The resolved sound as it is now. */
+        public static Sound of(long tick, SoundInstance sound) {
+            Float askedVolume = null;
+            Float askedPitch = null;
+            if (sound instanceof AbstractSoundInstanceAccessor own) {
+                askedVolume = own.blockpilot$volume();
+                askedPitch = own.blockpilot$pitch();
+            }
+            return new Sound(tick, Ids.of(sound.getLocation()), sound.getSource().getName(),
+                new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.isRelative(), sound.getVolume(),
+                sound.getPitch(), askedVolume, askedPitch);
+        }
     }
 
     public record Message(long tick, String kind, String text) {
@@ -56,9 +74,7 @@ public final class Observations {
     }
 
     public static synchronized void sound(SoundInstance sound) {
-        String category = sound.getSource().getName();
-        Sound entry = new Sound(tick(), Ids.of(sound.getLocation()), category,
-            new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.isRelative(), sound.getVolume(), sound.getPitch());
+        Sound entry = Sound.of(tick(), sound);
         SOUND_LOG.add(entry);
         STARTED.putIfAbsent(sound, entry.tick());
     }

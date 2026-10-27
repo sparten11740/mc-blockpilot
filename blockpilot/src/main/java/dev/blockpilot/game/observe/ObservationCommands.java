@@ -91,7 +91,10 @@ public final class ObservationCommands {
             .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*; an id without * must be a sound "
                 + "event the client knows", ArgType.PATTERN, ArgType.ID)
             .option("limit", "most recent n (default 50)", ArgType.INT)
-            .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted); the log "
+            .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted). vol and "
+                + "pitch are what it plays with: the values it was played with times those its resource (sounds.json) "
+                + "gives the variant chosen, and where these differ asked:<vol>/<pitch> gives the values it was played "
+                + "with; the engine plays pitch within 0.5 to 2. The log "
                 + "keeps the last 2000, and from=<tick> says where it begins when it dropped some of the asked "
                 + "window. sounds playing: the sounds playing now, with loop and played=<s> since their start (game "
                 + "time); a sound whose category or the master volume is 0 never plays, so the log has it and this "
@@ -99,6 +102,8 @@ public final class ObservationCommands {
                 + "client doesn't know fails, naming the closest")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
+            .field("asked_volume", "the volume it was played with, where its resource scales it")
+            .field("asked_pitch", "the pitch it was played with, where its resource scales it")
             .field("loop", "playing: the sound loops").field("played", "playing: seconds since it started")
             .example("sounds since=1200 match=*gear*"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
@@ -312,8 +317,7 @@ public final class ObservationCommands {
         List<Observations.Sound> shown = last(sounds, limit);
         List<Row> rows = new ArrayList<>();
         for (Observations.Sound sound : shown) {
-            Fields fields = soundFields(sound.id(), sound.category(), sound.ui(), sound.position(), sound.volume(),
-                sound.pitch()).put("tick", sound.tick(), "t" + sound.tick());
+            Fields fields = soundFields(sound).put("tick", sound.tick(), "t" + sound.tick());
             rows.add(Row.of(sound.tick() + ":" + sound.id(), fields));
         }
         return Result.ok(listed(sounds.size(), Observations.soundsFrom(since)))
@@ -341,8 +345,7 @@ public final class ObservationCommands {
         List<Row> rows = new ArrayList<>();
         for (Playing entry : shown) {
             SoundInstance sound = entry.sound();
-            Fields fields = soundFields(entry.id(), sound.getSource().getName(), sound.isRelative(),
-                new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.getVolume(), sound.getPitch());
+            Fields fields = soundFields(Observations.Sound.of(now, sound));
             if (sound.isLooping()) {
                 fields.put("loop", true, "loop");
             }
@@ -356,16 +359,22 @@ public final class ObservationCommands {
         return Result.ok(listed(playing.size(), null)).withRows(rows, playing.size() - shown.size());
     }
 
-    private static Fields soundFields(String id, String category, boolean ui, Vec3 position, float volume,
-        float pitch) {
-        Fields fields = new Fields().bare("id", id).bare("category", category);
-        if (ui) {
+    private static Fields soundFields(Observations.Sound sound) {
+        Fields fields = new Fields().bare("id", sound.id()).bare("category", sound.category());
+        if (sound.ui()) {
             fields.put("ui", true, "ui");
         } else {
-            fields.bare("at", Rel.of(position)).hidden("at_abs", Rel.absolute(position));
+            fields.bare("at", Rel.of(sound.position())).hidden("at_abs", Rel.absolute(sound.position()));
         }
-        return fields.put("volume", (double) volume, "vol" + Numbers.format(volume))
-            .put("pitch", (double) pitch, "pitch" + Numbers.format(pitch));
+        fields.put("volume", (double) sound.volume(), "vol" + Numbers.format(sound.volume()))
+            .put("pitch", (double) sound.pitch(), "pitch" + Numbers.format(sound.pitch()));
+        Float askedVolume = sound.askedVolume();
+        Float askedPitch = sound.askedPitch();
+        if (askedVolume != null && (askedVolume != sound.volume() || askedPitch != sound.pitch())) {
+            fields.put("asked_volume", (double) askedVolume, "asked:" + Numbers.format(askedVolume) + "/"
+                + Numbers.format(askedPitch)).hidden("asked_pitch", (double) askedPitch);
+        }
+        return fields;
     }
 
     /** A sound's match= as a pattern; without * it names a sound event, which the client has to know. */
