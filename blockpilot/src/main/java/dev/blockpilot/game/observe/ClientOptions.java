@@ -412,6 +412,15 @@ public final class ClientOptions {
                 ORIGINALS.putIfAbsent(name, original);
             }
         });
+        tellServer();
+    }
+
+    /**
+     * Sends the server the client's information, the render distance among it, which decides how far around the
+     * player the server sends chunks. The game sends it when it saves options.txt, which agent changes never do.
+     */
+    private static void tellServer() {
+        Minecraft.getInstance().options.broadcastOptions();
     }
 
     /** Called from a mixin before the game sets an option as a side effect of another (a graphics preset). */
@@ -431,6 +440,9 @@ public final class ClientOptions {
         UNLISTED.values().forEach(Runnable::run);
         ORIGINALS.clear();
         UNLISTED.clear();
+        if (!restored.isEmpty()) {
+            tellServer();
+        }
         return restored;
     }
 }

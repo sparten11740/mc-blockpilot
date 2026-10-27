@@ -163,6 +163,17 @@ game changed along with the one an agent set. Blockpilot SHALL NOT write
   `option reset`
 - **THEN** the preset and every option it set are back at the player's values
 
+### Requirement: Option changes reach the server
+An agent's change or reset of the client options SHALL reach the server as one
+made in the game's settings does, so a new render distance changes how far
+around the player the server sends chunks.
+
+#### Scenario: Render distance raised in a world
+- **WHEN** an agent who joined a world at render distance 6 runs
+  `option renderDistance 20`
+- **THEN** the server sends the chunks within 20 chunks of the player, as if
+  the game had been started at 20
+
 ### Requirement: Supported options
 The option names SHALL be those of the running version's `options.txt`:
 `graphicsMode`, `particles`, `renderDistance`, `simulationDistance`,
