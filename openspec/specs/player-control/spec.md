@@ -40,7 +40,13 @@ only when the action finishes, fails, is interrupted, or hits its timeout
 `goto <pos|e<id>> [near=<r>]` SHALL compute a path through loaded chunks and
 walk it. The path may walk, sprint, jump one block up, drop up to three blocks,
 swim, and climb ladders/vines. It SHALL NOT break or place blocks. It fails with
-`err no_path`, or with `err stuck <pos>` if progress stops for 3 s.
+`err no_path`, or with `err stuck <pos>` if progress stops for 3 s. Its jumps
+SHALL NOT turn creative flight on or off.
+
+#### Scenario: Stairs in creative
+- **WHEN** an agent in creative, not flying, runs `goto` to the top of a flight
+  of stairs
+- **THEN** the player walks up the stairs and arrives without flying
 
 #### Scenario: Unreachable target
 - **WHEN** the target is enclosed by solid blocks

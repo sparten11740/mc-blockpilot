@@ -23,6 +23,8 @@ public final class Navigator implements Action {
     private static final int MAX_NODES = 60000;
     private static final int STUCK_TICKS = 60;
     private static final int MAX_REPLANS = 8;
+    /** A second press of jump within this many ticks of the first turns creative flight on or off. */
+    private static final int DOUBLE_TAP_TICKS = 7;
 
     private final int session;
     private final Supplier<Vec3> target;
@@ -36,6 +38,8 @@ public final class Navigator implements Action {
     private int sinceProgress;
     private int lastIndex;
     private BlockPos plannedFor;
+    private boolean jumpHeld;
+    private int sincePress = DOUBLE_TAP_TICKS;
 
     public Navigator(int session, Supplier<Vec3> target, double near) {
         this.session = session;
@@ -132,9 +136,16 @@ public final class Navigator implements Action {
         player.setYHeadRot(yaw);
         var options = minecraft().options;
         InputState.hold(session, options.keyUp);
-        if (jump && (player.onGround() || player.isInWater() || player.onClimbable())) {
+        sincePress++;
+        boolean wanted = jump && (player.onGround() || player.isInWater() || player.onClimbable());
+        if (wanted && (jumpHeld || sincePress > DOUBLE_TAP_TICKS || !player.getAbilities().mayfly)) {
+            if (!jumpHeld) {
+                sincePress = 0;
+            }
+            jumpHeld = true;
             InputState.hold(session, options.keyJump);
         } else {
+            jumpHeld = false;
             InputState.release(options.keyJump);
         }
     }
@@ -143,6 +154,7 @@ public final class Navigator implements Action {
         var options = minecraft().options;
         InputState.release(options.keyUp);
         InputState.release(options.keyJump);
+        jumpHeld = false;
     }
 
     @Override
