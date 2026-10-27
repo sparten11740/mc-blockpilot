@@ -4,9 +4,6 @@ import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.game.GameClock;
 import dev.blockpilot.game.Ids;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -35,8 +32,8 @@ public final class Observations {
     public record Message(long tick, String kind, String text) {
     }
 
-    private static final Deque<Sound> SOUND_LOG = new ArrayDeque<>();
-    private static final Deque<Message> MESSAGE_LOG = new ArrayDeque<>();
+    private static final TickLog<Sound> SOUND_LOG = new TickLog<>(SOUNDS, Sound::tick);
+    private static final TickLog<Message> MESSAGE_LOG = new TickLog<>(MESSAGES, Message::tick);
     private static final LinkedHashMap<Long, Map<String, Integer>> PARTICLES = new LinkedHashMap<>();
     private static final Map<String, String> LAST_TEXT = new HashMap<>();
     private static final Map<String, Long> LAST_TICK = new HashMap<>();
@@ -59,10 +56,7 @@ public final class Observations {
         String category = sound.getSource().getName();
         Sound entry = new Sound(tick(), Ids.of(sound.getLocation()), category,
             new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.isRelative(), sound.getVolume(), sound.getPitch());
-        if (SOUND_LOG.size() >= SOUNDS) {
-            SOUND_LOG.removeFirst();
-        }
-        SOUND_LOG.addLast(entry);
+        SOUND_LOG.add(entry);
     }
 
     /**
@@ -81,10 +75,7 @@ public final class Observations {
             if (!kind.equals("chat") && text.equals(previous) && refreshed != null && now - refreshed < REPEAT_TICKS) {
                 return;
             }
-            if (MESSAGE_LOG.size() >= MESSAGES) {
-                MESSAGE_LOG.removeFirst();
-            }
-            MESSAGE_LOG.addLast(new Message(now, kind, text));
+            MESSAGE_LOG.add(new Message(now, kind, text));
         }
         if (!kind.equals("chat")) {
             events.accept(Event.of(kind, new Fields().bare("text", text)));
@@ -103,23 +94,21 @@ public final class Observations {
     }
 
     public static synchronized List<Sound> sounds(long since) {
-        List<Sound> out = new ArrayList<>();
-        for (Sound sound : SOUND_LOG) {
-            if (sound.tick() >= since) {
-                out.add(sound);
-            }
-        }
-        return out;
+        return SOUND_LOG.since(since);
+    }
+
+    /** See {@link TickLog#from}. */
+    public static synchronized Long soundsFrom(long since) {
+        return SOUND_LOG.from(since);
     }
 
     public static synchronized List<Message> messages(long since) {
-        List<Message> out = new ArrayList<>();
-        for (Message message : MESSAGE_LOG) {
-            if (message.tick() >= since) {
-                out.add(message);
-            }
-        }
-        return out;
+        return MESSAGE_LOG.since(since);
+    }
+
+    /** See {@link TickLog#from}. */
+    public static synchronized Long messagesFrom(long since) {
+        return MESSAGE_LOG.from(since);
     }
 
     /** Particle counts per type over the ticks from {@code since} on. */

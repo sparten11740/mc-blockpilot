@@ -83,8 +83,11 @@ public final class ObservationCommands {
             .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*", ArgType.PATTERN,
                 ArgType.ID)
             .option("limit", "most recent n (default 50)", ArgType.INT)
-            .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted)")
+            .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted); the log "
+                + "keeps the last 2000, and from=<tick> says where it begins when it dropped some of the asked "
+                + "window")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
+            .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
             .example("sounds since=1200 match=*gear*"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
             .option("since", "first tick to include, or a duration back from now, e.g. 60t", ArgType.INT,
@@ -93,7 +96,10 @@ public final class ObservationCommands {
             .option("match", "only messages whose whole text fits this pattern, ignoring case; * stands for any run "
                 + "of characters, spaces included, e.g. *gear*refused*")
             .option("limit", "most recent n (default 50)", ArgType.INT)
-            .help("chat, action-bar, title and subtitle messages with their tick").field("tick", "current tick")
+            .help("chat, action-bar, title and subtitle messages with their tick; the log keeps the last 500, and "
+                + "from=<tick> says where it begins when it dropped some of the asked window")
+            .field("tick", "current tick")
+            .field("from", "the tick of the oldest message the log keeps, when it dropped some from the window")
             .field("count", "matching messages").example("messages kind=actionbar"));
         registry.register(CommandSpec.query("particles", this::particles).group("observe")
             .option("since", "first tick to include, or a duration back from now (default: the last 20 ticks)",
@@ -302,8 +308,15 @@ public final class ObservationCommands {
                 .put("tick", sound.tick(), "t" + sound.tick());
             rows.add(Row.of(sound.tick() + ":" + sound.id(), fields));
         }
-        return Result.ok(new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
-            .put("count", sounds.size(), "count=" + sounds.size())).withRows(rows, sounds.size() - shown.size());
+        return Result.ok(listed(sounds.size(), Observations.soundsFrom(since)))
+            .withRows(rows, sounds.size() - shown.size());
+    }
+
+    /** The current tick and the count, with from= when the log dropped entries from the window. */
+    private static Fields listed(int count, Long from) {
+        Fields fields = new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
+            .put("count", count, "count=" + count);
+        return from == null ? fields : fields.put("from", from, "from=" + from);
     }
 
     private Result messages(CommandContext context, Args args) throws CommandException {
@@ -323,8 +336,8 @@ public final class ObservationCommands {
             rows.add(Row.of(message.tick() + ":" + message.kind(), new Fields().bare("kind", message.kind())
                 .put("tick", message.tick(), "t" + message.tick()).bare("text", message.text())));
         }
-        return Result.ok(new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
-            .put("count", messages.size(), "count=" + messages.size())).withRows(rows, messages.size() - shown.size());
+        return Result.ok(listed(messages.size(), Observations.messagesFrom(since)))
+            .withRows(rows, messages.size() - shown.size());
     }
 
     private Result particles(CommandContext context, Args args) throws CommandException {
