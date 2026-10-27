@@ -38,6 +38,7 @@ import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
@@ -119,7 +120,9 @@ final class ActionCommands {
             .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID)
             .optionalArg("count", ArgType.COUNT)
             .help("digs the block at <pos> (in reach), what the crosshair hits (no target), or walks to and digs "
-                + "the n nearest <block|#tag>; picks the best tool").example("mine #logs x6"));
+                + "the n nearest <block|#tag>; picks the best tool. A block the player can't break (bedrock outside "
+                + "creative, adventure mode) fails at once with err unbreakable; by type such blocks are passed over")
+            .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)
             .help("places the item at pos against an adjacent block").example("place torch ~1,0,0"));
@@ -730,14 +733,23 @@ final class ActionCommands {
         }
         BlockMatcher matcher = BlockMatcher.parse(token);
         Set<BlockPos> tried = new HashSet<>();
-        Supplier<BlockPos> nearest = () -> {
+        Dig.Targets nearest = () -> {
             BlockPos center = player().blockPosition();
             BlockPos[] best = {null};
+            String[] unbreakable = {null};
             BlockScan.around(minecraft().level, center, MINE_SEARCH_RADIUS, matcher, false, (pos, state) -> {
-                if (!tried.contains(pos) && (best[0] == null || pos.distSqr(center) < best[0].distSqr(center))) {
+                if (tried.contains(pos)) {
+                    return;
+                }
+                if (!breakable(state, pos)) {
+                    unbreakable[0] = Ids.of(state);
+                } else if (best[0] == null || pos.distSqr(center) < best[0].distSqr(center)) {
                     best[0] = pos.immutable();
                 }
             });
+            if (best[0] == null && tried.isEmpty() && unbreakable[0] != null) {
+                throw new CommandException("unbreakable", unbreakable[0]);
+            }
             if (best[0] != null) {
                 tried.add(best[0]);
             }
@@ -747,12 +759,28 @@ final class ActionCommands {
     }
 
     /**
+     * Whether holding attack can break the block: creative breaks any, otherwise the game mode must allow it and each
+     * tick of digging must make progress (none for bedrock, or a block a mod makes unbreakable).
+     */
+    private static boolean breakable(BlockState state, BlockPos pos) {
+        GameType mode = minecraft().gameMode.getPlayerMode();
+        return mode.isCreative() || !player().blockActionRestricted(minecraft().level, pos, mode)
+            && state.getDestroyProgress(player(), minecraft().level, pos) > 0;
+    }
+
+    /**
      * Digs blocks one after another: walks into reach when allowed, picks the best tool, aims at the block and holds
      * attack until it breaks. The crosshair must hit the block itself, so blocks behind others are skipped.
      */
     private static final class Dig implements Action {
+        /** The next block to dig, or null when there is none. */
+        @FunctionalInterface
+        interface Targets {
+            BlockPos next() throws CommandException;
+        }
+
         private final int session;
-        private final Supplier<BlockPos> targets;
+        private final Targets targets;
         private final int wanted;
         private final boolean walk;
         private final String what;
@@ -765,7 +793,7 @@ final class ActionCommands {
         private int digTicks;
         private String minedId;
 
-        Dig(int session, Supplier<BlockPos> targets, int wanted, boolean walk, String what) {
+        Dig(int session, Targets targets, int wanted, boolean walk, String what) {
             this.session = session;
             this.targets = targets;
             this.wanted = wanted;
@@ -776,7 +804,7 @@ final class ActionCommands {
         @Override
         public Result tick() throws CommandException {
             if (current == null) {
-                current = targets.get();
+                current = targets.next();
                 if (current == null) {
                     return finish();
                 }
@@ -819,6 +847,13 @@ final class ActionCommands {
             if (digTicks++ == 0) {
                 InventoryOps.selectBestTool(state);
                 InventoryOps.selectItemThatCanBreak(state, current);
+                if (!breakable(state, current)) {
+                    if (!walk) {
+                        throw new CommandException("unbreakable", Ids.of(state) + " " + Rel.of(current));
+                    }
+                    current = null;
+                    return null;
+                }
             }
             lookAt(center);
             HitResult hit = minecraft().hitResult;
