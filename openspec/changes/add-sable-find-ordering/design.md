@@ -38,7 +38,10 @@ doesn't depend on scan order.
 The position is resolved as other position arguments are (`~` relative to
 the player), then passed through `SubLevels.toWorld`. A plot position becomes
 its world point, and a world position stays as it is. Distances are then
-measured to each match's world position, as for the eyes today.
+measured to each match's world position, as for the eyes today. Whole
+coordinates name a block and mean its centre, as for `face` and `pixels`:
+matches are measured from their centres, so a block's own position lists that
+block first instead of tying it with its neighbours at the shared corner.
 
 ### D3. `count=` as `find` has it
 

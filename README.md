@@ -159,7 +159,7 @@ ok
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `quit` (leaves, answers `ok pid=<pid>` and closes the game), `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only), `config` (the mods with NeoForge config files), `config <mod> [client\|common\|server\|startup] [match=]` (their values by dotted key), `config <mod> [<type>] <key> [<value>]` (a value's default, what it takes and the mod's comment; with a value, sets it in memory, never in the file, and tells the mod as a reload of its file does; `err needs_restart` for a value only a game restart, or for a server config a world load, would apply; server configs need a world, and setting one the integrated server), `config reset` (puts back what agents changed, as leave, quitting, the agent-control key and shutdown do) |
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines; runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as the player; a failing command, a failing `execute if` test among them, is `err command_failed` with its `result`, which `?server …` lets the script carry on past), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
-| sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
+| sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit] [sort=x\|y\|z\|-x\|-y\|-z] [near=<pos>]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
 
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
@@ -203,7 +203,10 @@ works with them:
     `sample sable:info ship brief every 10t x20` over a take-off. The size in `sable:list` and the plot bounds are the
     world bounds turned back into the plot, so they grow while the sub-level is turned.
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions; with `side=server` from the
-    server's copy, also on a sub-level the client hasn't received.
+    server's copy, also on a sub-level the client hasn't received. They come nearest to the player first, nearest to
+    `near=<pos>` (a world or plot position), or with `sort=-z` along the sub-level's own plot axes (`-` for largest
+    first), so `sable:find ship *booster* 1 sort=-z` is the one furthest toward plot +z however the ship is turned. The
+    limit cuts the ordered list, and `count=` gives all matches when it left some out.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the
     nearest from which the block is in sight, so inside a hull rather than on it, else the nearest with `hidden`.
     `dist` is how far the player's eyes are from the block. `sable:tp ship *seat*` does the same next to the

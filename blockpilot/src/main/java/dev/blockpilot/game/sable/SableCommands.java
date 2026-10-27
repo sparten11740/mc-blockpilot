@@ -107,9 +107,16 @@ final class SableCommands {
             .optionalArg("limit", ArgType.INT)
             .option("side", "server: read the integrated server's copy of the plot, also of a sub-level the client "
                 + "has not received (cheats on)", Sides.NAMES)
-            .help("blocks aboard a sub-level (id, #tag or *pattern), nearest to the player first (limit default 5, "
-                + "max 100); " + REFERENCE)
+            .option("sort", "along the sub-level's own plot axes, smallest first, or largest first with -",
+                List.of("x", "y", "z", "-x", "-y", "-z"))
+            .option("near", "a world or plot position to order by distance from, instead of the player",
+                ArgType.POSITION)
+            .help("blocks aboard a sub-level (id, #tag or *pattern), nearest to the player first, or to near=<pos>, "
+                + "or with sort=x|y|z|-x|-y|-z along the sub-level's own plot axes (level ones nearest first); the "
+                + "order covers all matches, then the limit (default 5, max 100) cuts it, and count= gives all "
+                + "matches when it left some out; " + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
+            .field("count", "matches in all, when the limit left some out")
             .example("sable:find here *door* 3"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.action("tp", SableCommands::teleport)
             .needsServer().form(form -> form.arg("pos", ArgType.POSITION))
@@ -208,22 +215,53 @@ final class SableCommands {
         UUID known = knownSubLevel(args, "sub");
         BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
         int limit = Mth.clamp(args.integer("limit", 5), 1, MAX_FIND_LIMIT);
+        Comparator<Aboard> sort = args.option("sort") == null ? null : alongAxis(args.option("sort"));
+        Position near = args.option("near") == null ? null : context.resolve(Position.parse(args.option("near")));
         Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
         return Sides.read(args, (level, server) -> {
             SubLevels.Info info = resolve(level, known, args, "sub");
-            return Result.ok().withRows(aboard(level, info, matcher, eyes).stream().limit(limit)
-                .map(found -> Row.of(found.pos().toShortString(), new Fields()
-                    .bare("block", Ids.of(level.getBlockState(found.pos())))
-                    .bare("at", Rel.absolute(found.pos())).put("world", Rel.absolute(found.world()))))
-                .toList());
+            // A plot position becomes its world point; distances agree, as a sub-level only moves and turns.
+            Vec3 from = near == null ? eyes : SableSupport.subLevels().toWorld(level, point(near));
+            List<Aboard> found = aboard(level, info, matcher, from);
+            if (sort != null) {
+                // A stable sort, so blocks level on the axis keep their distance order.
+                found.sort(sort);
+            }
+            List<Row> rows = found.stream().limit(limit)
+                .map(block -> Row.of(block.pos().toShortString(), new Fields()
+                    .bare("block", Ids.of(level.getBlockState(block.pos())))
+                    .bare("at", Rel.absolute(block.pos())).put("world", Rel.absolute(block.world()))))
+                .toList();
+            return (found.size() > limit ? Result.ok(new Fields().put("count", found.size())) : Result.ok())
+                .withRows(rows);
         });
+    }
+
+    /** Whole coordinates name a block and mean its centre, where the blocks found are measured from. */
+    private static Vec3 point(Position position) {
+        Vec3 point = new Vec3(position.x(), position.y(), position.z());
+        boolean whole = point.x == Math.floor(point.x) && point.y == Math.floor(point.y)
+            && point.z == Math.floor(point.z);
+        return whole ? Vec3.atCenterOf(BlockPos.containing(point)) : point;
+    }
+
+    /** {@code x}, {@code y} or {@code z} of the plot position, smallest first; with {@code -} largest first. */
+    private static Comparator<Aboard> alongAxis(String sort) {
+        boolean descending = sort.startsWith("-");
+        String axis = sort.substring(descending ? 1 : 0);
+        Comparator<Aboard> order = Comparator.comparingInt(block -> switch (axis) {
+            case "x" -> block.pos().getX();
+            case "y" -> block.pos().getY();
+            default -> block.pos().getZ();
+        });
+        return descending ? order.reversed() : order;
     }
 
     private record Aboard(BlockPos pos, Vec3 world) {
     }
 
-    /** The blocks aboard the sub-level that match, nearest to the eyes first, as the level holds them. */
-    private static List<Aboard> aboard(Level level, SubLevels.Info info, BlockMatcher matcher, Vec3 eyes)
+    /** The blocks aboard the sub-level that match, nearest to the world point first, as the level holds them. */
+    private static List<Aboard> aboard(Level level, SubLevels.Info info, BlockMatcher matcher, Vec3 from)
         throws CommandException {
         AABB plot = info.plotBounds();
         BlockPos min = BlockPos.containing(plot.minX, plot.minY, plot.minZ);
@@ -237,7 +275,7 @@ final class SableCommands {
         List<Aboard> found = new ArrayList<>();
         BlockScan.box(level, min, max, matcher, false,
             (pos, state) -> found.add(new Aboard(pos.immutable(), subLevels.toWorld(level, Vec3.atCenterOf(pos)))));
-        found.sort(Comparator.comparingDouble(block -> block.world().distanceTo(eyes)));
+        found.sort(Comparator.comparingDouble(block -> block.world().distanceTo(from)));
         return found;
     }
 
