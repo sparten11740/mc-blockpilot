@@ -18,6 +18,7 @@ import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.game.Sides;
+import dev.blockpilot.game.input.KeyNames;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -26,7 +27,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
@@ -80,12 +83,13 @@ public final class ObservationCommands {
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
             .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
                 + "now, e.g. 60t", ArgType.INT, ArgType.DURATION)
-            .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*", ArgType.PATTERN,
-                ArgType.ID)
+            .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*; an id without * must be a sound "
+                + "event the client knows", ArgType.PATTERN, ArgType.ID)
             .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted); the log "
                 + "keeps the last 2000, and from=<tick> says where it begins when it dropped some of the asked "
-                + "window")
+                + "window. A match= without * is a sound event id (minecraft: when it names no namespace); one the "
+                + "client doesn't know fails, naming the closest")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
             .example("sounds since=1200 match=*gear*"));
@@ -286,11 +290,10 @@ public final class ObservationCommands {
 
     private Result sounds(CommandContext context, Args args) throws CommandException {
         long since = since(args, Long.MIN_VALUE);
-        Pattern match = args.option("match") == null ? null : glob(args.option("match"));
+        Pattern match = args.option("match") == null ? null : soundPattern(args.option("match"));
         List<Observations.Sound> sounds = new ArrayList<>();
         for (Observations.Sound sound : Observations.sounds(since)) {
-            String full = sound.id().contains(":") ? sound.id() : "minecraft:" + sound.id();
-            if (match == null || match.matcher(full).matches()) {
+            if (matches(match, sound.id())) {
                 sounds.add(sound);
             }
         }
@@ -310,6 +313,28 @@ public final class ObservationCommands {
         }
         return Result.ok(listed(sounds.size(), Observations.soundsFrom(since)))
             .withRows(rows, sounds.size() - shown.size());
+    }
+
+    /** A sound's match= as a pattern; without * it names a sound event, which the client has to know. */
+    private static Pattern soundPattern(String match) throws CommandException {
+        if (match.contains("*")) {
+            return glob(match);
+        }
+        String id = match.contains(":") ? match : "minecraft:" + match;
+        Set<String> known = Minecraft.getInstance().getSoundManager().getAvailableSounds().stream()
+            .map(Object::toString).collect(Collectors.toSet());
+        if (known.contains(id)) {
+            return glob(id);
+        }
+        String path = id.substring(id.indexOf(':') + 1);
+        List<String> containing = known.stream().filter(candidate -> candidate.contains(path)).toList();
+        throw new CommandException("syntax", "unknown sound " + id + "; closest: "
+            + String.join(" ", KeyNames.closest(id, containing.isEmpty() ? known : containing, 3)) + "; or match=*"
+            + path + "*");
+    }
+
+    private static boolean matches(Pattern match, String id) {
+        return match == null || match.matcher(id.contains(":") ? id : "minecraft:" + id).matches();
     }
 
     /** The current tick and the count, with from= when the log dropped entries from the window. */
