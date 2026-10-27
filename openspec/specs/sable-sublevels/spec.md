@@ -171,6 +171,11 @@ received.
   server holds and the client has not received
 - **THEN** the doors aboard are listed from the server's copy
 
+#### Scenario: Tilted ship
+- **WHEN** an agent runs `sable:find` and `sable:tp` with a block on a long
+  ship pitched by 15°
+- **THEN** both find the block as they do while the ship flies level
+
 ### Requirement: Teleporting next to a block aboard
 `sable:tp <plot position>` SHALL put the player on a free spot next to that
 block aboard, in a world with commands allowed, and answer with where the

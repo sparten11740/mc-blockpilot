@@ -51,8 +51,11 @@ final class SableCommands {
     private static final int TP_REACH = 2;
     private static final int TP_SETTLE_TICKS = 2;
     private static final int MAX_FIND_LIMIT = 100;
-    /** The positions sable:find may scan: as many as find's widest cube, 128 blocks each way. */
-    private static final long MAX_FIND_BLOCKS = 257L * 257 * 257;
+    /**
+     * The chunk columns sable:find may look through, half a default Sable plot's width. Plot bounds turned back from a
+     * tilted world box take in far more than the sub-level, but the scan skips the empty sections around it.
+     */
+    private static final long MAX_FIND_COLUMNS = 64L * 64;
     /** Keeps a bound that ends on a block edge from taking in the next block. */
     private static final double EDGE = 1.0E-6;
     /** Sub-levels are seen inside the world border, so this box holds them all. */
@@ -223,10 +226,10 @@ final class SableCommands {
         AABB plot = info.plotBounds();
         BlockPos min = BlockPos.containing(plot.minX, plot.minY, plot.minZ);
         BlockPos max = BlockPos.containing(plot.maxX - EDGE, plot.maxY - EDGE, plot.maxZ - EDGE);
-        long volume = (long) (max.getX() - min.getX() + 1) * (max.getY() - min.getY() + 1)
-            * (max.getZ() - min.getZ() + 1);
-        if (volume > MAX_FIND_BLOCKS) {
-            throw new CommandException("too_large", volume + " blocks in the plot bounds, max " + MAX_FIND_BLOCKS);
+        long columns = (long) ((max.getX() >> 4) - (min.getX() >> 4) + 1) * ((max.getZ() >> 4) - (min.getZ() >> 4) + 1);
+        if (columns > MAX_FIND_COLUMNS) {
+            throw new CommandException("too_large", columns + " chunk columns in the plot bounds, max "
+                + MAX_FIND_COLUMNS);
         }
         SubLevels subLevels = SableSupport.subLevels();
         List<Aboard> found = new ArrayList<>();
