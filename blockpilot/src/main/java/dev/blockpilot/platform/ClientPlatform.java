@@ -38,6 +38,8 @@ public final class ClientPlatform {
 
         /** Registers a key mapping; must be called while the mod is being constructed. */
         void registerKeyMapping(KeyMapping mapping);
+
+        ModConfigs modConfigs();
     }
 
     /** Callbacks the loader's entry point forwards its events to. */
@@ -128,5 +130,9 @@ public final class ClientPlatform {
 
     public static void registerKeyMapping(KeyMapping mapping) {
         services().registerKeyMapping(mapping);
+    }
+
+    public static ModConfigs modConfigs() {
+        return services().modConfigs();
     }
 }

@@ -3,6 +3,7 @@ package dev.blockpilot.platform.neoforge;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
+import dev.blockpilot.platform.ModConfigs;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import net.neoforged.neoforgespi.language.IModFileInfo;
 @Mod(value = Blockpilot.MOD_ID, dist = Dist.CLIENT)
 public final class NeoForgeClientEntrypoint {
     private final List<KeyMapping> keyMappings = new ArrayList<>();
+    private final ModConfigs configs = new NeoForgeModConfigs();
 
     public NeoForgeClientEntrypoint(IEventBus modEventBus) {
         ClientPlatform.install(new ClientPlatform.Services() {
@@ -93,6 +95,11 @@ public final class NeoForgeClientEntrypoint {
             @Override
             public void registerKeyMapping(KeyMapping mapping) {
                 keyMappings.add(mapping);
+            }
+
+            @Override
+            public ModConfigs modConfigs() {
+                return configs;
             }
         });
         Blockpilot.init();

@@ -2,6 +2,7 @@ package dev.blockpilot.platform.fabric;
 
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
+import dev.blockpilot.platform.ModConfigs;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
@@ -117,6 +118,11 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
                 *///?} else {
                 KeyBindingHelper.registerKeyBinding(mapping);
                 //?}
+            }
+
+            @Override
+            public ModConfigs modConfigs() {
+                return ModConfigs.NONE;
             }
         });
         Blockpilot.init();
