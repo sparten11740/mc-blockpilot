@@ -12,4 +12,4 @@
 
 ## 3. Integration checks
 
-- [ ] 3.1 Run `./gradlew build` for all four targets and the smoke test in both modes against the dev client, and check `config` on the Fabric dev client fails with `err unsupported` if it starts; verify all pass
+- [x] 3.1 Run `./gradlew build` for all four targets and the smoke test in both modes against the dev client, and check `config` on the Fabric dev client fails with `err unsupported` if it starts; verify all pass
