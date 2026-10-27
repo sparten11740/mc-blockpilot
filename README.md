@@ -197,7 +197,8 @@ works with them:
   - `sable:info here` gives the pose, velocity, height above ground (`agl`), bounds and whether the player rides it;
     `sable:info ship brief` only heading, pitch, roll, speed, climb rate and `agl`, e.g. for
     `sample sable:info ship brief every 10t x20` over a take-off.
-  - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions.
+  - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions; with `side=server` from the
+    server's copy, also on a sub-level the client hasn't received.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the
     nearest from which the block is in sight, so inside a hull rather than on it, else the nearest with `hidden`.
     `dist` is how far the player's eyes are from the block. `sable:tp ship *seat*` does the same next to the

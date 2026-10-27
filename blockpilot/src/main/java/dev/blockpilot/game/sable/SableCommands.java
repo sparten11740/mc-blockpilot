@@ -100,7 +100,8 @@ final class SableCommands {
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("find", SableCommands::find)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
             .optionalArg("limit", ArgType.INT)
-            .option("side", "server: read the integrated server's copy of the plot (cheats on)", Sides.NAMES)
+            .option("side", "server: read the integrated server's copy of the plot, also of a sub-level the client "
+                + "has not received (cheats on)", Sides.NAMES)
             .help("blocks aboard a sub-level (id, #tag or *pattern), nearest to the player first (limit default 5, "
                 + "max 100); " + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
@@ -199,15 +200,18 @@ final class SableCommands {
     }
 
     private static Result find(CommandContext context, Args args) throws CommandException {
-        SubLevels.Info info = resolve(args, "sub");
+        UUID known = knownSubLevel(args, "sub");
         BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
         int limit = Mth.clamp(args.integer("limit", 5), 1, MAX_FIND_LIMIT);
         Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
-        return Sides.read(args, (level, server) -> Result.ok().withRows(aboard(level, info, matcher, eyes).stream()
-            .limit(limit).map(found -> Row.of(found.pos().toShortString(), new Fields()
-                .bare("block", Ids.of(level.getBlockState(found.pos())))
-                .bare("at", Rel.absolute(found.pos())).put("world", Rel.absolute(found.world()))))
-            .toList()));
+        return Sides.read(args, (level, server) -> {
+            SubLevels.Info info = resolve(level, known, args, "sub");
+            return Result.ok().withRows(aboard(level, info, matcher, eyes).stream().limit(limit)
+                .map(found -> Row.of(found.pos().toShortString(), new Fields()
+                    .bare("block", Ids.of(level.getBlockState(found.pos())))
+                    .bare("at", Rel.absolute(found.pos())).put("world", Rel.absolute(found.world()))))
+                .toList());
+        });
     }
 
     private record Aboard(BlockPos pos, Vec3 world) {
@@ -245,11 +249,7 @@ final class SableCommands {
             BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
             Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
             done = Sides.onServer((level, server) -> {
-                SubLevels.Info info = known != null ? SableSupport.subLevels().info(level, known)
-                    : resolve(level, args, "sub");
-                if (info == null) {
-                    throw new CommandException("no_sublevel", args.word("sub"));
-                }
+                SubLevels.Info info = resolve(level, known, args, "sub");
                 List<Aboard> found = aboard(level, info, matcher, eyes);
                 if (found.isEmpty()) {
                     throw new CommandException("no_block", args.word("what") + " aboard " + info.name());
@@ -276,6 +276,15 @@ final class SableCommands {
             }
             return null;
         }
+    }
+
+    /** On either thread: the sub-level {@link #knownSubLevel} returned as that level holds it, else looked up there. */
+    private static SubLevels.Info resolve(Level level, UUID known, Args args, String name) throws CommandException {
+        SubLevels.Info info = known != null ? SableSupport.subLevels().info(level, known) : resolve(level, args, name);
+        if (info == null) {
+            throw new CommandException("no_sublevel", args.word(name));
+        }
+        return info;
     }
 
     /** On the server thread: puts the player on the best free spot next to the block aboard, see {@link #freeSpot}. */

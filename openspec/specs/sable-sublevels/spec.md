@@ -158,12 +158,18 @@ SHALL give the plot position that is at that world point.
 `sable:find <sub-level> <block|#tag|*pattern> [limit]` SHALL find matching
 blocks aboard the sub-level, nearest to the player first, and give each one's
 plot and world position. With `side=server` it reads the server's copy, as
-`find` does.
+`find` does, and finds the sub-level there too, so also one the client has not
+received.
 
 #### Scenario: Door aboard
 - **WHEN** an agent runs `sable:find here *door* 3` aboard a ship
 - **THEN** the doors aboard are listed with plot and world positions, in one
   call
+
+#### Scenario: Sub-level the client has not received
+- **WHEN** an agent runs `sable:find <UUID> *door* side=server` for a ship the
+  server holds and the client has not received
+- **THEN** the doors aboard are listed from the server's copy
 
 ### Requirement: Teleporting next to a block aboard
 `sable:tp <plot position>` SHALL put the player on a free spot next to that
