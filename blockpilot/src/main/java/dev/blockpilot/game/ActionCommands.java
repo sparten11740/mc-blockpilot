@@ -15,6 +15,9 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.AimedClick;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.path.Navigator;
+import dev.blockpilot.game.path.PathSearch;
+import dev.blockpilot.game.path.Terrain;
+import dev.blockpilot.game.path.WorldTerrain;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.KeyMappingAccessor;
@@ -25,6 +28,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -93,7 +97,9 @@ final class ActionCommands {
         registry.register(CommandSpec.action("goto", this::navigate).needsWorld().group("movement")
             .arg("target", ArgType.POSITION, ArgType.ENTITY)
             .option("near", "stop within this many blocks", ArgType.NUMBER)
-            .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs)")
+            .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs). To a "
+                + "position without near=, fails at once with err no_path and why when the player can't stand in "
+                + "that cell (a block fills it, no room for the head, nothing to stand on, danger, an unloaded chunk)")
             .field("took", "seconds").example("goto 120,64,-30"));
         registry.register(CommandSpec.action("use", this::use).needsWorld().group("interact")
             .form(form -> form.optional(target -> target.arg("target", ArgType.POSITION, ArgType.ENTITY)
@@ -498,10 +504,39 @@ final class ActionCommands {
             if (SableSupport.subLevels().at(minecraft().level, block) != null) {
                 throw new CommandException("syntax", "goto can't walk onto a sub-level; use sable:tp " + absolute);
             }
+            if (!args.hasOption("near")) {
+                String blocked = unstandable(minecraft().level, block);
+                if (blocked != null) {
+                    throw new CommandException("no_path", blocked);
+                }
+            }
             Vec3 goal = Vec3.atBottomCenterOf(block);
             target = () -> goal;
         }
         return new Navigator(context.sessionId(), target, near);
+    }
+
+    /** Why the player can't stand in the cell, naming the blocks, or null when it can. */
+    private static String unstandable(Level level, BlockPos cell) {
+        Terrain terrain = new WorldTerrain(level);
+        PathSearch.Blocker blocker = PathSearch.blocker(terrain, cell.getX(), cell.getY(), cell.getZ());
+        if (blocker == null) {
+            return null;
+        }
+        return switch (blocker) {
+            case UNLOADED -> Rel.of(cell) + " is in a chunk that isn't loaded";
+            case FILLED -> Ids.of(level.getBlockState(cell)) + " fills " + Rel.of(cell)
+                + (PathSearch.blocker(terrain, cell.getX(), cell.getY() + 1, cell.getZ()) == null
+                    ? "; stand at " + Rel.of(cell.above()) : "");
+            case NO_HEADROOM -> Ids.of(level.getBlockState(cell.above())) + " at " + Rel.of(cell.above())
+                + " leaves no room for the head";
+            case DANGEROUS -> {
+                BlockPos danger = Stream.of(cell, cell.above(), cell.below())
+                    .filter(pos -> terrain.dangerous(pos.getX(), pos.getY(), pos.getZ())).findFirst().orElse(cell);
+                yield Ids.of(level.getBlockState(danger)) + " at " + Rel.of(danger) + " is dangerous";
+            }
+            case NO_FLOOR -> "nothing to stand on at " + Rel.of(cell);
+        };
     }
 
     private Action use(CommandContext context, Args args) throws CommandException {

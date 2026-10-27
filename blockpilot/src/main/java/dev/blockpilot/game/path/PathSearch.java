@@ -31,6 +31,9 @@ public final class PathSearch {
 
     public enum State { SEARCHING, FOUND, NO_PATH }
 
+    /** Why the player can't be at a cell. */
+    public enum Blocker { UNLOADED, FILLED, NO_HEADROOM, DANGEROUS, NO_FLOOR }
+
     private record Open(Node node, double cost, double estimate) {
     }
 
@@ -124,14 +127,34 @@ public final class PathSearch {
     private record Move(Node node, double cost) {
     }
 
-    /** Whether the player can be at this cell: two blocks of room and something to stand on (or water, a ladder). */
-    boolean standable(int x, int y, int z) {
-        if (!terrain.loaded(x, y, z) || !terrain.passable(x, y, z) || !terrain.passable(x, y + 1, z)
-            || terrain.dangerous(x, y, z) || terrain.dangerous(x, y + 1, z)) {
-            return false;
+    /**
+     * Why the player can't be at this cell, or null when it can: two blocks of room and something to stand on (or
+     * water, a ladder).
+     */
+    public static Blocker blocker(Terrain terrain, int x, int y, int z) {
+        if (!terrain.loaded(x, y, z)) {
+            return Blocker.UNLOADED;
         }
-        return terrain.solid(x, y - 1, z) && !terrain.dangerous(x, y - 1, z)
-            || terrain.water(x, y, z) || terrain.climbable(x, y, z);
+        if (!terrain.passable(x, y, z)) {
+            return Blocker.FILLED;
+        }
+        if (!terrain.passable(x, y + 1, z)) {
+            return Blocker.NO_HEADROOM;
+        }
+        if (terrain.dangerous(x, y, z) || terrain.dangerous(x, y + 1, z)) {
+            return Blocker.DANGEROUS;
+        }
+        if (terrain.water(x, y, z) || terrain.climbable(x, y, z)) {
+            return null;
+        }
+        if (!terrain.solid(x, y - 1, z)) {
+            return Blocker.NO_FLOOR;
+        }
+        return terrain.dangerous(x, y - 1, z) ? Blocker.DANGEROUS : null;
+    }
+
+    boolean standable(int x, int y, int z) {
+        return blocker(terrain, x, y, z) == null;
     }
 
     private List<Move> neighbours(Node node) {

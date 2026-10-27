@@ -1,6 +1,7 @@
 package dev.blockpilot.game.path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
@@ -139,5 +140,22 @@ class PathSearchTest {
         PathSearch search = search(grid, 8, 1, 0, 0);
         assertEquals(PathSearch.State.FOUND, search.state());
         assertTrue(search.path().stream().noneMatch(node -> node.z() == 0 && node.x() >= 1 && node.x() <= 6));
+    }
+
+    @Test
+    void saysWhyACellCantBeStoodIn() {
+        Grid grid = new Grid().floor(-5, 10, -5, 5, 0).wall(4, 1, 1, 0, 0).wall(5, 2, 2, 0, 0);
+        grid.lava.add(Grid.key(6, 0, 0));
+        grid.water.add(Grid.key(7, 5, 0));
+        grid.ladders.add(Grid.key(8, 5, 0));
+        assertNull(PathSearch.blocker(grid, 3, 1, 0));
+        assertEquals(PathSearch.Blocker.UNLOADED, PathSearch.blocker(grid, 100, 1, 0));
+        assertEquals(PathSearch.Blocker.FILLED, PathSearch.blocker(grid, 3, 0, 0));
+        assertEquals(PathSearch.Blocker.FILLED, PathSearch.blocker(grid, 4, 1, 0));
+        assertEquals(PathSearch.Blocker.NO_HEADROOM, PathSearch.blocker(grid, 5, 1, 0));
+        assertEquals(PathSearch.Blocker.DANGEROUS, PathSearch.blocker(grid, 6, 1, 0));
+        assertEquals(PathSearch.Blocker.NO_FLOOR, PathSearch.blocker(grid, 3, 6, 0));
+        assertNull(PathSearch.blocker(grid, 7, 5, 0));
+        assertNull(PathSearch.blocker(grid, 8, 5, 0));
     }
 }
