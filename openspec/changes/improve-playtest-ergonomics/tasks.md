@@ -3,7 +3,7 @@
 ## 1. Perception (game-perception)
 
 - [x] 1.1 Add `count=<n>` to `find` when the limit cut its list, for blocks, entities and drops (D1), with `help find` (limit default 5, max 100; `count` as matches in all) and the README; verify on the dev client that `find` with eight logs in range and limit 3 carries `count=8` in text and JSON, and limit 10 carries none
-- [ ] 1.2 Report `width=<n>` from `screenshot` when the frames are narrower than asked (D9), with `help screenshot` (max 1280, for a sheet each tile's width) and the README; verify on the dev client that `screenshot 2560` carries `width=1280`, `screenshot 640` carries none, `screenshot 640 crop=0,0,0.1,0.1` carries the crop's width, and a sheet of 9 frames at 640 carries `width=512`
+- [x] 1.2 Report `width=<n>` from `screenshot` when the frames are narrower than asked (D9), with `help screenshot` (max 1280, for a sheet each tile's width) and the README; verify on the dev client that `screenshot 2560` carries `width=1280`, `screenshot 640` carries none, `screenshot 640 crop=0,0,0.1,0.1` carries the crop's width, and a sheet of 9 frames at 640 carries `width=512`
 
 ## 2. Player control (player-control)
 

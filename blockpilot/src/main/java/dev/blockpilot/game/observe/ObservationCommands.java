@@ -46,11 +46,13 @@ public final class ObservationCommands {
             .option("hud", "off: hide the GUI, crosshair and hand while capturing",
                 List.of("on", "off"))
             .option("crop", "x0,y0,x1,y1: only that part of each frame, in fractions from the top left")
-            .help("saves the last rendered frame as PNG (default 512 wide) and returns its path and the tick it was "
-                + "captured on; with burst=n every=Nt it saves n frames, one every N ticks, starting now, and with "
-                + "sheet one PNG of them in a grid, each labelled #<n> t<tick>. Works with the window in the "
-                + "background. MCP also has a screenshot tool").field("file", "absolute path")
+            .help("saves the last rendered frame as PNG (default 512 wide, max 1280 and the frame's or crop's own "
+                + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
+                + "frames, one every N ticks, starting now, and with sheet one PNG of them in a grid, each labelled "
+                + "#<n> t<tick>, the width being each tile's (cut so the sheet is at most 1536 wide). Works with the "
+                + "window in the background. MCP also has a screenshot tool").field("file", "absolute path")
             .field("tick", "the tick the frame was captured on")
+            .field("width", "the width the frames have, when narrower than asked (or than 512)")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
@@ -91,8 +93,9 @@ public final class ObservationCommands {
         if (sheet && frames < 2) {
             throw new CommandException("syntax", "a sheet needs burst=<n> of at least 2");
         }
-        int width = sheet ? ContactSheet.tileWidth(frames, args.has("width") ? args.integer("width", 0) : null)
-            : Mth.clamp(args.integer("width", 512), 16, 1280);
+        int asked = args.integer("width", 512);
+        int width = sheet ? ContactSheet.tileWidth(frames, args.has("width") ? asked : null)
+            : Mth.clamp(asked, 16, 1280);
         FrameRect crop = args.hasOption("crop") ? FrameRect.parse(args.option("crop")) : FrameRect.ALL;
         Duration every = args.durationOption("every");
         int interval = every == null ? 10 : Math.max(1, every.ticks());
@@ -107,6 +110,8 @@ public final class ObservationCommands {
         long requested = Screenshots.frames();
         int[] elapsed = {-1};
         return new Action() {
+            private int captured;
+
             @Override
             public Result tick() throws CommandException {
                 if (hideHud) {
@@ -130,12 +135,16 @@ public final class ObservationCommands {
                         fields.bare("file", Screenshots.save(Screenshots.sheet(tiles, labels), "_sheet").toString());
                     }
                     cancel();
+                    Result result;
                     if (frames == 1) {
                         Fields frame = rows.get(0).fields();
-                        return Result.ok(new Fields().bare("file", frame.get("file"))
+                        result = Result.ok(new Fields().bare("file", frame.get("file"))
                             .put("tick", frame.get("tick"), "t" + frame.get("tick")));
+                    } else {
+                        result = Result.ok(fields.put("frames", rows.size(), "frames=" + rows.size())).withRows(rows);
                     }
-                    return Result.ok(fields.put("frames", rows.size(), "frames=" + rows.size())).withRows(rows);
+                    // Cut to the cap, to the frame's or crop's own width, or to fit the sheet.
+                    return captured < asked ? result.with(new Fields().put("width", captured)) : result;
                 } catch (IOException e) {
                     cancel();
                     throw new CommandException("internal", "screenshot failed: " + e.getMessage());
@@ -147,6 +156,7 @@ public final class ObservationCommands {
                 long tick = Observations.tick();
                 Fields fields = new Fields();
                 NativeImage frame = Screenshots.frame(width, crop);
+                captured = frame.getWidth();
                 if (sheet) {
                     tiles.add(frame);
                 } else {
