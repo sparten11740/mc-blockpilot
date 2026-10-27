@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /** The result lines of a reply, text or JSON, as far as the exit code and the stderr summary need them. */
 final class Results {
@@ -48,19 +50,25 @@ final class Results {
         return results;
     }
 
-    /** One stderr line when steps failed or were skipped, else null. */
+    /** One stderr line when steps failed or were skipped, naming the failed steps (from 1), else null. */
     static String summary(List<Result> results) {
-        List<Result> errors = results.stream().filter(Result::isErr).toList();
+        List<Integer> failed = IntStream.range(0, results.size()).filter(index -> results.get(index).isErr())
+            .mapToObj(index -> index + 1).toList();
         long skips = results.stream().filter(result -> result.kind().equals("skip")).count();
-        if (errors.isEmpty() && skips == 0) {
+        if (failed.isEmpty() && skips == 0) {
             return null;
         }
-        String line = "blockpilot: " + errors.size() + " err, " + skips + " skip";
+        String steps = failed.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        String line = "blockpilot: " + failed.size() + " err"
+            + (failed.isEmpty() ? "" : failed.size() == 1 ? " (step " + steps + ")" : " (steps " + steps + ")")
+            + ", " + skips + " skip";
         // The parser refuses a script with a syntax error: that step answers "err syntax col <n>: …", every other
         // one skip.
-        if (errors.size() == 1 && errors.get(0).code().equals("syntax") && errors.get(0).argument().startsWith("col ")
-            && 1 + skips == results.size()) {
-            return line + " (a syntax error, so nothing ran)";
+        if (failed.size() == 1 && 1 + skips == results.size()) {
+            Result error = results.get(failed.get(0) - 1);
+            if (error.code().equals("syntax") && error.argument().startsWith("col ")) {
+                return line + " (a syntax error, so nothing ran)";
+            }
         }
         return skips > 0 ? line + " (nothing after the error ran)" : line;
     }

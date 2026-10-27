@@ -60,7 +60,7 @@ class MainTest {
     void aFailedCommandExitsOneAndIsCounted() throws IOException {
         game(line -> "err unknown_block stoen\nskip\n.\n");
         assertEquals(1, run("mine stoen; jump"));
-        assertEquals("blockpilot: 1 err, 1 skip (nothing after the error ran)", stderr());
+        assertEquals("blockpilot: 1 err (step 1), 1 skip (nothing after the error ran)", stderr());
     }
 
     @Test

@@ -28,11 +28,11 @@ class ResultsTest {
         Result ok = new Result("ok", "", "");
         Result skip = new Result("skip", "", "");
         assertNull(Results.summary(List.of(ok, ok)));
-        assertEquals("blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)",
+        assertEquals("blockpilot: 1 err (step 1), 2 skip (a syntax error, so nothing ran)",
             Results.summary(List.of(new Result("err", "syntax", "col 12: unknown command"), skip, skip)));
-        assertEquals("blockpilot: 1 err, 1 skip (nothing after the error ran)",
+        assertEquals("blockpilot: 1 err (step 2), 1 skip (nothing after the error ran)",
             Results.summary(List.of(ok, new Result("err", "unknown_block", "stoen"), skip)));
-        assertEquals("blockpilot: 2 err, 0 skip",
+        assertEquals("blockpilot: 2 err (steps 1, 3), 0 skip",
             Results.summary(List.of(new Result("err", "a", ""), ok, new Result("err", "b", ""))));
     }
 
