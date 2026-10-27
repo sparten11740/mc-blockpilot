@@ -10,6 +10,7 @@ import java.io.Writer;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -63,7 +64,14 @@ final class ShellClient {
                 readLine();
             }
             send(options.script().replace("\n", "; "));
-            reply = options.json() ? readLine() : textReply();
+            try {
+                reply = options.json() ? readLine() : textReply();
+            } catch (SocketTimeoutException e) {
+                // Closing the connection ends the session, and the game cancels its script.
+                err.println("blockpilot: no reply within " + seconds(options.timeout()) + "s, so the script was "
+                    + "cancelled; a longer script needs a larger --timeout");
+                return 2;
+            }
         }
         out.println(reply);
         List<Results.Result> results = Results.of(reply);

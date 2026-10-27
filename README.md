@@ -29,11 +29,11 @@ that can't open its window fails before any mod loads, so nothing reports that a
 macOS that is a client started while the display sleeps ("Failed to locate a primary monitor"), which
 `caffeinate -u -t 300` before the start avoids by waking the display. `--game-dir <dir>` talks to the game in another
 directory, and `--help` lists the options.
-Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
-out; stderr says after how many seconds). When a step failed or was skipped, one line on stderr counts them, names
-the failed steps (from 1) and says whether anything ran, e.g. `blockpilot: 1 err (step 3), 2 skip (nothing after the
-error ran)`. After a `quit` the CLI returns only once the game process has exited (within `--timeout`, else exit
-code 2), so a restart can follow straight away.
+Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed out,
+or no reply came within `--timeout`, default 300, which cancels the script; stderr says after how many seconds). When a
+step failed or was skipped, one line on stderr counts them, names the failed steps (from 1) and says whether anything
+ran, e.g. `blockpilot: 1 err (step 3), 2 skip (nothing after the error ran)`. After a `quit` the CLI returns only once
+the game process has exited (within `--timeout`, else exit code 2), so a restart can follow straight away.
 
 **Over MCP** (three tools: `run`, `screenshot`, `help`): the launcher also serves MCP over stdio. The MCP client
 starts it once per session, so the tools are there before the game is and keep working through every restart of

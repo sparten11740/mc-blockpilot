@@ -97,6 +97,14 @@ class MainTest {
     }
 
     @Test
+    void aReplyThatNeverComesTimesOutNamingTheLimit() throws IOException {
+        game(line -> "");
+        assertEquals(2, run("--timeout", "0.5", "wait 600s"));
+        assertEquals("blockpilot: no reply within 0.5s, so the script was cancelled; a longer script needs a larger "
+            + "--timeout", stderr());
+    }
+
+    @Test
     void aStaleEndpointFileIsUnreachable() throws Exception {
         Process exited = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
             "-version").redirectErrorStream(true).start();

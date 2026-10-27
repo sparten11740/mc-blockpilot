@@ -2,7 +2,7 @@
 
 ## 1. CLI and help (dev-integration)
 
-- [ ] 1.1 Catch the reply's read timeout in the CLI and say how long it waited, that the script was cancelled and to raise `--timeout` (D7), with a `MainTest` case and the README's exit-code paragraph; verify by the test and by running the launcher with `--timeout 3` on `wait 10s` against the dev client
+- [x] 1.1 Catch the reply's read timeout in the CLI and say how long it waited, that the script was cancelled and to raise `--timeout` (D7), with a `MainTest` case and the README's exit-code paragraph; verify by the test and by running the launcher with `--timeout 3` on `wait 10s` against the dev client
 - [ ] 1.2 Name `option fov 110` and `option renderClouds off` in `help camera` for effects spanning hundreds of blocks (D8), with the README's observe row; verify the help text on the dev client
 
 ## 2. Waits (command-language)
