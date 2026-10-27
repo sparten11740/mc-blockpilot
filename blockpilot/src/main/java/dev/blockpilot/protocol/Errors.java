@@ -41,6 +41,10 @@ public final class Errors {
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
         CODES.put("busy", "a performance capture is already running (perf stop first)");
         CODES.put("no_capture", "no performance capture is running (perf start first)");
+        CODES.put("needs_restart", "config: the value takes effect only after a game restart, or for a server "
+            + "config after the world loads its file again; edit the file instead");
+        CODES.put("unsupported", "the command needs something this loader lacks (config: NeoForge's config "
+            + "system)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");

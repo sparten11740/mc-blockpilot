@@ -23,6 +23,7 @@ final class GameCommands {
         new ServerCommands().register(registry);
         new ObservationCommands().register(registry);
         new OptionCommands().register(registry);
+        new ConfigCommands().register(registry);
         new PixelCommands().register(registry);
         new PerfCommands().register(registry);
         new LogCommands().register(registry);
