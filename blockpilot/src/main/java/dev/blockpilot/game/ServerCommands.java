@@ -72,7 +72,8 @@ final class ServerCommands {
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
             .arg("target", ArgType.POSITION, ArgType.ENTITY, ArgType.UUID)
             .option("path", "NBT path inside the data, e.g. Pos or Items[0].id")
-            .help("server-side data of a block entity (<pos>) or entity (e<id> or uuid); SNBT in text, JSON in json")
+            .help("server-side data of a block entity (<pos>, with Sable also a plot position aboard a sub-level) or "
+                + "entity (e<id> or uuid); SNBT in text, JSON in json")
             .field("value", "the data").example("nbt e812 path=Pos"));
         registry.register(CommandSpec.action("tick", this::tick).onServer().group("integrated")
             .form(form -> form.keyword("op", "freeze", "unfreeze", "query"))

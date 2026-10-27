@@ -23,7 +23,7 @@
 
 ## 5. Help notes (sable-sublevels)
 
-- [ ] 5.1 Say in `help sable:list` and `help sable:info` that size and plot bounds grow while a sub-level is turned, and in `help nbt` that `<pos>` may be a plot position (D7), with the README's Sable section; verify the help texts on the dev client and that `nbt <plot pos of a chest aboard>` returns its items
+- [x] 5.1 Say in `help sable:list` and `help sable:info` that size and plot bounds grow while a sub-level is turned, and in `help nbt` that `<pos>` may be a plot position (D7), with the README's Sable section; verify the help texts on the dev client and that `nbt <plot pos of a chest aboard>` returns its items
 
 ## 6. Integration checks
 

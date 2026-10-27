@@ -185,8 +185,8 @@ works with them:
 
 - A position in a plot prints as itself, followed by the sub-level and where that block is in the world, e.g.
   `aim:stone_button 20481032,129,20481033 sub=ship world=10.5,-58.5,6.5`. It pastes back into `block`, `blocks`,
-  `face`, `use`, `mine`, `place` and `camera`. `status` shows `aboard:<name>` while the player stands on or rides a
-  sub-level.
+  `nbt`, `face`, `use`, `mine`, `place` and `camera`. `status` shows `aboard:<name>` while the player stands on or
+  rides a sub-level.
 - `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. As
   everywhere, `use` fails with `err obstructed <id> <position>` when something else is in the way; `use <pos> any`
   clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A camera placed at, or looking at, a plot
@@ -198,7 +198,8 @@ works with them:
     (after a lost packet, say), and `sable:list side=server` lists the server's.
   - `sable:info here` gives the pose, velocity, height above ground (`agl`), bounds and whether the player rides it;
     `sable:info ship brief` only heading, pitch, roll, speed, climb rate and `agl`, e.g. for
-    `sample sable:info ship brief every 10t x20` over a take-off.
+    `sample sable:info ship brief every 10t x20` over a take-off. The size in `sable:list` and the plot bounds are the
+    world bounds turned back into the plot, so they grow while the sub-level is turned.
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions; with `side=server` from the
     server's copy, also on a sub-level the client hasn't received.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the

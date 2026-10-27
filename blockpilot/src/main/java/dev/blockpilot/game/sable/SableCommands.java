@@ -76,7 +76,8 @@ final class SableCommands {
                 + "radius that the client does not; left out at 0")
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("dist", "blocks from the player").field("speed", "blocks per second")
-            .field("size", "blocks along x, y and z of its plot bounds").example("sable:list 64"));
+            .field("size", "blocks along x, y and z of its plot bounds: the world bounds turned back into the plot, "
+                + "so larger while it is turned").example("sable:list 64"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).optionalKeyword("brief", "brief")
             .help("one sub-level's pose, velocity, height above ground and bounds; with brief only yaw, pitch, roll, "
@@ -88,7 +89,8 @@ final class SableCommands {
             .field("climb", "brief only: vertical speed, blocks per second")
             .field("agl", "height above ground: from the bottom of its world bounds to the top of the ground under "
                 + "their centre; none above nothing loaded")
-            .field("box", "world bounds").field("plot", "plot bounds, looser while it is turned")
+            .field("box", "world bounds")
+            .field("plot", "plot bounds: the world bounds turned back into the plot, so larger while it is turned")
             .field("rides", "the player stands on or rides it")
             .example("sable:info here"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("world", SableCommands::world)
