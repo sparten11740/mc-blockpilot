@@ -66,7 +66,9 @@ final class ServerCommands {
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
                 + "every feedback line; it runs as the server, at the player's position, rotation and dimension, so "
                 + "~ and @p count from the player; options go before the command (server as=player settle=0t "
-                + "<command>)")
+                + "<command>); a command that fails, an execute if test that doesn't pass among them, answers err "
+                + "command_failed with its message and result, which ends the script unless the step starts with ? "
+                + "(?server execute if block ~ ~-1 ~ minecraft:stone)")
             .field("result", "the command's return value").field("success", "true/false")
             .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")

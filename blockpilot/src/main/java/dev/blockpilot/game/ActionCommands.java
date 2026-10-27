@@ -73,7 +73,8 @@ final class ActionCommands {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
             .form(form -> form.arg("target", ArgType.POSITION, ArgType.ENTITY).optional(WITHIN_BLOCK))
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
-                + "returns what the crosshair then hits. " + WITHIN_BLOCK_HELP).example("face 12.5,70.2,-3.4"));
+                + "returns what the crosshair then hits; turn sets yaw and pitch instead. " + WITHIN_BLOCK_HELP)
+            .example("face 12.5,70.2,-3.4"));
         registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
             .arg("yaw", ArgType.NUMBER).arg("pitch", ArgType.NUMBER).optionalArg("ticks", ArgType.DURATION)
             .help("sets the camera to yaw/pitch (degrees), optionally smoothed over a duration")
@@ -113,7 +114,9 @@ final class ActionCommands {
                 + "blocks), adding off_target when that was not the target. The server gets the game's own crosshair "
                 + "hit: where the aimed look ray first meets a block's shape, which the reply reports as aim and hit=. "
                 + "Sneaking with an item in either hand, the game skips the block's own use and uses the item, which "
-                + "the reply names as sneak_item. " + WITHIN_BLOCK_HELP)
+                + "the reply names as sneak_item. With Sable, after err obstructed at a plot position, sable:tp to "
+                + "that position moves the player to the nearest spot from which it is in sight, if there is one "
+                + "(else it answers hidden). " + WITHIN_BLOCK_HELP)
             .field("aim", "what was clicked")
             .field("off_target", "with any: the target, when the click went to something else")
             .field("sneak_item", "with sneak: the item in hand that took the click instead of the block")

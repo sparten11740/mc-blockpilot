@@ -157,7 +157,7 @@ ok
 | input | `mouse down\|up\|click <button>`, `mouse move <dx> <dy> [Nt]`, `drag <button> …`, `scroll <n>`, `key down\|up\|press <key\|key.mapping>` (a key alone is pressed: `key escape`), `type <text>`, `release` |
 | talk | `chat <text>`, `cmd <command>` |
 | session | `worlds`, `servers`, `join world\|server <name>`, `leave`, `quit` (leaves, answers `ok pid=<pid>` and closes the game), `respawn`, `create world <name> [flat\|void\|normal] …`, `snapshot save\|restore\|delete <name>`, `snapshot list`, `delete world <folder>` (test worlds only) |
-| integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines; runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as the player), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
+| integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines; runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as the player; a failing command, a failing `execute if` test among them, is `err command_failed` with its `result`, which `?server …` lets the script carry on past), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
 | sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
@@ -190,7 +190,9 @@ works with them:
 - `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. As
   everywhere, `use` fails with `err obstructed <id> <position>` when something else is in the way; `use <pos> any`
   clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A camera placed at, or looking at, a plot
-  position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard.
+  position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard, and after `err obstructed`,
+  `sable:tp` to the same position moves the player to the nearest spot from which it is in sight, if there is one
+  (else it answers `hidden`).
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
   the one under the crosshair):
   - `sable:list` lists the sub-levels within 128 blocks, nearest first. In singleplayer with cheats on it adds
