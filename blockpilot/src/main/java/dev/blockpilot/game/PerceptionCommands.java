@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -81,9 +82,11 @@ final class PerceptionCommands {
             .option("side", "server: read the integrated server's level (cheats on), incl. chunks the client lacks",
                 Sides.NAMES)
             .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks within a cube "
-                + "reaching radius blocks each way from the player (default 32, max " + MAX_FIND_RADIUS + "); with "
-                + "Sable, blocks aboard a sub-level are in its plot, which sable:find searches")
-            .field("count", "matches").field("radius", "the radius searched, when the one asked for was over the max")
+                + "reaching radius blocks each way from the player (default 32, max " + MAX_FIND_RADIUS + "), the "
+                + "nearest limit of them (default 5, max 100); with Sable, blocks aboard a sub-level are in its plot, "
+                + "which sable:find searches")
+            .field("count", "matches in all, when the limit left some out")
+            .field("radius", "the radius searched, when the one asked for was over the max")
             .example("find #logs 32 3"));
         registry.register(CommandSpec.query("block", this::block).needsWorld().group("perception")
             .arg("pos", ArgType.POSITION).option("side", "server: read the integrated server's level (cheats on)",
@@ -329,15 +332,13 @@ final class PerceptionCommands {
         Vec3 eyes = player.position();
         AABB box = new AABB(center).inflate(radius);
         Result found = Sides.read(args, (level, server) -> {
-            List<Row> rows = new ArrayList<>();
             var entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
             if (matcher == null && entityType.isPresent()) {
                 var type = entityType.get();
                 List<Entity> entities = level.getEntities((Entity) null, box,
                     entity -> entity.getType() == type && entity.isAlive() && entity.getId() != player.getId());
                 entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
-                entities.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity, server)));
-                return Result.ok().withRows(rows);
+                return nearest(entities, limit, entity -> entityRow(entity, server));
             }
             if (matcher == null) {
                 var item = BuiltInRegistries.ITEM.getOptional(id)
@@ -345,20 +346,22 @@ final class PerceptionCommands {
                 List<Entity> drops = level.getEntities((Entity) null, box,
                     entity -> entity instanceof ItemEntity drop && drop.getItem().is(item));
                 drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
-                drops.stream().limit(limit).forEach(entity -> rows.add(entityRow(entity, server)));
-                return Result.ok().withRows(rows);
+                return nearest(drops, limit, entity -> entityRow(entity, server));
             }
             List<BlockPos> blocks = new ArrayList<>();
             BlockScan.around(level, center, radius, matcher, false, (pos, state) -> blocks.add(pos.immutable()));
             blocks.sort(Comparator.comparingDouble(pos -> pos.distSqr(center)));
-            for (BlockPos pos : blocks.subList(0, Math.min(limit, blocks.size()))) {
-                rows.add(Row.of(pos.toShortString(), new Fields().bare("block", Ids.of(level.getBlockState(pos)))
-                    .bare("at", Rel.of(pos)).hidden("at_abs", Rel.absolute(pos))));
-            }
-            return Result.ok().withRows(rows);
+            return nearest(blocks, limit, pos -> Row.of(pos.toShortString(), new Fields()
+                .bare("block", Ids.of(level.getBlockState(pos))).bare("at", Rel.of(pos))
+                .hidden("at_abs", Rel.absolute(pos))));
         });
-        return asked > MAX_FIND_RADIUS && found.isOk()
-            ? Result.ok(new Fields().put("radius", radius)).withRows(found.rows()) : found;
+        return asked > MAX_FIND_RADIUS && found.isOk() ? found.with(new Fields().put("radius", radius)) : found;
+    }
+
+    /** The first {@code limit} of the sorted matches, with {@code count} when the limit left some out. */
+    private static <T> Result nearest(List<T> sorted, int limit, Function<T, Row> row) {
+        Result result = sorted.size() > limit ? Result.ok(new Fields().put("count", sorted.size())) : Result.ok();
+        return result.withRows(sorted.stream().limit(limit).map(row).toList());
     }
 
     private Result block(CommandContext context, Args args) throws CommandException {
