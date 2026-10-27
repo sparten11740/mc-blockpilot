@@ -112,13 +112,20 @@ only.
 `OptionCommands.Settle` moves to its own class in `game/observe`, taking the
 command's name as its label, and the new `settle [timeout=]` returns it with
 no fields but `settled=`, or `unsettled pending=` at the timeout. Its test
-stays that of `option`: the compile queue empty and the number of rendered
+is that of `option`, the compile queue empty and the number of rendered
 sections unchanged for 3 ticks, counted from the second tick, by when the
-renderer has scheduled the sections that came into view. `settle` changes
-nothing and needs a world. *Alternative:* make `camera at` wait itself.
-Rejected: teleports, `sable:tp` and `goto` bring new chunks into view too,
-and the camera's quick answer is enough when an agent doesn't need the whole
-view.
+renderer has scheduled the sections that came into view; and no chunk missing
+that the server will send. Those are the chunks that
+`ChunkTrackingView.isInViewDistance` puts within the effective render distance
+of the player's chunk, the same test the server uses, less the ring it sends
+beyond. In new terrain they arrive unevenly as the server generates them,
+over half a minute for a render distance raised from 6 to 20, so waiting for
+the chunk count to stop changing could answer in a gap. At the timeout the
+reply adds `missing=<n>` when chunks are still to arrive. `option` waits the
+same way. `settle` changes nothing and needs a world. *Alternative:* make
+`camera at` wait itself. Rejected: teleports, `sable:tp` and `goto` bring new
+chunks into view too, and the camera's quick answer is enough when an agent
+doesn't need the whole view.
 
 ### D9. `screenshot` says when its width was cut
 
@@ -138,9 +145,13 @@ still useful, as `find`'s cut radius is.
   only applies without `near=`, and the cell above is named when it works.
 - [The stderr summary's wording changes] → scripts read the exit code, which
   doesn't change; stderr is for people and agents reading it.
-- [`settle` answers before chunks the server hasn't sent yet arrive] → it
-  waits for what the client has; `camera at` flags a camera in an unloaded
-  chunk, and an agent can wait for the chunks first.
+- [The server never sends some chunks within the view distance: a spectator
+  where spectators don't generate chunks, a mod that withholds them] →
+  `settle` runs to its timeout and answers `unsettled` with `missing=`, so the
+  agent sees why.
+- [A camera far from the player looks at chunks that never arrive] → `settle`
+  only waits for chunks around the player; `camera at` flags a camera in an
+  unloaded chunk.
 
 ## Migration Plan
 

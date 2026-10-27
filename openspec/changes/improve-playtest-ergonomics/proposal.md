@@ -33,9 +33,10 @@ retry or wait, where the command could say at once what happened.
 - `camera off` is accepted as `camera reset`.
 - `camera at` reports `unloaded` instead of the block when the camera sits in
   a chunk the client hasn't loaded, which renders as empty sky.
-- A new `settle [timeout=]` waits until the chunks in view have compiled, as
-  `option` does after a change, for use after `camera at`, a teleport or
-  anything else that brings new chunks into view.
+- A new `settle [timeout=]` waits until the chunks around the player have
+  arrived and those in view have compiled, as `option` then does after a
+  change too, for use after `camera at`, a teleport or anything else that
+  brings new chunks into view.
 - The CLI's timeout message says how long it waited for the game, and its
   stderr summary of failed steps names their step numbers.
 - `help sable:list` and `help sable:info` say that a sub-level's size and plot

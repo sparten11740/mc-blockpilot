@@ -22,13 +22,15 @@ public final class OptionCommands {
             .form(form -> form.keyword("op", "reset"))
             .form(form -> form.arg("name", ArgType.WORD).optionalArg("value", ArgType.WORD))
             .help("option: the video options and their values; option <name>: its value and what it takes; option "
-                + "<name> <value>: sets it and answers once the chunks have rebuilt (settled=<s>, or unsettled "
-                + "pending=<n> at timeout=, default 20s); option reset: puts back what agents changed, as leave, "
-                + "quitting, the agent-control key and shutdown do, with the options the game changed along with them. "
-                + "Names as in options.txt (renderDistance, particles, …) plus hud on|off. Never written to "
-                + "options.txt")
+                + "<name> <value>: sets it and answers once the chunks have arrived and rebuilt, as settle does "
+                + "(settled=<s>, or unsettled pending=<n> at timeout=, default 20s); option reset: puts back what "
+                + "agents changed, as leave, quitting, the agent-control key and shutdown do, with the options the "
+                + "game changed along with them. Names as in options.txt (renderDistance, particles, …) plus hud "
+                + "on|off. Never written to options.txt")
             .field("was", "the value before the first agent change").field("takes", "the accepted values")
-            .field("settled", "seconds until the chunks were rebuilt").example("option renderDistance 8"));
+            .field("settled", "seconds until the chunks had arrived and were rebuilt")
+            .field("missing", "chunks still to arrive at the timeout, when there are any")
+            .example("option renderDistance 8"));
     }
 
     private Action option(CommandContext context, Args args) throws CommandException {

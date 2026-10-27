@@ -40,15 +40,27 @@ SHALL carry `unloaded` instead of a block.
 - **WHEN** an agent runs `camera at <a point 2000 blocks from the player>`
 - **THEN** the reply carries `unloaded` and names no block
 
+### Requirement: Settling after an option change
+After a change, `option` SHALL wait as `settle` does: it answers once every
+chunk within the view distance of the player has arrived and the chunk compile
+queue has stayed empty for 3 ticks, with `settled=<seconds>`, or at `timeout=`
+(default 20s) with `unsettled pending=<n>`, and `missing=<n>` while chunks
+have yet to arrive. Either way the option keeps its new value.
+
+#### Scenario: Render distance raised
+- **WHEN** an agent runs `option renderDistance 16`
+- **THEN** the reply comes after the newly visible chunks have arrived and
+  their sections have compiled, with `settled=` and the time it took
+
 ## ADDED Requirements
 
 ### Requirement: Waiting for the view to settle
-`settle [timeout=<duration>]` SHALL answer once the chunk compile queue has
-stayed empty, with the same number of sections rendered, for 3 ticks, with
+`settle [timeout=<duration>]` SHALL answer once every chunk within the view
+distance of the player has arrived and the chunk compile queue has stayed
+empty, with the same number of sections rendered, for 3 ticks, with
 `settled=<seconds>`, or at `timeout=` (default 20s) with `unsettled
-pending=<n>`, as `option` does after a change. It SHALL change nothing, so an
-agent can wait with it for the view to finish loading after `camera at`, a
-teleport or anything else that brings new chunks into view.
+pending=<n>`, plus `missing=<n>` while chunks have yet to arrive. It SHALL
+change nothing.
 
 #### Scenario: Camera moved far
 - **WHEN** an agent runs `camera at ~150,0,0; settle; screenshot`
@@ -58,3 +70,9 @@ teleport or anything else that brings new chunks into view.
 #### Scenario: Nothing new in view
 - **WHEN** an agent runs `settle` while the view hasn't changed
 - **THEN** it answers with `settled=` after a few ticks
+
+#### Scenario: New terrain still generating
+- **WHEN** an agent raises the render distance where the terrain around the
+  player isn't generated yet, and runs `settle timeout=120s`
+- **THEN** `settle` answers once the chunks within the new view distance have
+  arrived, so `block` at the edge of that distance finds its chunk loaded

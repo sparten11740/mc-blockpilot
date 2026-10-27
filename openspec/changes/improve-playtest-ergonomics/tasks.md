@@ -15,6 +15,7 @@
 
 - [x] 3.1 Accept `camera off` as `camera reset` and report `unloaded` for a camera in a chunk the client hasn't loaded (D5), with `help camera` and the README; verify on the dev client that `camera off` returns to first person, and `camera at` 2000 blocks away carries `unloaded` and no block, while one 10 blocks up still names `air`
 - [x] 3.2 Move `option`'s wait into its own `Settle` class and add `settle [timeout=]` (D8), with `help settle` and the README; verify on the dev client that `camera at ~150,0,0; settle` answers `settled=` and a screenshot after it shows the sections around the camera, that `settle` with nothing new in view answers within a few ticks, and that `option renderDistance <n>` still settles
+- [x] 3.3 Make `settle`, and so `option`, also wait until the chunks within the view distance of the player have arrived, with `missing=<n>` at the timeout (D8), with `help settle`, `help option` and the README; verify in a new normal world that `option renderDistance 20` raised from 6, and `settle` after a teleport into new terrain, answer only once `block` near the edge of the view distance finds its chunk loaded, while they answered at once before, and that `settle timeout=1s` there answers `unsettled` with `missing=`
 
 ## 4. CLI (dev-integration)
 
