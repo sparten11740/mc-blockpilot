@@ -13,7 +13,7 @@ record Construct(String name, List<String> usages, String help, String example) 
                 + "another field (hp<$max_hp); stable= how long they must keep holding (default 1t), every= how "
                 + "often to check (default 1t), timeout= (default 60s, a plain number is seconds), clock= the side "
                 + "the query runs on; server-side queries are checked at the end of server ticks and report the "
-                + "tick (t<n>)",
+                + "tick (t<n>); a query that fails with err syntax ends the wait at once, other errors are retried",
             "wait block ~1,0,0 until id==air timeout=5s"),
         new Construct("sample", List.of("sample <query> every <duration> x<n> [clock=server|client]",
             "sample <query> every <duration> [x<n>] [clock=server|client] while <action|wait>"),

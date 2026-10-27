@@ -97,11 +97,13 @@ could match.
 ### D6. A wait ends on `err syntax`
 
 `WaitUntil` returns the query's result at once when it is an error with code
-`syntax`. Gate errors (`not_in_world` and the like) and other errors keep
-the wait re-running, so a wait through a world join still works.
+`syntax`. Other errors keep the wait re-running: a chunk still to arrive
+(`unloaded`), a sub-level or entity not there yet, or the world gone during
+the wait. A wait whose query can't run outside a world is already refused at
+its start, by the query's gate.
 
-Alternative: end on any error. That would break waits that start before the
-world is ready, so it was rejected.
+Alternative: end on any error. That would break waits for something that
+appears only later, such as a chunk or a sub-level, so it was rejected.
 
 ### D7. The CLI catches the reply's read timeout itself
 

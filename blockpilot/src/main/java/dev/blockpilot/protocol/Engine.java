@@ -371,6 +371,11 @@ public final class Engine {
                 } catch (CommandException e) {
                     last = e.toResult();
                 }
+                if ("syntax".equals(last.code())) {
+                    // Running the query again can't fix it; other errors can pass (unloaded, or not_in_world while
+                    // a dimension loads).
+                    return last;
+                }
                 matches = condition.holds(last) ? matches + every : 0;
                 if (matches >= stable) {
                     Fields fields = new Fields().bare("elapsed", new Duration(elapsed).seconds() + "s");

@@ -7,7 +7,7 @@
 
 ## 2. Waits (command-language)
 
-- [ ] 2.1 End `wait <query> until` at once when the query fails with `err syntax`, and keep re-running on other errors (D6), with engine tests for both and the README's wait notes if they cover errors; verify on the dev client that `wait find stoen 8 until count>0 timeout=60s` fails on its first tick naming `stoen`
+- [x] 2.1 End `wait <query> until` at once when the query fails with `err syntax`, and keep re-running on other errors (D6), with engine tests for both and the README's wait notes if they cover errors; verify on the dev client that `wait find stoen 8 until count>0 timeout=60s` fails on its first tick naming `stoen`
 
 ## 3. Sounds (client-observation)
 

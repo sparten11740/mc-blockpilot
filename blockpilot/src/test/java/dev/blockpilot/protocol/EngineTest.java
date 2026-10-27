@@ -40,6 +40,9 @@ class EngineTest {
         registry.register(CommandSpec.action("walk", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
         registry.register(CommandSpec.query("world", (context, args) -> Result.ok()).needsWorld());
+        registry.register(CommandSpec.query("typo", (context, args) -> {
+            throw new CommandException("syntax", "unknown block stoen");
+        }));
         registry.register(CommandSpec.query("boom", (context, args) -> {
             throw new IllegalStateException("boom");
         }));
@@ -187,6 +190,25 @@ class EngineTest {
         CompletableFuture<Reply> wait = engine.submit(session, null, "wait counter until value>5 timeout=3t");
         tick(5);
         assertEquals("err timeout 0.15s value=0", text(wait));
+    }
+
+    @Test
+    void waitEndsAtOnceOnAQuerySyntaxError() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> wait = engine.submit(session, null, "wait typo until count>0 timeout=60s");
+        tick(1);
+        assertTrue(wait.isDone());
+        assertEquals("err syntax unknown block stoen", text(wait));
+    }
+
+    @Test
+    void waitKeepsRunningThroughOtherErrors() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> wait = engine.submit(session, null, "wait fail until ok timeout=5t");
+        tick(4);
+        assertFalse(wait.isDone());
+        tick(1);
+        assertTrue(text(wait).startsWith("err timeout"), text(wait));
     }
 
     @Test
