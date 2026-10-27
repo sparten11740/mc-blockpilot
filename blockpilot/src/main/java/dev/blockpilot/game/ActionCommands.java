@@ -233,14 +233,19 @@ final class ActionCommands {
             return () -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
         }
         Level level = minecraft().level;
-        Position absolute = context.resolve(args.position(name));
-        BlockPos block = BlockPos.containing(absolute.x(), absolute.y(), absolute.z());
-        Vec3 target = target(level, absolute, args);
-        SubLevels.Info subLevel = SableSupport.subLevels().at(level, block);
+        return seen(level, target(level, context.resolve(args.position(name)), args));
+    }
+
+    /**
+     * Where to aim at a point: the point itself, or for a point in a sub-level's plot where the player will see it at
+     * the start of the next tick, following the sub-level.
+     */
+    private static Supplier<Vec3> seen(Level level, Vec3 point) {
+        SubLevels.Info subLevel = SableSupport.subLevels().at(level, BlockPos.containing(point));
         if (subLevel != null) {
-            return () -> SableSupport.subLevels().toWorld(level, target).add(lead(level, target, subLevel.id()));
+            return () -> SableSupport.subLevels().toWorld(level, point).add(lead(level, point, subLevel.id()));
         }
-        return () -> target;
+        return () -> point;
     }
 
     /**
@@ -717,7 +722,8 @@ final class ActionCommands {
         }
         if (args.type("target") == ArgType.POSITION) {
             BlockPos pos = Rel.block(context.resolve(args.position("target")));
-            if (Vec3.atCenterOf(pos).distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
+            Vec3 center = seen(minecraft().level, Vec3.atCenterOf(pos)).get();
+            if (center.distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
                 throw new CommandException("out_of_reach", Rel.of(pos).toString());
             }
             return new Dig(session, () -> pos, 1, false, null);
@@ -751,6 +757,7 @@ final class ActionCommands {
         private final boolean walk;
         private final String what;
         private BlockPos current;
+        private Supplier<Vec3> aim;
         private BlockState original;
         private Navigator walking;
         private int mined;
@@ -774,6 +781,7 @@ final class ActionCommands {
                     return finish();
                 }
                 original = minecraft().level.getBlockState(current);
+                aim = seen(minecraft().level, Vec3.atCenterOf(current));
                 walking = null;
                 blockedTicks = 0;
                 digTicks = 0;
@@ -786,7 +794,7 @@ final class ActionCommands {
                 current = null;
                 return mined >= wanted ? finish() : null;
             }
-            Vec3 center = Vec3.atCenterOf(current);
+            Vec3 center = aim.get();
             boolean inReach = center.distanceTo(player().getEyePosition()) <= player().blockInteractionRange() - 0.5;
             if (!inReach) {
                 if (!walk) {
@@ -875,12 +883,13 @@ final class ActionCommands {
         }
         InventoryOps.select(item);
         BlockPos against = pos.relative(support);
-        Vec3 point = Vec3.atCenterOf(against).add(Vec3.atLowerCornerOf(support.getOpposite().getNormal()).scale(0.5));
+        Supplier<Vec3> point = seen(level, Vec3.atCenterOf(against)
+            .add(Vec3.atLowerCornerOf(support.getOpposite().getNormal()).scale(0.5)));
         int[] step = {0};
         return named("place", () -> {
             step[0]++;
             if (step[0] == 1) {
-                lookAt(point);
+                lookAt(point.get());
                 return null;
             }
             if (step[0] == 2) {
@@ -888,6 +897,8 @@ final class ActionCommands {
                 if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(against)) {
                     throw new CommandException("out_of_reach", "cannot see the face to place against");
                 }
+                // A sub-level under way moves on before the click's own pick.
+                lookAt(point.get());
                 click(options().keyUse);
                 return null;
             }

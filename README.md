@@ -184,7 +184,8 @@ works with them:
 
 - A position in a plot prints as itself, followed by the sub-level and where that block is in the world, e.g.
   `aim:stone_button 20481032,129,20481033 sub=ship world=10.5,-58.5,6.5`. It pastes back into `block`, `blocks`,
-  `face`, `use` and `camera`. `status` shows `aboard:<name>` while the player stands on or rides a sub-level.
+  `face`, `use`, `mine`, `place` and `camera`. `status` shows `aboard:<name>` while the player stands on or rides a
+  sub-level.
 - `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. As
   everywhere, `use` fails with `err obstructed <id> <position>` when something else is in the way; `use <pos> any`
   clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A camera placed at, or looking at, a plot

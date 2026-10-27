@@ -70,6 +70,11 @@ SHALL refuse a plot position and point to `sable:tp`.
 - **THEN** the reply is the seat with its state, `sub=<name>` and its world
   position
 
+#### Scenario: Digging and placing aboard
+- **WHEN** an agent standing next to a ship runs `mine <plot position>` and
+  then `place <item> <plot position>` for a free cell on its deck
+- **THEN** the block aboard is dug and the item is placed aboard
+
 #### Scenario: Walking to a block aboard
 - **WHEN** an agent runs `goto <plot position>`
 - **THEN** the result is `err syntax` saying `goto` can't walk onto a
