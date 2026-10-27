@@ -63,9 +63,12 @@ final class InputCommands {
             .optionalArg("at", ArgType.POINT, ArgType.WIDGET)
             .help("scrolls by n notches (positive up), optionally at x,y or w<i>").example("scroll -2"));
         registry.register(CommandSpec.action("key", this::key).group("input")
-            .keyword("op", "down", "up", "press").arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION)
+            .form(form -> form.keyword("op", "down", "up", "press").arg("key", ArgType.WORD)
+                .optionalArg("ticks", ArgType.DURATION))
+            .form(form -> form.arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION))
             .help("a key by name (w, space, left_shift or left.shift, e, f5, escape, enter) or key mapping id "
-                + "(key.use, key.inventory, a mod's mapping); press = down then up after Nt (default 1t)")
+                + "(key.use, key.inventory, a mod's mapping); press = down then up after Nt (default 1t), as a key "
+                + "alone does (key escape; key up is the up arrow)")
             .example("key press key.inventory"));
         registry.register(CommandSpec.action("type", this::type).group("input").arg("text", ArgType.TEXT)
             .help("types text into the focused text field").example("type hello"));
@@ -351,7 +354,7 @@ final class InputCommands {
         boolean mouse = key.getType() == InputConstants.Type.MOUSE;
         int code = key.getValue();
         int session = context.sessionId();
-        String op = args.word("op");
+        String op = args.has("op") ? args.word("op") : "press";
         if (op.equals("down")) {
             if (mouse) {
                 InputState.holdButton(session, code);

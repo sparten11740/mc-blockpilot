@@ -8,7 +8,7 @@
 ## 2. Player control (player-control)
 
 - [x] 2.1 Fail `mine` with the new code `unbreakable` when digging makes no progress, and skip such blocks in `mine <block|#tag> x<n>` (D2), with the code in `help errors`, `help mine` and the README; verify on the dev client that `mine <bedrock>` in survival fails on its first tick, `mine` at bedrock under the crosshair too, `mine bedrock` on a flat world's floor fails `unbreakable bedrock` at once, and bedrock still breaks in creative
-- [ ] 2.2 Add the form `key <key> [Nt]` that presses the key (D3), with `help key` and the README; verify on the dev client that `key escape` opens the pause menu from the world, `key up` presses the up arrow, and `key up w` still releases `w`
+- [x] 2.2 Add the form `key <key> [Nt]` that presses the key (D3), with `help key` and the README; verify on the dev client that `key escape` opens the pause menu from the world, `key up` presses the up arrow, and `key up w` still releases `w`
 - [ ] 2.3 Give `PathSearch` the reason a cell can't be stood in, build `standable` on it, and check `goto <pos>`'s target before walking (D4), with unit tests in `PathSearchTest` for each reason, `help goto` and the README; verify on the dev client that `goto` at a stone block names the stone and the cell above, `goto ~0,5,0` says nothing is there to stand on, and neither moves the player
 
 ## 3. Observation (client-observation)
