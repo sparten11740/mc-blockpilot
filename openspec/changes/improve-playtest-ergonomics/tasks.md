@@ -18,7 +18,7 @@
 
 ## 4. CLI (dev-integration)
 
-- [ ] 4.1 Say how many seconds the CLI waited in both `--wait-ready` timeout messages (D6), with a unit test in the CLI tests and the README; verify by running the launcher with `--wait-ready 3` against a game directory with no game, and with `--wait-ready 5 --wait-world` against a game in its title screen
+- [x] 4.1 Say how many seconds the CLI waited in both `--wait-ready` timeout messages (D6), with a unit test in the CLI tests and the README; verify by running the launcher with `--wait-ready 3` against a game directory with no game, and with `--wait-ready 5 --wait-world` against a game in its title screen
 - [ ] 4.2 Name the failed steps in the stderr summary (D6), with `ResultsTest` cases for one error, several errors and a syntax error; verify by running a five-step script whose third step fails and reading stderr
 
 ## 5. Help notes (sable-sublevels)

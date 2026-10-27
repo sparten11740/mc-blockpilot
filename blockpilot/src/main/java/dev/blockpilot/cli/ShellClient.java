@@ -43,7 +43,8 @@ final class ShellClient {
             err.println("blockpilot: the game crashed while starting: " + e.getMessage());
             return 2;
         } catch (IOException e) {
-            err.println("blockpilot: game not reachable: " + e.getMessage());
+            String waited = options.waitReady() > 0 ? " after " + seconds(options.waitReady()) + "s" : "";
+            err.println("blockpilot: game not reachable" + waited + ": " + e.getMessage());
             return 2;
         }
         String reply;
@@ -72,8 +73,8 @@ final class ShellClient {
         }
         Long pid = Results.quitPid(reply);
         if (pid != null && !EndpointFile.waitExit(pid, options.timeout())) {
-            err.println("blockpilot: the game (pid " + pid + ") is still running after "
-                + BigDecimal.valueOf(options.timeout()).stripTrailingZeros().toPlainString() + "s");
+            err.println("blockpilot: the game (pid " + pid + ") is still running after " + seconds(options.timeout())
+                + "s");
             return 2;
         }
         return results.stream().anyMatch(Results.Result::isErr) ? 1 : 0;
@@ -142,12 +143,16 @@ final class ShellClient {
                 return true;
             }
             if (System.nanoTime() - deadline >= 0) {
-                err.println("blockpilot: timed out waiting for a world (last status: " + status.lines().findFirst()
-                    .orElse("") + ")");
+                err.println("blockpilot: timed out after " + seconds(options.waitReady()) + "s waiting for a world "
+                    + "(last status: " + status.lines().findFirst().orElse("") + ")");
                 return false;
             }
             pause();
         }
+    }
+
+    private static String seconds(double value) {
+        return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
     }
 
     private void send(String line) throws IOException {

@@ -90,6 +90,13 @@ class MainTest {
     }
 
     @Test
+    void aWorldThatNeverComesTimesOutSayingHowLong() throws IOException {
+        game(line -> "ok menu title\n.\n");
+        assertEquals(2, run("--wait-ready", "0.5", "--wait-world", "jump"));
+        assertEquals("blockpilot: timed out after 0.5s waiting for a world (last status: ok menu title)", stderr());
+    }
+
+    @Test
     void aStaleEndpointFileIsUnreachable() throws Exception {
         Process exited = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
             "-version").redirectErrorStream(true).start();
@@ -134,7 +141,7 @@ class MainTest {
         Files.writeString(report, "---- Minecraft Crash Report ----\n");
         Files.setLastModifiedTime(report, FileTime.fromMillis(System.currentTimeMillis() - 3_600_000));
         assertEquals(2, run("--wait-ready", "2", "status"));
-        assertTrue(stderr().startsWith("blockpilot: game not reachable: "), stderr());
+        assertTrue(stderr().startsWith("blockpilot: game not reachable after 2s: "), stderr());
     }
 
     @Test

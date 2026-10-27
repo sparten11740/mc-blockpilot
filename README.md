@@ -30,9 +30,10 @@ macOS that is a client started while the display sleeps ("Failed to locate a pri
 `caffeinate -u -t 300` before the start avoids by waking the display. `--game-dir <dir>` talks to the game in another
 directory, and `--help` lists the options.
 Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed
-out). When a step failed or was skipped, one line on stderr counts them and says whether anything ran, e.g.
-`blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI returns only once the game
-process has exited (within `--timeout`, else exit code 2), so a restart can follow straight away.
+out; stderr says after how many seconds). When a step failed or was skipped, one line on stderr counts them and
+says whether anything ran, e.g. `blockpilot: 1 err, 2 skip (a syntax error, so nothing ran)`. After a `quit` the CLI
+returns only once the game process has exited (within `--timeout`, else exit code 2), so a restart can follow
+straight away.
 
 **Over MCP** (three tools: `run`, `screenshot`, `help`): the launcher also serves MCP over stdio. The MCP client
 starts it once per session, so the tools are there before the game is and keep working through every restart of
