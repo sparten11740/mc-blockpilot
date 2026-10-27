@@ -14,7 +14,7 @@
 ## 3. Observation (client-observation)
 
 - [x] 3.1 Accept `camera off` as `camera reset` and report `unloaded` for a camera in a chunk the client hasn't loaded (D5), with `help camera` and the README; verify on the dev client that `camera off` returns to first person, and `camera at` 2000 blocks away carries `unloaded` and no block, while one 10 blocks up still names `air`
-- [ ] 3.2 Move `option`'s wait into its own `Settle` class and add `settle [timeout=]` (D8), with `help settle` and the README; verify on the dev client that `camera at ~150,0,0; settle` answers `settled=` and a screenshot after it shows the sections around the camera, that `settle` with nothing new in view answers within a few ticks, and that `option renderDistance <n>` still settles
+- [x] 3.2 Move `option`'s wait into its own `Settle` class and add `settle [timeout=]` (D8), with `help settle` and the README; verify on the dev client that `camera at ~150,0,0; settle` answers `settled=` and a screenshot after it shows the sections around the camera, that `settle` with nothing new in view answers within a few ticks, and that `option renderDistance <n>` still settles
 
 ## 4. CLI (dev-integration)
 

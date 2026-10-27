@@ -65,6 +65,13 @@ public final class ObservationCommands {
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
             .field("unloaded", "set instead of block when the client hasn't loaded the camera's chunk")
             .example("camera at ~10,5,10 look ~0,1,0"));
+        registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
+            .help("waits until the chunks in view have compiled, as option does after a change: after camera at, a "
+                + "teleport or anything else that brings new chunks into view, before a screenshot. Answers "
+                + "settled=<s>, or unsettled pending=<n> at timeout= (default 20s). Chunks the client hasn't received "
+                + "don't count")
+            .field("settled", "seconds until the chunks had compiled").field("unsettled", "set at the timeout")
+            .field("pending", "sections still to compile at the timeout").example("settle timeout=30s"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
             .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
                 + "now, e.g. 60t", ArgType.INT, ArgType.DURATION)
@@ -232,6 +239,10 @@ public final class ObservationCommands {
             }
             return Result.ok(fields);
         });
+    }
+
+    private Action settle(CommandContext context, Args args) throws CommandException {
+        return new Settle("settle", Fields::new, args.durationOption("timeout"));
     }
 
     /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
