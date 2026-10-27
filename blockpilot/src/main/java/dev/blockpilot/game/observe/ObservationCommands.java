@@ -61,7 +61,9 @@ public final class ObservationCommands {
             .form(form -> form.keyword("op", "reset", "off"))
             .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
-                + "around the player, so a camera beyond the render distance shows sky")
+                + "around the player, so a camera beyond the render distance shows sky. To take in an effect that "
+                + "spans hundreds of blocks, widen the view with option fov 110 and clear it with option renderClouds "
+                + "off (option reset puts both back)")
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
             .field("unloaded", "set instead of block when the client hasn't loaded the camera's chunk")
             .example("camera at ~10,5,10 look ~0,1,0"));
