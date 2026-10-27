@@ -344,3 +344,22 @@ coordinate outside 0 to 1 SHALL fail with `err syntax`.
 - **WHEN** an agent runs `use <plot position> at <u,v,w>` on a block aboard a
   moving sub-level
 - **THEN** the point follows the sub-level as a whole-block target does
+
+### Requirement: The hit a click sends
+A `use` SHALL report, as `aim` and `hit=u,v,w`, the crosshair hit its click
+was sent to the server with, read on the tick the game handled the click. That
+hit is where the look ray, aimed at the target, first meets a block's shape,
+so with `at <u,v,w>` it differs from the point asked for when the block's
+shape does not hold that point on the ray.
+
+#### Scenario: Point off a thin block's shape
+- **WHEN** an agent runs `use <pos of a button> at 0.5,0.9,0.5`, above the
+  button's shape
+- **THEN** the reply's `aim` and `hit=` name where the aimed ray met a shape,
+  which is the hit the server received
+
+#### Scenario: Moving target
+- **WHEN** an agent runs `use <plot position> any` on a block of a moving
+  sub-level
+- **THEN** the reported hit is the one of the tick the click was handled, not
+  of the tick before
