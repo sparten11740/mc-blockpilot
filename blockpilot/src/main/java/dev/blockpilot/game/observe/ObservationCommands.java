@@ -20,17 +20,21 @@ import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.game.Sides;
 import dev.blockpilot.game.input.KeyNames;
 import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.mixin.SoundEngineAccessor;
+import dev.blockpilot.mixin.SoundManagerAccessor;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -81,6 +85,7 @@ public final class ObservationCommands {
             .field("missing", "chunks still to arrive at the timeout, when there are any")
             .example("settle timeout=30s"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
+            .form(form -> form.optionalKeyword("playing", "playing"))
             .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
                 + "now, e.g. 60t", ArgType.INT, ArgType.DURATION)
             .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*; an id without * must be a sound "
@@ -88,10 +93,13 @@ public final class ObservationCommands {
             .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted); the log "
                 + "keeps the last 2000, and from=<tick> says where it begins when it dropped some of the asked "
-                + "window. A match= without * is a sound event id (minecraft: when it names no namespace); one the "
+                + "window. sounds playing: the sounds playing now, with loop and played=<s> since their start (game "
+                + "time); a sound whose category or the master volume is 0 never plays, so the log has it and this "
+                + "doesn't. A match= without * is a sound event id (minecraft: when it names no namespace); one the "
                 + "client doesn't know fails, naming the closest")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
+            .field("loop", "playing: the sound loops").field("played", "playing: seconds since it started")
             .example("sounds since=1200 match=*gear*"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
             .option("since", "first tick to include, or a duration back from now, e.g. 60t", ArgType.INT,
@@ -291,28 +299,73 @@ public final class ObservationCommands {
     private Result sounds(CommandContext context, Args args) throws CommandException {
         long since = since(args, Long.MIN_VALUE);
         Pattern match = args.option("match") == null ? null : soundPattern(args.option("match"));
+        int limit = args.intOption("limit", 50);
+        if (args.has("playing")) {
+            return playing(since, match, limit);
+        }
         List<Observations.Sound> sounds = new ArrayList<>();
         for (Observations.Sound sound : Observations.sounds(since)) {
             if (matches(match, sound.id())) {
                 sounds.add(sound);
             }
         }
-        List<Observations.Sound> shown = last(sounds, args.intOption("limit", 50));
+        List<Observations.Sound> shown = last(sounds, limit);
         List<Row> rows = new ArrayList<>();
         for (Observations.Sound sound : shown) {
-            Fields fields = new Fields().bare("id", sound.id()).bare("category", sound.category());
-            if (sound.ui()) {
-                fields.put("ui", true, "ui");
-            } else {
-                fields.bare("at", Rel.of(sound.position())).hidden("at_abs", Rel.absolute(sound.position()));
-            }
-            fields.put("volume", (double) sound.volume(), "vol" + Numbers.format(sound.volume()))
-                .put("pitch", (double) sound.pitch(), "pitch" + Numbers.format(sound.pitch()))
-                .put("tick", sound.tick(), "t" + sound.tick());
+            Fields fields = soundFields(sound.id(), sound.category(), sound.ui(), sound.position(), sound.volume(),
+                sound.pitch()).put("tick", sound.tick(), "t" + sound.tick());
             rows.add(Row.of(sound.tick() + ":" + sound.id(), fields));
         }
         return Result.ok(listed(sounds.size(), Observations.soundsFrom(since)))
             .withRows(rows, sounds.size() - shown.size());
+    }
+
+    private record Playing(SoundInstance sound, String id, Long started) {
+    }
+
+    /** The sounds whose channel is still playing; the engine keeps a stopped one in its map for a few ticks. */
+    private Result playing(long since, Pattern match, int limit) {
+        var engine = ((SoundManagerAccessor) Minecraft.getInstance().getSoundManager()).blockpilot$soundEngine();
+        List<Playing> playing = new ArrayList<>();
+        ((SoundEngineAccessor) engine).blockpilot$channels().forEach((sound, channel) -> {
+            String id = Ids.of(sound.getLocation());
+            Long started = Observations.started(sound);
+            boolean inWindow = started == null ? since == Long.MIN_VALUE : started >= since;
+            if (!channel.isStopped() && inWindow && matches(match, id)) {
+                playing.add(new Playing(sound, id, started));
+            }
+        });
+        playing.sort(Comparator.comparing(Playing::started, Comparator.nullsFirst(Comparator.naturalOrder())));
+        List<Playing> shown = last(playing, limit);
+        long now = Observations.tick();
+        List<Row> rows = new ArrayList<>();
+        for (Playing entry : shown) {
+            SoundInstance sound = entry.sound();
+            Fields fields = soundFields(entry.id(), sound.getSource().getName(), sound.isRelative(),
+                new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.getVolume(), sound.getPitch());
+            if (sound.isLooping()) {
+                fields.put("loop", true, "loop");
+            }
+            if (entry.started() != null) {
+                double played = new Duration((int) Math.max(0, now - entry.started())).seconds();
+                fields.put("tick", entry.started(), "t" + entry.started())
+                    .put("played", played, "played=" + Numbers.format(played) + "s");
+            }
+            rows.add(Row.of((entry.started() == null ? "" : entry.started() + ":") + entry.id(), fields));
+        }
+        return Result.ok(listed(playing.size(), null)).withRows(rows, playing.size() - shown.size());
+    }
+
+    private static Fields soundFields(String id, String category, boolean ui, Vec3 position, float volume,
+        float pitch) {
+        Fields fields = new Fields().bare("id", id).bare("category", category);
+        if (ui) {
+            fields.put("ui", true, "ui");
+        } else {
+            fields.bare("at", Rel.of(position)).hidden("at_abs", Rel.absolute(position));
+        }
+        return fields.put("volume", (double) volume, "vol" + Numbers.format(volume))
+            .put("pitch", (double) pitch, "pitch" + Numbers.format(pitch));
     }
 
     /** A sound's match= as a pattern; without * it names a sound event, which the client has to know. */

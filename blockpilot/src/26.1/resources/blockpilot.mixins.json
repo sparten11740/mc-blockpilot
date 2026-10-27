@@ -33,7 +33,9 @@
     "QuadParticleGroupMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
-    "SoundEngineMixin"
+    "SoundEngineAccessor",
+    "SoundEngineMixin",
+    "SoundManagerAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Consumer;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.particles.ParticleType;
@@ -34,6 +35,8 @@ public final class Observations {
 
     private static final TickLog<Sound> SOUND_LOG = new TickLog<>(SOUNDS, Sound::tick);
     private static final TickLog<Message> MESSAGE_LOG = new TickLog<>(MESSAGES, Message::tick);
+    /** The tick each sound instance first started; a sound the engine loops by hand is played again each loop. */
+    private static final Map<SoundInstance, Long> STARTED = new WeakHashMap<>();
     private static final LinkedHashMap<Long, Map<String, Integer>> PARTICLES = new LinkedHashMap<>();
     private static final Map<String, String> LAST_TEXT = new HashMap<>();
     private static final Map<String, Long> LAST_TICK = new HashMap<>();
@@ -57,6 +60,12 @@ public final class Observations {
         Sound entry = new Sound(tick(), Ids.of(sound.getLocation()), category,
             new Vec3(sound.getX(), sound.getY(), sound.getZ()), sound.isRelative(), sound.getVolume(), sound.getPitch());
         SOUND_LOG.add(entry);
+        STARTED.putIfAbsent(sound, entry.tick());
+    }
+
+    /** The tick the sound first started, or null if it never went through the engine's play. */
+    public static synchronized Long started(SoundInstance sound) {
+        return STARTED.get(sound);
     }
 
     /**
