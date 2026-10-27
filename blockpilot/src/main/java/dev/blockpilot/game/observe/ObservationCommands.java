@@ -17,6 +17,7 @@ import dev.blockpilot.game.FrameCapture;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.Rel;
 import dev.blockpilot.game.Screenshots;
+import dev.blockpilot.game.Sides;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -57,10 +58,12 @@ public final class ObservationCommands {
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
                 .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY)))
-            .form(form -> form.keyword("op", "reset"))
+            .form(form -> form.keyword("op", "reset", "off"))
             .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
-                + "camera reset: back to the player's view. The player keeps acting normally")
+                + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
+                + "around the player, so a camera beyond the render distance shows sky")
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
+            .field("unloaded", "set instead of block when the client hasn't loaded the camera's chunk")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.query("sounds", this::sounds).group("observe")
             .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
@@ -185,7 +188,7 @@ public final class ObservationCommands {
     }
 
     private Action camera(CommandContext context, Args args) throws CommandException {
-        if (args.word("op").equals("reset")) {
+        if (!args.word("op").equals("at")) {
             CameraControl.reset();
             return () -> Result.ok();
         }
@@ -212,12 +215,17 @@ public final class ObservationCommands {
         BlockPos cell = BlockPos.containing(position);
         return ActionSupport.afterFrames(2, () -> {
             Vec3 looking = target.at(1);
-            BlockState block = level.getBlockState(cell);
-            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute)
-                .put("block", Ids.of(block), "in:" + Ids.of(block));
-            if (block.isCollisionShapeFullBlock(level, cell)) {
-                // The view starts inside a solid block, which shows its faces from within or nothing at all.
-                fields.put("inside", Ids.of(block));
+            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+            if (!Sides.loaded(level, cell)) {
+                // A missing chunk reads as air, but renders as nothing.
+                fields.put("unloaded", true, "unloaded");
+            } else {
+                BlockState block = level.getBlockState(cell);
+                fields.put("block", Ids.of(block), "in:" + Ids.of(block));
+                if (block.isCollisionShapeFullBlock(level, cell)) {
+                    // The view starts inside a solid block, which shows its faces from within or nothing at all.
+                    fields.put("inside", Ids.of(block));
+                }
             }
             if (looking != null) {
                 fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
