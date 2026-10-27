@@ -36,12 +36,15 @@ public final class PixelCommands {
                 + "frame fractions from the top left, or [name=]@<pos>, the square around a world position reaching "
                 + "r=<blocks> to each side (default 0.5); unnamed ones are r0, r1, …, and with none all and centre. "
                 + "Each gives <name>.r .g .b .luma (means), .max and .p90 (luma), 0-255; err offscreen <name> when a "
-                + "position is behind the camera or out of the frame")
+                + "position is behind the camera or out of the frame. A frame rendered from a placed camera (camera "
+                + "at) adds camera <x,y,z>, so no region may be named camera")
+            .field("camera", "the placed camera's absolute position, when the frame was rendered from it")
             .example("pixels sky=0.4,0.05,0.6,0.15 @~0,0,4 r=1"));
     }
 
     private Result pixels(CommandContext context, Args args) throws CommandException {
         Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
+        Position frameCamera = CameraControl.frameCamera();
         try (NativeImage image = FrameCapture.read()) {
             PixelStats.Frame frame = new PixelStats.Frame() {
                 @Override
@@ -69,7 +72,7 @@ public final class PixelCommands {
                     + " luma=" + Numbers.format((double) stats.get("luma")) + " max=" + stats.get("max") + " p90="
                     + stats.get("p90"));
             }
-            return Result.ok(fields);
+            return Result.ok(CameraControl.withFrameCamera(fields, frameCamera));
         }
     }
 
@@ -92,6 +95,9 @@ public final class PixelCommands {
             String body = token.substring(equals + 1);
             if (equals > 0 && !Lexicon.isIdentifier(name)) {
                 throw new CommandException("syntax", "a region's name is an identifier, not " + name);
+            }
+            if (name.equals("camera")) {
+                throw new CommandException("syntax", "camera is taken: the reply names a placed camera with it");
             }
             if (regions.containsKey(name)) {
                 throw new CommandException("syntax", "two regions are named " + name);

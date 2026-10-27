@@ -1,5 +1,8 @@
 package dev.blockpilot.game.observe;
 
+import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Position;
+import dev.blockpilot.game.Rel;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
@@ -35,6 +38,7 @@ public final class CameraControl {
 
     private static volatile Placement placement;
     private static volatile Angles rendered;
+    private static volatile Vec3 renderedFrom;
     /** The player's own F1 (hide GUI) setting while a placed camera hides the GUI, else null. */
     private static Boolean hiddenGuiBefore;
 
@@ -72,7 +76,22 @@ public final class CameraControl {
         return rendered;
     }
 
-    /** Called once per frame after the level rendered, when the camera holds its final angles. */
+    /**
+     * Where a placed camera sat for the last rendered frame, as an absolute position, or null when that frame showed
+     * the player's view. It follows the frames, not the placement, so right after {@code camera reset} it still names
+     * the camera. Menus outside a world don't record frames, and none of them is a placed camera's.
+     */
+    static Position frameCamera() {
+        Vec3 from = renderedFrom;
+        return from == null || Minecraft.getInstance().level == null ? null : Rel.absolute(from);
+    }
+
+    /** Adds {@code camera <x,y,z>} for a frame seen from a placed camera. */
+    static Fields withFrameCamera(Fields fields, Position camera) {
+        return camera == null ? fields : fields.put("camera", camera, "camera " + camera);
+    }
+
+    /** Called once per frame after the level rendered, when the camera holds its final angles and position. */
     public static void recordRendered() {
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
         //? if neoforge {
@@ -81,5 +100,6 @@ public final class CameraControl {
         /*float roll = 0;
         *///?}
         rendered = new Angles(camera.getYRot(), camera.getXRot(), roll);
+        renderedFrom = placement == null ? null : camera.getPosition();
     }
 }

@@ -57,9 +57,11 @@ public final class ObservationCommands {
             .help("saves the last rendered frame as PNG (default 512 wide, max 1280 and the frame's or crop's own "
                 + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
                 + "frames, one every N ticks, starting now, and with sheet one PNG of them in a grid, each labelled "
-                + "#<n> t<tick>, the width being each tile's (cut so the sheet is at most 1536 wide). Works with the "
+                + "#<n> t<tick>, the width being each tile's (cut so the sheet is at most 1536 wide). A frame rendered "
+                + "from a placed camera (camera at, until camera reset) carries camera <x,y,z>. Works with the "
                 + "window in the background. MCP also has a screenshot tool").field("file", "absolute path")
             .field("tick", "the tick the frame was captured on")
+            .field("camera", "the placed camera's absolute position, for a frame rendered from it")
             .field("width", "the width the frames have, when narrower than asked (or than 512)")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
@@ -176,8 +178,8 @@ public final class ObservationCommands {
                     Result result;
                     if (frames == 1) {
                         Fields frame = rows.get(0).fields();
-                        result = Result.ok(new Fields().bare("file", frame.get("file"))
-                            .put("tick", frame.get("tick"), "t" + frame.get("tick")));
+                        result = Result.ok(CameraControl.withFrameCamera(new Fields().bare("file", frame.get("file"))
+                            .put("tick", frame.get("tick"), "t" + frame.get("tick")), (Position) frame.get("camera")));
                     } else {
                         result = Result.ok(fields.put("frames", rows.size(), "frames=" + rows.size())).withRows(rows);
                     }
@@ -203,7 +205,9 @@ public final class ObservationCommands {
                         fields.bare("file", file.toString());
                     }
                 }
-                rows.add(Row.of(String.valueOf(rows.size()), fields.put("tick", tick, "t" + tick)));
+                fields.put("tick", tick, "t" + tick);
+                rows.add(Row.of(String.valueOf(rows.size()),
+                    CameraControl.withFrameCamera(fields, CameraControl.frameCamera())));
             }
 
             @Override

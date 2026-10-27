@@ -37,6 +37,7 @@ stonecutter parameters {
     rename("26.1", "graphics.drawString(", "graphics.text(")
     rename("26.1", "camera.getYRot()", "camera.yRot()")
     rename("26.1", "camera.getXRot()", "camera.xRot()")
+    rename("26.1", "camera.getPosition()", "camera.position()")
     rename("26.1", ".getItem().canAttackBlock(", ".canDestroyBlock(")
     rename("26.1", ".handleInventoryMouseClick(", ".handleContainerInput(")
     rename("26.1", "ClickType", "ContainerInput")

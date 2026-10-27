@@ -6,7 +6,7 @@
 
 ## 2. Placed camera (client-observation)
 
-- [ ] 2.1 Record the placed camera's position for each rendered frame, add `camera <x,y,z>` to `screenshot` frames and `pixels` replies taken from it, and refuse a `pixels` region named `camera` (D3, D4), with `help screenshot`, `help pixels` and the README's observe row; verify on the dev client that `camera at ~5,5,5 look ~0,1,0; screenshot burst=2 every=5t; pixels` carries `camera` on both frames and on `pixels`, that after `camera reset` and a frame `screenshot` and `pixels` carry none, and that `pixels camera=0,0,1,1` fails with `err syntax`
+- [x] 2.1 Record the placed camera's position for each rendered frame, add `camera <x,y,z>` to `screenshot` frames and `pixels` replies taken from it, and refuse a `pixels` region named `camera` (D3, D4), with `help screenshot`, `help pixels` and the README's observe row; verify on the dev client that `camera at ~5,5,5 look ~0,1,0; screenshot burst=2 every=5t; pixels` carries `camera` on both frames and on `pixels`, that after `camera reset` and a frame `screenshot` and `pixels` carry none, and that `pixels camera=0,0,1,1` fails with `err syntax`
 
 ## 3. Integration checks
 
