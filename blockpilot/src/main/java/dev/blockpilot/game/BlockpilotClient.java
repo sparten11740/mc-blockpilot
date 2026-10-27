@@ -181,7 +181,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onClientStopping() {
         try {
-            restoreOptions("the game is closing");
+            restoreAgentChanges("the game is closing");
         } catch (RuntimeException e) {
             // An option's update hook failing must not break shutdown; nothing writes the changed values anyway.
             Blockpilot.LOGGER.warn("Could not restore the options agents changed", e);
@@ -207,7 +207,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             enabled = !enabled;
             if (!enabled) {
                 engine.stopAll("disabled");
-                restoreOptions("agent control turned off");
+                restoreAgentChanges("agent control turned off");
                 CameraControl.reset();
             }
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
@@ -236,18 +236,28 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         closeIn = ticks;
     }
 
-    static void restoreOptions(String reason) {
+    /** Config values first: they catch their own failures, which an option's update hook doesn't. */
+    static void restoreAgentChanges(String reason) {
+        List<String> values = ConfigCommands.restoreAll();
+        if (!values.isEmpty()) {
+            Blockpilot.LOGGER.info("Put back the config values agents changed, as {}: {}", reason,
+                String.join(" ", values));
+        }
         List<String> restored = ClientOptions.restoreAll();
         if (!restored.isEmpty()) {
-            Blockpilot.LOGGER.info("Restored the options agents changed, as {}: {}", reason, String.join(" ", restored));
+            Blockpilot.LOGGER.info("Restored the options agents changed, as {}: {}", reason,
+                String.join(" ", restored));
         }
     }
 
-    /** Agent option changes end when the player leaves the world (Blockpilot's own world switches keep them). */
+    /**
+     * Agent option and config changes end when the player leaves the world (Blockpilot's own world switches keep
+     * them).
+     */
     private void restoreOnWorldExit() {
         boolean inWorld = Minecraft.getInstance().level != null;
         if (wasInWorld && !inWorld && !SessionCommands.leftByBlockpilot()) {
-            restoreOptions("the world was left");
+            restoreAgentChanges("the world was left");
         }
         wasInWorld = inWorld;
     }
@@ -267,6 +277,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onServerStopping(MinecraftServer server) {
         ServerCommands.onServerStopping(server);
+        ConfigCommands.forgetServerValues();
     }
 
     @Override

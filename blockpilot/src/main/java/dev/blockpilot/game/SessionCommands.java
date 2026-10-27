@@ -222,14 +222,14 @@ final class SessionCommands {
             throw new CommandException("not_in_world");
         }
         disconnect();
-        BlockpilotClient.restoreOptions("the agent left the world");
+        BlockpilotClient.restoreAgentChanges("the agent left the world");
         return () -> minecraft().level == null ? Result.ok() : null;
     }
 
     private Action quit() {
         if (minecraft().level != null) {
             disconnect();
-            BlockpilotClient.restoreOptions("the agent quit the game");
+            BlockpilotClient.restoreAgentChanges("the agent quit the game");
         }
         return () -> {
             if (minecraft().level != null) {

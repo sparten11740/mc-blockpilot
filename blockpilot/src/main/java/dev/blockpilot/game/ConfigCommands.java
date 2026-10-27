@@ -28,7 +28,7 @@ public final class ConfigCommands {
     private record Original(ModConfigs.File file, ModConfigs.Entry entry, Object value) {
     }
 
-    /** By mod, file and key; client thread only. */
+    /** By mod, file and key; the server thread forgets server values when it stops, so access is synchronized. */
     private static final Map<String, Original> ORIGINALS = new LinkedHashMap<>();
 
     /** One value and the file it is in. */
@@ -194,7 +194,7 @@ public final class ConfigCommands {
         if (value == null || !entry.accepts(value)) {
             throw new CommandException("syntax", entry.key() + " takes " + takes(entry) + ", not " + text);
         }
-        ORIGINALS.putIfAbsent(id(file, entry), new Original(file, entry, entry.value()));
+        remember(new Original(file, entry, entry.value()));
         entry.set(value);
     }
 
@@ -213,7 +213,7 @@ public final class ConfigCommands {
         String now = ConfigValues.text(entry.value());
         Fields fields = new Fields().bare("type", file.type()).bare("key", entry.key())
             .put("value", json(entry.value()), now);
-        Original original = ORIGINALS.get(id(file, entry));
+        Original original = original(file, entry);
         if (original != null && !ConfigValues.text(original.value()).equals(now)) {
             fields.put("was", json(original.value()), "was " + ConfigValues.text(original.value()));
         }
@@ -245,8 +245,21 @@ public final class ConfigCommands {
         };
     }
 
+    private static synchronized void remember(Original original) {
+        ORIGINALS.putIfAbsent(id(original.file(), original.entry()), original);
+    }
+
+    private static synchronized Original original(ModConfigs.File file, ModConfigs.Entry entry) {
+        return ORIGINALS.get(id(file, entry));
+    }
+
+    /** A stopping server unloads its configs, and the next world load reads that world's files afresh. */
+    public static synchronized void forgetServerValues() {
+        ORIGINALS.values().removeIf(original -> original.file().type().equals("server"));
+    }
+
     /** Puts back every value agents changed, telling each mod; returns them as {@code <mod>:<key>}. */
-    public static List<String> restoreAll() {
+    public static synchronized List<String> restoreAll() {
         List<String> restored = new ArrayList<>();
         ORIGINALS.values().forEach(original -> {
             String name = original.file().modId() + ":" + original.entry().key();
