@@ -38,27 +38,31 @@ is first created as by `create world` if it doesn't exist.
   world
 
 ### Requirement: Standalone CLI client
-Blockpilot SHALL ship `tools/blockpilot.py`, a command-line client that needs
-only Python 3 and its standard library. It reads `endpoint.json` and the token
-from a game directory, sends one script per invocation, and prints the reply.
-Its exit code is 0 when every command returned `ok`, 1 on any `err`, and 2 if
-the endpoint can't be reached. A readiness file whose process is gone counts as
-unreachable.
+Blockpilot SHALL ship a command-line client in its mod jar, run through the
+launcher, that needs nothing besides the game's Java. It reads `endpoint.json`
+and the token from a game directory (the launcher's, or `--game-dir`), sends
+one script per invocation, and prints the reply. Its exit code is 0 when every
+command returned `ok`, 1 on any `err`, and 2 if the endpoint can't be reached.
+A readiness file whose process is gone counts as unreachable.
 
 #### Scenario: One-shot script
-- **WHEN** an agent runs `python3 tools/blockpilot.py --game-dir run "status;
-  inv"`
+- **WHEN** an agent runs `run/blockpilot/blockpilot "status; inv"`
 - **THEN** the text reply is printed to stdout, and the exit code is 0
 
 #### Scenario: Stale readiness file
 - **WHEN** the game was killed and its `endpoint.json` is still there
 - **THEN** the CLI exits with code 2 instead of connecting to whatever now holds
-  the port
+  the port, on Windows as on the other systems
 
 #### Scenario: JSON output
 - **WHEN** an agent runs the CLI with `--json`
 - **THEN** stdout is exactly one JSON object, the same as the line protocol's
   JSON reply
+
+#### Scenario: Another game directory
+- **WHEN** an agent runs a launcher with `--game-dir <other dir>`
+- **THEN** the CLI talks to the game in that directory instead of the
+  launcher's
 
 ### Requirement: CLI readiness wait
 `--wait-ready <seconds>` SHALL make the CLI wait until the endpoint is
@@ -67,8 +71,8 @@ player is in a world. Both run before the script, and exit with code 2 on
 timeout.
 
 #### Scenario: Launch then act
-- **WHEN** an agent runs `python3 tools/blockpilot.py --game-dir run
-  --wait-ready 180 "create world t flat"` right after starting `runClient`
+- **WHEN** an agent runs `run/blockpilot/blockpilot --wait-ready 180 "create
+  world t flat"` right after starting `runClient`
 - **THEN** the CLI blocks until the endpoint is reachable, then runs the script
 
 #### Scenario: Launch with auto-join
@@ -96,8 +100,8 @@ once the process is gone, and 2 when it is still running at the timeout. A
 restart loop then needs no process lookup.
 
 #### Scenario: Restart loop
-- **WHEN** an agent runs `python3 tools/blockpilot.py --game-dir run "quit"`
-  and then starts the game again
+- **WHEN** an agent runs `run/blockpilot/blockpilot "quit"` and then starts the
+  game again
 - **THEN** the first command returns only after the old game process has
   exited, with exit code 0, so the new game can take the port and the
   readiness file
@@ -107,3 +111,25 @@ restart loop then needs no process lookup.
   out
 - **THEN** the CLI exits with code 2 and says on stderr that the game is still
   running, with its pid
+
+### Requirement: Launcher on the game's own Java
+At every start Blockpilot SHALL write `<gameDir>/blockpilot/blockpilot`
+(`blockpilot.cmd` on Windows), a launcher that runs the CLI on the Java the
+game runs on, from the jar or folders the game loaded Blockpilot from, with
+that game directory preset. It needs no `java` on `PATH`, stays after the game
+exits, and is replaced at the next start.
+
+#### Scenario: No Java on the path
+- **WHEN** the game was started through Gradle with a toolchain JDK and an
+  agent runs `run/blockpilot/blockpilot "status"` from a shell whose `PATH`
+  has no `java`
+- **THEN** the CLI runs and prints the status
+
+#### Scenario: Blockpilot updated
+- **WHEN** a newer Blockpilot jar replaces the old one and the game starts
+- **THEN** the launcher runs the newer jar's CLI
+
+#### Scenario: Jar gone
+- **WHEN** the jar the launcher names was deleted after the game exited
+- **THEN** the launcher exits with code 2 and says on stderr that the game has
+  to start once to update it
