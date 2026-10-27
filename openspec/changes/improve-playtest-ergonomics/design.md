@@ -17,12 +17,17 @@ rather than deep. Relevant current state:
 - A command's forms are tried in order against all of a call's tokens.
 - The CLI's stderr summary (`Results.summary`) counts errors and skips;
   `ResultsTest` covers it.
+- `option` already waits after a change until the chunk compile queue has
+  stayed empty for 3 ticks, in a private class of `OptionCommands`.
+- `screenshot` cuts its width to 1280, and `Screenshots.frame` to the frame's
+  or crop's own width; a sheet's tiles are cut to fit 1,536 pixels. The reply
+  says none of it.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Each new error or field comes from what the game or the command already
-  knows; no new scans, timers or waits.
+  knows; no new scans or timers, and the one new wait is `option`'s.
 - The `goto` check and the path search can't disagree about a cell.
 
 **Non-Goals:**
@@ -102,6 +107,28 @@ the world bounds turned back into the plot and grow while the sub-level is
 turned. `help nbt` says that `<pos>` may be a plot position. These are text
 only.
 
+### D8. `settle` is `option`'s wait on its own
+
+`OptionCommands.Settle` moves to its own class in `game/observe`, taking the
+command's name as its label, and the new `settle [timeout=]` returns it with
+no fields but `settled=`, or `unsettled pending=` at the timeout. Its test
+stays that of `option`: the compile queue empty and the number of rendered
+sections unchanged for 3 ticks, counted from the second tick, by when the
+renderer has scheduled the sections that came into view. `settle` changes
+nothing and needs a world. *Alternative:* make `camera at` wait itself.
+Rejected: teleports, `sable:tp` and `goto` bring new chunks into view too,
+and the camera's quick answer is enough when an agent doesn't need the whole
+view.
+
+### D9. `screenshot` says when its width was cut
+
+The action keeps the width of the frames it captured. When that is less than
+the width asked for, or 512 when none is, the reply carries `width=<n>`; for
+a sheet, the width is each tile's. `help screenshot` gives the cap of 1280.
+Over MCP the image carries its own size, so the tool's reply doesn't change.
+*Alternative:* fail when the width is over the cap. Rejected: the cut image is
+still useful, as `find`'s cut radius is.
+
 ## Risks / Trade-offs
 
 - [A mod breaks its block through another route than digging, so progress is
@@ -111,6 +138,9 @@ only.
   only applies without `near=`, and the cell above is named when it works.
 - [The stderr summary's wording changes] → scripts read the exit code, which
   doesn't change; stderr is for people and agents reading it.
+- [`settle` answers before chunks the server hasn't sent yet arrive] → it
+  waits for what the client has; `camera at` flags a camera in an unloaded
+  chunk, and an agent can wait for the chunks first.
 
 ## Migration Plan
 

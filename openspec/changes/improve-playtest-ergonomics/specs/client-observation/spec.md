@@ -39,3 +39,22 @@ SHALL carry `unloaded` instead of a block.
 #### Scenario: Camera beyond the loaded chunks
 - **WHEN** an agent runs `camera at <a point 2000 blocks from the player>`
 - **THEN** the reply carries `unloaded` and names no block
+
+## ADDED Requirements
+
+### Requirement: Waiting for the view to settle
+`settle [timeout=<duration>]` SHALL answer once the chunk compile queue has
+stayed empty, with the same number of sections rendered, for 3 ticks, with
+`settled=<seconds>`, or at `timeout=` (default 20s) with `unsettled
+pending=<n>`, as `option` does after a change. It SHALL change nothing, so an
+agent can wait with it for the view to finish loading after `camera at`, a
+teleport or anything else that brings new chunks into view.
+
+#### Scenario: Camera moved far
+- **WHEN** an agent runs `camera at ~150,0,0; settle; screenshot`
+- **THEN** `settle` answers with `settled=` once the sections around the
+  camera have compiled, and the screenshot shows them
+
+#### Scenario: Nothing new in view
+- **WHEN** an agent runs `settle` while the view hasn't changed
+- **THEN** it answers with `settled=` after a few ticks

@@ -3,6 +3,7 @@
 ## 1. Perception (game-perception)
 
 - [ ] 1.1 Add `count=<n>` to `find` when the limit cut its list, for blocks, entities and drops (D1), with `help find` (limit default 5, max 100; `count` as matches in all) and the README; verify on the dev client that `find` with eight logs in range and limit 3 carries `count=8` in text and JSON, and limit 10 carries none
+- [ ] 1.2 Report `width=<n>` from `screenshot` when the frames are narrower than asked (D9), with `help screenshot` (max 1280, for a sheet each tile's width) and the README; verify on the dev client that `screenshot 2560` carries `width=1280`, `screenshot 640` carries none, `screenshot 640 crop=0,0,0.1,0.1` carries the crop's width, and a sheet of 9 frames at 640 carries `width=512`
 
 ## 2. Player control (player-control)
 
@@ -13,6 +14,7 @@
 ## 3. Observation (client-observation)
 
 - [ ] 3.1 Accept `camera off` as `camera reset` and report `unloaded` for a camera in a chunk the client hasn't loaded (D5), with `help camera` and the README; verify on the dev client that `camera off` returns to first person, and `camera at` 2000 blocks away carries `unloaded` and no block, while one 10 blocks up still names `air`
+- [ ] 3.2 Move `option`'s wait into its own `Settle` class and add `settle [timeout=]` (D8), with `help settle` and the README; verify on the dev client that `camera at ~150,0,0; settle` answers `settled=` and a screenshot after it shows the sections around the camera, that `settle` with nothing new in view answers within a few ticks, and that `option renderDistance <n>` still settles
 
 ## 4. CLI (dev-integration)
 
