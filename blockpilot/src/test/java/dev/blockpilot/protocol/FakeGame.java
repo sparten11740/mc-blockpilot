@@ -1,18 +1,27 @@
 package dev.blockpilot.protocol;
 
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * A game for engine tests: client tasks run at once, server tasks wait in {@link #serverTasks} until the test runs
- * them, positions resolve around 0,64,0, releases are counted.
+ * them, calls on the server run at once and are counted, positions resolve around 0,64,0, releases are counted.
  */
 final class FakeGame implements GameBridge {
     final AtomicInteger releases = new AtomicInteger();
     final List<Runnable> serverTasks = new ArrayList<>();
+    int serverCalls;
+    /** Whether a call on the server is running, for queries that note where they ran. */
+    boolean inServerCall;
+    /** The error code calls on the server fail with; null lets them run. */
+    String serverCallFailure;
+    /** What else happens while a call on the server runs, say the server ending a tick. */
+    Runnable duringServerCall = () -> { };
     /** The gate's answer for commands that need a world; null lets them run. */
     String worldGate;
     /** The gate's answer for commands that need the integrated server; null lets them run. */
@@ -32,6 +41,21 @@ final class FakeGame implements GameBridge {
     @Override
     public void runOnServer(Runnable task) {
         serverTasks.add(task);
+    }
+
+    @Override
+    public <T> T callOnServer(Supplier<T> task) throws CommandException {
+        serverCalls++;
+        if (serverCallFailure != null) {
+            throw new CommandException(serverCallFailure);
+        }
+        inServerCall = true;
+        duringServerCall.run();
+        try {
+            return task.get();
+        } finally {
+            inServerCall = false;
+        }
     }
 
     @Override

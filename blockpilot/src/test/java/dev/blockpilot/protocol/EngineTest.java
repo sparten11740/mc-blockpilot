@@ -48,6 +48,8 @@ class EngineTest {
         }));
         registry.register(CommandSpec.query("probe", (context, args) ->
             Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
+        registry.register(CommandSpec.query("served", (context, args) ->
+            Result.ok(new Fields().put("in_call", game.inServerCall))).onServer());
         registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
         registry.register(CommandSpec.action("roll", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).onServer().arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
@@ -310,9 +312,106 @@ class EngineTest {
         CompletableFuture<Reply> huge = engine.submit(session, null, "sample counter every 1t x5000");
         tick(2);
         assertEquals("err syntax col 8: walk is not a read-only command", text(action));
-        assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> every "
-            + "<duration> x<n> [clock=server|client] | sample <query> every <duration> [x<n>] [clock=server|client] "
-            + "while <action|wait>", text(huge));
+        assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> [and "
+            + "<query>…] every <duration> x<n> [clock=server|client] | sample <query> [and <query>…] every <duration> "
+            + "[x<n>] [clock=server|client] while <action|wait>", text(huge));
+    }
+
+    @Test
+    void aSampleOfSeveralQueriesGivesARowPerQueryInEachRun() {
+        // Spec scenario "A body and its pilot on the same ticks".
+        CompletableFuture<Reply> sample = engine.submit(engine.openSession(), null, "sample counter and items every 2t "
+            + "x2");
+        for (int index = 0; index < 10 && !sample.isDone(); index++) {
+            game.time++;
+            counter.incrementAndGet();
+            tick(1);
+        }
+        assertEquals("ok samples=2\n  t1 counter value=1\n  t1 items count=1\n  t3 counter value=3\n"
+            + "  t3 items count=1", text(sample));
+        assertEquals("counter", sample.join().results().get(0).rows().get(0).fields().get("query"));
+    }
+
+    @Test
+    void aSampleOfBothSidesReadsTheServerOnesInOneCallPerRun() {
+        Session session = engine.openSession();
+        // Spec scenario "A client and a server readout together".
+        CompletableFuture<Reply> mixed = engine.submit(session, null, "sample served and counter and served every 1t "
+            + "x2");
+        for (int index = 0; index < 5 && !mixed.isDone(); index++) {
+            game.time++;
+            tick(1);
+        }
+        assertEquals("ok samples=2\n  t1 served in_call=true\n  t1 counter value=0\n  t1 served in_call=true\n"
+            + "  t2 served in_call=true\n  t2 counter value=0\n  t2 served in_call=true", text(mixed));
+        assertEquals(2, game.serverCalls);
+        CompletableFuture<Reply> served = engine.submit(session, null, "sample served and probe every 1t x2");
+        for (int index = 0; index < 5 && !served.isDone(); index++) {
+            engine.tickClient();
+            engine.tickServer();
+        }
+        assertEquals(4, served.join().results().get(0).rows().size());
+        // On the server clock the queries run on the server's own tick.
+        assertEquals(2, game.serverCalls);
+    }
+
+    @Test
+    void theServerRowsOfAMixedSampleCarryTheErrorThatStoppedThem() {
+        Session session = engine.openSession();
+        game.serverGate = "no_server";
+        CompletableFuture<Reply> noServer = engine.submit(session, null, "sample counter and probe every 1t x1");
+        tick(1);
+        assertEquals("ok samples=1\n  t0 counter value=0\n  t0 probe err no_server", text(noServer));
+        assertEquals(0, game.serverCalls);
+        game.serverGate = null;
+        game.serverCallFailure = "timeout";
+        CompletableFuture<Reply> timedOut = engine.submit(session, null, "sample probe and counter and served every 1t "
+            + "x1");
+        tick(1);
+        assertEquals("ok samples=1\n  t0 probe err timeout\n  t0 counter value=0\n  t0 served err timeout",
+            text(timedOut));
+    }
+
+    @Test
+    void aServerActionBesideAMixedSampleMakesUpTheTicksItMissed() {
+        // The server ends a tick on its own thread while the client waits on it, and finds the job busy.
+        game.duringServerCall = () -> {
+            Thread server = new Thread(engine::tickServer);
+            server.start();
+            try {
+                server.join();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        CompletableFuture<Reply> roll = engine.submit(engine.openSession(), null, "sample counter and probe every 1t "
+            + "while roll a 4");
+        tick(1);
+        engine.tickServer();
+        assertEquals(1, log.stream().filter("a"::equals).count());
+        tick(1);
+        assertEquals(1, log.stream().filter("a"::equals).count());
+        engine.tickServer();
+        // Three server ticks have passed: the one at the start, the missed one and this one.
+        assertEquals(3, log.stream().filter("a"::equals).count());
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok samples=2", text(roll).lines().findFirst().orElseThrow());
+    }
+
+    @Test
+    void aSampleOfSeveralQueriesRunsBesideAnAction() {
+        CompletableFuture<Reply> walk = engine.submit(engine.openSession(), null, "sample counter and probe every 1t "
+            + "while walk a 3");
+        for (int index = 0; index < 10 && !walk.isDone(); index++) {
+            game.time++;
+            tick(1);
+        }
+        Result result = walk.join().results().get(0);
+        assertEquals("ok samples=3", text(walk).lines().findFirst().orElseThrow());
+        assertEquals(6, result.rows().size());
+        assertEquals(List.of("counter", "probe", "counter", "probe", "counter", "probe"), result.rows().stream()
+            .map(row -> row.fields().get("query")).toList());
     }
 
     @Test

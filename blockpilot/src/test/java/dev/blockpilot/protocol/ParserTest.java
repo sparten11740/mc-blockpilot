@@ -483,7 +483,7 @@ class ParserTest {
     @Test
     void samples() {
         Statement.Sample sample = assertInstanceOf(Statement.Sample.class, statement("sample status every 1t x20"));
-        assertEquals("status", sample.query().entry().qualifiedName());
+        assertEquals("status", sample.queries().get(0).entry().qualifiedName());
         assertEquals(new Duration(1), sample.every());
         assertEquals(20, sample.count());
         assertEquals(1000, assertInstanceOf(Statement.Sample.class, statement("sample probe every 2t x1000 "
@@ -507,6 +507,46 @@ class ParserTest {
     }
 
     @Test
+    void aSampleTakesSeveralQueriesJoinedByAnd() {
+        Statement.Sample three = assertInstanceOf(Statement.Sample.class, statement("sample block ~0,-1,0 side=where "
+            + "and look 3 and status every 20t x3"));
+        assertEquals(List.of("block", "look", "status"), three.queries().stream()
+            .map(query -> query.entry().qualifiedName()).toList());
+        assertEquals(3, three.queries().get(1).args().integer("radius", 0));
+        assertEquals(3, three.count());
+        // A bare and ends a sampled query's text, while the query of assert takes it.
+        Statement.Sample note = assertInstanceOf(Statement.Sample.class, statement("sample note a b and status every "
+            + "1t x2"));
+        assertEquals("a b", note.queries().get(0).args().text("text"));
+        assertEquals("a and b", assertInstanceOf(Statement.Assert.class, statement("assert note a and b ok")).query()
+            .args().text("text"));
+        assertEquals(500, assertInstanceOf(Statement.Sample.class, statement("sample status and status every 1t "
+            + "x500")).count());
+        // Spec scenario "Too many rows".
+        assertErrorAt("sample status and status every 1t x600", "x600", "a sample holds at most 1000 rows, not 1200: "
+            + "x600 times 2 queries");
+        assertErrorAt("sample status and", null, "missing a query (a read-only command)");
+        assertErrorAt("sample status and every 1t x5", "every", "a query (a read-only command) expected, got every");
+        assertErrorAt("sample status and mine every 1t x5", "mine", "mine is not a read-only command");
+        assertErrorAt("sample status and wait 1t every 1t x5", "wait", "wait can't be a query; constructs run only as "
+            + "statements");
+    }
+
+    @Test
+    void aSampleOfBothSidesRunsOnTheClientClock() {
+        Statement.Sample mixed = assertInstanceOf(Statement.Sample.class, statement("sample probe and status every "
+            + "1t x5 clock=client"));
+        assertEquals("status", mixed.lead().entry().qualifiedName());
+        assertEquals("probe", assertInstanceOf(Statement.Sample.class, statement("sample probe and probe every 1t x5 "
+            + "clock=server")).lead().entry().qualifiedName());
+        // Spec scenario "Server clock asked for".
+        assertErrorAt("sample status and probe every 1t x5 clock=server", "clock", "clock=server doesn't fit status, "
+            + "which runs on the client");
+        assertErrorAt("sample probe and probe every 1t x5 clock=client", "clock", "clock=client doesn't fit probe, "
+            + "which runs on the server");
+    }
+
+    @Test
     void aSampleCanRunBesideAnAction() {
         Statement.Sample walk = assertInstanceOf(Statement.Sample.class, statement("sample status every 2t while "
             + "mine #logs x3"));
@@ -517,6 +557,9 @@ class ParserTest {
         Statement.Sample capped = assertInstanceOf(Statement.Sample.class, statement("sample status every 2t x5 "
             + "clock=client while mine"));
         assertEquals(5, capped.count());
+        // Without a count, the runs stop where the rows reach 1000.
+        assertEquals(333, assertInstanceOf(Statement.Sample.class, statement("sample status and look and inv every 2t "
+            + "while mine")).count());
         assertNull(assertInstanceOf(Statement.Sample.class, statement("sample status every 2t x5")).during());
         assertErrorAt("sample status every 2t while", null, "missing an action or wait after while");
         assertErrorAt("sample status every 2t while assert status hp>0", "assert", "while takes an action or a wait, "

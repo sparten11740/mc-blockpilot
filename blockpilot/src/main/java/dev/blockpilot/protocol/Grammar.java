@@ -48,7 +48,9 @@ final class Grammar {
                          blank+ predicates ( blank+ wait-option )* )
         wait-option  ::= ( "stable=" | "every=" ) duration
                        | "timeout=" ( duration | seconds ) | clock
-        sample       ::= "sample" blank+ query blank+ "every" blank+ duration
+        sample       ::= "sample" blank+ sample-query
+                         ( blank+ "and" blank+ sample-query )*
+                         blank+ "every" blank+ duration
                          ( blank+ count ( blank+ clock )? ( blank+ beside )?
                          | ( blank+ clock )? blank+ beside )
         beside       ::= "while" blank+ ( wait | call )
@@ -57,6 +59,8 @@ final class Grammar {
         if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
                          "?"? statement
         query        ::= ( command-name - construct ) ( blank+ ( token - stop ) )*
+        sample-query ::= ( command-name - construct )
+                         ( blank+ ( token - ( stop | "and" ) ) )*
         stop         ::= "ok" | "until" | "every" | "then" | test-shape
 
         /* Calls: the tokens are matched against the command's forms */

@@ -12,6 +12,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -229,9 +230,8 @@ public final class Engine {
     }
 
     Sampler sample(CommandContext context, Statement.Sample sample) {
-        Statement.Call query = sample.query();
-        return new Sampler(context, query.entry().spec(), query.args(), sample.every().ticks(), sample.count(),
-            query.entry().spec().runsOnServer());
+        return new Sampler(context, sample.queries(), sample.every().ticks(), sample.count(),
+            sample.lead().entry().spec().runsOnServer());
     }
 
     Action waitTicks(Statement.WaitTicks wait) {
@@ -245,21 +245,23 @@ public final class Engine {
             wait.every(), timeout.ticks(), query.entry().spec().runsOnServer());
     }
 
-    /** {@code sample}: runs a query every N ticks and collects one row per run. */
+    /**
+     * {@code sample}: runs its queries every N ticks and collects one row per query and run. On the client clock, the
+     * server-side queries of a run are read together in one call to the server thread.
+     */
     final class Sampler implements Action, SelfTimed, ServerClocked {
         private final CommandContext context;
-        private final CommandSpec query;
-        private final Args args;
+        private final List<Statement.Call> queries;
         private final int interval;
         private final int count;
         private final boolean serverClock;
         private final List<Row> rows = new ArrayList<>();
         private int elapsed;
+        private int runs;
 
-        Sampler(CommandContext context, CommandSpec query, Args args, int interval, int count, boolean serverClock) {
+        Sampler(CommandContext context, List<Statement.Call> queries, int interval, int count, boolean serverClock) {
             this.context = context;
-            this.query = query;
-            this.args = args;
+            this.queries = queries;
             this.interval = interval;
             this.count = count;
             this.serverClock = serverClock;
@@ -274,28 +276,70 @@ public final class Engine {
         public Result tick() {
             if (elapsed++ % interval == 0) {
                 long time = game.gameTime();
-                Fields fields = new Fields().put("tick", time, "t" + time);
-                Result result;
-                String gate = serverClock ? null : game.gate(query);
-                try {
-                    result = gate != null ? Result.error(gate) : query.queryHandler().run(context, args);
-                } catch (CommandException e) {
-                    result = e.toResult();
+                List<Result> results = results();
+                for (int index = 0; index < queries.size(); index++) {
+                    rows.add(row(time, queries.get(index), results.get(index)));
                 }
-                if (!result.isOk()) {
-                    fields.put("err", result.code(), "err " + result.code());
-                }
-                result.fields().list().forEach(field -> fields.put(field.name(), field.value(), field.text()));
-                if (result.rows() != null && result.fields().get("count") == null) {
-                    fields.put("count", result.rows().size(), "count=" + result.rows().size());
-                }
-                rows.add(Row.of(String.valueOf(rows.size()), fields));
+                runs++;
             }
             return done() ? Result.ok(samples()).withRows(rows) : null;
         }
 
+        /** Each query's result, in order; on the client clock, the server-side ones come from one server call. */
+        private List<Result> results() {
+            Result[] results = new Result[queries.size()];
+            List<Integer> serverSide = new ArrayList<>();
+            for (int index = 0; index < queries.size(); index++) {
+                CommandSpec spec = queries.get(index).entry().spec();
+                String gate = serverClock ? null : game.gate(spec);
+                if (gate != null) {
+                    results[index] = Result.error(gate);
+                } else if (!serverClock && spec.runsOnServer()) {
+                    serverSide.add(index);
+                } else {
+                    results[index] = run(queries.get(index));
+                }
+            }
+            if (!serverSide.isEmpty()) {
+                List<Result> served;
+                try {
+                    served = game.callOnServer(() -> serverSide.stream().map(queries::get).map(this::run).toList());
+                } catch (CommandException e) {
+                    served = Collections.nCopies(serverSide.size(), e.toResult());
+                }
+                for (int index = 0; index < serverSide.size(); index++) {
+                    results[serverSide.get(index)] = served.get(index);
+                }
+            }
+            return List.of(results);
+        }
+
+        private Result run(Statement.Call query) {
+            try {
+                return query.entry().spec().queryHandler().run(context, query.args());
+            } catch (CommandException e) {
+                return e.toResult();
+            }
+        }
+
+        /** The run's row for the query, named after the tick when the sample has several queries. */
+        private Row row(long time, Statement.Call query, Result result) {
+            Fields fields = new Fields().put("tick", time, "t" + time);
+            if (queries.size() > 1) {
+                fields.bare("query", query.entry().qualifiedName());
+            }
+            if (!result.isOk()) {
+                fields.put("err", result.code(), "err " + result.code());
+            }
+            result.fields().list().forEach(field -> fields.put(field.name(), field.value(), field.text()));
+            if (result.rows() != null && result.fields().get("count") == null) {
+                fields.put("count", result.rows().size(), "count=" + result.rows().size());
+            }
+            return Row.of(String.valueOf(rows.size()), fields);
+        }
+
         boolean done() {
-            return rows.size() >= count;
+            return runs >= count;
         }
 
         List<Row> rows() {
@@ -303,7 +347,7 @@ public final class Engine {
         }
 
         Fields samples() {
-            return new Fields().put("samples", rows.size(), "samples=" + rows.size());
+            return new Fields().put("samples", runs, "samples=" + runs);
         }
 
         @Override

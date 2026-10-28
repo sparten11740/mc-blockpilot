@@ -3,6 +3,7 @@ package dev.blockpilot.protocol;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
+import java.util.function.Supplier;
 
 /** What the engine needs from the game, so the engine itself stays free of Minecraft classes. */
 public interface GameBridge {
@@ -11,6 +12,12 @@ public interface GameBridge {
 
     /** Runs the task on the integrated server thread; at once when already there or when no server runs. */
     void runOnServer(Runnable task);
+
+    /**
+     * Runs the task on the integrated server thread and waits for its value up to 5 s, at once when already there:
+     * {@code no_server} without one, {@code timeout} when it takes longer, {@code internal} when it throws.
+     */
+    <T> T callOnServer(Supplier<T> task) throws CommandException;
 
     /** False while the game is still loading its resources; queued actions wait until then, queries still run. */
     boolean ready();

@@ -160,7 +160,7 @@ ok
 | integrated | `server [as=player] [settle=Nt] <command>` (result value and feedback lines; runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as the player; a failing command, a failing `execute if` test among them, is `err command_failed` with its `result`, which `?server …` lets the script carry on past), `nbt <pos\|e<id>\|uuid> [path=]`, `tick freeze\|unfreeze\|step <n>\|rate <tps>\|query`, `block`/`blocks`/`find … side=server` |
 | performance | `perf start [name]`, `perf stop` (MSPT/TPS, FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts, per render stage on NeoForge, network; JSON summary saved to `blockpilot/perf/<name>.json`), `perf status` |
 | sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief]` (`brief`: yaw, pitch, roll, speed, climb, world y, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit] [sort=x\|y\|z\|-x\|-y\|-z] [near=<pos>]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
-| meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> every <Nt> x<n> [clock=server]`, `sample <query> every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
+| meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> [and <query>…] every <Nt> x<n> [clock=server]` (a row per query and run; client and server queries together run on the client's ticks), `sample <query> [and <query>…] every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
 
 Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
 written to `options.txt`, and are put back when the player or the agent leaves the world, when the player turns agent
@@ -245,7 +245,8 @@ BlockpilotApi.register("aerolarge", CommandSpec.query("gear", (context, args) ->
 
 Handlers run on the client thread. A command that touches the server world declares `onServer()`: its query runs at
 the end of a server tick, and its action starts, ticks and is cancelled on the server thread. It needs the same
-cheats world as `server`, and its queries work with `sample … clock=server`:
+cheats world as `server`, and its queries work with `sample … clock=server` or beside client queries in one
+`sample … and …`:
 
 ```java
 BlockpilotApi.register("aerolarge", CommandSpec.action("build", (context, args) -> {

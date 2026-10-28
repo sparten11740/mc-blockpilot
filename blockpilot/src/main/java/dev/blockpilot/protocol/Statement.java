@@ -2,6 +2,7 @@ package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.Duration;
+import java.util.List;
 
 /** A parsed step: the grammar's {@code statement}, with its constructs. */
 sealed interface Statement {
@@ -19,8 +20,13 @@ sealed interface Statement {
     record WaitUntil(Call query, Condition condition, int stable, int every, Duration timeout) implements Statement {
     }
 
-    /** {@code during}: the action or wait sampled beside, or null; {@code count} caps the samples. */
-    record Sample(Call query, Duration every, int count, Statement during) implements Statement {
+    /** {@code during}: the action or wait sampled beside, or null; {@code count} caps the runs. */
+    record Sample(List<Call> queries, Duration every, int count, Statement during) implements Statement {
+        /** The query whose side the sample runs on, gated as it starts: its first client-side one, else its first. */
+        Call lead() {
+            return queries.stream().filter(query -> !query.entry().spec().runsOnServer()).findFirst()
+                .orElse(queries.get(0));
+        }
     }
 
     record Assert(Call query, Condition condition) implements Statement {

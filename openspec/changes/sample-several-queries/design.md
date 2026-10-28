@@ -83,7 +83,8 @@ out, so its replies read as today.
 
 When all queries run on one side the sample runs on that side's clock, as
 today, and `clock=` must fit it. When they mix sides, the sample runs on the
-client's clock, and `clock=server` is `err syntax` naming a client-side query.
+client's clock: `clock=client` states it, and `clock=server` is `err syntax`
+naming a client-side query.
 On each run the sampler runs the client-side queries on the client thread.
 It reads all the server-side ones in a single hop to the server thread, so
 they see one moment of the server. The sampler reaches the server through a
@@ -97,6 +98,12 @@ when sides mix, else its first query's side.
 Rows carry the tick of the client's run, as `gameTime()` reports it. In
 singleplayer that is the integrated server's game time, so the server rows
 read the moment their label names, or the next server tick at most.
+
+While the client waits on the server it holds the statement's job, so the
+server's own step of that job at the end of a tick can find it busy and skip
+it. A server-side action beside a mixed sample would then lose that tick. So
+a job counts the server steps it misses while it runs an action or sample on
+the server clock, and makes them up at its next server step.
 
 ### D4. 1,000 rows in all
 
@@ -124,6 +131,9 @@ sample it reads the server in a hop of its own, beside the sampler's.
 - [The client waits on the server once per run] → as `side=server` reads do
   today, with the same 5 s limit. A server read is a short task between
   server ticks.
+- [A missed server step is made up in the next server tick, two steps in one
+  tick] → the action keeps one step per server tick in all, and a step is late
+  only when the client's wait overlapped the end of a server tick.
 - [`sable:info side=server` hops on its own, so in one run the server can
   tick between its read and the sampler's batch] → the two reads lie at most
   a tick apart. Both read the copy the server simulates.

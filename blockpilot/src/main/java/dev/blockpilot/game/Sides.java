@@ -5,6 +5,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.protocol.CommandFailure;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -70,16 +71,21 @@ public final class Sides {
             throw new CommandException("no_cheats");
         }
         ServerLevel level = server.getLevel(minecraft.level.dimension());
+        return await(server.submit(() -> {
+            try {
+                return read.apply(level, true);
+            } catch (CommandException e) {
+                return e.toResult();
+            } catch (CommandFailure e) {
+                return e.toResult();
+            }
+        }));
+    }
+
+    /** Waits for a task submitted to the server thread, up to the usual limit. */
+    static <T> T await(CompletableFuture<T> task) throws CommandException {
         try {
-            return server.submit(() -> {
-                try {
-                    return read.apply(level, true);
-                } catch (CommandException e) {
-                    return e.toResult();
-                } catch (CommandFailure e) {
-                    return e.toResult();
-                }
-            }).get(SERVER_READ_SECONDS, TimeUnit.SECONDS);
+            return task.get(SERVER_READ_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new CommandException("internal", "interrupted while reading from the server");

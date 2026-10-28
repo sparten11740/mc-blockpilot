@@ -12,6 +12,7 @@ import dev.blockpilot.api.Row;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,13 @@ final class ScriptJob implements CommandContext {
      * world load that waits for the integrated server) must never make the other thread wait, or they deadlock.
      */
     private final ReentrantLock lock = new ReentrantLock();
+    /**
+     * Server steps that found the job held by the client while something ran on the server clock, say while a sample
+     * waited on the server; made up at the next one, so a server-side action keeps one tick per server tick.
+     */
+    private final AtomicInteger missedServerSteps = new AtomicInteger();
+    /** Whether an action or sample runs on the server clock, as the last step left the job; read without the lock. */
+    private volatile boolean serverClocked;
     private int index;
     /** The last statement whose gate passed; statements up to it may run on either thread without a client tick. */
     private int gatedThrough = -1;
@@ -92,11 +100,21 @@ final class ScriptJob implements CommandContext {
     /** Advances the job as far as it can on this thread; true once it is complete. */
     boolean step(Affinity affinity) {
         // Tasks run while the client thread waits inside a command (a world load) must not re-enter that job.
-        if (lock.isHeldByCurrentThread() || !lock.tryLock()) {
+        if (lock.isHeldByCurrentThread()) {
+            return false;
+        }
+        if (!lock.tryLock()) {
+            if (affinity == Affinity.SERVER && serverClocked) {
+                missedServerSteps.incrementAndGet();
+            }
             return false;
         }
         try {
             boolean done = advance(affinity);
+            int missed = affinity == Affinity.SERVER ? missedServerSteps.getAndSet(0) : 0;
+            for (; missed > 0 && !done; missed--) {
+                done = advance(affinity);
+            }
             if (pendingCancel != null) {
                 cancelLocked(pendingCancel);
                 return true;
@@ -104,6 +122,8 @@ final class ScriptJob implements CommandContext {
             return done;
         } finally {
             activity = running == null ? null : running.name();
+            serverClocked = running != null && running.affinity() == Affinity.SERVER
+                || sampling != null && samplingAffinity == Affinity.SERVER;
             lock.unlock();
         }
     }
@@ -197,7 +217,7 @@ final class ScriptJob implements CommandContext {
             case Statement.If check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
             case Statement.WaitUntil wait -> new Placement(wait.query().entry().spec(), true, Affinity.CLIENT);
             case Statement.Sample sample -> sample.during() == null
-                ? new Placement(sample.query().entry().spec(), true, Affinity.CLIENT) : placement(sample.during());
+                ? new Placement(sample.lead().entry().spec(), true, Affinity.CLIENT) : placement(sample.during());
             case Statement.WaitTicks wait -> new Placement(null, true, Affinity.CLIENT);
             case Statement.WaitIdle wait -> new Placement(null, true, Affinity.CLIENT);
         };

@@ -34,6 +34,8 @@ final class Parser {
     static final int MAX_SAMPLES = 1000;
 
     private static final Set<String> STOP_WORDS = Set.of("ok", "until", "every", "then");
+    /** A sampled query also ends at the {@code and} before the next one. */
+    private static final Set<String> SAMPLE_STOP_WORDS = Set.of("ok", "until", "every", "then", "and");
     private static final List<String> COMPARISONS = List.of("==", "!=", "<=", ">=", "<", ">");
     private static final String PREDICATE = "a predicate (field==value, field<n or ok)";
     private static final CommandSpec.Option CLOCK = option("clock", List.of("server", "client"));
@@ -189,7 +191,7 @@ final class Parser {
             if (registry.resolve(next) == null && "0123456789.-".indexOf(next.charAt(0)) >= 0) {
                 throw error(column(index), "a duration like 20t or 3s expected, got " + next);
             }
-            Statement.Call query = query(end, WAIT_OPTIONS);
+            Statement.Call query = query(end, WAIT_OPTIONS, STOP_WORDS);
             if (index < end && WAIT_OPTIONS.containsKey(text(index))) {
                 throw optionWrittenAsWord(end);
             }
@@ -209,7 +211,11 @@ final class Parser {
 
         private Statement sample(int end) throws SyntaxError {
             index++;
-            Statement.Call query = query(end, SAMPLE_OPTIONS);
+            List<Statement.Call> queries = new ArrayList<>(List.of(query(end, SAMPLE_OPTIONS, SAMPLE_STOP_WORDS)));
+            while (index < end && text(index).equals("and")) {
+                index++;
+                queries.add(query(end, SAMPLE_OPTIONS, SAMPLE_STOP_WORDS));
+            }
             expectWord("every", end);
             int interval = column(index);
             Duration every = Duration.parse(expectToken(ArgType.DURATION, end));
@@ -220,7 +226,8 @@ final class Parser {
             while (beside < end && !text(beside).equals("while")) {
                 beside++;
             }
-            int count = MAX_SAMPLES;
+            // MAX_SAMPLES caps the rows, one per query and run.
+            int count = MAX_SAMPLES / queries.size();
             if (index < beside && ArgType.COUNT.matches(text(index))) {
                 int countColumn = column(index);
                 String times = text(index++);
@@ -228,15 +235,20 @@ final class Parser {
                 if (count < 1 || count > MAX_SAMPLES) {
                     throw error(countColumn, "a sample is taken x1 to x" + MAX_SAMPLES + " times, not " + times);
                 }
+                if (count * queries.size() > MAX_SAMPLES) {
+                    throw error(countColumn, "a sample holds at most " + MAX_SAMPLES + " rows, not "
+                        + count * queries.size() + ": " + times + " times " + queries.size() + " queries");
+                }
             } else if (beside == end) {
                 throw expected("a count x<n> or while <action|wait>", end);
             }
-            checkClock(query, options(beside, SAMPLE_OPTIONS));
+            Statement.Sample sample = new Statement.Sample(List.copyOf(queries), every, count, null);
+            checkClock(sample.lead(), options(beside, SAMPLE_OPTIONS));
             if (beside == end) {
-                return new Statement.Sample(query, every, count, null);
+                return sample;
             }
             index++;
-            return new Statement.Sample(query, every, count, beside(end));
+            return new Statement.Sample(sample.queries(), every, count, beside(end));
         }
 
         /** The action or wait after {@code while}. */
@@ -261,7 +273,7 @@ final class Parser {
 
         private Statement assertion(int end) throws SyntaxError {
             index++;
-            Statement.Call query = query(end, Map.of());
+            Statement.Call query = query(end, Map.of(), STOP_WORDS);
             Condition condition = predicates(end, Map.of());
             expectEnd(end);
             return new Statement.Assert(query, condition);
@@ -272,7 +284,7 @@ final class Parser {
                 throw error(column(index), "if nests at most " + MAX_NESTING + " deep");
             }
             index++;
-            Statement.Call query = query(end, Map.of());
+            Statement.Call query = query(end, Map.of(), STOP_WORDS);
             Condition condition = predicates(end, Map.of());
             expectWord("then", end);
             if (index == end) {
@@ -284,11 +296,12 @@ final class Parser {
         }
 
         /**
-         * A read-only command and its arguments, up to the first stop word or predicate. When it doesn't parse, a
-         * construct option or a predicate written into it is the likelier mistake.
+         * A read-only command and its arguments, up to the first of the stop words or a predicate. When it doesn't
+         * parse, a construct option or a predicate written into it is the likelier mistake.
          */
-        private Statement.Call query(int end, Map<String, CommandSpec.Option> constructOptions) throws SyntaxError {
-            if (index == end || isStop(text(index))) {
+        private Statement.Call query(int end, Map<String, CommandSpec.Option> constructOptions, Set<String> stops)
+            throws SyntaxError {
+            if (index == end || isStop(text(index), stops)) {
                 throw expected("a query (a read-only command)", end);
             }
             if (Construct.named(text(index)) != null) {
@@ -296,7 +309,7 @@ final class Parser {
             }
             int from = index;
             int stop = index + 1;
-            while (stop < end && !isStop(text(stop))) {
+            while (stop < end && !isStop(text(stop), stops)) {
                 stop++;
             }
             try {
@@ -330,8 +343,8 @@ final class Parser {
             return null;
         }
 
-        private static boolean isStop(String token) {
-            return STOP_WORDS.contains(token) || Lexicon.testShape(token) != null;
+        private static boolean isStop(String token, Set<String> stops) {
+            return stops.contains(token) || Lexicon.testShape(token) != null;
         }
 
         /**

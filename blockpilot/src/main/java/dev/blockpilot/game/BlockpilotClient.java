@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -361,6 +362,15 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         } else {
             server.execute(task);
         }
+    }
+
+    @Override
+    public <T> T callOnServer(Supplier<T> task) throws CommandException {
+        MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+        if (server == null) {
+            throw new CommandException("no_server");
+        }
+        return server.isSameThread() ? task.get() : Sides.await(server.submit(task));
     }
 
     @Override
