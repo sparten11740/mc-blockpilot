@@ -15,4 +15,4 @@
 
 ## 4. Integration checks
 
-- [ ] 4.1 Run `./gradlew build` for all four targets and the smoke test in both modes against the dev client; verify all pass
+- [x] 4.1 Run `./gradlew build` for all four targets and the smoke test in both modes against the dev client; verify all pass
