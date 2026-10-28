@@ -34,6 +34,10 @@ final class FakeGame implements GameBridge {
     boolean serverPaused;
     /** What the fake says kept the client busy, or null. */
     String stallHint;
+    /** The client ticks the fake reports; the tests' tick helper advances it. */
+    long clientTicks;
+    /** The server load the fake reports, in ms. */
+    int serverLoad;
 
     @Override
     public void runOnClient(Runnable task) {
@@ -89,6 +93,16 @@ final class FakeGame implements GameBridge {
     @Override
     public Position resolve(Position position) {
         return position.resolve(0, 64, 0);
+    }
+
+    @Override
+    public long clientTicks() {
+        return clientTicks;
+    }
+
+    @Override
+    public int serverLoad() {
+        return serverLoad;
     }
 
     @Override

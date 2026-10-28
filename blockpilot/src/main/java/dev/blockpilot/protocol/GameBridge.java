@@ -37,6 +37,12 @@ public interface GameBridge {
     /** What kept the client busy since its last tick, such as how many chat lines arrived, or null. */
     String stallHint();
 
+    /** Client ticks since the game started, rising by one per tick, unlike the game time a client tick reads. */
+    long clientTicks();
+
+    /** The idle time {@code load server} adds to each server tick, in ms, or 0. */
+    int serverLoad();
+
     /** The tick replies use: the integrated server's game time in singleplayer, else the client's; -1 if none. */
     long gameTime();
 

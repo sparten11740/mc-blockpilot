@@ -319,6 +319,8 @@ public final class Engine {
         private final List<Row> rows = new ArrayList<>();
         private int elapsed;
         private int runs;
+        /** Runs that read the server from the client while server load was set, which held the client. */
+        private int heldRuns;
 
         Sampler(CommandContext context, List<Statement.Call> queries, int interval, int count, boolean serverClock) {
             this.context = context;
@@ -337,9 +339,10 @@ public final class Engine {
         public Result tick() {
             if (elapsed++ % interval == 0) {
                 long time = game.gameTime();
+                long clientTick = game.clientTicks();
                 List<Result> results = results();
                 for (int index = 0; index < queries.size(); index++) {
-                    rows.add(row(time, queries.get(index), results.get(index)));
+                    rows.add(row(time, clientTick, queries.get(index), results.get(index)));
                 }
                 runs++;
             }
@@ -362,6 +365,9 @@ public final class Engine {
                 }
             }
             if (!serverSide.isEmpty()) {
+                if (game.serverLoad() > 0) {
+                    heldRuns++;
+                }
                 List<Result> served;
                 try {
                     served = game.callOnServer(() -> serverSide.stream().map(queries::get).map(this::run).toList());
@@ -383,9 +389,15 @@ public final class Engine {
             }
         }
 
-        /** The run's row for the query, named after the tick when the sample has several queries. */
-        private Row row(long time, Statement.Call query, Result result) {
+        /**
+         * The run's row for the query: the tick, on the client clock the client's own tick (the game time it reads can
+         * repeat or skip), and the query's name when the sample has several.
+         */
+        private Row row(long time, long clientTick, Statement.Call query, Result result) {
             Fields fields = new Fields().put("tick", time, "t" + time);
+            if (!serverClock) {
+                fields.put("client_tick", clientTick, "c" + clientTick);
+            }
             if (queries.size() > 1) {
                 fields.bare("query", query.entry().qualifiedName());
             }
@@ -408,7 +420,9 @@ public final class Engine {
         }
 
         Fields samples() {
-            return new Fields().put("samples", runs, "samples=" + runs);
+            Fields fields = new Fields().put("samples", runs, "samples=" + runs);
+            return heldRuns == 0 ? fields : fields.put("held_client", heldRuns, "held_client=" + heldRuns
+                + " (reads of the server under load server held the client)");
         }
 
         @Override

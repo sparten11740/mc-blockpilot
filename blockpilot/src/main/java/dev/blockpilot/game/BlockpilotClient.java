@@ -450,6 +450,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public long clientTicks() {
+        return ticks;
+    }
+
+    @Override
+    public int serverLoad() {
+        return Load.server().ms();
+    }
+
+    @Override
     public String stallHint() {
         long chat = chatSinceTick.get();
         return chat == 0 ? null : chat + " chat lines arrived since";

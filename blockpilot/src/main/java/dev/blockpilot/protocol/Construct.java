@@ -19,9 +19,12 @@ record Construct(String name, List<String> usages, String help, String example) 
             "sample <query> [and <query>…] every <duration> [x<n>] [clock=server|client] while <action|wait>"),
             "runs the read-only queries n times (x1 to x1000, at most 1000 rows in all), every N ticks (1t or more), "
                 + "one row per query and run with the game tick, the query's command name when there are several, "
-                + "and its fields; queries on both sides run on the client's ticks, the server-side ones read "
-                + "together on the server thread; with while, runs the action or wait and samples beside it until "
-                + "it ends, and the line is its result with the samples as rows",
+                + "and its fields; queries on both sides run on the client's ticks, the server-side ones (also those "
+                + "given side=server) read together on the server thread; rows on the client's ticks add the "
+                + "client's own tick, c<n>, which rises by one per client tick where the game tick may repeat or "
+                + "skip; a read of the server from the client waits for the server's tick, so under load server it "
+                + "holds the client, which held_client=<runs> reports; with while, runs the action or wait and "
+                + "samples beside it until it ends, and the line is its result with the samples as rows",
             "sample status every 1t x20"),
         new Construct("assert", List.of("assert <query> <predicate> [and …]"),
             "runs the read-only query once; ok with the observed fields when the predicates (as in wait) hold, "

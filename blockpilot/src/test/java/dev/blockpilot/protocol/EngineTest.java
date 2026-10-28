@@ -94,6 +94,7 @@ class EngineTest {
 
     private void tick(int times) {
         for (int index = 0; index < times; index++) {
+            game.clientTicks++;
             engine.tickClient();
         }
     }
@@ -311,7 +312,7 @@ class EngineTest {
             counter.incrementAndGet();
             tick(1);
         }
-        assertEquals("ok samples=3\n  t1 value=1\n  t3 value=3\n  t5 value=5", text(sample));
+        assertEquals("ok samples=3\n  t1 c1 value=1\n  t3 c3 value=3\n  t5 c5 value=5", text(sample));
     }
 
     @Test
@@ -336,8 +337,8 @@ class EngineTest {
             counter.incrementAndGet();
             tick(1);
         }
-        assertEquals("ok samples=2\n  t1 counter value=1\n  t1 items count=1\n  t3 counter value=3\n"
-            + "  t3 items count=1", text(sample));
+        assertEquals("ok samples=2\n  t1 c1 counter value=1\n  t1 c1 items count=1\n  t3 c3 counter value=3\n"
+            + "  t3 c3 items count=1", text(sample));
         assertEquals("counter", sample.join().results().get(0).rows().get(0).fields().get("query"));
     }
 
@@ -351,8 +352,8 @@ class EngineTest {
             game.time++;
             tick(1);
         }
-        assertEquals("ok samples=2\n  t1 served in_call=true\n  t1 counter value=0\n  t1 served in_call=true\n"
-            + "  t2 served in_call=true\n  t2 counter value=0\n  t2 served in_call=true", text(mixed));
+        assertEquals("ok samples=2\n  t1 c1 served in_call=true\n  t1 c1 counter value=0\n  t1 c1 served in_call=true"
+            + "\n  t2 c2 served in_call=true\n  t2 c2 counter value=0\n  t2 c2 served in_call=true", text(mixed));
         assertEquals(2, game.serverCalls);
         CompletableFuture<Reply> served = engine.submit(session, null, "sample served and probe every 1t x2");
         for (int index = 0; index < 5 && !served.isDone(); index++) {
@@ -386,19 +387,53 @@ class EngineTest {
     }
 
     @Test
+    void clientClockRowsCarryTheClientsTickAndServerClockRowsNone() {
+        // The game tick the client reads stays put across two client ticks, as when the threads drift in phase.
+        CompletableFuture<Reply> client = engine.submit(engine.openSession(), null, "sample counter every 1t x3");
+        tick(3);
+        assertEquals(List.of(1L, 2L, 3L), client.join().results().get(0).rows().stream()
+            .map(row -> row.fields().get("client_tick")).toList());
+        CompletableFuture<Reply> server = engine.submit(engine.openSession(), null, "sample probe every 1t x2");
+        for (int index = 0; index < 4 && !server.isDone(); index++) {
+            tick(1);
+            engine.tickServer();
+        }
+        assertTrue(server.join().results().get(0).rows().stream()
+            .allMatch(row -> row.fields().get("client_tick") == null));
+    }
+
+    @Test
+    void aSampleSaysWhenItsServerReadsHeldTheClient() {
+        game.serverLoad = 60;
+        CompletableFuture<Reply> held = engine.submit(engine.openSession(), null, "sample counter and probe every 1t "
+            + "x3");
+        tick(3);
+        assertEquals("ok samples=3 held_client=3 (reads of the server under load server held the client)",
+            text(held).lines().findFirst().orElseThrow());
+        CompletableFuture<Reply> clientOnly = engine.submit(engine.openSession(), null, "sample counter every 1t x2");
+        tick(2);
+        assertEquals("ok samples=2", text(clientOnly).lines().findFirst().orElseThrow());
+        game.serverLoad = 0;
+        CompletableFuture<Reply> unloaded = engine.submit(engine.openSession(), null, "sample counter and probe every "
+            + "1t x2");
+        tick(2);
+        assertEquals("ok samples=2", text(unloaded).lines().findFirst().orElseThrow());
+    }
+
+    @Test
     void theServerRowsOfAMixedSampleCarryTheErrorThatStoppedThem() {
         Session session = engine.openSession();
         game.serverGate = "no_server";
         CompletableFuture<Reply> noServer = engine.submit(session, null, "sample counter and probe every 1t x1");
         tick(1);
-        assertEquals("ok samples=1\n  t0 counter value=0\n  t0 probe err no_server", text(noServer));
+        assertEquals("ok samples=1\n  t0 c1 counter value=0\n  t0 c1 probe err no_server", text(noServer));
         assertEquals(0, game.serverCalls);
         game.serverGate = null;
         game.serverCallFailure = "timeout";
         CompletableFuture<Reply> timedOut = engine.submit(session, null, "sample probe and counter and served every 1t "
             + "x1");
         tick(1);
-        assertEquals("ok samples=1\n  t0 probe err timeout\n  t0 counter value=0\n  t0 served err timeout",
+        assertEquals("ok samples=1\n  t0 c2 probe err timeout\n  t0 c2 counter value=0\n  t0 c2 served err timeout",
             text(timedOut));
     }
 
@@ -468,7 +503,7 @@ class EngineTest {
             tick(1);
         }
         // Each sample is taken before the action's tick, so the first shows the state before it started.
-        assertEquals("ok samples=3\n  t1 value=0\n  t2 value=1\n  t3 value=2", text(walk));
+        assertEquals("ok samples=3\n  t1 c1 value=0\n  t2 c2 value=1\n  t3 c3 value=2", text(walk));
         CompletableFuture<Reply> capped = engine.submit(session, null, "sample counter every 2t x2 while walk b 6");
         tick(10);
         assertEquals(List.of(3, 5), capped.join().results().get(0).rows().stream()

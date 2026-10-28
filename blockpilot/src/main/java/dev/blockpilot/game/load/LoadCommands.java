@@ -28,7 +28,9 @@ public final class LoadCommands {
                 + "its MSPT, or to every frame (0 to " + Load.MAX_MS + " ms); load net <ms> holds every packet on the "
                 + "client's connection that long in each direction, keeping their order (0 to " + Load.MAX_NET_MS
                 + " ms); 0 ends one, load off ends all, load reports what is set; it also ends on leaving the world, "
-                + "with agent control off and on closing, and nothing is saved")
+                + "with agent control off and on closing, and nothing is saved; a read of the server from the client "
+                + "(side=server, a sample's server queries) waits for the server's tick, so under server load it "
+                + "holds the client too")
             .field("server_ms", "idle time added to each server tick").field("server_jitter", "how far it strays")
             .field("client_ms", "idle time added to each frame").field("client_jitter", "how far it strays")
             .field("net_ms", "delay of each packet, each way").field("net_jitter", "how far it strays")
