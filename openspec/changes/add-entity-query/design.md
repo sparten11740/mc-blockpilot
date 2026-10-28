@@ -40,6 +40,13 @@ moves compare directly. A zero velocity is left out, as the language leaves
 out default values. With `side=server` the row adds `uuid`, as server-side
 entity rows do elsewhere.
 
+Text replies print numbers to the hundredth, so the query prints `pos` and
+`vel` itself, to the thousandth. JSON rounded every number to the hundredth
+too. It now writes a position's coordinates to the thousandth, so the JSON
+form keeps them as well. Other commands round their positions to hundredths
+before replying, so they read as before. The exception is `status`'s velocity,
+which it always rounded to thousandths and which JSON now keeps.
+
 ### D2. Reading through `Sides.read`
 
 The handler reads the entity by id through `Sides.read`, so the server form

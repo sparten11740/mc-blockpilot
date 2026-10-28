@@ -34,4 +34,6 @@ None.
 ## Impact
 
 - `game/PerceptionCommands.java`: the `entity` query in the perception group.
+- `protocol/Formatter.java`: JSON writes position coordinates to the
+  thousandth, not the hundredth.
 - README: the perception row.

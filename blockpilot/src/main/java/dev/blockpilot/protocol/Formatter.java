@@ -16,6 +16,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -188,9 +189,9 @@ public final class Formatter {
                 return new JsonPrimitive(position.toString());
             }
             JsonArray array = new JsonArray();
-            array.add(number(position.x()));
-            array.add(number(position.y()));
-            array.add(number(position.z()));
+            array.add(coordinate(position.x()));
+            array.add(coordinate(position.y()));
+            array.add(coordinate(position.z()));
             return array;
         }
         if (value instanceof EntityRef || value instanceof CharSequence) {
@@ -214,7 +215,16 @@ public final class Formatter {
 
     /** Rounded, and without the E notation Gson uses from 10^7 up, where Sable's plot coordinates are. */
     private static JsonPrimitive number(double value) {
-        String plain = BigDecimal.valueOf(Numbers.round(value)).toPlainString();
+        return plain(BigDecimal.valueOf(Numbers.round(value)));
+    }
+
+    /** A position's coordinate keeps thousandths, which a command gives where it measured motion that finely. */
+    private static JsonPrimitive coordinate(double value) {
+        return plain(BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP).stripTrailingZeros());
+    }
+
+    private static JsonPrimitive plain(BigDecimal value) {
+        String plain = value.toPlainString();
         return new JsonPrimitive(new BigDecimal(plain.contains(".") ? plain : plain + ".0"));
     }
 }
