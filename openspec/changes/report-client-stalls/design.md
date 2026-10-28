@@ -54,10 +54,10 @@ directly with a time.
 
 ### D3. Cancelling with a reason
 
-`ScriptJob.cancel` takes the result to fail the current statement with. The
-code-only form stays for `stop` and closing sessions. The reason reads
-`the client hasn't ticked for <n>s`, followed by the game's hint when there
-is one.
+`ScriptJob.cancel` takes the result to fail the current statement with, in
+place of a bare code; `stop` and closing sessions pass `Result.error(code)`.
+The reason reads `the client hasn't ticked for <n>s`, followed by the game's
+hint when there is one.
 
 ### D4. The chat hint
 

@@ -30,7 +30,9 @@ macOS that is a client started while the display sleeps ("Failed to locate a pri
 `caffeinate -u -t 300` before the start avoids by waking the display. `--game-dir <dir>` talks to the game in another
 directory, and `--help` lists the options.
 Exit codes: 0 every command returned `ok`, 1 one returned `err`, 2 the game could not be reached (or the wait timed out,
-or no reply came within `--timeout`, default 300, which cancels the script; stderr says after how many seconds). When a
+or no reply came within `--timeout`, default 300, which cancels the script; stderr says after how many seconds). When the
+game's client thread finishes no tick for 30 s outside Blockpilot's own commands, for example flooded with chat by a
+command block, every waiting script answers `err stalled` with how long and how many chat lines arrived. When a
 step failed or was skipped, one line on stderr counts them, names the failed steps (from 1) and says whether anything
 ran, e.g. `blockpilot: 1 err (step 3), 2 skip (nothing after the error ran)`. After a `quit` the CLI returns only once
 the game process has exited (within `--timeout`, else exit code 2), so a restart can follow straight away.

@@ -32,6 +32,8 @@ final class FakeGame implements GameBridge {
     boolean ready = true;
     /** Whether the fake's integrated server is paused. */
     boolean serverPaused;
+    /** What the fake says kept the client busy, or null. */
+    String stallHint;
 
     @Override
     public void runOnClient(Runnable task) {
@@ -87,6 +89,11 @@ final class FakeGame implements GameBridge {
     @Override
     public Position resolve(Position position) {
         return position.resolve(0, 64, 0);
+    }
+
+    @Override
+    public String stallHint() {
+        return stallHint;
     }
 
     @Override

@@ -65,7 +65,7 @@ final class ScriptJob implements CommandContext {
     private Affinity samplingAffinity;
     private volatile String activity;
     /** A cancel that arrived on the thread already inside this job's step; applied when that step ends. */
-    private String pendingCancel;
+    private Result pendingCancel;
 
     ScriptJob(Engine engine, Session session, String id, List<Parser.Line> lines) {
         this.engine = engine;
@@ -407,22 +407,25 @@ final class ScriptJob implements CommandContext {
         }
     }
 
-    /** Stops the job: the running action is cancelled and every statement not yet done fails with the code. */
-    void cancel(String code) {
+    /**
+     * Stops the job: the running action is cancelled, the statement it is at fails with the error and the rest are
+     * skipped.
+     */
+    void cancel(Result error) {
         if (lock.isHeldByCurrentThread()) {
             // Called from a task the client runs while it waits inside this job's own step: apply it afterwards.
-            pendingCancel = code;
+            pendingCancel = error;
             return;
         }
         lock.lock();
         try {
-            cancelLocked(code);
+            cancelLocked(error);
         } finally {
             lock.unlock();
         }
     }
 
-    private void cancelLocked(String code) {
+    private void cancelLocked(Result error) {
         if (future.isDone()) {
             return;
         }
@@ -440,7 +443,7 @@ final class ScriptJob implements CommandContext {
         sampling = null;
         if (index < lines.size()) {
             // A cancelled script stops even at a soft (?) statement.
-            results.add(Result.error(code));
+            results.add(error);
             index++;
             skipRest();
         }

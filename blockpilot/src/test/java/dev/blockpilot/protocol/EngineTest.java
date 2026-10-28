@@ -51,6 +51,11 @@ class EngineTest {
         registry.register(CommandSpec.query("served", (context, args) ->
             Result.ok(new Fields().put("in_call", game.inServerCall))).onServer());
         registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
+        // A step that holds the client thread past the stall limit, as a world load does.
+        registry.register(CommandSpec.action("hold", (context, args) -> () -> {
+            engine.checkStalls(System.nanoTime() + 2 * Engine.STALL_NANOS);
+            return Result.ok();
+        }));
         registry.register(CommandSpec.action("roll", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).onServer().arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
         engine = new Engine(registry, game);
@@ -480,6 +485,51 @@ class EngineTest {
         tick(2);
         engine.submit(engine.openSession(), null, "stop").join();
         assertEquals("err cancelled", text(stopped));
+    }
+
+    @Test
+    void aStalledClientFailsWaitingAndRunningScripts() {
+        CompletableFuture<Reply> running = engine.submit(engine.openSession(), null, "walk a 100");
+        tick(1);
+        CompletableFuture<Reply> waiting = engine.submit(engine.openSession(), null, "walk b 1");
+        game.stallHint = "262144 chat lines arrived since";
+        engine.checkStalls(System.nanoTime() + Engine.STALL_NANOS - 1_000_000_000L);
+        assertFalse(running.isDone());
+        // Spec scenario "Chat flood".
+        engine.checkStalls(System.nanoTime() + Engine.STALL_NANOS + 1_500_000_000L);
+        assertEquals("err stalled the client hasn't ticked for 31s; 262144 chat lines arrived since", text(running));
+        assertEquals("err stalled the client hasn't ticked for 31s; 262144 chat lines arrived since", text(waiting));
+        assertTrue(log.contains("a cancelled"), log.toString());
+    }
+
+    @Test
+    void aRequestDuringAStallIsAnsweredAtTheNextCheck() {
+        tick(1);
+        long stalled = System.nanoTime() + Engine.STALL_NANOS + 2_500_000_000L;
+        engine.checkStalls(stalled);
+        // Spec scenario "Asking during the stall".
+        CompletableFuture<Reply> later = engine.submit(engine.openSession(), null, "walk a 1");
+        engine.checkStalls(stalled + 1_000_000_000L);
+        assertEquals("err stalled the client hasn't ticked for 33s", text(later));
+    }
+
+    @Test
+    void aStepHoldingTheClientThreadIsNoStall() {
+        // Spec scenario "A long world load".
+        CompletableFuture<Reply> hold = engine.submit(engine.openSession(), null, "hold; walk a 1");
+        tick(3);
+        assertEquals("ok\nok", text(hold));
+    }
+
+    @Test
+    void tickingAgainEndsTheStall() {
+        tick(1);
+        engine.checkStalls(System.nanoTime() + Engine.STALL_NANOS + 1_000_000_000L);
+        tick(1);
+        CompletableFuture<Reply> walk = engine.submit(engine.openSession(), null, "walk a 1");
+        engine.checkStalls(System.nanoTime() + 1_000_000_000L);
+        tick(1);
+        assertEquals("ok", text(walk));
     }
 
     @Test

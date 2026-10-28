@@ -19,7 +19,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runs scripts for every session. Scripts made only of queries run right away; scripts with an action go through
@@ -36,6 +41,10 @@ public final class Engine {
         boolean onServerClock();
     }
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("Blockpilot");
+    /** How long the client may go without finishing a tick, outside Blockpilot's steps, before it counts as stalled. */
+    static final long STALL_NANOS = TimeUnit.SECONDS.toNanos(30);
+
     private final CommandRegistry registry;
     private final GameBridge game;
     private final Help help;
@@ -44,6 +53,9 @@ public final class Engine {
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
     private final Parser parser;
+    private volatile long lastClientTick = System.nanoTime();
+    /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
+    private volatile boolean clientStepping;
 
     public Engine(CommandRegistry registry, GameBridge game) {
         this.registry = registry;
@@ -74,7 +86,7 @@ public final class Engine {
     /** Ends a session: its queued and running scripts are cancelled. */
     public void closeSession(Session session) {
         sessions.remove(session.id());
-        cancelWhere(job -> job.session() == session, "cancelled", true);
+        cancelWhere(job -> job.session() == session, Result.error("cancelled"), true);
         game.releaseInputs(session.id());
     }
 
@@ -107,7 +119,7 @@ public final class Engine {
             queue.addLast(job);
         } else {
             free.add(job);
-            game.runOnClient(() -> stepFree(ScriptJob.Affinity.CLIENT));
+            game.runOnClient(() -> onClientThread(() -> stepFree(ScriptJob.Affinity.CLIENT)));
         }
         return job.future();
     }
@@ -127,7 +139,53 @@ public final class Engine {
 
     /** Called at the end of every client tick. */
     public void tickClient() {
-        tick(ScriptJob.Affinity.CLIENT);
+        lastClientTick = System.nanoTime();
+        onClientThread(() -> tick(ScriptJob.Affinity.CLIENT));
+    }
+
+    /** Marks Blockpilot's steps on the client thread, so a command holding it there is busy, not stalled. */
+    private void onClientThread(Runnable steps) {
+        boolean outer = !clientStepping;
+        clientStepping = true;
+        try {
+            steps.run();
+        } finally {
+            if (outer) {
+                clientStepping = false;
+            }
+        }
+    }
+
+    /** Checks once a second, off the client thread, whether the client has stalled; see {@link #checkStalls}. */
+    public void startWatchdog() {
+        ScheduledExecutorService watchdog = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "Blockpilot watchdog");
+            thread.setDaemon(true);
+            return thread;
+        });
+        watchdog.scheduleAtFixedRate(() -> {
+            try {
+                checkStalls(System.nanoTime());
+            } catch (RuntimeException e) {
+                // A failed check must not end the schedule.
+                LOGGER.error("Checking for a stalled client failed", e);
+            }
+        }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    /**
+     * While the client has not finished a tick for {@link #STALL_NANOS} and no Blockpilot step holds its thread,
+     * cancels every script with {@code err stalled}, saying how long and what the client was busy with.
+     */
+    void checkStalls(long now) {
+        long since = now - lastClientTick;
+        if (clientStepping || since < STALL_NANOS || queue.isEmpty() && free.isEmpty()) {
+            return;
+        }
+        String why = "the client hasn't ticked for " + TimeUnit.NANOSECONDS.toSeconds(since) + "s";
+        String hint = game.stallHint();
+        cancelWhere(job -> true, Result.error("stalled", hint == null ? why : why + "; " + hint), true);
+        game.releaseInputs();
     }
 
     /** Called at the end of every integrated-server tick, on the server thread. */
@@ -164,24 +222,27 @@ public final class Engine {
 
     /** Cancels every queued and running script with the code; returns how many were stopped. */
     public int stopAll(String code) {
-        int stopped = cancelWhere(job -> true, code, false);
+        int stopped = cancelWhere(job -> true, Result.error(code), false);
         game.releaseInputs();
         return stopped;
     }
 
-    /** Cancels matching queued scripts, and with {@code queries} also scripts of only queries still pending. */
-    private int cancelWhere(java.util.function.Predicate<ScriptJob> filter, String code, boolean queries) {
+    /**
+     * Cancels matching queued scripts, and with {@code queries} also scripts of only queries still pending; the
+     * statement each was at fails with the error.
+     */
+    private int cancelWhere(java.util.function.Predicate<ScriptJob> filter, Result error, boolean queries) {
         int stopped = 0;
         for (ScriptJob job : new ArrayList<>(queue)) {
             if (filter.test(job)) {
-                job.cancel(code);
+                job.cancel(error);
                 queue.remove(job);
                 stopped++;
             }
         }
         for (ScriptJob job : free) {
             if (queries && filter.test(job)) {
-                job.cancel(code);
+                job.cancel(error);
                 free.remove(job);
             }
         }

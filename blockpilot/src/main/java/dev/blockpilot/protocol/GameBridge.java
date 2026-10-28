@@ -34,6 +34,9 @@ public interface GameBridge {
     /** Resolves a {@code ~} position against the player's block position. */
     Position resolve(Position position) throws CommandException;
 
+    /** What kept the client busy since its last tick, such as how many chat lines arrived, or null. */
+    String stallHint();
+
     /** The tick replies use: the integrated server's game time in singleplayer, else the client's; -1 if none. */
     long gameTime();
 

@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -77,6 +78,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     /** Ticks until the game closes after {@code quit}, or -1. */
     private int closeIn = -1;
     private final AgentPresence presence = new AgentPresence();
+    /** Chat lines since the end of the last client tick, which a stalled client reports. */
+    private final AtomicLong chatSinceTick = new AtomicLong();
 
     private BlockpilotClient() {
     }
@@ -110,6 +113,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         config = Config.load(directory.resolve("config.json"));
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
+        engine.startWatchdog();
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);
         LogCapture.setSink(engine::broadcast);
@@ -227,6 +231,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         ActionCommands.holdFlight(agentInControl);
         InputState.reassert();
         events.tick();
+        chatSinceTick.set(0);
         engine.tickClient();
         if (closeIn > 0 && --closeIn == 0) {
             Minecraft.getInstance().stop();
@@ -297,6 +302,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onChatReceived(Component message) {
+        chatSinceTick.incrementAndGet();
         Observations.message("chat", message);
         if (events != null) {
             events.chat(message);
@@ -434,6 +440,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         }
         BlockPos base = player.blockPosition();
         return position.resolve(base.getX(), base.getY(), base.getZ());
+    }
+
+    @Override
+    public String stallHint() {
+        long chat = chatSinceTick.get();
+        return chat == 0 ? null : chat + " chat lines arrived since";
     }
 
     @Override
