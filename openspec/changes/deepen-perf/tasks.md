@@ -6,7 +6,7 @@
 
 ## 2. Block changes by block (performance-capture)
 
-- [ ] 2.1 Add the `blockChanged` mixin for both versions and the counting with block entity type and Sable sub-level cached per section (D2), with `server.block_changes` in the summary and the text overview; add unit tests for the ranking; verify on the dev client that a capture while a repeating command block toggles a block (or a redstone clock runs) lists that block with its rate, and that changes aboard a sub-level carry its name
+- [x] 2.1 Add the `blockChanged` mixin for both versions and the counting with block entity type and Sable sub-level cached per section (D2), with `server.block_changes` in the summary and the text overview; add unit tests for the ranking; verify on the dev client that a capture while a repeating command block toggles a block (or a redstone clock runs) lists that block with its rate, and that changes aboard a sub-level carry its name
 
 ## 3. Particle sources (performance-capture)
 

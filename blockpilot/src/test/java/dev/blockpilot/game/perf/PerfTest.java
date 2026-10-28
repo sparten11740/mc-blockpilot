@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,32 @@ class PerfTest {
         double[] many = new double[30];
         java.util.Arrays.fill(many, 70);
         assertEquals(Perf.MAX_SPIKES, Perf.spikes(many, new long[30]).size());
+    }
+
+    @Test
+    void blockChangesAreRankedByRateWithTheirBlockEntityAndSubLevel() {
+        Perf.blockChanged("stone", null, null);
+        Perf.start("changes");
+        Perf.serverTick(1_000_000, 1);
+        for (int change = 0; change < 3; change++) {
+            Perf.blockChanged("oak_leaves", null, null);
+        }
+        for (int change = 0; change < 5; change++) {
+            Perf.blockChanged("mymod:thruster", "mymod:thruster", "ship");
+        }
+        Perf.blockChanged("stone", null, null);
+        JsonArray changes = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server")
+            .getAsJsonArray("block_changes");
+        assertEquals(3, changes.size());
+        JsonObject thruster = changes.get(0).getAsJsonObject();
+        assertEquals("mymod:thruster", thruster.get("block").getAsString());
+        assertEquals("mymod:thruster", thruster.get("be").getAsString());
+        assertEquals("ship", thruster.get("sub").getAsString());
+        assertEquals(5, thruster.get("count").getAsInt());
+        JsonObject leaves = changes.get(1).getAsJsonObject();
+        assertEquals("oak_leaves", leaves.get("block").getAsString());
+        assertFalse(leaves.has("be") || leaves.has("sub"));
+        assertEquals(1, changes.get(2).getAsJsonObject().get("count").getAsInt());
     }
 
     @Test

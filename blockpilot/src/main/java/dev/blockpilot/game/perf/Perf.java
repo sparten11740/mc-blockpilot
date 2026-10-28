@@ -62,6 +62,10 @@ public final class Perf {
         }
     }
 
+    /** A block change counted under its block, block entity type and sub-level (both may be null). */
+    record Change(String block, String blockEntity, String sub) {
+    }
+
     /** Packets and bytes per type. */
     static final class Traffic {
         private final Map<String, LongAdder[]> byType = new ConcurrentHashMap<>();
@@ -94,6 +98,7 @@ public final class Perf {
     }
 
     private static String name;
+    private static volatile int capture;
     private static long startNanos;
     private static Timings serverBlockEntities = new Timings();
     private static Timings serverEntities = new Timings();
@@ -107,6 +112,7 @@ public final class Perf {
     /** The tick time the server needs for 20 ticks per second; longer ticks are spikes. */
     static final double SPIKE_MS = 50;
     static final int MAX_SPIKES = 20;
+    static final int MAX_BLOCK_CHANGES = 20;
 
     private static List<Double> tickMillis = Collections.synchronizedList(new ArrayList<>());
     /** The game tick each of {@link #tickMillis} ended on. */
@@ -117,6 +123,9 @@ public final class Perf {
     private static Traffic clientbound = new Traffic();
     private static Traffic serverbound = new Traffic();
     private static long clientTicks;
+    /** Changes per block, under their lock: counted on the server thread, summarized on the client's. */
+    private static Map<Change, long[]> blockChanges = new HashMap<>();
+    private static final Object BLOCK_CHANGES_LOCK = new Object();
     private static long heapStart;
     private static long heapPeak;
     private static long gcCountStart;
@@ -139,12 +148,18 @@ public final class Perf {
         return name;
     }
 
+    /** Which capture runs or ran last, so per-capture caches elsewhere know when to start over. */
+    public static int capture() {
+        return capture;
+    }
+
     public static double seconds() {
         return active ? (System.nanoTime() - startNanos) / 1e9 : 0;
     }
 
     public static synchronized void start(String captureName) {
         name = captureName;
+        capture++;
         serverBlockEntities = new Timings();
         serverEntities = new Timings();
         clientBlockEntities = new Timings();
@@ -162,6 +177,9 @@ public final class Perf {
         clientbound = new Traffic();
         serverbound = new Traffic();
         clientTicks = 0;
+        synchronized (BLOCK_CHANGES_LOCK) {
+            blockChanges = new HashMap<>();
+        }
         RENDER_STARTS.clear();
         ENTITY_RENDER_STARTS.clear();
         particleTickStart = 0;
@@ -311,6 +329,15 @@ public final class Perf {
         }
     }
 
+    /** A block change the server marks for sending to clients, on the server thread. */
+    public static void blockChanged(String block, String blockEntity, String sub) {
+        if (active) {
+            synchronized (BLOCK_CHANGES_LOCK) {
+                blockChanges.computeIfAbsent(new Change(block, blockEntity, sub), key -> new long[1])[0]++;
+            }
+        }
+    }
+
     public static void packet(boolean toClient, String type) {
         if (active) {
             (toClient ? clientbound : serverbound).add(type, 0);
@@ -382,6 +409,9 @@ public final class Perf {
             server.addProperty("tps", round(ticks.length / seconds));
             server.addProperty("ticks", ticks.length);
             server.add("spikes", spikes(ticks, labels));
+            synchronized (BLOCK_CHANGES_LOCK) {
+                server.add("block_changes", ranked(blockChanges, seconds));
+            }
             JsonObject timeline = new JsonObject();
             JsonArray tickArray = new JsonArray();
             JsonArray msArray = new JsonArray();
@@ -462,6 +492,26 @@ public final class Perf {
                 spikes.add(spike);
             });
         return spikes;
+    }
+
+    /** The most frequent block changes, as {@code {block, be?, sub?, count, per_s}}, most first. */
+    static JsonArray ranked(Map<Change, long[]> changes, double seconds) {
+        JsonArray array = new JsonArray();
+        changes.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]))
+            .limit(MAX_BLOCK_CHANGES).forEach(entry -> {
+                JsonObject object = new JsonObject();
+                object.addProperty("block", entry.getKey().block());
+                if (entry.getKey().blockEntity() != null) {
+                    object.addProperty("be", entry.getKey().blockEntity());
+                }
+                if (entry.getKey().sub() != null) {
+                    object.addProperty("sub", entry.getKey().sub());
+                }
+                object.addProperty("count", entry.getValue()[0]);
+                object.addProperty("per_s", round(seconds <= 0 ? 0 : entry.getValue()[0] / seconds));
+                array.add(object);
+            });
+        return array;
     }
 
     private static double[] toArray(List<Double> values) {

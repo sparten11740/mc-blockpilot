@@ -57,7 +57,8 @@ public final class PerfCommands {
             .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
-                + "tick (every tick's time is in the file), tick time per block-entity and entity type, "
+                + "tick (every tick's time is in the file), tick time per block-entity and entity type, the block "
+                + "changes the server sends to clients per block, block entity type and sub-level, "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
                 + "render time per type with live counts, render-level stage time (NeoForge), section rebuilds, "
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
@@ -214,6 +215,16 @@ public final class PerfCommands {
                 .forEach(spike -> rows.add(Row.of("spike:t" + spike.get("tick").getAsLong(), new Fields()
                     .bare("list", "spike").put("tick", spike.get("tick").getAsLong(), "t" + spike.get("tick"))
                     .put("ms", spike.get("ms").getAsDouble(), Numbers.format(spike.get("ms").getAsDouble()) + "ms"))));
+        }
+        if (server.has("block_changes")) {
+            server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
+                .forEach(change -> {
+                    String where = change.get("block").getAsString()
+                        + (change.has("sub") ? " on " + change.get("sub").getAsString() : "");
+                    double rate = change.get("per_s").getAsDouble();
+                    rows.add(Row.of("change:" + where, new Fields().bare("list", "change").bare("type", where)
+                        .put("per_s", rate, Numbers.format(rate) + "/s")));
+                });
         }
         addTop(rows, "server be", server.getAsJsonArray("block_entities"), "ms_per_tick", "ms/t");
         addTop(rows, "server entity", server.getAsJsonArray("entities"), "ms_per_tick", "ms/t");

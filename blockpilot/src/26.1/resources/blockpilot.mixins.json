@@ -36,6 +36,7 @@
     "QuadParticleGroupMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
+    "ServerChunkCacheMixin",
     "SoundEngineAccessor",
     "SoundEngineMixin",
     "SoundManagerAccessor"
