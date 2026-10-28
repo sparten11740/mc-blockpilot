@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,13 +82,15 @@ final class PerceptionCommands {
             .help("nearby entities and notable blocks (block entities, ores, …) within radius (default 16, max 64)")
             .field("count", "rows").example("look 12"));
         registry.register(CommandSpec.query("entity", this::entity).needsWorld().group("perception")
-            .arg("ref", ArgType.ENTITY)
+            .form(form -> form.arg("ref", List.of("me"), ArgType.ENTITY))
             .option("side", "server: the integrated server's copy of the entity (cheats on)", Sides.NAMES)
-            .help("one entity's motion: type, position, yaw, pitch and velocity; with side=server as the integrated "
-                + "server has it, so sampling both sides shows how far the client's copy drifts")
-            .field("type", "entity type").field("pos", "absolute position, to the thousandth")
+            .help("one entity's motion (me: the player): type, e<id>, position, yaw, pitch, velocity and age; with "
+                + "side=server as the integrated server has it, so sampling both sides shows how far the client's "
+                + "copy drifts")
+            .field("type", "entity type").field("ref", "its e<id>").field("pos", "absolute position, to the thousandth")
             .field("yaw", "degrees, to the tenth").field("pitch", "degrees, to the tenth")
             .field("vel", "velocity, blocks per tick; left out at zero").field("on_ground", "false: airborne")
+            .field("age", "ticks this copy has existed; a copy made again starts at 0")
             .field("uuid", "side=server only").example("entity e12 side=server"));
         registry.register(CommandSpec.query("find", this::find).needsWorld().group("perception")
             .form(form -> form.arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
@@ -385,14 +388,17 @@ final class PerceptionCommands {
     }
 
     private Result entity(CommandContext context, Args args) throws CommandException {
-        int id = args.entity("ref").id();
+        boolean me = args.word("ref").equals("me");
+        int id = me ? -1 : args.entity("ref").id();
+        UUID playerId = minecraft().player.getUUID();
         return Sides.read(args, (level, server) -> {
-            Entity entity = level.getEntity(id);
+            Entity entity = me ? level.getPlayerByUUID(playerId) : level.getEntity(id);
             if (entity == null) {
                 throw new CommandException("no_entity", args.word("ref"));
             }
             Position pos = Position.absolute(round3(entity.getX()), round3(entity.getY()), round3(entity.getZ()));
-            Fields fields = new Fields().bare("type", Ids.of(entity)).put("pos", pos, "pos " + thousandths(pos))
+            Fields fields = new Fields().bare("type", Ids.of(entity)).bare("ref", new EntityRef(entity.getId()))
+                .put("pos", pos, "pos " + thousandths(pos))
                 .tag("yaw", round(Mth.wrapDegrees(entity.getYRot()))).tag("pitch", round(entity.getXRot()));
             Vec3 velocity = entity.getDeltaMovement();
             Position vel = Position.absolute(round3(velocity.x), round3(velocity.y), round3(velocity.z));
@@ -402,6 +408,7 @@ final class PerceptionCommands {
             if (!entity.onGround()) {
                 fields.put("on_ground", false, "airborne");
             }
+            fields.put("age", entity.tickCount, "age=" + entity.tickCount);
             if (server) {
                 fields.put("uuid", entity.getUUID().toString(), "uuid:" + entity.getUUID());
             }
