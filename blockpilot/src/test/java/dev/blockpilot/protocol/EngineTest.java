@@ -50,6 +50,10 @@ class EngineTest {
             Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
         registry.register(CommandSpec.query("served", (context, args) ->
             Result.ok(new Fields().put("in_call", game.inServerCall))).onServer());
+        // Reads the server itself with side=server, as block or entity do.
+        registry.register(CommandSpec.query("sided", (context, args) ->
+            Result.ok(new Fields().put("in_call", game.inServerCall))).option("side", "where", List.of("client",
+            "server")));
         registry.register(CommandSpec.action("spin", (context, args) -> new Steps(1000, "spin")).onServer());
         // A step that holds the client thread past the stall limit, as a world load does.
         registry.register(CommandSpec.action("hold", (context, args) -> () -> {
@@ -357,6 +361,27 @@ class EngineTest {
         }
         assertEquals(4, served.join().results().get(0).rows().size());
         // On the server clock the queries run on the server's own tick.
+        assertEquals(2, game.serverCalls);
+    }
+
+    @Test
+    void aSideServerQueryIsReadInTheRunsOneServerTrip() {
+        CompletableFuture<Reply> mixed = engine.submit(engine.openSession(), null, "sample counter and sided "
+            + "side=server and served every 1t x2");
+        tick(1);
+        tick(1);
+        Result result = mixed.join().results().get(0);
+        assertEquals(6, result.rows().size());
+        assertEquals(true, result.rows().get(1).fields().get("in_call"));
+        assertEquals(2, game.serverCalls);
+        CompletableFuture<Reply> onServer = engine.submit(engine.openSession(), null, "sample sided side=server every "
+            + "1t x2 clock=server");
+        for (int index = 0; index < 4 && !onServer.isDone(); index++) {
+            engine.tickClient();
+            engine.tickServer();
+        }
+        assertEquals(2, onServer.join().results().get(0).rows().size());
+        // On the server clock it reads the server directly, without a trip.
         assertEquals(2, game.serverCalls);
     }
 

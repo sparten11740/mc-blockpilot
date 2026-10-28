@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -71,7 +72,7 @@ public final class Sides {
             throw new CommandException("no_cheats");
         }
         ServerLevel level = server.getLevel(minecraft.level.dimension());
-        return await(server.submit(() -> {
+        Supplier<Result> task = () -> {
             try {
                 return read.apply(level, true);
             } catch (CommandException e) {
@@ -79,7 +80,9 @@ public final class Sides {
             } catch (CommandFailure e) {
                 return e.toResult();
             }
-        }));
+        };
+        // On the server thread, inside a task it runs, a task submitted now would wait behind the one running.
+        return server.isSameThread() ? task.get() : await(server.submit(task));
     }
 
     /** Waits for a task submitted to the server thread, up to the usual limit. */
@@ -110,6 +113,9 @@ public final class Sides {
         ServerLevel level = server.getLevel(minecraft.level.dimension());
         if (level == null) {
             return null;
+        }
+        if (server.isSameThread()) {
+            return read.apply(level);
         }
         try {
             return server.submit(() -> read.apply(level)).get(SERVER_READ_SECONDS, TimeUnit.SECONDS);

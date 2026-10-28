@@ -292,7 +292,7 @@ public final class Engine {
 
     Sampler sample(CommandContext context, Statement.Sample sample) {
         return new Sampler(context, sample.queries(), sample.every().ticks(), sample.count(),
-            sample.lead().entry().spec().runsOnServer());
+            sample.lead().runsOnServer());
     }
 
     Action waitTicks(Statement.WaitTicks wait) {
@@ -303,7 +303,7 @@ public final class Engine {
         Statement.Call query = wait.query();
         Duration timeout = wait.timeout() == null ? ScriptJob.DEFAULT_TIMEOUT : wait.timeout();
         return new WaitUntil(context, query.entry().spec(), query.args(), wait.condition(), wait.stable(),
-            wait.every(), timeout.ticks(), query.entry().spec().runsOnServer());
+            wait.every(), timeout.ticks(), query.runsOnServer());
     }
 
     /**
@@ -351,14 +351,14 @@ public final class Engine {
             Result[] results = new Result[queries.size()];
             List<Integer> serverSide = new ArrayList<>();
             for (int index = 0; index < queries.size(); index++) {
-                CommandSpec spec = queries.get(index).entry().spec();
-                String gate = serverClock ? null : game.gate(spec);
+                Statement.Call query = queries.get(index);
+                String gate = serverClock ? null : game.gate(query.entry().spec());
                 if (gate != null) {
                     results[index] = Result.error(gate);
-                } else if (!serverClock && spec.runsOnServer()) {
+                } else if (!serverClock && query.runsOnServer()) {
                     serverSide.add(index);
                 } else {
-                    results[index] = run(queries.get(index));
+                    results[index] = run(query);
                 }
             }
             if (!serverSide.isEmpty()) {

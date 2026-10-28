@@ -547,6 +547,21 @@ class ParserTest {
     }
 
     @Test
+    void aSideServerQueryIsServerSideForClocks() {
+        Statement.Sample server = assertInstanceOf(Statement.Sample.class, statement("sample block 1,2,3 side=server "
+            + "every 1t x5 clock=server"));
+        assertTrue(server.lead().runsOnServer());
+        assertErrorAt("sample block 1,2,3 every 1t x5 clock=server", "clock", "clock=server doesn't fit block, which "
+            + "runs on the client");
+        assertErrorAt("sample block 1,2,3 side=server every 1t x5 clock=client", "clock", "clock=client doesn't fit "
+            + "block, which runs on the server");
+        assertEquals("status", assertInstanceOf(Statement.Sample.class, statement("sample status and block 1,2,3 "
+            + "side=server every 1t x5")).lead().entry().qualifiedName());
+        assertInstanceOf(Statement.WaitUntil.class, statement("wait block 1,2,3 side=server until id==air "
+            + "clock=server"));
+    }
+
+    @Test
     void aSampleCanRunBesideAnAction() {
         Statement.Sample walk = assertInstanceOf(Statement.Sample.class, statement("sample status every 2t while "
             + "mine #logs x3"));

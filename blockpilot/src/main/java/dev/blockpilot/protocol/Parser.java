@@ -478,7 +478,7 @@ final class Parser {
         /** {@code clock=} states where the query runs, so it must name the side the query's command runs on. */
         private void checkClock(Statement.Call query, Map<String, Lexer.Token> options) throws SyntaxError {
             Lexer.Token clock = options.get("clock");
-            String side = query.entry().spec().runsOnServer() ? "server" : "client";
+            String side = query.runsOnServer() ? "server" : "client";
             if (clock != null && !value(clock).equals(side)) {
                 throw error(clock.column(), "clock=" + value(clock) + " doesn't fit " + query.entry().qualifiedName()
                     + ", which runs on the " + side);
