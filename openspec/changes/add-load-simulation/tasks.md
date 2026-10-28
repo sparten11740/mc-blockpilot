@@ -2,8 +2,8 @@
 
 ## 1. Server and client load (load-simulation)
 
-- [ ] 1.1 Add the `load` action with its forms, report and limits (D1, D6), the server load parked at the head of `tickChildren` through a mixin for both versions (D2), and its end on `load off`, a 0, agent control off, leaving the world, the game closing and the server stopping (D5); add unit tests for the time drawn within the jitter and for the report; add help and the README's performance row; verify on the dev client that `load server 60; perf start; wait 200t; perf stop` reports MSPT near 60 and TPS near 16, that `load server 30 jitter=20` spreads MSPT, and that leaving and joining the world ends it
-- [ ] 1.2 Add the client load in the frame mixin for both versions (D3); verify on the dev client that `load client 50` brings `perf` FPS under 20 and `load client 0` restores it
+- [x] 1.1 Add the `load` action with its forms, report and limits (D1, D6), the server load parked at the head of `tickChildren` through a mixin for both versions (D2), and its end on `load off`, a 0, agent control off, leaving the world, the game closing and the server stopping (D5); add unit tests for the time drawn within the jitter and for the report; add help and the README's performance row; verify on the dev client that `load server 60; perf start; wait 200t; perf stop` reports MSPT near 60 and TPS near 16, that `load server 30 jitter=20` spreads MSPT, and that leaving and joining the world ends it
+- [x] 1.2 Add the client load in the frame mixin for both versions (D3); verify on the dev client that `load client 50` brings `perf` FPS under 20 and `load client 0` restores it
 
 ## 2. Network delay (load-simulation)
 

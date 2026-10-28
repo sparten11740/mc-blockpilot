@@ -12,6 +12,7 @@ import dev.blockpilot.cli.Launcher;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
+import dev.blockpilot.game.load.Load;
 import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.ClientOptions;
@@ -237,8 +238,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         closeIn = ticks;
     }
 
+    private static void endLoad(String reason) {
+        String ended = Load.off();
+        if (!ended.isEmpty()) {
+            Blockpilot.LOGGER.info("Ended the load agents added, as {}: {}", reason, ended);
+        }
+    }
+
     /** Config values first: they catch their own failures, which an option's update hook doesn't. */
     static void restoreAgentChanges(String reason) {
+        endLoad(reason);
         List<String> values = ConfigCommands.restoreAll();
         if (!values.isEmpty()) {
             Blockpilot.LOGGER.info("Put back the config values agents changed, as {}: {}", reason,
@@ -257,6 +266,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
      */
     private void restoreOnWorldExit() {
         boolean inWorld = Minecraft.getInstance().level != null;
+        if (wasInWorld && !inWorld) {
+            // Unlike options, load ends on Blockpilot's own world switches too.
+            endLoad("the world was left");
+        }
         if (wasInWorld && !inWorld && !SessionCommands.leftByBlockpilot()) {
             restoreAgentChanges("the world was left");
         }
@@ -277,6 +290,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onServerStopping(MinecraftServer server) {
+        endLoad("the server stopped");
         ServerCommands.onServerStopping(server);
         ConfigCommands.forgetServerValues();
     }

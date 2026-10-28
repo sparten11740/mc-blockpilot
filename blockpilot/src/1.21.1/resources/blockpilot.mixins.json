@@ -21,6 +21,7 @@
     "KeyboardHandlerMixin",
     "LevelRendererMixin",
     "MinecraftMixin",
+    "MinecraftServerMixin",
     "MouseHandlerMixin",
     "PacketDecoderMixin",
     "PacketEncoderMixin",

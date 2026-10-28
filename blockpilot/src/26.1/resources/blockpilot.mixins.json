@@ -23,6 +23,7 @@
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
     "MinecraftMixin",
+    "MinecraftServerMixin",
     "MouseHandlerMixin",
     "NativeImageInvoker",
     "PacketDecoderMixin",
