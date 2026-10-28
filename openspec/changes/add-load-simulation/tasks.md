@@ -7,7 +7,7 @@
 
 ## 2. Network delay (load-simulation)
 
-- [ ] 2.1 Add the delaying handler with ordered release per direction and an accessor for the connection's channel in both versions (D4), installed by `load net` and passing packets straight on at 0; add unit tests for the release times (order kept under jitter, straight on at 0); verify on the dev client that after `load net 200` a block placed with `server settle=0t setblock …` reaches the client about 4 to 5 ticks later (with `wait block … until id==… ` reporting `elapsed`), against 0 to 1 tick without it, and that the game stays connected for a minute at `load net 2000`
+- [x] 2.1 Add the delaying handler with ordered release per direction and an accessor for the connection's channel in both versions (D4), installed by `load net` and passing packets straight on at 0; add unit tests for the release times (order kept under jitter, straight on at 0); verify on the dev client that after `load net 200` a block placed with `server settle=0t setblock …` reaches the client about 4 to 5 ticks later (with `wait block … until id==… ` reporting `elapsed`), against 0 to 1 tick without it, and that the game stays connected for a minute at `load net 2000`
 
 ## 3. Integration checks
 
