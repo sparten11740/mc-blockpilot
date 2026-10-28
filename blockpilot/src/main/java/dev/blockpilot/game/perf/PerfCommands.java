@@ -56,7 +56,8 @@ public final class PerfCommands {
         registry.register(CommandSpec.action("perf", this::perf).group("performance")
             .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
-            .help("perf start [name] … perf stop: server MSPT/TPS and tick time per block-entity and entity type, "
+            .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
+                + "tick (every tick's time is in the file), tick time per block-entity and entity type, "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
                 + "render time per type with live counts, render-level stage time (NeoForge), section rebuilds, "
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
@@ -109,7 +110,8 @@ public final class PerfCommands {
             }
             JsonObject summary = Perf.stop(counts.getNow(null), liveParticles());
             Path file = save(summary);
-            return Result.ok(overview(summary, file)).withRows(top(summary));
+            JsonObject reply = forReply(summary);
+            return Result.ok(overview(reply, file)).withRows(top(reply));
         }
 
         @Override
@@ -172,6 +174,13 @@ public final class PerfCommands {
         return file.toAbsolutePath();
     }
 
+    /** The summary without the per-tick timeline, which only the file keeps. */
+    static JsonObject forReply(JsonObject summary) {
+        JsonObject reply = summary.deepCopy();
+        reply.getAsJsonObject("server").remove("timeline");
+        return reply;
+    }
+
     /** One line: duration, MSPT, TPS, FPS and 1% low, the file; the full summary as a JSON-only field. */
     private static Fields overview(JsonObject summary, Path file) {
         JsonObject server = summary.getAsJsonObject("server");
@@ -181,7 +190,8 @@ public final class PerfCommands {
         if (server.has("mspt")) {
             JsonObject mspt = server.getAsJsonObject("mspt");
             text.append(" mspt=").append(number(mspt, "avg")).append('/').append(number(mspt, "p95")).append('/')
-                .append(number(mspt, "max")).append(" tps=").append(number(server, "tps"));
+                .append(number(mspt, "p99")).append('/').append(number(mspt, "max")).append(" tps=")
+                .append(number(server, "tps"));
         }
         JsonObject fps = client.getAsJsonObject("fps");
         text.append(" fps=").append(number(fps, "avg")).append(" low1%=").append(number(fps, "low_1pct"))
@@ -199,6 +209,12 @@ public final class PerfCommands {
         JsonObject server = summary.getAsJsonObject("server");
         JsonObject client = summary.getAsJsonObject("client");
         JsonObject network = summary.getAsJsonObject("network");
+        if (server.has("spikes")) {
+            server.getAsJsonArray("spikes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
+                .forEach(spike -> rows.add(Row.of("spike:t" + spike.get("tick").getAsLong(), new Fields()
+                    .bare("list", "spike").put("tick", spike.get("tick").getAsLong(), "t" + spike.get("tick"))
+                    .put("ms", spike.get("ms").getAsDouble(), Numbers.format(spike.get("ms").getAsDouble()) + "ms"))));
+        }
         addTop(rows, "server be", server.getAsJsonArray("block_entities"), "ms_per_tick", "ms/t");
         addTop(rows, "server entity", server.getAsJsonArray("entities"), "ms_per_tick", "ms/t");
         addTop(rows, "renderer", client.getAsJsonArray("block_entity_renderers"), "ms_per_frame", "ms/frame");

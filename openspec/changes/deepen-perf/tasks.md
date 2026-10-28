@@ -2,7 +2,7 @@
 
 ## 1. Server tick spikes and timeline (performance-capture)
 
-- [ ] 1.1 Add `p99` to `server.mspt`, `server.spikes` and the file-only `server.timeline` keyed by game tick (D1, D5), with the text overview's MSPT and spike list; add unit tests for the spikes (over 50 ms, longest first, at most 20) and for leaving the timeline out of the reply; verify on the dev client with `load server 30 jitter=30` (or a `server` command that takes long) that a capture lists spikes whose ticks match `t<n>` of server-clock sample rows, and that the file has the timeline
+- [x] 1.1 Add `p99` to `server.mspt`, `server.spikes` and the file-only `server.timeline` keyed by game tick (D1, D5), with the text overview's MSPT and spike list; add unit tests for the spikes (over 50 ms, longest first, at most 20) and for leaving the timeline out of the reply; verify on the dev client with `load server 30 jitter=30` (or a `server` command that takes long) that a capture lists spikes whose ticks match `t<n>` of server-clock sample rows, and that the file has the timeline
 
 ## 2. Block changes by block (performance-capture)
 

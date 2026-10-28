@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.IntStream;
 
 /**
  * Performance capture. Instrumented code checks {@link #active} and does nothing else while no capture runs. While
@@ -103,7 +104,13 @@ public final class Perf {
     private static Timings particleTicks = new Timings();
     private static Timings particleRenders = new Timings();
     private static Timings renderStages = new Timings();
+    /** The tick time the server needs for 20 ticks per second; longer ticks are spikes. */
+    static final double SPIKE_MS = 50;
+    static final int MAX_SPIKES = 20;
+
     private static List<Double> tickMillis = Collections.synchronizedList(new ArrayList<>());
+    /** The game tick each of {@link #tickMillis} ended on. */
+    private static List<Long> tickLabels = Collections.synchronizedList(new ArrayList<>());
     private static List<Double> frameMillis = Collections.synchronizedList(new ArrayList<>());
     private static long lastFrame;
     private static final AtomicLong SECTION_REBUILDS = new AtomicLong();
@@ -148,6 +155,7 @@ public final class Perf {
         particleRenders = new Timings();
         renderStages = new Timings();
         tickMillis = Collections.synchronizedList(new ArrayList<>());
+        tickLabels = Collections.synchronizedList(new ArrayList<>());
         frameMillis = Collections.synchronizedList(new ArrayList<>());
         lastFrame = 0;
         SECTION_REBUILDS.set(0);
@@ -335,10 +343,14 @@ public final class Perf {
         }
     }
 
-    /** Once per server tick, with the duration of the last completed tick. */
-    public static void serverTick(long lastTickNanos) {
+    /** Once per server tick, with the duration of the last completed tick and the game tick it ended on. */
+    public static void serverTick(long lastTickNanos, long gameTick) {
         if (active && lastTickNanos > 0) {
-            tickMillis.add(lastTickNanos / 1e6);
+            // One lock for both lists, so the timeline's two arrays stay the same length.
+            synchronized (tickMillis) {
+                tickMillis.add(lastTickNanos / 1e6);
+                tickLabels.add(gameTick);
+            }
         }
     }
 
@@ -353,16 +365,33 @@ public final class Perf {
         summary.addProperty("name", name);
         summary.addProperty("duration_s", round(seconds));
 
-        double[] ticks = toArray(tickMillis);
+        double[] ticks;
+        long[] labels;
+        synchronized (tickMillis) {
+            ticks = toArray(tickMillis);
+            labels = tickLabels.stream().mapToLong(Long::longValue).toArray();
+        }
         JsonObject server = new JsonObject();
         if (ticks.length > 0) {
             JsonObject mspt = new JsonObject();
             mspt.addProperty("avg", round(Stats.average(ticks)));
             mspt.addProperty("p95", round(Stats.percentile(ticks, 0.95)));
+            mspt.addProperty("p99", round(Stats.percentile(ticks, 0.99)));
             mspt.addProperty("max", round(Stats.max(ticks)));
             server.add("mspt", mspt);
             server.addProperty("tps", round(ticks.length / seconds));
             server.addProperty("ticks", ticks.length);
+            server.add("spikes", spikes(ticks, labels));
+            JsonObject timeline = new JsonObject();
+            JsonArray tickArray = new JsonArray();
+            JsonArray msArray = new JsonArray();
+            for (int index = 0; index < ticks.length; index++) {
+                tickArray.add(labels[index]);
+                msArray.add(round(ticks[index]));
+            }
+            timeline.add("tick", tickArray);
+            timeline.add("ms", msArray);
+            server.add("timeline", timeline);
             server.add("block_entities", serverBlockEntities.ranked(ticks.length, "ms_per_tick"));
             server.add("entities", serverEntities.ranked(ticks.length, "ms_per_tick"));
             if (serverCounts != null) {
@@ -420,6 +449,19 @@ public final class Perf {
             + clientBlockEntities.calls() + clientEntities.calls() + renderers.calls() + entityRenderers.calls()
             + particleTicks.calls() + particleRenders.calls() + renderStages.calls());
         return summary;
+    }
+
+    /** The ticks over {@link #SPIKE_MS}, longest first, at most {@link #MAX_SPIKES}, as {@code {tick, ms}}. */
+    static JsonArray spikes(double[] ticks, long[] labels) {
+        JsonArray spikes = new JsonArray();
+        IntStream.range(0, ticks.length).filter(index -> ticks[index] > SPIKE_MS).boxed()
+            .sorted((a, b) -> Double.compare(ticks[b], ticks[a])).limit(MAX_SPIKES).forEach(index -> {
+                JsonObject spike = new JsonObject();
+                spike.addProperty("tick", labels[index]);
+                spike.addProperty("ms", round(ticks[index]));
+                spikes.add(spike);
+            });
+        return spikes;
     }
 
     private static double[] toArray(List<Double> values) {

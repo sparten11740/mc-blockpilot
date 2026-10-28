@@ -2,6 +2,7 @@ package dev.blockpilot.game.perf;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import java.util.List;
@@ -49,7 +50,7 @@ class PerfTest {
     void summarizesWhatTheHooksRecorded() {
         Perf.start("unit");
         for (int tick = 0; tick < 20; tick++) {
-            Perf.serverTick(2_000_000);
+            Perf.serverTick(2_000_000, 1000 + tick);
             Perf.blockEntityStart(false);
             Perf.blockEntityEnd(false, "hopper");
             Perf.entityStart(false);
@@ -100,5 +101,32 @@ class PerfTest {
         assertEquals(12, payload.get("bytes").getAsInt());
         assertEquals("move_player_pos", summary.getAsJsonObject("network").getAsJsonArray("serverbound").get(0)
             .getAsJsonObject().get("type").getAsString());
+    }
+
+    @Test
+    void spikesAreTheTicksOverFiftyMillisecondsLongestFirst() {
+        double[] ticks = {10, 60, 180, 55, 50};
+        long[] labels = {101, 102, 103, 104, 105};
+        assertEquals("[{\"tick\":103,\"ms\":180.0},{\"tick\":102,\"ms\":60.0},{\"tick\":104,\"ms\":55.0}]",
+            Perf.spikes(ticks, labels).toString());
+        double[] many = new double[30];
+        java.util.Arrays.fill(many, 70);
+        assertEquals(Perf.MAX_SPIKES, Perf.spikes(many, new long[30]).size());
+    }
+
+    @Test
+    void theTimelineIsInTheFileButNotTheReply() {
+        Perf.start("timeline");
+        Perf.serverTick(3_000_000, 500);
+        Perf.serverTick(90_000_000, 501);
+        JsonObject summary = Perf.stop(new JsonObject(), Map.of());
+        JsonObject server = summary.getAsJsonObject("server");
+        assertEquals("{\"tick\":[500,501],\"ms\":[3.0,90.0]}", server.get("timeline").toString());
+        assertEquals("[{\"tick\":501,\"ms\":90.0}]", server.get("spikes").toString());
+        assertEquals(90.0, server.getAsJsonObject("mspt").get("p99").getAsDouble());
+        JsonObject reply = PerfCommands.forReply(summary);
+        assertFalse(reply.getAsJsonObject("server").has("timeline"));
+        assertTrue(server.has("timeline"));
+        assertTrue(reply.getAsJsonObject("server").has("spikes"));
     }
 }

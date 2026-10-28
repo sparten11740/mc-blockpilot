@@ -78,6 +78,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     /** Ticks until the game closes after {@code quit}, or -1. */
     private int closeIn = -1;
     private final AgentPresence presence = new AgentPresence();
+    /** The overworld's game time at the end of the last server tick, on the server thread. */
+    private long lastServerGameTick;
     /** Chat lines since the end of the last client tick, which a stalled client reports. */
     private final AtomicLong chatSinceTick = new AtomicLong();
 
@@ -284,10 +286,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onServerTickEnd(MinecraftServer server) {
         if (Perf.active) {
-            // This tick's time is recorded after the event; the previous one is complete.
+            // This tick's time is recorded after the event on some loaders; the previous one is complete, and it
+            // ended on the game tick this hook saw last time.
             long[] times = server.getTickTimesNanos();
-            Perf.serverTick(times[Math.floorMod(server.getTickCount() - 1, times.length)]);
+            Perf.serverTick(times[Math.floorMod(server.getTickCount() - 1, times.length)], lastServerGameTick);
         }
+        lastServerGameTick = server.overworld().getGameTime();
         if (engine != null) {
             engine.tickServer();
         }
