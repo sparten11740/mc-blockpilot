@@ -45,6 +45,8 @@ final class SessionCommands {
         registry.register(CommandSpec.action("join", this::join).group("session")
             .form(form -> form.keyword("kind", "world").text("name"))
             .form(form -> form.keyword("kind", "server").arg("name", ArgType.INT, ArgType.WORD))
+            .option("tick", "frozen: freeze a world's server before its first tick, so it reads as saved until "
+                + "tick unfreeze or tick step", List.of("frozen"))
             .help("joins a save folder or a server (list index or address); returns once the player can act")
             .example("join world New World"));
         registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
@@ -118,14 +120,19 @@ final class SessionCommands {
 
     private Action join(CommandContext context, Args args) throws CommandException {
         String name = args.word("name");
+        boolean world = args.word("kind").equals("world");
+        if (args.hasOption("tick") && !world) {
+            throw new CommandException("syntax", "tick=frozen freezes a singleplayer world; a server can't be frozen");
+        }
         if (minecraft().level != null) {
             disconnect();
         }
-        if (args.word("kind").equals("world")) {
+        if (world) {
             boolean exists = summaries().stream().anyMatch(save -> save.getLevelId().equals(name));
             if (!exists) {
                 throw new CommandException("join_failed", "no save folder " + name + "; see worlds");
             }
+            ServerCommands.freezeOnStart(args.hasOption("tick") ? name : null);
             minecraft().createWorldOpenFlows().openWorld(name, () -> minecraft().setScreen(new TitleScreen()));
         } else {
             String address = name;
@@ -152,13 +159,20 @@ final class SessionCommands {
         public Result tick() throws CommandException {
             Minecraft minecraft = minecraft();
             if (minecraft.screen instanceof DisconnectedScreen disconnected) {
+                ServerCommands.freezeOnStart(null);
                 throw new CommandException("join_failed", describe(disconnected));
             }
             if (minecraft.player != null && minecraft.level != null
                 && (minecraft.screen == null || !Screens.type(minecraft.screen).equals("loading"))) {
+                ServerCommands.freezeOnStart(null);
                 return Result.ok(new Fields().put("joined", name, "joined " + name));
             }
             return null;
+        }
+
+        @Override
+        public void cancel() {
+            ServerCommands.freezeOnStart(null);
         }
 
         @Override

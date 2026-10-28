@@ -156,6 +156,7 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             }
         });
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> ClientPlatform.hooks().onScreenInit(screen));
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> ClientPlatform.hooks().onServerStarted(server));
         ServerTickEvents.END_SERVER_TICK.register(server -> ClientPlatform.hooks().onServerTickEnd(server));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> ClientPlatform.hooks().onServerStopping(server));
         // Fabric fires the load for every chunk that becomes full, and the generate besides for a new one.

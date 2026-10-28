@@ -56,6 +56,8 @@ final class ServerCommands {
     private static final int OWNER = 4;
     //?}
     private static boolean changedTicking;
+    /** The save folder a frozen join is opening, set on the client thread and read on the server's. */
+    private static volatile String freezeOnStart;
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("server", this::server).onServer().group("integrated")
@@ -306,6 +308,19 @@ final class ServerCommands {
             }
         }
         return () -> Result.ok(tickState());
+    }
+
+    /** Freezes the world in that save folder when its server starts, before its first tick; null for none. */
+    static void freezeOnStart(String folder) {
+        freezeOnStart = folder;
+    }
+
+    static void onServerStarted(MinecraftServer server) {
+        if (Snapshots.folderOf(server).equals(freezeOnStart)) {
+            server.tickRateManager().setFrozen(true);
+            changedTicking = true;
+        }
+        freezeOnStart = null;
     }
 
     /** Undoes freezing and rate changes Blockpilot made, so a world is never saved frozen because of it. */

@@ -68,6 +68,10 @@ public final class ClientPlatform {
         default void onClientStopping() {
         }
 
+        /** The server has loaded its levels and not ticked yet; on the server thread. */
+        default void onServerStarted(MinecraftServer server) {
+        }
+
         default void onServerTickEnd(MinecraftServer server) {
         }
 

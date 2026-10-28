@@ -290,6 +290,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public void onServerStarted(MinecraftServer server) {
+        ServerCommands.onServerStarted(server);
+    }
+
+    @Override
     public void onServerTickEnd(MinecraftServer server) {
         if (Perf.active) {
             // This tick's time is recorded after the event on some loaders; the previous one is complete, and it

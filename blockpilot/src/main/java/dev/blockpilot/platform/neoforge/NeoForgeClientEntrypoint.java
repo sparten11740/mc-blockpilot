@@ -29,6 +29,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -154,6 +155,8 @@ public final class NeoForgeClientEntrypoint {
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class,
             event -> ClientPlatform.hooks().onScreenInit(event.getScreen()));
         NeoForge.EVENT_BUS.addListener(GameShuttingDownEvent.class, event -> ClientPlatform.hooks().onClientStopping());
+        NeoForge.EVENT_BUS.addListener(ServerStartedEvent.class,
+            event -> ClientPlatform.hooks().onServerStarted(event.getServer()));
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post.class,
             event -> ClientPlatform.hooks().onServerTickEnd(event.getServer()));
         NeoForge.EVENT_BUS.addListener(ServerStoppingEvent.class,
