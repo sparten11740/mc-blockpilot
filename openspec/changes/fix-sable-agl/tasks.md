@@ -6,7 +6,7 @@
 
 ## 2. Flight readout (sable-sublevels)
 
-- [ ] 2.1 Add `y=`, the world y of the sub-level's position, to `sable:info <sub> brief` before `agl` (D4), with `help sable:info`, the `y` field, the README's sable row and With Sable section; verify on the dev client that `sable:info <sub> brief` gives yaw, pitch, roll, speed, climb, y and agl, and that `y` matches the y of `at=` in the full reply
+- [x] 2.1 Add `y=`, the world y of the sub-level's position, to `sable:info <sub> brief` before `agl` (D4), with `help sable:info`, the `y` field, the README's sable row and With Sable section; verify on the dev client that `sable:info <sub> brief` gives yaw, pitch, roll, speed, climb, y and agl, and that `y` matches the y of `at=` in the full reply
 
 ## 3. Integration checks
 

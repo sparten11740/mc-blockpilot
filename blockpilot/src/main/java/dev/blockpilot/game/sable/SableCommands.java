@@ -81,12 +81,13 @@ final class SableCommands {
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).optionalKeyword("brief", "brief")
             .help("one sub-level's pose, velocity, height above ground and bounds; with brief only yaw, pitch, roll, "
-                + "speed, climb and agl, e.g. to sample a climb; " + REFERENCE)
+                + "speed, climb, y and agl, e.g. to sample a climb; " + REFERENCE)
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("yaw", "degrees turned from how it was built; 90 is a quarter turn west")
             .field("pitch", "degrees, nose down positive").field("roll", "degrees, right side down positive")
             .field("speed", "blocks per second").field("vel", "blocks per second along x, y and z")
             .field("climb", "brief only: vertical speed, blocks per second")
+            .field("y", "brief only: world y of its position")
             .field("agl", "height above ground: from the lowest corner of its lowest block, however it is turned, to "
                 + "the top of the ground straight under that corner; none above nothing loaded, or when the client "
                 + "holds none of its blocks")
@@ -177,7 +178,7 @@ final class SableCommands {
         if (args.has("brief")) {
             return Result.ok(new Fields().tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch()))
                 .tag("roll", tenths(info.roll())).put("speed", tenths(velocity.length()))
-                .put("climb", tenths(velocity.y)).put("agl", agl));
+                .put("climb", tenths(velocity.y)).put("y", tenths(info.position().y)).put("agl", agl));
         }
         return Result.ok(new Fields().bare("name", info.name()).bare("id", info.id().toString())
             .bare("at", Rel.of(info.position())).hidden("at_abs", Rel.absolute(info.position()))
