@@ -144,7 +144,7 @@ def main():
         ("move into a wall", "server as=player fill ~2 ~ ~-1 ~2 ~1 ~1 stone; wait 3t; ?move forward 8; "
                              "server as=player fill ~-2 ~ ~-2 ~3 ~2 ~2 air", [r"err stuck moved="], True),
         ("sample while moving", "sample status every 2t while move back 2", [r"ok moved \d.* samples=\d",
-                                                                            r"^  t\d+ pos "]),
+                                                                            r"^  t\d+ c\d+ pos "]),
         ("look and find", "look 8; find grass_block 4 2", [r"^ok", r"grass_block"]),
         ("region dump", "blocks ~-1,-1,-1 ~1,0,1", [r"a=grass_block", r"y-61:"]),
         ("raw input", "key press key.inventory; wait 3t; screen; close; mouse move 40 0 4t",
