@@ -11,7 +11,7 @@
 ## 3. Particle sources (performance-capture)
 
 - [x] 3.1 Add `ClientPlatform.modOf` for NeoForge and Fabric (D4) and the sampled stack walk at client particle creation with `particles.sources` in the summary and text overview (D3); add unit tests for picking the source frame (skipped prefixes, the packet listener as `server`); verify on the dev client that a capture near a campfire or a mod's particle source names it, and that particles from a `server particle …` command count as `server`
-- [ ] 3.2 Add the `sendParticles` mixin for both versions with the same walk on the server thread (D3); verify on the dev client that particles sent by server code are attributed to their sender with `via` `server_side`
+- [x] 3.2 Add the `sendParticles` mixin for both versions with the same walk on the server thread (D3); verify on the dev client that particles sent by server code are attributed to their sender with `via` `server_side`
 
 ## 4. Integration checks
 

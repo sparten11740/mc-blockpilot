@@ -61,12 +61,13 @@ At particle creation on the client, the first spawn of each type and every
 Minecraft, Mojang libraries, the loaders, Mixin and Blockpilot are skipped.
 If Minecraft's client packet listener comes first, the source is `server`.
 Otherwise it is the first remaining frame's class, or `minecraft` when no
-frame remains. The same walk runs on the
-server thread at the head of each `sendParticles` overload, keyed by the
-particle type, with the source marked `server_side`. The summary's
-`particles.sources` lists, per type spawned, its top three sources by share:
-`{type, mod, class, via, share}`, where `via` is `client`, `server` or
-`server_side`.
+frame remains. The same walk runs on the server thread at the head of the
+`sendParticles` overloads that build the packet, keyed by the particle type,
+with the source marked `server_side`. In 26.1 the shortest overload only
+passes on to a longer one, so hooking it too would count twice. The
+summary's `particles.sources` lists, per type spawned, its top three sources
+by share: `{type, mod, class, via, share}`, where `via` is `client`,
+`server` or `server_side`.
 
 ### D4. The mod a class comes from
 

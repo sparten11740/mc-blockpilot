@@ -60,8 +60,8 @@ public final class PerfCommands {
                 + "tick (every tick's time is in the file), tick time per block-entity and entity type, the block "
                 + "changes the server sends to clients per block, block entity type and sub-level, "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
-                + "render time per type with live counts and the mod and class that spawned them (server for those "
-                + "the server sent), "
+                + "render time per type with live counts and the mod and class that spawned them on the client or "
+                + "sent them on the integrated server, "
                 + "render-level stage time (NeoForge), section rebuilds, "
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")

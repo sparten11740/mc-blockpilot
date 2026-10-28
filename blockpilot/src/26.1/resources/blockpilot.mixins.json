@@ -37,6 +37,7 @@
     "RebuildTaskMixin",
     "SelectionListAccessor",
     "ServerChunkCacheMixin",
+    "ServerLevelMixin",
     "SoundEngineAccessor",
     "SoundEngineMixin",
     "SoundManagerAccessor"
