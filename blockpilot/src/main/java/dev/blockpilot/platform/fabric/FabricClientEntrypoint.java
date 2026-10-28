@@ -108,6 +108,17 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             }
 
             @Override
+            public String modOf(Class<?> type) {
+                String file = type.getName().replace('.', '/') + ".class";
+                for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+                    if (mod.findPath(file).isPresent()) {
+                        return mod.getMetadata().getId();
+                    }
+                }
+                return null;
+            }
+
+            @Override
             public void registerKeyMapping(KeyMapping mapping) {
                 //? if >=26.1 {
                 /*// Categories are registered objects here, and Fabric leaves registering them to the mod.

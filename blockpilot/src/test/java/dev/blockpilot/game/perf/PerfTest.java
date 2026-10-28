@@ -142,6 +142,37 @@ class PerfTest {
     }
 
     @Test
+    void aSampleOfSpawnsIsTracedAndSourcesRankedByShare() {
+        assertFalse(Perf.traceSpawn("flame", false));
+        Perf.start("sources");
+        int traced = 0;
+        for (int spawn = 0; spawn < 64; spawn++) {
+            traced += Perf.traceSpawn("flame", false) ? 1 : 0;
+        }
+        // The first spawn and every 32nd after it, per side.
+        assertEquals(2, traced);
+        assertTrue(Perf.traceSpawn("flame", true));
+        for (int sample = 0; sample < 6; sample++) {
+            Perf.spawnedBy("large_smoke", "mymod", "com.example.Burner", "client");
+        }
+        Perf.spawnedBy("large_smoke", null, null, "server");
+        Perf.spawnedBy("large_smoke", "minecraft", null, "client");
+        Perf.spawnedBy("large_smoke", "other", "com.example.Chimney", "client");
+        Perf.spawnedBy("flame", "mymod", "com.example.Torch", "server_side");
+        JsonArray sources = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("client").getAsJsonObject("particles")
+            .getAsJsonArray("sources");
+        assertEquals(4, sources.size());
+        JsonObject burner = sources.get(0).getAsJsonObject();
+        assertEquals("large_smoke", burner.get("type").getAsString());
+        assertEquals("mymod", burner.get("mod").getAsString());
+        assertEquals("com.example.Burner", burner.get("class").getAsString());
+        assertEquals("client", burner.get("via").getAsString());
+        assertEquals(0.67, burner.get("share").getAsDouble());
+        assertEquals("flame", sources.get(3).getAsJsonObject().get("type").getAsString());
+        assertEquals("server_side", sources.get(3).getAsJsonObject().get("via").getAsString());
+    }
+
+    @Test
     void theTimelineIsInTheFileButNotTheReply() {
         Perf.start("timeline");
         Perf.serverTick(3_000_000, 500);

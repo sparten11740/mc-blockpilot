@@ -66,6 +66,10 @@ public final class Perf {
     record Change(String block, String blockEntity, String sub) {
     }
 
+    /** Code that spawned a particle: its mod and class (null when unknown) and how the particle came. */
+    record Spawner(String mod, String className, String via) {
+    }
+
     /** Packets and bytes per type. */
     static final class Traffic {
         private final Map<String, LongAdder[]> byType = new ConcurrentHashMap<>();
@@ -113,6 +117,9 @@ public final class Perf {
     static final double SPIKE_MS = 50;
     static final int MAX_SPIKES = 20;
     static final int MAX_BLOCK_CHANGES = 20;
+    /** The first spawn of each particle type and every this many after it are traced to their source. */
+    static final int SOURCE_SAMPLING = 32;
+    static final int SOURCES_PER_TYPE = 3;
 
     private static List<Double> tickMillis = Collections.synchronizedList(new ArrayList<>());
     /** The game tick each of {@link #tickMillis} ended on. */
@@ -126,6 +133,11 @@ public final class Perf {
     /** Changes per block, under their lock: counted on the server thread, summarized on the client's. */
     private static Map<Change, long[]> blockChanges = new HashMap<>();
     private static final Object BLOCK_CHANGES_LOCK = new Object();
+    /** Spawns per particle type on each side, and the spawners of the traced ones, under their lock. */
+    private static Map<String, int[]> clientSpawns = new HashMap<>();
+    private static Map<String, int[]> serverSpawns = new HashMap<>();
+    private static Map<String, Map<Spawner, int[]>> spawners = new HashMap<>();
+    private static final Object SPAWNERS_LOCK = new Object();
     private static long heapStart;
     private static long heapPeak;
     private static long gcCountStart;
@@ -179,6 +191,11 @@ public final class Perf {
         clientTicks = 0;
         synchronized (BLOCK_CHANGES_LOCK) {
             blockChanges = new HashMap<>();
+        }
+        synchronized (SPAWNERS_LOCK) {
+            clientSpawns = new HashMap<>();
+            serverSpawns = new HashMap<>();
+            spawners = new HashMap<>();
         }
         RENDER_STARTS.clear();
         ENTITY_RENDER_STARTS.clear();
@@ -338,6 +355,27 @@ public final class Perf {
         }
     }
 
+    /** Counts a particle spawned (on the client) or sent (by the server); true when this one is to be traced. */
+    public static boolean traceSpawn(String type, boolean server) {
+        if (!active) {
+            return false;
+        }
+        synchronized (SPAWNERS_LOCK) {
+            return (server ? serverSpawns : clientSpawns).computeIfAbsent(type, key -> new int[1])[0]++
+                % SOURCE_SAMPLING == 0;
+        }
+    }
+
+    /** A traced particle of the type and where it came from. */
+    public static void spawnedBy(String type, String mod, String className, String via) {
+        if (active) {
+            synchronized (SPAWNERS_LOCK) {
+                spawners.computeIfAbsent(type, key -> new HashMap<>())
+                    .computeIfAbsent(new Spawner(mod, className, via), key -> new int[1])[0]++;
+            }
+        }
+    }
+
     public static void packet(boolean toClient, String type) {
         if (active) {
             (toClient ? clientbound : serverbound).add(type, 0);
@@ -451,6 +489,9 @@ public final class Perf {
         liveParticles.entrySet().stream().sorted((a, b) -> b.getValue() - a.getValue())
             .forEach(entry -> live.addProperty(entry.getKey(), entry.getValue()));
         particles.add("live", live);
+        synchronized (SPAWNERS_LOCK) {
+            particles.add("sources", sources(spawners));
+        }
         client.add("particles", particles);
         client.add("render_stages", renderStages.ranked(frames.length, "ms_per_frame"));
         client.addProperty("ticks", clientTicks);
@@ -492,6 +533,38 @@ public final class Perf {
                 spikes.add(spike);
             });
         return spikes;
+    }
+
+    /**
+     * Per particle type traced, most traced first, its top sources by share of its traced spawns, as
+     * {@code {type, mod?, class?, via, share}}.
+     */
+    static JsonArray sources(Map<String, Map<Spawner, int[]>> traced) {
+        JsonArray array = new JsonArray();
+        traced.entrySet().stream()
+            .sorted((a, b) -> Integer.compare(total(b.getValue()), total(a.getValue())))
+            .forEach(type -> {
+                int total = total(type.getValue());
+                type.getValue().entrySet().stream().sorted((a, b) -> Integer.compare(b.getValue()[0], a.getValue()[0]))
+                    .limit(SOURCES_PER_TYPE).forEach(source -> {
+                        JsonObject object = new JsonObject();
+                        object.addProperty("type", type.getKey());
+                        if (source.getKey().mod() != null) {
+                            object.addProperty("mod", source.getKey().mod());
+                        }
+                        if (source.getKey().className() != null) {
+                            object.addProperty("class", source.getKey().className());
+                        }
+                        object.addProperty("via", source.getKey().via());
+                        object.addProperty("share", round((double) source.getValue()[0] / total));
+                        array.add(object);
+                    });
+            });
+        return array;
+    }
+
+    private static int total(Map<Spawner, int[]> sources) {
+        return sources.values().stream().mapToInt(count -> count[0]).sum();
     }
 
     /** The most frequent block changes, as {@code {block, be?, sub?, count, per_s}}, most first. */

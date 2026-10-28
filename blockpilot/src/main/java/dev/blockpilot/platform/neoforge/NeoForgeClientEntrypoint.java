@@ -4,6 +4,7 @@ import dev.blockpilot.Blockpilot;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.platform.ModConfigs;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +91,22 @@ public final class NeoForgeClientEntrypoint {
                 // This FML names only the primary path: the jar, or in a dev run the classes folder.
                 return List.of(file.getFile().getFilePath());
                 //?}
+            }
+
+            @Override
+            public String modOf(Class<?> type) {
+                String file = type.getName().replace('.', '/') + ".class";
+                for (IModFileInfo info : ModList.get().getModFiles()) {
+                    //? if >=26.1 {
+                    /*boolean holds = info.getFile().getContents().containsFile(file);
+                    *///?} else {
+                    boolean holds = Files.exists(info.getFile().findResource(file.split("/")));
+                    //?}
+                    if (holds && !info.getMods().isEmpty()) {
+                        return info.getMods().get(0).getModId();
+                    }
+                }
+                return null;
             }
 
             @Override

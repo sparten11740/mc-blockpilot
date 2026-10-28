@@ -3,6 +3,9 @@ package dev.blockpilot.platform;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -35,6 +38,9 @@ public final class ClientPlatform {
 
         /** The jar, or in a dev run the folders, the loader loaded this mod from. */
         List<Path> modPaths();
+
+        /** The id of the mod whose files hold the class, or null when none does. */
+        String modOf(Class<?> type);
 
         /** Registers a key mapping; must be called while the mod is being constructed. */
         void registerKeyMapping(KeyMapping mapping);
@@ -70,6 +76,8 @@ public final class ClientPlatform {
     }
 
     private static Services services;
+    /** {@link #modOf} per class, "" for none; a class doesn't change mods. */
+    private static final Map<Class<?>, String> MODS_OF = new ConcurrentHashMap<>();
     private static Hooks hooks = new Hooks() {
     };
 
@@ -126,6 +134,12 @@ public final class ClientPlatform {
     /** Only plain files and folders: a jar nested in another mod's jar has none. */
     public static List<Path> modPaths() {
         return services().modPaths().stream().filter(path -> path.getFileSystem() == FileSystems.getDefault()).toList();
+    }
+
+    /** The id of the mod whose files hold the class, or null when none does. */
+    public static String modOf(Class<?> type) {
+        String mod = MODS_OF.computeIfAbsent(type, key -> Objects.requireNonNullElse(services().modOf(key), ""));
+        return mod.isEmpty() ? null : mod;
     }
 
     public static void registerKeyMapping(KeyMapping mapping) {

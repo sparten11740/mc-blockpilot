@@ -60,7 +60,9 @@ public final class PerfCommands {
                 + "tick (every tick's time is in the file), tick time per block-entity and entity type, the block "
                 + "changes the server sends to clients per block, block entity type and sub-level, "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
-                + "render time per type with live counts, render-level stage time (NeoForge), section rebuilds, "
+                + "render time per type with live counts and the mod and class that spawned them (server for those "
+                + "the server sent), "
+                + "render-level stage time (NeoForge), section rebuilds, "
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")
             .example("perf start before"));
@@ -233,11 +235,34 @@ public final class PerfCommands {
         JsonObject particles = client.getAsJsonObject("particles");
         addTop(rows, "particle render", particles.getAsJsonArray("renders"), "ms_per_frame", "ms/frame");
         addTop(rows, "particle tick", particles.getAsJsonArray("ticks"), "ms_per_tick", "ms/t");
+        if (particles.has("sources")) {
+            particles.getAsJsonArray("sources").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
+                .forEach(source -> {
+                    String type = source.get("type").getAsString();
+                    String from = from(source);
+                    double share = source.get("share").getAsDouble();
+                    rows.add(Row.of("source:" + type + ":" + from, new Fields().bare("list", "source")
+                        .bare("type", type).bare("from", from)
+                        .put("share", share, Math.round(share * 100) + "%")));
+                });
+        }
         addTop(rows, "stage", client.getAsJsonArray("render_stages"), "ms_per_frame", "ms/frame");
         addTop(rows, "client be", client.getAsJsonArray("block_entity_ticks"), "ms_per_tick", "ms/t");
         addTop(rows, "in", network.getAsJsonArray("clientbound"), "per_s", "/s");
         addTop(rows, "out", network.getAsJsonArray("serverbound"), "per_s", "/s");
         return rows;
+    }
+
+    /** Who spawned a particle, for the text overview: the mod and class, or the server that sent it. */
+    private static String from(JsonObject source) {
+        String via = source.get("via").getAsString();
+        if (via.equals("server")) {
+            return "server";
+        }
+        String mod = source.has("mod") ? source.get("mod").getAsString() : "?";
+        String type = source.has("class") ? " " + source.get("class").getAsString()
+            .substring(source.get("class").getAsString().lastIndexOf('.') + 1) : "";
+        return (via.equals("server_side") ? "sent by " : "") + mod + type;
     }
 
     private static void addTop(List<Row> rows, String label, JsonArray entries, String key, String unit) {

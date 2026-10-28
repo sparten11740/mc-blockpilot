@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.blockpilot.game.Ids;
 import dev.blockpilot.game.observe.Observations;
+import dev.blockpilot.game.perf.ParticleSources;
 import dev.blockpilot.game.perf.ParticleTag;
 import dev.blockpilot.game.perf.Perf;
 import net.minecraft.client.Camera;
@@ -20,7 +21,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Counts particles by type as the client creates them (the path level particles and mods' spawns take), tags each
- * with its type, and times their ticks and renders per type during a performance capture.
+ * with its type, and during a performance capture times their ticks and renders per type and traces a sample to the
+ * code that spawned them.
  */
 @Mixin(ParticleEngine.class)
 public abstract class ParticleEngineMixin {
@@ -29,8 +31,11 @@ public abstract class ParticleEngineMixin {
         double ySpeed, double zSpeed, CallbackInfoReturnable<Particle> info) {
         if (info.getReturnValue() != null) {
             Observations.particle(options.getType());
-            ((ParticleTag) info.getReturnValue()).blockpilot$type(Ids.of(BuiltInRegistries.PARTICLE_TYPE
-                .getKey(options.getType())));
+            String type = Ids.of(BuiltInRegistries.PARTICLE_TYPE.getKey(options.getType()));
+            ((ParticleTag) info.getReturnValue()).blockpilot$type(type);
+            if (Perf.active) {
+                ParticleSources.created(type);
+            }
         }
     }
 
