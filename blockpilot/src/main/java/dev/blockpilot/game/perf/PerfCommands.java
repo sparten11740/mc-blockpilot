@@ -57,7 +57,8 @@ public final class PerfCommands {
             .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
-                + "tick (every tick's time is in the file), tick time per block-entity and entity type, the block "
+                + "tick with the chunks generated, loaded and sent and the entities added in them (every tick's are in "
+                + "the file), tick time per block-entity and entity type, the block "
                 + "changes the server sends to clients per block, block entity type and sub-level, "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
                 + "render time per type with live counts and the mod and class that spawned them on the client or "
@@ -214,9 +215,17 @@ public final class PerfCommands {
         JsonObject network = summary.getAsJsonObject("network");
         if (server.has("spikes")) {
             server.getAsJsonArray("spikes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
-                .forEach(spike -> rows.add(Row.of("spike:t" + spike.get("tick").getAsLong(), new Fields()
-                    .bare("list", "spike").put("tick", spike.get("tick").getAsLong(), "t" + spike.get("tick"))
-                    .put("ms", spike.get("ms").getAsDouble(), Numbers.format(spike.get("ms").getAsDouble()) + "ms"))));
+                .forEach(spike -> {
+                    Fields fields = new Fields().bare("list", "spike")
+                        .put("tick", spike.get("tick").getAsLong(), "t" + spike.get("tick"))
+                        .put("ms", spike.get("ms").getAsDouble(), Numbers.format(spike.get("ms").getAsDouble()) + "ms");
+                    for (String count : List.of("chunks_generated", "chunks_loaded", "chunks_sent", "entities_added")) {
+                        if (spike.has(count)) {
+                            fields.put(count, spike.get(count).getAsInt(), count + "=" + spike.get(count));
+                        }
+                    }
+                    rows.add(Row.of("spike:t" + spike.get("tick").getAsLong(), fields));
+                });
         }
         if (server.has("block_changes")) {
             server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)

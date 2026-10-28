@@ -73,6 +73,14 @@ public final class ClientPlatform {
 
         default void onServerStopping(MinecraftServer server) {
         }
+
+        /** A chunk became full in a server level, read from disk or generated; on the server thread. */
+        default void onServerChunkLoaded() {
+        }
+
+        /** A newly generated chunk became full, after its {@link #onServerChunkLoaded}; on the server thread. */
+        default void onServerChunkGenerated() {
+        }
     }
 
     private static Services services;

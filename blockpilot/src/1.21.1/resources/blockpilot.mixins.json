@@ -29,6 +29,8 @@
     "ParticleEngineAccessor",
     "ParticleEngineMixin",
     "ParticleMixin",
+    "PersistentEntitySectionManagerMixin",
+    "PlayerChunkSenderMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
     "ServerChunkCacheMixin",

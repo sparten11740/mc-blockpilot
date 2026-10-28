@@ -124,6 +124,15 @@ public final class Perf {
     private static List<Double> tickMillis = Collections.synchronizedList(new ArrayList<>());
     /** The game tick each of {@link #tickMillis} ended on. */
     private static List<Long> tickLabels = Collections.synchronizedList(new ArrayList<>());
+    /** What the server did in each of {@link #tickMillis}: indexed by the {@code WORK_} constants. */
+    private static List<int[]> tickWorks = Collections.synchronizedList(new ArrayList<>());
+    static final int WORK_CHUNKS_FULL = 0;
+    static final int WORK_CHUNKS_GENERATED = 1;
+    static final int WORK_CHUNKS_SENT = 2;
+    static final int WORK_ENTITIES_ADDED = 3;
+    /** Server-thread counts since the last end of tick, and those of the tick that ended last. */
+    private static int[] tickWork = new int[4];
+    private static int[] endedTickWork = new int[4];
     private static List<Double> frameMillis = Collections.synchronizedList(new ArrayList<>());
     private static long lastFrame;
     private static final AtomicLong SECTION_REBUILDS = new AtomicLong();
@@ -183,6 +192,9 @@ public final class Perf {
         renderStages = new Timings();
         tickMillis = Collections.synchronizedList(new ArrayList<>());
         tickLabels = Collections.synchronizedList(new ArrayList<>());
+        tickWorks = Collections.synchronizedList(new ArrayList<>());
+        tickWork = new int[4];
+        endedTickWork = new int[4];
         frameMillis = Collections.synchronizedList(new ArrayList<>());
         lastFrame = 0;
         SECTION_REBUILDS.set(0);
@@ -408,15 +420,49 @@ public final class Perf {
         }
     }
 
-    /** Once per server tick, with the duration of the last completed tick and the game tick it ended on. */
+    /** A chunk became full in a server level, read from disk or generated; on the server thread. */
+    public static void chunkLoaded() {
+        if (active) {
+            tickWork[WORK_CHUNKS_FULL]++;
+        }
+    }
+
+    public static void chunkGenerated() {
+        if (active) {
+            tickWork[WORK_CHUNKS_GENERATED]++;
+        }
+    }
+
+    public static void chunkSent() {
+        if (active) {
+            tickWork[WORK_CHUNKS_SENT]++;
+        }
+    }
+
+    public static void entityAdded() {
+        if (active) {
+            tickWork[WORK_ENTITIES_ADDED]++;
+        }
+    }
+
+    /**
+     * Once per server tick, with the duration of the last completed tick and the game tick it ended on. That tick is
+     * the one before the hook's, so its counts are those this hook held back last time.
+     */
     public static void serverTick(long lastTickNanos, long gameTick) {
-        if (active && lastTickNanos > 0) {
-            // One lock for both lists, so the timeline's two arrays stay the same length.
+        if (!active) {
+            return;
+        }
+        if (lastTickNanos > 0) {
+            // One lock for the lists, so the timeline's arrays stay the same length.
             synchronized (tickMillis) {
                 tickMillis.add(lastTickNanos / 1e6);
                 tickLabels.add(gameTick);
+                tickWorks.add(endedTickWork);
             }
         }
+        endedTickWork = tickWork;
+        tickWork = new int[4];
     }
 
     /**
@@ -432,9 +478,11 @@ public final class Perf {
 
         double[] ticks;
         long[] labels;
+        int[][] works;
         synchronized (tickMillis) {
             ticks = toArray(tickMillis);
             labels = tickLabels.stream().mapToLong(Long::longValue).toArray();
+            works = tickWorks.toArray(new int[0][]);
         }
         JsonObject server = new JsonObject();
         if (ticks.length > 0) {
@@ -446,20 +494,23 @@ public final class Perf {
             server.add("mspt", mspt);
             server.addProperty("tps", round(ticks.length / seconds));
             server.addProperty("ticks", ticks.length);
-            server.add("spikes", spikes(ticks, labels));
+            server.add("spikes", spikes(ticks, labels, works));
+            int[] total = new int[4];
+            for (int[] work : works) {
+                for (int kind = 0; kind < total.length; kind++) {
+                    total[kind] += work[kind];
+                }
+            }
+            JsonObject chunks = new JsonObject();
+            chunks.addProperty("generated", total[WORK_CHUNKS_GENERATED]);
+            chunks.addProperty("loaded", total[WORK_CHUNKS_FULL] - total[WORK_CHUNKS_GENERATED]);
+            chunks.addProperty("sent", total[WORK_CHUNKS_SENT]);
+            server.add("chunks", chunks);
+            server.addProperty("entities_added", total[WORK_ENTITIES_ADDED]);
             synchronized (BLOCK_CHANGES_LOCK) {
                 server.add("block_changes", ranked(blockChanges, seconds));
             }
-            JsonObject timeline = new JsonObject();
-            JsonArray tickArray = new JsonArray();
-            JsonArray msArray = new JsonArray();
-            for (int index = 0; index < ticks.length; index++) {
-                tickArray.add(labels[index]);
-                msArray.add(round(ticks[index]));
-            }
-            timeline.add("tick", tickArray);
-            timeline.add("ms", msArray);
-            server.add("timeline", timeline);
+            server.add("timeline", timeline(ticks, labels, works));
             server.add("block_entities", serverBlockEntities.ranked(ticks.length, "ms_per_tick"));
             server.add("entities", serverEntities.ranked(ticks.length, "ms_per_tick"));
             if (serverCounts != null) {
@@ -522,17 +573,54 @@ public final class Perf {
         return summary;
     }
 
-    /** The ticks over {@link #SPIKE_MS}, longest first, at most {@link #MAX_SPIKES}, as {@code {tick, ms}}. */
-    static JsonArray spikes(double[] ticks, long[] labels) {
+    /**
+     * The ticks over {@link #SPIKE_MS}, longest first, at most {@link #MAX_SPIKES}, as {@code {tick, ms}} and what the
+     * server did in them, leaving out counts of 0.
+     */
+    static JsonArray spikes(double[] ticks, long[] labels, int[][] works) {
         JsonArray spikes = new JsonArray();
         IntStream.range(0, ticks.length).filter(index -> ticks[index] > SPIKE_MS).boxed()
             .sorted((a, b) -> Double.compare(ticks[b], ticks[a])).limit(MAX_SPIKES).forEach(index -> {
                 JsonObject spike = new JsonObject();
                 spike.addProperty("tick", labels[index]);
                 spike.addProperty("ms", round(ticks[index]));
+                int[] work = works[index];
+                addCount(spike, "chunks_generated", work[WORK_CHUNKS_GENERATED]);
+                addCount(spike, "chunks_loaded", work[WORK_CHUNKS_FULL] - work[WORK_CHUNKS_GENERATED]);
+                addCount(spike, "chunks_sent", work[WORK_CHUNKS_SENT]);
+                addCount(spike, "entities_added", work[WORK_ENTITIES_ADDED]);
                 spikes.add(spike);
             });
         return spikes;
+    }
+
+    private static void addCount(JsonObject object, String name, int count) {
+        if (count > 0) {
+            object.addProperty(name, count);
+        }
+    }
+
+    /** Every tick's game tick, time and what the server did in it, as arrays of the same length. */
+    private static JsonObject timeline(double[] ticks, long[] labels, int[][] works) {
+        String[] names = {"tick", "ms", "chunks_generated", "chunks_loaded", "chunks_sent", "entities_added"};
+        JsonArray[] arrays = new JsonArray[names.length];
+        for (int column = 0; column < names.length; column++) {
+            arrays[column] = new JsonArray();
+        }
+        for (int index = 0; index < ticks.length; index++) {
+            int[] work = works[index];
+            arrays[0].add(labels[index]);
+            arrays[1].add(round(ticks[index]));
+            arrays[2].add(work[WORK_CHUNKS_GENERATED]);
+            arrays[3].add(work[WORK_CHUNKS_FULL] - work[WORK_CHUNKS_GENERATED]);
+            arrays[4].add(work[WORK_CHUNKS_SENT]);
+            arrays[5].add(work[WORK_ENTITIES_ADDED]);
+        }
+        JsonObject timeline = new JsonObject();
+        for (int column = 0; column < names.length; column++) {
+            timeline.add(names[column], arrays[column]);
+        }
+        return timeline;
     }
 
     /**

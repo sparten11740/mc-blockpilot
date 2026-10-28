@@ -6,7 +6,7 @@
 
 ## 2. What the server did on each tick (performance-capture)
 
-- [ ] 2.1 Add the per-tick counters to `Perf` with their one-tick hold (D2), platform hooks for chunk loads and generations on NeoForge and Fabric, and mixins on `PlayerChunkSender.sendChunk` and `PersistentEntitySectionManager.addEntity` for both versions; put the counts on spikes, in the file's timeline and in the summary's totals, with the text overview (D3); add unit tests for the hold and for leaving zero counts out; verify on the dev client that flying or teleporting into terrain never visited during a capture gives spikes with `chunks_generated`, and returning over it gives `chunks_loaded` or `chunks_sent` instead
+- [x] 2.1 Add the per-tick counters to `Perf` with their one-tick hold (D2), platform hooks for chunk loads and generations on NeoForge and Fabric, and mixins on `PlayerChunkSender.sendChunk` and `PersistentEntitySectionManager.addEntity` for both versions; put the counts on spikes, in the file's timeline and in the summary's totals, with the text overview (D3); add unit tests for the hold and for leaving zero counts out; verify on the dev client that flying or teleporting into terrain never visited during a capture gives spikes with `chunks_generated`, and returning over it gives `chunks_loaded` or `chunks_sent` instead
 
 ## 3. Integration checks
 

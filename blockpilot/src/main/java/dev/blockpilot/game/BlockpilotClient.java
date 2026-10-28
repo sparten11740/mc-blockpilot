@@ -301,6 +301,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public void onServerChunkLoaded() {
+        Perf.chunkLoaded();
+    }
+
+    @Override
+    public void onServerChunkGenerated() {
+        Perf.chunkGenerated();
+    }
+
+    @Override
     public void onServerStopping(MinecraftServer server) {
         endLoad("the server stopped");
         ServerCommands.onServerStopping(server);

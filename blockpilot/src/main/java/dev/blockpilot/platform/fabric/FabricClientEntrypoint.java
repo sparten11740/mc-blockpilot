@@ -28,6 +28,7 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 //?}
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -157,5 +158,13 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> ClientPlatform.hooks().onScreenInit(screen));
         ServerTickEvents.END_SERVER_TICK.register(server -> ClientPlatform.hooks().onServerTickEnd(server));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> ClientPlatform.hooks().onServerStopping(server));
+        // Fabric fires the load for every chunk that becomes full, and the generate besides for a new one.
+        //? if >=26.1 {
+        /*ServerChunkEvents.CHUNK_LOAD.register((level, chunk, generated) ->
+            ClientPlatform.hooks().onServerChunkLoaded());
+        *///?} else {
+        ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> ClientPlatform.hooks().onServerChunkLoaded());
+        //?}
+        ServerChunkEvents.CHUNK_GENERATE.register((level, chunk) -> ClientPlatform.hooks().onServerChunkGenerated());
     }
 }

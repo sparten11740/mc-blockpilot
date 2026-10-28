@@ -109,10 +109,10 @@ class PerfTest {
         double[] ticks = {10, 60, 180, 55, 50};
         long[] labels = {101, 102, 103, 104, 105};
         assertEquals("[{\"tick\":103,\"ms\":180.0},{\"tick\":102,\"ms\":60.0},{\"tick\":104,\"ms\":55.0}]",
-            Perf.spikes(ticks, labels).toString());
+            Perf.spikes(ticks, labels, new int[5][4]).toString());
         double[] many = new double[30];
         java.util.Arrays.fill(many, 70);
-        assertEquals(Perf.MAX_SPIKES, Perf.spikes(many, new long[30]).size());
+        assertEquals(Perf.MAX_SPIKES, Perf.spikes(many, new long[30], new int[30][4]).size());
     }
 
     @Test
@@ -173,13 +173,35 @@ class PerfTest {
     }
 
     @Test
+    void aTicksWorkGoesWithItsTimeOneTickLaterAndZeroCountsAreLeftOut() {
+        Perf.start("work");
+        // The end of tick 1: its time isn't read yet (the hook reads the tick before), its work is held back.
+        Perf.chunkLoaded();
+        Perf.chunkLoaded();
+        Perf.chunkGenerated();
+        Perf.chunkSent();
+        Perf.serverTick(1_000_000, 0);
+        // The end of tick 2: tick 1's time comes, with tick 1's work.
+        Perf.entityAdded();
+        Perf.serverTick(120_000_000, 1);
+        Perf.serverTick(2_000_000, 2);
+        JsonObject server = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server");
+        assertEquals("[{\"tick\":1,\"ms\":120.0,\"chunks_generated\":1,\"chunks_loaded\":1,\"chunks_sent\":1}]",
+            server.get("spikes").toString());
+        assertEquals("{\"generated\":1,\"loaded\":1,\"sent\":1}", server.get("chunks").toString());
+        assertEquals(1, server.get("entities_added").getAsInt());
+        assertEquals("[0,0,1]", server.getAsJsonObject("timeline").get("entities_added").toString());
+    }
+
+    @Test
     void theTimelineIsInTheFileButNotTheReply() {
         Perf.start("timeline");
         Perf.serverTick(3_000_000, 500);
         Perf.serverTick(90_000_000, 501);
         JsonObject summary = Perf.stop(new JsonObject(), Map.of());
         JsonObject server = summary.getAsJsonObject("server");
-        assertEquals("{\"tick\":[500,501],\"ms\":[3.0,90.0]}", server.get("timeline").toString());
+        assertEquals("{\"tick\":[500,501],\"ms\":[3.0,90.0],\"chunks_generated\":[0,0],\"chunks_loaded\":[0,0],"
+            + "\"chunks_sent\":[0,0],\"entities_added\":[0,0]}", server.get("timeline").toString());
         assertEquals("[{\"tick\":501,\"ms\":90.0}]", server.get("spikes").toString());
         assertEquals(90.0, server.getAsJsonObject("mspt").get("p99").getAsDouble());
         JsonObject reply = PerfCommands.forReply(summary);

@@ -33,6 +33,8 @@
     "ParticleEngineMixin",
     "ParticleGroupMixin",
     "ParticleMixin",
+    "PersistentEntitySectionManagerMixin",
+    "PlayerChunkSenderMixin",
     "QuadParticleGroupMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
