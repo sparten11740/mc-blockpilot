@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -51,6 +52,12 @@ final class SableCommands {
     private static final int DEFAULT_RADIUS = 128;
     private static final int TP_REACH = 2;
     private static final int TP_SETTLE_TICKS = 2;
+    /** Also long enough for a client that has yet to receive the sub-level after a long teleport. */
+    private static final int TP_BOARD_TICKS = 100;
+    /** Half a block and a little: a bottom slab drops the feet half a block below the spot's floor. */
+    private static final double TP_ON_SPOT = 0.6;
+    /** How far above the spot an untracked player is put to fall onto it: as far as the sub-level's step may miss. */
+    private static final double TP_DROP = 0.25;
     private static final int MAX_FIND_LIMIT = 100;
     /**
      * The chunk columns sable:find may look through, half a default Sable plot's width. Plot bounds turned back from a
@@ -129,7 +136,9 @@ final class SableCommands {
                 ArgType.ID))
             .help("puts the player aboard: on a free spot within " + TP_REACH + " blocks of a block in a sub-level's "
                 + "plot, standing on that sub-level (cheats on); the nearest spot from which the block is in sight, "
-                + "else the nearest, with hidden. sable:tp <sub> <block|#tag|*pattern> boards next to the matching "
+                + "else the nearest, with hidden. It answers once the client shows the player standing on that spot, "
+                + "also on a sub-level under way, else fails after " + TP_BOARD_TICKS / 20 + "s with err not_aboard "
+                + "and what the client shows. sable:tp <sub> <block|#tag|*pattern> boards next to the matching "
                 + "block aboard nearest the player, read from the server's copy, so also a sub-level the client "
                 + "hasn't received; " + REFERENCE)
             .field("at", "where the player stands, world position").field("plot", "that spot's plot position")
@@ -290,29 +299,89 @@ final class SableCommands {
 
     private static Action teleport(CommandContext context, Args args) throws CommandException {
         UUID playerId = Minecraft.getInstance().player.getUUID();
-        Result done;
+        Landing[] landing = {null};
+        Result boarded;
         // The server step runs now; the client sees the player's new place a tick or two later.
         if (args.has("pos")) {
             Position target = context.resolve(args.position("pos"));
             BlockPos block = BlockPos.containing(target.x(), target.y(), target.z());
-            done = Sides.onServer((level, server) -> Result.ok(board(level, playerId, block)));
+            boarded = Sides.onServer((level, server) -> {
+                landing[0] = board(level, playerId, block);
+                return Result.ok();
+            });
         } else {
             UUID known = knownSubLevel(args, "sub");
             BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
             Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
-            done = Sides.onServer((level, server) -> {
+            boarded = Sides.onServer((level, server) -> {
                 SubLevels.Info info = resolve(level, known, args, "sub");
                 List<Aboard> found = aboard(level, info, matcher, eyes);
                 if (found.isEmpty()) {
                     throw new CommandException("no_block", args.word("what") + " aboard " + info.name());
                 }
                 BlockPos block = found.get(0).pos();
-                return Result.ok(board(level, playerId, block).bare("block", Ids.of(level.getBlockState(block)))
-                    .put("target", Rel.absolute(block)));
+                landing[0] = board(level, playerId, block);
+                landing[0].fields().bare("block", Ids.of(level.getBlockState(block)))
+                    .put("target", Rel.absolute(block));
+                return Result.ok();
             });
         }
+        if (!boarded.isOk()) {
+            return () -> boarded;
+        }
         int[] ticks = {0};
-        return () -> !done.isOk() || ++ticks[0] > TP_SETTLE_TICKS ? done : null;
+        return () -> {
+            String offSpot = land(landing[0]);
+            if (++ticks[0] > TP_SETTLE_TICKS && offSpot == null) {
+                return Result.ok(new Fields().bare("at", Rel.absolute(Minecraft.getInstance().player.position())))
+                    .with(landing[0].fields());
+            }
+            if (ticks[0] >= TP_BOARD_TICKS) {
+                throw new CommandException("not_aboard", offSpot);
+            }
+            return null;
+        };
+    }
+
+    /**
+     * On the client thread: null once the client shows the player carried by the sub-level with the feet on the spot.
+     * Else what it shows instead, and the player is put on the spot as the client has the sub-level, if it has it.
+     * The server put them there as it has the sub-level, which on the client lags a tick or so behind, and while
+     * Sable carries the player the client's place in the plot is the one that holds.
+     */
+    private static String land(Landing landing) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        SubLevels subLevels = SableSupport.subLevels();
+        Vec3 plot = subLevels.toPlot(minecraft.level, landing.sub(), player.position());
+        if (plot == null) {
+            return "the client has no copy of " + landing.name();
+        }
+        SubLevels.Info carrier = subLevels.carrying(player);
+        boolean carried = carrier != null && carrier.id().equals(landing.sub());
+        Vec3 floor = Vec3.atBottomCenterOf(landing.spot());
+        if (carried && plot.distanceTo(floor) <= TP_ON_SPOT) {
+            return null;
+        }
+        Vec3 spot = subLevels.toWorld(minecraft.level, floor);
+        if (carried) {
+            // Sable carries a player it tracks from where the sub-level is now to where it is next tick.
+            player.setPos(spot);
+            player.setDeltaMovement(Vec3.ZERO);
+        } else {
+            // Early in the next tick Sable moves the sub-level, then the player moves, and Sable starts carrying them
+            // when that move lands on it: put them just above where the spot will be, falling.
+            Vec3 next = spot.add(subLevels.velocity(minecraft.level, floor).scale(1 / 20.0));
+            player.setPos(next.add(0, TP_DROP, 0));
+            player.setDeltaMovement(new Vec3(0, -2 * TP_DROP, 0));
+        }
+        player.resetFallDistance();
+        if (player.getAbilities().flying) {
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+        }
+        return "the client shows the player at " + Rel.absolute(plot) + " in " + landing.name() + "'s plot, "
+            + (carrier == null ? "on no sub-level" : "aboard " + carrier.name());
     }
 
     /**
@@ -339,8 +408,14 @@ final class SableCommands {
         return info;
     }
 
+    /**
+     * Where {@code sable:tp} put the player: the spot in the sub-level's plot, and the reply's fields after {@code at}.
+     */
+    private record Landing(BlockPos spot, UUID sub, String name, Fields fields) {
+    }
+
     /** On the server thread: puts the player on the best free spot next to the block aboard, see {@link #freeSpot}. */
-    private static Fields board(Level serverLevel, UUID playerId, BlockPos block) throws CommandException {
+    private static Landing board(Level serverLevel, UUID playerId, BlockPos block) throws CommandException {
         ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(playerId);
         if (player == null) {
             throw new CommandException("not_in_world");
@@ -369,12 +444,12 @@ final class SableCommands {
         //?}
         // A sub-level moves as one piece, so the distance in its plot is the distance in the world.
         double dist = eyes(spot.pos(), eyeHeight).distanceTo(Vec3.atCenterOf(block));
-        Fields fields = new Fields().bare("at", Rel.absolute(at)).put("plot", Rel.absolute(spot.pos()))
-            .put("sub", info.name()).put("dist", tenths(dist));
+        Fields fields = new Fields().put("plot", Rel.absolute(spot.pos())).put("sub", info.name())
+            .put("dist", tenths(dist));
         if (!spot.seen()) {
             fields.put("hidden", true, "hidden");
         }
-        return fields;
+        return new Landing(spot.pos(), info.id(), info.name(), fields);
     }
 
     private record Spot(BlockPos pos, boolean seen) {

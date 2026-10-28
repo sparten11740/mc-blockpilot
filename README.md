@@ -215,7 +215,10 @@ works with them:
     limit cuts the ordered list, and `count=` gives all matches when it left some out.
   - `sable:tp 20481032,129,20481033` puts the player on a free spot next to that block aboard (cheats on): the
     nearest from which the block is in sight, so inside a hull rather than on it, else the nearest with `hidden`.
-    `dist` is how far the player's eyes are from the block. `sable:tp ship *seat*` does the same next to the
+    `dist` is how far the player's eyes are from the block. It answers once the client shows the player standing on
+    that spot, also on a ship under way: Sable's client runs sub-levels a tick or so behind the server, so the player
+    is put on the spot as the client has the ship. When the client doesn't show that within 5 s, it fails with
+    `err not_aboard` and what the client shows. `sable:tp ship *seat*` does the same next to the
     matching block aboard nearest the player, named in the reply as `block` and `target`; it reads the server's copy,
     so it also boards a ship that has flown out of the client's sight, without carrying a plot position along.
   - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to

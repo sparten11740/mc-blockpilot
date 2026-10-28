@@ -45,12 +45,19 @@ server's player there so the client gets the chunks and the sub-level.
 Then, on each client tick until done, while the client holds the sub-level
 and the player isn't yet on the spot:
 
-- set the player's position to the spot's floor centre mapped through the
-  client's copy;
-- while the client doesn't track the sub-level yet, set the player's motion
-  to the sub-level's velocity at that point, per tick, so the player's next
-  move goes along with the deck and lands on it. Once tracked, set the
-  motion to zero, since Sable carries a tracked player itself;
+- while the client doesn't track the sub-level yet: early in each client
+  tick Sable moves its sub-levels, and only then does the player move. So
+  put the player where the spot's floor centre will be after that step (the
+  spot through the client's copy plus the sub-level's velocity there for
+  one tick), a quarter block above it, with a downward motion of half a
+  block. Their next move then lands on the deck, which starts the tracking.
+  The quarter block covers a step that comes out a little longer or shorter
+  than the velocity says. Moving the player along with the deck instead
+  (motion equal to the deck's velocity) never touches the deck, so it never
+  tracks: tried on the dev client;
+- once tracked, put the player on the spot through the client's copy with
+  no motion, since Sable carries a tracked player from one pose to the
+  next;
 - stop creative flight, since a flying player never touches the deck.
 
 Placing again on every tick until done also undoes the server's own

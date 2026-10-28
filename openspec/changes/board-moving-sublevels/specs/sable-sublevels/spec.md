@@ -35,9 +35,10 @@ what the client shows instead.
 #### Scenario: Onto a ship at speed
 - **WHEN** an agent runs `sable:tp <plot position of a lever>` on a ship
   flying at 50 blocks per second
-- **THEN** `sable:plot here ~0,0,0` right after the reply is within half a
-  block of the reply's `plot`, `status` shows the player aboard, and `use`
-  at the lever's plot position uses it
+- **THEN** sampling `entity me` beside `sable:world` of the spot's floor
+  centre over the next ticks shows the player within half a block of the
+  spot, `status` shows the player aboard, and `use` at the lever's plot
+  position uses it
 
 #### Scenario: Never aboard
 - **WHEN** the client doesn't show the player standing on the sub-level
