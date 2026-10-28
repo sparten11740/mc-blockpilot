@@ -32,6 +32,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -80,6 +81,8 @@ final class SableCommands {
                 + "so larger while it is turned").example("sable:list 64"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).optionalKeyword("brief", "brief")
+            .option("side", "server: read the integrated server's copy, also of a sub-level the client has not "
+                + "received, with agl measured in the server's level (cheats on)", Sides.NAMES)
             .help("one sub-level's pose, velocity, height above ground and bounds; with brief only yaw, pitch, roll, "
                 + "speed, climb, y and agl, e.g. to sample a climb; " + REFERENCE)
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
@@ -89,8 +92,8 @@ final class SableCommands {
             .field("climb", "brief only: vertical speed, blocks per second")
             .field("y", "brief only: world y of its position")
             .field("agl", "height above ground: from the lowest corner of its lowest block, however it is turned, to "
-                + "the top of the ground straight under that corner; none above nothing loaded, or when the client "
-                + "holds none of its blocks")
+                + "the top of the ground straight under that corner; none above nothing loaded, or when the side "
+                + "read holds none of its blocks")
             .field("box", "world bounds")
             .field("plot", "plot bounds: the world bounds turned back into the plot, so larger while it is turned")
             .field("rides", "the player stands on or rides it")
@@ -169,25 +172,29 @@ final class SableCommands {
     }
 
     private static Result info(CommandContext context, Args args) throws CommandException {
-        Minecraft minecraft = Minecraft.getInstance();
-        SubLevels.Info info = resolve(args, "sub");
-        Vec3 velocity = info.velocity();
-        SubLevels.Info carrying = SableSupport.subLevels().carrying(minecraft.player);
-        boolean rides = carrying != null && carrying.id().equals(info.id());
-        Object agl = heightAboveGround(minecraft.level, info);
-        if (args.has("brief")) {
-            return Result.ok(new Fields().tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch()))
-                .tag("roll", tenths(info.roll())).put("speed", tenths(velocity.length()))
-                .put("climb", tenths(velocity.y)).put("y", tenths(info.position().y)).put("agl", agl));
-        }
-        return Result.ok(new Fields().bare("name", info.name()).bare("id", info.id().toString())
-            .bare("at", Rel.of(info.position())).hidden("at_abs", Rel.absolute(info.position()))
-            .tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch())).tag("roll", tenths(info.roll()))
-            .put("speed", tenths(velocity.length()))
-            .put("vel", Position.absolute(tenths(velocity.x), tenths(velocity.y), tenths(velocity.z)))
-            .put("agl", agl).put("box", bounds(info.worldBounds()), "box=" + boundsText(info.worldBounds()))
-            .put("plot", bounds(info.plotBounds()), "plot=" + boundsText(info.plotBounds()))
-            .put("rides", rides));
+        UUID known = knownSubLevel(args, "sub");
+        UUID playerId = Minecraft.getInstance().player.getUUID();
+        return Sides.read(args, (level, server) -> {
+            SubLevels.Info info = resolve(level, known, args, "sub");
+            Vec3 velocity = info.velocity();
+            Player player = level.getPlayerByUUID(playerId);
+            SubLevels.Info carrying = player == null ? null : SableSupport.subLevels().carrying(player);
+            boolean rides = carrying != null && carrying.id().equals(info.id());
+            Object agl = heightAboveGround(level, info);
+            if (args.has("brief")) {
+                return Result.ok(new Fields().tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch()))
+                    .tag("roll", tenths(info.roll())).put("speed", tenths(velocity.length()))
+                    .put("climb", tenths(velocity.y)).put("y", tenths(info.position().y)).put("agl", agl));
+            }
+            return Result.ok(new Fields().bare("name", info.name()).bare("id", info.id().toString())
+                .bare("at", Rel.of(info.position())).hidden("at_abs", Rel.absolute(info.position()))
+                .tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch())).tag("roll", tenths(info.roll()))
+                .put("speed", tenths(velocity.length()))
+                .put("vel", Position.absolute(tenths(velocity.x), tenths(velocity.y), tenths(velocity.z)))
+                .put("agl", agl).put("box", bounds(info.worldBounds()), "box=" + boundsText(info.worldBounds()))
+                .put("plot", bounds(info.plotBounds()), "plot=" + boundsText(info.plotBounds()))
+                .put("rides", rides));
+        });
     }
 
     private static Result world(CommandContext context, Args args) throws CommandException {

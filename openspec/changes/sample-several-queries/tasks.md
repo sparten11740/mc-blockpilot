@@ -6,7 +6,7 @@
 
 ## 2. The server's copy of a sub-level (sable-sublevels)
 
-- [ ] 2.1 Give `sable:info` the `side` option, reading through `Sides.read` with the sub-level resolved as `sable:find` resolves it (D5), with `help sable:info`, the README's sable row and With Sable section; verify on the dev client that `sable:info <sub> side=server` at rest gives the client's pose and `agl`, that a sub-level `sable:list side=server` shows but the client hasn't received answers with `side=server` while the plain form fails with `err no_sublevel`, and that `sample sable:info <sub> brief side=server and nbt e<id> every 20t x3` gives three pairs of rows
+- [x] 2.1 Give `sable:info` the `side` option, reading through `Sides.read` with the sub-level resolved as `sable:find` resolves it (D5), with `help sable:info`, the README's sable row and With Sable section; verify on the dev client that `sable:info <sub> side=server` at rest gives the client's pose and `agl`, that a sub-level `sable:list side=server` shows but the client hasn't received answers with `side=server` while the plain form fails with `err no_sublevel`, and that `sample sable:info <sub> brief side=server and nbt e<id> every 20t x3` gives three pairs of rows
 
 ## 3. Integration checks
 
