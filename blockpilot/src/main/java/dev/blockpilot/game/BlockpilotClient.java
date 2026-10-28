@@ -16,6 +16,7 @@ import dev.blockpilot.game.load.Load;
 import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.ClientOptions;
+import dev.blockpilot.game.observe.EntityUpdates;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.game.sable.SableSupport;
@@ -235,6 +236,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         events.tick();
         chatSinceTick.set(0);
         engine.tickClient();
+        EntityUpdates.CLIENT.clear();
         if (closeIn > 0 && --closeIn == 0) {
             Minecraft.getInstance().stop();
         }

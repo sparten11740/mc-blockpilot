@@ -12,6 +12,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.observe.CameraControl;
+import dev.blockpilot.game.observe.EntityUpdates;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -91,6 +92,8 @@ final class PerceptionCommands {
             .field("yaw", "degrees, to the tenth").field("pitch", "degrees, to the tenth")
             .field("vel", "velocity, blocks per tick; left out at zero").field("on_ground", "false: airborne")
             .field("age", "ticks this copy has existed; a copy made again starts at 0")
+            .field("net", "client only: updates the client applied since its previous tick, per kind (move, "
+                + "teleport, motion, data), as net move1 data1; left out when none")
             .field("uuid", "side=server only").example("entity e12 side=server"));
         registry.register(CommandSpec.query("find", this::find).needsWorld().group("perception")
             .form(form -> form.arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
@@ -411,6 +414,8 @@ final class PerceptionCommands {
             fields.put("age", entity.tickCount, "age=" + entity.tickCount);
             if (server) {
                 fields.put("uuid", entity.getUUID().toString(), "uuid:" + entity.getUUID());
+            } else {
+                EntityUpdates.CLIENT.addTo(fields, entity.getId());
             }
             return Result.ok(fields);
         });

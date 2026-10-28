@@ -11,6 +11,8 @@
     "BoundTickingBlockEntityMixin",
     "CameraMixin",
     "ChunkMapAccessor",
+    "ClientPacketListenerMixin",
+    "ClientboundMoveEntityPacketAccessor",
     "ConnectionAccessor",
     "ConnectionMixin",
     "EntityRenderDispatcherMixin",
