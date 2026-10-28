@@ -51,27 +51,26 @@ state and submitting it, and counts as one call.
 - **THEN** its type appears with about 3 ms per frame and one call per block
   entity and frame
 
-### Requirement: Particle and render-stage metrics
+### Requirement: Particle metrics
 For particles the summary SHALL include the live count per type when the
 capture stops and the tick and render time per type. The type is the particle
 type id when the particle was spawned from particle options, otherwise its
 class name. From 26.1 on, a particle's render time is the time its own code
 takes to extract it into the frame, measured for quad particles, which are
-nearly all of them. On NeoForge it SHALL include the time per render-level
-stage, summed over the handlers of that stage, with the stages named as
-NeoForge names them for that version.
+nearly all of them.
 
+#### Scenario: Expensive particles found
+- **WHEN** a mod's plasma particles take a large share of the render thread
+- **THEN** their type tops the particle render list with its ms per frame, and
+  the live counts show how many exist
+
+### Requirement: Particle sources
 For each particle type spawned during the capture, the summary SHALL also name
 its sources, from a sample of its spawns. A source is the mod and class of the
 first code outside Minecraft, the mod loader and Blockpilot that spawned the
 particle on the client, or `server` when the server sent it. In singleplayer,
 particles the server sent SHALL also be attributed to the mod and class that
 sent them on the server. Each source carries its share of the sampled spawns.
-
-#### Scenario: Expensive particles found
-- **WHEN** a mod's plasma particles take a large share of the render thread
-- **THEN** their type tops the particle render list with its ms per frame, and
-  the live counts show how many exist
 
 #### Scenario: Spawner named
 - **WHEN** a burner block entity of a mod spawns `large_smoke` on the client
@@ -84,6 +83,11 @@ sent them on the server. Each source carries its share of the sampled spawns.
   singleplayer
 - **THEN** the sources of `flame` name that mod and class as sent by the
   server
+
+### Requirement: Render-stage metrics
+On NeoForge the summary SHALL include the time per render-level stage, summed
+over the handlers of that stage, with the stages named as NeoForge names them
+for that version.
 
 #### Scenario: Render stage handlers
 - **WHEN** a mod draws laser beams in the `after_particles` stage on NeoForge
