@@ -234,6 +234,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         ActionCommands.holdFlight(agentInControl);
         InputState.reassert();
         events.tick();
+        SableSupport.tick(Minecraft.getInstance());
         chatSinceTick.set(0);
         engine.tickClient();
         EntityUpdates.CLIENT.clear();

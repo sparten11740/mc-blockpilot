@@ -2,8 +2,10 @@ package dev.blockpilot.game.sable;
 
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
+import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.lang.reflect.InvocationTargetException;
+import net.minecraft.client.Minecraft;
 
 /**
  * Turns the Sable integration on when a compatible Sable is installed. The compat package is loaded by name only after
@@ -23,6 +25,21 @@ public final class SableSupport {
     /** What the rest of Blockpilot asks about sub-levels; it knows none while the integration is off. */
     public static SubLevels subLevels() {
         return integration.subLevels();
+    }
+
+    /** Once per client tick, before the engine's steps, so a command's own boarding reaches its reply. */
+    public static void tick(Minecraft minecraft) {
+        if (minecraft.player == null || minecraft.level == null) {
+            Boarding.CLIENT.forget();
+            return;
+        }
+        SubLevels.Info carrier;
+        try {
+            carrier = subLevels().carrying(minecraft.player);
+        } catch (CommandFailure e) {
+            return;
+        }
+        Boarding.CLIENT.update(carrier == null ? null : carrier.id(), carrier == null ? null : carrier.name());
     }
 
     /** Must run before the extension registrations freeze, so the compat package can register its commands. */
