@@ -321,6 +321,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public void onServerStopping(MinecraftServer server) {
         endLoad("the server stopped");
+        SessionCommands.onServerStopping(server);
         ServerCommands.onServerStopping(server);
         ConfigCommands.forgetServerValues();
     }

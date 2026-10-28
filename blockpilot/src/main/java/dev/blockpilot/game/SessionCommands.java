@@ -50,10 +50,12 @@ final class SessionCommands {
             .help("joins a save folder or a server (list index or address); returns once the player can act")
             .example("join world New World"));
         registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
-            .help("saves and quits singleplayer or disconnects, back to the title screen").example("leave"));
+            .help("saves and quits singleplayer or disconnects, back to the title screen")
+            .field("saved_at", "the game time a singleplayer world was saved at").example("leave"));
         registry.register(CommandSpec.action("quit", (context, args) -> quit()).group("session")
             .help("leaves the world as leave does, answers with the game's process id, then closes the game")
-            .field("pid", "the game's process id; it exits shortly after the reply").example("quit"));
+            .field("pid", "the game's process id; it exits shortly after the reply")
+            .field("saved_at", "the game time a singleplayer world was saved at").example("quit"));
         registry.register(CommandSpec.action("respawn", (context, args) -> respawn()).needsWorld().group("session")
             .help("respawns from the death screen").example("respawn"));
     }
@@ -199,6 +201,8 @@ final class SessionCommands {
 
     /** Set while a world exit Blockpilot started is pending, so it isn't taken for the player leaving. */
     private static boolean leaving;
+    /** The game time the integrated server last saved its world at as it stopped, or -1. */
+    private static volatile long savedAt = -1;
 
     /**
      * Leaves the current game the way the pause menu's button does (saving singleplayer worlds). Used by Blockpilot's
@@ -235,12 +239,14 @@ final class SessionCommands {
         if (minecraft().level == null) {
             throw new CommandException("not_in_world");
         }
+        savedAt = -1;
         disconnect();
         BlockpilotClient.restoreAgentChanges("the agent left the world");
-        return () -> minecraft().level == null ? Result.ok() : null;
+        return () -> minecraft().level == null ? Result.ok(withSavedAt(new Fields())) : null;
     }
 
     private Action quit() {
+        savedAt = -1;
         if (minecraft().level != null) {
             disconnect();
             BlockpilotClient.restoreAgentChanges("the agent quit the game");
@@ -251,8 +257,17 @@ final class SessionCommands {
             }
             // The reply goes out on the endpoint's threads; closing a few ticks later lets it leave first.
             BlockpilotClient.get().closeAfter(QUIT_DELAY_TICKS);
-            return Result.ok(new Fields().put("pid", ProcessHandle.current().pid()));
+            return Result.ok(withSavedAt(new Fields().put("pid", ProcessHandle.current().pid())));
         };
+    }
+
+    /** Leaving a singleplayer world waits for its server to stop, which saves the world after this hook. */
+    static void onServerStopping(MinecraftServer server) {
+        savedAt = server.overworld().getGameTime();
+    }
+
+    private static Fields withSavedAt(Fields fields) {
+        return savedAt < 0 ? fields : fields.put("saved_at", savedAt, "saved_at=t" + savedAt);
     }
 
     /** Called when the world has gone; true when Blockpilot left it (and the flag is cleared). */
