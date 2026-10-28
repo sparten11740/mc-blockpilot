@@ -389,13 +389,10 @@ only the session that sets it.
 
 ### Requirement: Wait conditions
 `wait <query> until <predicate> [and <predicate>…]` SHALL re-run a read-only
-command until every predicate over its result holds. A predicate is
-`<field><op><value>` with `== != < <= > >=`, or `ok`; `count` is the number of
-rows; an ordering compares with a number or `$<field>`, another field of the
-same result. A field the result leaves out reads as `none`, so `==none` holds
-for it and an ordering on it never does. Options after the predicates:
-`stable=` how long the predicates must keep holding, `every=` how often to
-check (both default 1t), `timeout=` (default 60s, a plain number is seconds).
+command until every predicate over its result holds. Options after the
+predicates: `stable=` how long the predicates must keep holding, `every=` how
+often to check (both default 1t), `timeout=` (default 60s, a plain number is
+seconds).
 
 #### Scenario: Wait for a block change
 - **WHEN** an agent runs `wait block 0,-60,0 until id==air`
@@ -416,6 +413,12 @@ check (both default 1t), `timeout=` (default 60s, a plain number is seconds).
 #### Scenario: Action used as condition
 - **WHEN** an agent runs `wait mine ~0,-1,0 until ok`
 - **THEN** the result is `err syntax` because `mine` is not a read-only command
+
+### Requirement: Wait predicates
+A predicate SHALL be `<field><op><value>` with `== != < <= > >=`, or `ok`;
+`count` is the number of rows; an ordering compares with a number or
+`$<field>`, another field of the same result. A field the result leaves out
+reads as `none`, so `==none` holds for it and an ordering on it never does.
 
 #### Scenario: Two fields compared
 - **WHEN** an agent runs `wait status until hp<$max_hp`
