@@ -2,7 +2,7 @@
 
 ## 1. Bundle contents (performance-capture)
 
-- [ ] 1.1 Count a bundle's sub-packets by type in `ConnectionMixin` for both versions (D1), with the README's performance row; verify on the dev client that a capture while entities spawn (`server summon` of several) lists `add_entity` with their count beside `bundle`
+- [x] 1.1 Count a bundle's sub-packets by type in `ConnectionMixin` for both versions (D1), with the README's performance row; verify on the dev client that a capture while entities spawn (`server summon` of several) lists `add_entity` with their count beside `bundle`
 
 ## 2. What the server did on each tick (performance-capture)
 
