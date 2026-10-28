@@ -224,6 +224,10 @@ works with them:
     so it also boards a ship that has flown out of the client's sight, without carrying a plot position along.
   - `sable:world 20481032.5,129.5,20481033.5` converts plot to world, and `sable:plot ship 10.5,-58.5,6.5` world to
     plot.
+- Right after `join world tick=frozen` neither side has any sub-levels: Sable loads them from the save, and sends them
+  to the player, only on ticks that run. After `tick step 1` the server's copy is there (`side=server`), one tick on
+  from the save as the game time is, with its saved velocity; after a second `tick step 1` the client's is too. Until
+  then the client has no deck to stand on, and players don't freeze, so a player saved aboard can fall.
 
 Blockpilot talks to Sable only through its published
 [companion API](https://github.com/ryanhcode/sable-companion) and bundles nothing of it. Without Sable nothing changes
