@@ -32,7 +32,9 @@ None.
 
 ### Modified Capabilities
 - `client-observation`: replies of the observation logs name the window they
-  cover, and flag a `since=` tick from before the world was joined.
+  cover, and flag a `since=` tick from before the world was joined. The
+  particle counts requirement says what the log keeps: the last 1,200 ticks
+  that had particles.
 
 ## Impact
 

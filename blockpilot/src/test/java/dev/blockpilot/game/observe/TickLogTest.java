@@ -19,6 +19,14 @@ class TickLogTest {
     }
 
     @Test
+    void knowsItsOldestTick() {
+        assertNull(log.oldest());
+        log.add(10L);
+        log.add(20L);
+        assertEquals(10L, log.oldest());
+    }
+
+    @Test
     void saysWhereItStartsOnlyWhenTheWindowLostEntries() {
         log.add(10L);
         log.add(20L);

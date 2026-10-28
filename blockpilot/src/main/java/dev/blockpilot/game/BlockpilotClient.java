@@ -269,7 +269,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     /**
      * Agent option and config changes end when the player leaves the world (Blockpilot's own world switches keep
-     * them).
+     * them), load ends then too, and entering a world notes its tick for since=.
      */
     private void restoreOnWorldExit() {
         boolean inWorld = Minecraft.getInstance().level != null;
@@ -279,6 +279,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         }
         if (wasInWorld && !inWorld && !SessionCommands.leftByBlockpilot()) {
             restoreAgentChanges("the world was left");
+        }
+        if (!wasInWorld && inWorld) {
+            Observations.joined(GameClock.now());
         }
         wasInWorld = inWorld;
     }

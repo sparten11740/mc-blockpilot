@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +105,9 @@ public final class ObservationCommands {
                 + "client doesn't know fails, naming the closest")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
+            .field("window", "the ticks the reply covers: from since= (or the oldest start), or from where the log "
+                + "still begins when it dropped older starts, to now")
+            .field("joined", "the tick this world was joined, when since= is a tick from before it")
             .field("asked_volume", "the volume it was played with, where its resource scales it")
             .field("asked_pitch", "the pitch it was played with, where its resource scales it")
             .field("loop", "playing: the sound loops").field("played", "playing: seconds since it started")
@@ -119,12 +123,20 @@ public final class ObservationCommands {
                 + "from=<tick> says where it begins when it dropped some of the asked window")
             .field("tick", "current tick")
             .field("from", "the tick of the oldest message the log keeps, when it dropped some from the window")
+            .field("window", "the ticks the reply covers: from since= (or the oldest message), or from where the log "
+                + "still begins when it dropped older messages, to now")
+            .field("joined", "the tick this world was joined, when since= is a tick from before it")
             .field("count", "matching messages").example("messages kind=actionbar"));
         registry.register(CommandSpec.query("particles", this::particles).group("observe")
             .option("since", "first tick to include, or a duration back from now (default: the last 20 ticks)",
                 ArgType.INT, ArgType.DURATION)
-            .help("particles spawned per type over a window (the last 1200 ticks are kept)")
-            .field("tick", "current tick").field("total", "all particles in the window").example("particles since=1200"));
+            .help("particles spawned per type over a window (the counts of the last 1200 ticks that had any are "
+                + "kept); window=t<first>..t<now> names the ticks the reply covers")
+            .field("tick", "current tick").field("total", "all particles in the window")
+            .field("window", "the ticks the reply covers: from since= (or the default), or from where the log still "
+                + "begins when it dropped older counts, to now")
+            .field("joined", "the tick this world was joined, when since= is a tick from before it")
+            .example("particles since=1200"));
     }
 
     private Action screenshot(CommandContext context, Args args) throws CommandException {
@@ -310,7 +322,7 @@ public final class ObservationCommands {
         Pattern match = args.option("match") == null ? null : soundPattern(args.option("match"));
         int limit = args.intOption("limit", 50);
         if (args.has("playing")) {
-            return playing(since, match, limit);
+            return playing(since, match, limit).with(joined(args));
         }
         List<Observations.Sound> sounds = new ArrayList<>();
         for (Observations.Sound sound : Observations.sounds(since)) {
@@ -324,8 +336,9 @@ public final class ObservationCommands {
             Fields fields = soundFields(sound).put("tick", sound.tick(), "t" + sound.tick());
             rows.add(Row.of(sound.tick() + ":" + sound.id(), fields));
         }
-        return Result.ok(listed(sounds.size(), Observations.soundsFrom(since)))
-            .withRows(rows, sounds.size() - shown.size());
+        Long from = Observations.soundsFrom(since);
+        return Result.ok(window(listed(sounds.size(), from), Since.first(since, from, Observations.soundsOldest(),
+            Observations.tick()))).with(joined(args)).withRows(rows, sounds.size() - shown.size());
     }
 
     private record Playing(SoundInstance sound, String id, Long started) {
@@ -403,6 +416,26 @@ public final class ObservationCommands {
         return match == null || match.matcher(id.contains(":") ? id : "minecraft:" + id).matches();
     }
 
+    /** Flags a bare {@code since=} tick from before this world was joined, most likely meant as ticks back. */
+    private static Fields joined(Args args) {
+        Long joined = Observations.joinedTick();
+        if (!Since.predatesJoin(args, joined)) {
+            return new Fields();
+        }
+        String since = args.option("since");
+        return new Fields().put("joined", joined, "joined=t" + joined + " (since=" + since + " is a tick; " + since
+            + "t counts back)");
+    }
+
+    /** {@code window=t<first>..t<now>}: the ticks a reply covers, from the first one to the current one. */
+    private static Fields window(Fields fields, long first) {
+        long now = Observations.tick();
+        Map<String, Long> window = new LinkedHashMap<>();
+        window.put("from", first);
+        window.put("to", now);
+        return fields.put("window", window, "window=t" + first + "..t" + now);
+    }
+
     /** The current tick and the count, with from= when the log dropped entries from the window. */
     private static Fields listed(int count, Long from) {
         Fields fields = new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
@@ -427,7 +460,9 @@ public final class ObservationCommands {
             rows.add(Row.of(message.tick() + ":" + message.kind(), new Fields().bare("kind", message.kind())
                 .put("tick", message.tick(), "t" + message.tick()).bare("text", message.text())));
         }
-        return Result.ok(listed(messages.size(), Observations.messagesFrom(since)))
+        Long from = Observations.messagesFrom(since);
+        return Result.ok(window(listed(messages.size(), from), Since.first(since, from,
+            Observations.messagesOldest(), Observations.tick()))).with(joined(args))
             .withRows(rows, messages.size() - shown.size());
     }
 
@@ -443,7 +478,9 @@ public final class ObservationCommands {
             rows.add(Row.of(entry.getKey(), new Fields().bare("type", entry.getKey())
                 .put("count", entry.getValue(), "x" + entry.getValue())));
         }
-        return Result.ok(new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
-            .put("total", total, "total=" + total)).withRows(rows);
+        Fields fields = new Fields().put("tick", Observations.tick(), "tick=" + Observations.tick())
+            .put("total", total, "total=" + total);
+        return Result.ok(window(fields, Since.first(since, Observations.particlesFrom(since),
+            Observations.particlesOldest(), Observations.tick()))).with(joined(args)).withRows(rows);
     }
 }

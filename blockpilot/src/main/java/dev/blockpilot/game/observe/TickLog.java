@@ -35,6 +35,11 @@ final class TickLog<T> {
         return out;
     }
 
+    /** The tick of the oldest entry kept, or null when there is none. */
+    Long oldest() {
+        return entries.isEmpty() ? null : tick.applyAsLong(entries.getFirst());
+    }
+
     /** The tick of the oldest entry kept, when entries from {@code since} on were dropped; else null. */
     Long from(long since) {
         return droppedThrough != null && since <= droppedThrough ? tick.applyAsLong(entries.getFirst()) : null;

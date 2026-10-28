@@ -56,6 +56,10 @@ public final class Observations {
     /** The tick each sound instance first started; a sound the engine loops by hand is played again each loop. */
     private static final Map<SoundInstance, Long> STARTED = new WeakHashMap<>();
     private static final LinkedHashMap<Long, Map<String, Integer>> PARTICLES = new LinkedHashMap<>();
+    /** The latest tick whose particle counts were dropped, or null. */
+    private static Long particlesDroppedThrough;
+    /** The game tick the player last entered a world, or null before the first. */
+    private static volatile Long joinedTick;
     private static final Map<String, String> LAST_TEXT = new HashMap<>();
     private static final Map<String, Long> LAST_TICK = new HashMap<>();
     private static final int REPEAT_TICKS = 40;
@@ -113,9 +117,17 @@ public final class Observations {
         PARTICLES.computeIfAbsent(tick, key -> new HashMap<>()).merge(id, 1, Integer::sum);
         Iterator<Long> oldest = PARTICLES.keySet().iterator();
         while (PARTICLES.size() > PARTICLE_TICKS && oldest.hasNext()) {
-            oldest.next();
+            particlesDroppedThrough = oldest.next();
             oldest.remove();
         }
+    }
+
+    public static void joined(long tick) {
+        joinedTick = tick;
+    }
+
+    public static Long joinedTick() {
+        return joinedTick;
     }
 
     public static synchronized List<Sound> sounds(long since) {
@@ -127,6 +139,10 @@ public final class Observations {
         return SOUND_LOG.from(since);
     }
 
+    public static synchronized Long soundsOldest() {
+        return SOUND_LOG.oldest();
+    }
+
     public static synchronized List<Message> messages(long since) {
         return MESSAGE_LOG.since(since);
     }
@@ -134,6 +150,19 @@ public final class Observations {
     /** See {@link TickLog#from}. */
     public static synchronized Long messagesFrom(long since) {
         return MESSAGE_LOG.from(since);
+    }
+
+    public static synchronized Long messagesOldest() {
+        return MESSAGE_LOG.oldest();
+    }
+
+    /** As {@link TickLog#from}, for the particle counts. */
+    public static synchronized Long particlesFrom(long since) {
+        return particlesDroppedThrough != null && since <= particlesDroppedThrough ? particlesOldest() : null;
+    }
+
+    public static synchronized Long particlesOldest() {
+        return PARTICLES.isEmpty() ? null : PARTICLES.keySet().iterator().next();
     }
 
     /** Particle counts per type over the ticks from {@code since} on. */

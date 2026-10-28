@@ -3,13 +3,15 @@
 ### Requirement: The window a reply covers
 `sounds`, `messages` and `particles` replies SHALL carry
 `window=t<first>..t<now>`, the ticks their answer covers. The first tick is
-the `since=` tick, or the start of the default window without `since=`, but
-no earlier than the oldest tick the log still holds. The last is the current
-tick.
+the `since=` tick, or without `since=` where the default window starts: 20
+ticks back for `particles`, the oldest entry for `sounds` and `messages`, or
+the current tick when their log is empty. When the log has dropped entries
+from that tick on, the first tick is the oldest tick it still holds instead.
+The last is the current tick.
 
 #### Scenario: A bare number read as ticks back
 - **WHEN** an agent runs `particles since=100` at tick 14,159 and the particle
-  log holds ticks from 12,959 on
+  log has dropped the counts before tick 12,959
 - **THEN** the reply carries `window=t12959..t14159`, not the last 100 ticks
 
 #### Scenario: A duration
@@ -38,3 +40,15 @@ was given.
 - **WHEN** an agent runs `messages since=<tick>` with the `tick` of a reply
   in this world
 - **THEN** the reply carries no `joined=`
+
+## MODIFIED Requirements
+
+### Requirement: Particle counts
+The client SHALL count the particles it spawns per particle type and tick, for
+the last 1,200 ticks that had any. `particles [since=<tick>]` SHALL return the
+count per type over the window, most frequent first, with the total.
+
+#### Scenario: Laser impact particles
+- **WHEN** a laser shot spawns 40 crit particles and an agent runs `particles
+  since=<tick before the shot>`
+- **THEN** a row reports `crit x40`

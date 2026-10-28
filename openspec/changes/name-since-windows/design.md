@@ -33,11 +33,16 @@
 
 `sounds`, `messages` and `particles` add a `window` field: the first tick
 covered and the current tick, printed `window=t<first>..t<now>`, and in JSON
-an object `{from, to}` of the two ticks. The first tick is the later of the
-asked first tick (from `since=`, or the default) and the oldest tick the log
-holds. An empty log covers only the current tick. `Since` gets a small pure
-function for this, which the tests drive. `TickLog` and the particle counts
-each answer the tick of their oldest entry.
+an object `{from, to}` of the two ticks. The first tick is the asked one
+(from `since=`, or the default), unless the log has dropped entries from
+there on: then it is the oldest tick the log still holds, the tick `from=`
+already reports for sounds and messages. A log that dropped nothing covers its
+quiet early ticks too, so its window starts at the asked tick even before its
+oldest entry. Without `since=`, sounds and messages start at their oldest
+entry, or at the current tick when the log is empty. `Since` gets a small pure
+function for this, which the tests drive. `TickLog` answers the tick of its
+oldest entry, and the particle counts learn which ticks they dropped, as
+`TickLog` does.
 
 The existing `from=` stays as it is: it tells that the log dropped entries
 the window asked for, which the window alone doesn't say.
