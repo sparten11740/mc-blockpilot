@@ -22,8 +22,9 @@ reading level.dat, which game time a world was saved at.
   can't freeze a remote server.
 - `leave` and `quit` answer with `saved_at=t<tick>` when they leave a
   singleplayer world: the game time the world was saved at.
-- The README notes that while the server is frozen, Sable sends its
-  sub-levels to a player who has just joined only once a tick runs.
+- The README notes that after a frozen join, Sable has no sub-levels on
+  either side until a tick runs: the server's copy comes with the first
+  `tick step 1`, the client's with the second.
 
 ## Capabilities
 

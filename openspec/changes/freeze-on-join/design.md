@@ -19,11 +19,11 @@
 - `join world <folder>` takes the folder as free text to the end of the
   line, since folder names hold spaces. Options go before free text, as in
   `server as=player <command>`.
-- Sable runs its sub-levels, their physics and the sending of sub-levels to
-  players from one container tick, which it skips while the server is
-  frozen. A player who joins a frozen world therefore gets no sub-levels
-  until a tick runs. Vanilla never freezes players, so the client still
-  moves the player.
+- Sable runs its sub-levels, their physics, loading them from the save and
+  sending them to players from one container tick, which it skips while the
+  server is frozen. After a frozen join neither the server nor the client
+  has any sub-levels until a tick runs. Vanilla never freezes players, so the
+  client still moves the player.
 
 ## Goals / Non-Goals
 
@@ -75,7 +75,9 @@ an NBT read for the same number.
 - [The client's loading might wait on a server tick and never end while
   frozen] → The dev-client check joins frozen and expects the usual answer;
   vanilla keeps sending chunks and handling the connection while frozen.
-- [After a frozen join, Sable sub-levels are missing on the client and the
-  player can fall where a deck would be] → The README says so: read the
-  saved state with `side=server` and `tick step 1` to get the sub-levels
-  sent. The dev-client check confirms it.
+- [After a frozen join, Sable sub-levels are missing on both sides, and the
+  player can fall where a deck would be] → The README says so. On the dev
+  client the server's copy came with the first `tick step 1`, one tick on
+  from the save with its saved velocity, and the client's with the second.
+  The exact saved pose can't be read, since Sable steps a sub-level in the
+  tick that loads it.
