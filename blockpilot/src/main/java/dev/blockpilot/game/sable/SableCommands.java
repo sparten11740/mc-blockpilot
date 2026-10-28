@@ -87,8 +87,9 @@ final class SableCommands {
             .field("pitch", "degrees, nose down positive").field("roll", "degrees, right side down positive")
             .field("speed", "blocks per second").field("vel", "blocks per second along x, y and z")
             .field("climb", "brief only: vertical speed, blocks per second")
-            .field("agl", "height above ground: from the bottom of its world bounds to the top of the ground under "
-                + "their centre; none above nothing loaded")
+            .field("agl", "height above ground: from the lowest corner of its lowest block, however it is turned, to "
+                + "the top of the ground straight under that corner; none above nothing loaded, or when the client "
+                + "holds none of its blocks")
             .field("box", "world bounds")
             .field("plot", "plot bounds: the world bounds turned back into the plot, so larger while it is turned")
             .field("rides", "the player stands on or rides it")
@@ -172,7 +173,7 @@ final class SableCommands {
         Vec3 velocity = info.velocity();
         SubLevels.Info carrying = SableSupport.subLevels().carrying(minecraft.player);
         boolean rides = carrying != null && carrying.id().equals(info.id());
-        Object agl = heightAboveGround(minecraft.level, info.worldBounds());
+        Object agl = heightAboveGround(minecraft.level, info);
         if (args.has("brief")) {
             return Result.ok(new Fields().tag("yaw", tenths(info.yaw())).tag("pitch", tenths(info.pitch()))
                 .tag("roll", tenths(info.roll())).put("speed", tenths(velocity.length()))
@@ -460,20 +461,24 @@ final class SableCommands {
     }
 
     /**
-     * Blocks from the bottom of the bounds down to the top of the first block with a collision shape under their
-     * centre, or {@code none} over unloaded chunks or the void. Sub-levels keep their blocks in their plots, so only
-     * the world below counts.
+     * Blocks from the sub-level's lowest point down to the top of the first block with a collision shape straight under
+     * it, or {@code none} over unloaded chunks or the void, or when the level holds none of its blocks. Sub-levels keep
+     * their blocks in their plots, so only the world below counts.
      */
-    private static Object heightAboveGround(Level level, AABB bounds) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(Mth.floor(bounds.getCenter().x),
-            Math.min(Mth.floor(bounds.minY), level.getMaxBuildHeight() - 1), Mth.floor(bounds.getCenter().z));
+    private static Object heightAboveGround(Level level, SubLevels.Info info) {
+        Vec3 lowest = LowestPoint.of(level, info);
+        if (lowest == null) {
+            return "none";
+        }
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(Mth.floor(lowest.x),
+            Math.min(Mth.floor(lowest.y), level.getMaxBuildHeight() - 1), Mth.floor(lowest.z));
         if (!Sides.loaded(level, cursor)) {
             return "none";
         }
         for (; cursor.getY() >= level.getMinBuildHeight(); cursor.move(0, -1, 0)) {
             VoxelShape shape = level.getBlockState(cursor).getCollisionShape(level, cursor);
             if (!shape.isEmpty()) {
-                return tenths(Math.max(0, bounds.minY - (cursor.getY() + shape.max(Direction.Axis.Y))));
+                return tenths(Math.max(0, lowest.y - (cursor.getY() + shape.max(Direction.Axis.Y))));
             }
         }
         return "none";

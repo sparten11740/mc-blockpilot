@@ -200,8 +200,9 @@ works with them:
     (after a lost packet, say), and `sable:list side=server` lists the server's.
   - `sable:info here` gives the pose, velocity, height above ground (`agl`), bounds and whether the player rides it;
     `sable:info ship brief` only heading, pitch, roll, speed, climb rate and `agl`, e.g. for
-    `sample sable:info ship brief every 10t x20` over a take-off. The size in `sable:list` and the plot bounds are the
-    world bounds turned back into the plot, so they grow while the sub-level is turned.
+    `sample sable:info ship brief every 10t x20` over a take-off. `agl` is measured from the lowest corner of the
+    lowest block, however the sub-level is turned, to the ground straight under it. The size in `sable:list` and the
+    plot bounds are the world bounds turned back into the plot, so they grow while the sub-level is turned.
   - `sable:find ship *door* 3` finds blocks aboard, with plot and world positions; with `side=server` from the
     server's copy, also on a sub-level the client hasn't received. They come nearest to the player first, nearest to
     `near=<pos>` (a world or plot position), or with `sort=-z` along the sub-level's own plot axes (`-` for largest
