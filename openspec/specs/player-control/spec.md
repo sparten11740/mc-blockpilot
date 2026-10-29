@@ -335,6 +335,12 @@ coordinate outside 0 to 1 SHALL fail with `err syntax`.
 - **THEN** the click lands on that key, where the turn by the block's facing
   has put it in the world
 
+#### Scenario: Left and right seen from the front
+- **WHEN** a panel's model has its front on its north side, and an agent aims at
+  the left one of two buttons as seen from in front of the panel
+- **THEN** that button has the higher u, whichever horizontal way the panel
+  faces
+
 #### Scenario: Point read off the crosshair
 - **WHEN** an agent aims at a key by hand, reads `hit=0.73,0.86,0.34` from
   `status`, and later runs `use <pos> at 0.73,0.86,0.34`

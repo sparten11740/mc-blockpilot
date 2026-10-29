@@ -63,7 +63,8 @@ final class ActionCommands {
     private static final Consumer<Form> WITHIN_BLOCK = at -> at.keyword("at", "at").arg("point", ArgType.POSITION);
     private static final String WITHIN_BLOCK_HELP = "at u,v,w aims at that point of the block, each 0 to 1 in the "
         + "frame its model is drawn in facing north (u west to east, v up, w north to south), turned with the block's "
-        + "facing; status shows hit=u,v,w for the point under the crosshair";
+        + "facing, so seen from the model's north side, usually the block's front, u runs right to left; status shows "
+        + "hit=u,v,w for the point under the crosshair";
     /** How long {@code use} re-aims at its target for the crosshair to rest on it before it gives up. */
     private static final int MAX_AIM_TICKS = 10;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
