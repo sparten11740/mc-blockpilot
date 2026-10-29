@@ -2,8 +2,8 @@
 
 ## 1. Counting and summary (performance-capture)
 
-- [ ] 1.1 Count block changes per dimension and position in `Perf.blockChanged`, under its lock, with the count, last block and sub-level per position, at most 65,536 positions per capture and the changes beyond that in an untracked counter, all reset by `perf start` (D1, D2), and pass the dimension and position from `BlockChanges.changed`; verify with a `PerfTest` case that changes at three positions rank by count with their block, sub-level and `dim` only outside the overworld
-- [ ] 1.2 Add `block_change_positions` (the 50 busiest, `pos` as `[x,y,z]`, block, `sub`, `dim`, count, `per_s`) and `block_change_positions_untracked` (only above zero) to the summary's server object (D3); verify with `PerfTest` cases that the list stops at 50 and that changes past the bound count as untracked while the per-block counts still include them
+- [x] 1.1 Count block changes per dimension and position in `Perf.blockChanged`, under its lock, with the count, last block and sub-level per position, at most 65,536 positions per capture and the changes beyond that in an untracked counter, all reset by `perf start` (D1, D2), and pass the dimension and position from `BlockChanges.changed`; verify with a `PerfTest` case that changes at three positions rank by count with their block, sub-level and `dim` only outside the overworld
+- [x] 1.2 Add `block_change_positions` (the 50 busiest, `pos` as `[x,y,z]`, block, `sub`, `dim`, count, `per_s`) and `block_change_positions_untracked` (only above zero) to the summary's server object (D3); verify with `PerfTest` cases that the list stops at 50 and that changes past the bound count as untracked while the per-block counts still include them
 
 ## 2. Overview and docs
 

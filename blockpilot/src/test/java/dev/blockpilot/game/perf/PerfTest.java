@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 /** The capture summary, fed the way the instrumentation mixins feed it. */
 class PerfTest {
+    private static final Perf.Spot ORIGIN = new Perf.Spot("overworld", 0, 0, 0);
+
     @Test
     void idleHooksRecordNothing() {
         Perf.particleTickEnd("flame");
@@ -117,16 +119,16 @@ class PerfTest {
 
     @Test
     void blockChangesAreRankedByRateWithTheirBlockEntityAndSubLevel() {
-        Perf.blockChanged("stone", null, null);
+        Perf.blockChanged(new Perf.Change("stone", null, null), ORIGIN);
         Perf.start("changes");
         Perf.serverTick(1_000_000, 1);
         for (int change = 0; change < 3; change++) {
-            Perf.blockChanged("oak_leaves", null, null);
+            Perf.blockChanged(new Perf.Change("oak_leaves", null, null), ORIGIN);
         }
         for (int change = 0; change < 5; change++) {
-            Perf.blockChanged("mymod:thruster", "mymod:thruster", "ship");
+            Perf.blockChanged(new Perf.Change("mymod:thruster", "mymod:thruster", "ship"), ORIGIN);
         }
-        Perf.blockChanged("stone", null, null);
+        Perf.blockChanged(new Perf.Change("stone", null, null), ORIGIN);
         JsonArray changes = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server")
             .getAsJsonArray("block_changes");
         assertEquals(3, changes.size());
@@ -139,6 +141,56 @@ class PerfTest {
         assertEquals("oak_leaves", leaves.get("block").getAsString());
         assertFalse(leaves.has("be") || leaves.has("sub"));
         assertEquals(1, changes.get(2).getAsJsonObject().get("count").getAsInt());
+    }
+
+    @Test
+    void positionsAreRankedByCountWithTheLastBlockTheirSubLevelAndDimension() {
+        Perf.start("positions");
+        Perf.serverTick(1_000_000, 1);
+        for (int change = 0; change < 5; change++) {
+            Perf.blockChanged(new Perf.Change("mymod:thruster", null, "ship"), new Perf.Spot("overworld", 1, 2, 3));
+        }
+        for (int change = 0; change < 3; change++) {
+            Perf.blockChanged(new Perf.Change("netherrack", null, null), new Perf.Spot("the_nether", 1, 2, 3));
+        }
+        Perf.blockChanged(new Perf.Change("stone", null, null), new Perf.Spot("overworld", -4, 5, 6));
+        Perf.blockChanged(new Perf.Change("air", null, null), new Perf.Spot("overworld", -4, 5, 6));
+        JsonObject server = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server");
+        JsonArray positions = server.getAsJsonArray("block_change_positions");
+        assertEquals(3, positions.size());
+        JsonObject thruster = positions.get(0).getAsJsonObject();
+        assertEquals("[1,2,3]", thruster.get("pos").toString());
+        assertEquals("mymod:thruster", thruster.get("block").getAsString());
+        assertEquals("ship", thruster.get("sub").getAsString());
+        assertEquals(5, thruster.get("count").getAsInt());
+        assertFalse(thruster.has("dim"));
+        assertEquals("the_nether", positions.get(1).getAsJsonObject().get("dim").getAsString());
+        JsonObject flipped = positions.get(2).getAsJsonObject();
+        assertEquals("[-4,5,6]", flipped.get("pos").toString());
+        assertEquals("air", flipped.get("block").getAsString());
+        assertFalse(flipped.has("sub") || flipped.has("dim"));
+        assertFalse(server.has("block_change_positions_untracked"));
+    }
+
+    @Test
+    void positionsPastTheBoundCountAsUntrackedAndTheListStopsAtFifty() {
+        Perf.start("bound");
+        Perf.serverTick(1_000_000, 1);
+        Perf.Change stone = new Perf.Change("stone", null, null);
+        for (int x = 0; x < Perf.MAX_TRACKED_POSITIONS; x++) {
+            Perf.blockChanged(stone, new Perf.Spot("overworld", x, 0, 0));
+        }
+        Perf.blockChanged(stone, new Perf.Spot("overworld", -1, 0, 0));
+        Perf.blockChanged(stone, new Perf.Spot("overworld", -1, 0, 0));
+        Perf.blockChanged(stone, new Perf.Spot("overworld", 7, 0, 0));
+        JsonObject server = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server");
+        JsonArray positions = server.getAsJsonArray("block_change_positions");
+        assertEquals(Perf.MAX_BLOCK_CHANGE_POSITIONS, positions.size());
+        assertEquals("[7,0,0]", positions.get(0).getAsJsonObject().get("pos").toString());
+        assertEquals(2, positions.get(0).getAsJsonObject().get("count").getAsInt());
+        assertEquals(2, server.get("block_change_positions_untracked").getAsInt());
+        assertEquals(Perf.MAX_TRACKED_POSITIONS + 3,
+            server.getAsJsonArray("block_changes").get(0).getAsJsonObject().get("count").getAsInt());
     }
 
     @Test

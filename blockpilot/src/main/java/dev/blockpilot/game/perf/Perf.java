@@ -66,6 +66,17 @@ public final class Perf {
     record Change(String block, String blockEntity, String sub) {
     }
 
+    /** A block position in a dimension, named as {@code status} names it (e.g. overworld). */
+    record Spot(String dimension, int x, int y, int z) {
+    }
+
+    /** The changes at one position: how many, the block it last changed to and its sub-level (null when none). */
+    static final class SpotChanges {
+        private long count;
+        private String block;
+        private String sub;
+    }
+
     /** Code that spawned a particle: its mod and class (null when unknown) and how the particle came. */
     record Spawner(String mod, String className, String via) {
     }
@@ -117,6 +128,10 @@ public final class Perf {
     static final double SPIKE_MS = 50;
     static final int MAX_SPIKES = 20;
     static final int MAX_BLOCK_CHANGES = 20;
+    static final int MAX_BLOCK_CHANGE_POSITIONS = 50;
+    /** The positions a capture counts block changes at; changes at further ones count only as untracked. */
+    static final int MAX_TRACKED_POSITIONS = 65_536;
+    private static final String OVERWORLD = "overworld";
     /** The first spawn of each particle type and every this many after it are traced to their source. */
     static final int SOURCE_SAMPLING = 32;
     static final int SOURCES_PER_TYPE = 3;
@@ -141,6 +156,9 @@ public final class Perf {
     private static long clientTicks;
     /** Changes per block, under their lock: counted on the server thread, summarized on the client's. */
     private static Map<Change, long[]> blockChanges = new HashMap<>();
+    /** Changes per position under the same lock, and the changes at positions past the bound. */
+    private static Map<Spot, SpotChanges> positionChanges = new HashMap<>();
+    private static long untrackedChanges;
     private static final Object BLOCK_CHANGES_LOCK = new Object();
     /** Spawns per particle type on each side, and the spawners of the traced ones, under their lock. */
     private static Map<String, int[]> clientSpawns = new HashMap<>();
@@ -203,6 +221,8 @@ public final class Perf {
         clientTicks = 0;
         synchronized (BLOCK_CHANGES_LOCK) {
             blockChanges = new HashMap<>();
+            positionChanges = new HashMap<>();
+            untrackedChanges = 0;
         }
         synchronized (SPAWNERS_LOCK) {
             clientSpawns = new HashMap<>();
@@ -359,10 +379,19 @@ public final class Perf {
     }
 
     /** A block change the server marks for sending to clients, on the server thread. */
-    public static void blockChanged(String block, String blockEntity, String sub) {
+    static void blockChanged(Change change, Spot spot) {
         if (active) {
             synchronized (BLOCK_CHANGES_LOCK) {
-                blockChanges.computeIfAbsent(new Change(block, blockEntity, sub), key -> new long[1])[0]++;
+                blockChanges.computeIfAbsent(change, key -> new long[1])[0]++;
+                SpotChanges at = positionChanges.size() < MAX_TRACKED_POSITIONS
+                    ? positionChanges.computeIfAbsent(spot, key -> new SpotChanges()) : positionChanges.get(spot);
+                if (at == null) {
+                    untrackedChanges++;
+                } else {
+                    at.count++;
+                    at.block = change.block();
+                    at.sub = change.sub();
+                }
             }
         }
     }
@@ -509,6 +538,10 @@ public final class Perf {
             server.addProperty("entities_added", total[WORK_ENTITIES_ADDED]);
             synchronized (BLOCK_CHANGES_LOCK) {
                 server.add("block_changes", ranked(blockChanges, seconds));
+                server.add("block_change_positions", rankedPositions(positionChanges, seconds));
+                if (untrackedChanges > 0) {
+                    server.addProperty("block_change_positions_untracked", untrackedChanges);
+                }
             }
             server.add("timeline", timeline(ticks, labels, works));
             server.add("block_entities", serverBlockEntities.ranked(ticks.length, "ms_per_tick"));
@@ -670,6 +703,33 @@ public final class Perf {
                 }
                 object.addProperty("count", entry.getValue()[0]);
                 object.addProperty("per_s", round(seconds <= 0 ? 0 : entry.getValue()[0] / seconds));
+                array.add(object);
+            });
+        return array;
+    }
+
+    /** The busiest positions, as {@code {pos, block, sub?, dim?, count, per_s}}, most first. */
+    static JsonArray rankedPositions(Map<Spot, SpotChanges> changes, double seconds) {
+        JsonArray array = new JsonArray();
+        changes.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue().count, a.getValue().count))
+            .limit(MAX_BLOCK_CHANGE_POSITIONS).forEach(entry -> {
+                Spot spot = entry.getKey();
+                SpotChanges at = entry.getValue();
+                JsonObject object = new JsonObject();
+                JsonArray pos = new JsonArray();
+                pos.add(spot.x());
+                pos.add(spot.y());
+                pos.add(spot.z());
+                object.add("pos", pos);
+                object.addProperty("block", at.block);
+                if (at.sub != null) {
+                    object.addProperty("sub", at.sub);
+                }
+                if (!spot.dimension().equals(OVERWORLD)) {
+                    object.addProperty("dim", spot.dimension());
+                }
+                object.addProperty("count", at.count);
+                object.addProperty("per_s", round(seconds <= 0 ? 0 : at.count / seconds));
                 array.add(object);
             });
         return array;

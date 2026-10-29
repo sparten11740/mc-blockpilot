@@ -29,10 +29,12 @@ couple of map operations.
 `BlockChanges.changed` passes the dimension and the position along with the
 block, block entity and sub-level, and `Perf.blockChanged` updates both maps
 under the one lock it already takes. Each position keeps its count, the block
-it last changed to and its sub-level name. The key is the dimension and the
-packed position (`BlockPos.asLong`), so the same coordinates in two dimensions
-stay apart. An alternative, a second mixin or hook just for positions, would
-read the same state twice for no gain.
+it last changed to and its sub-level name. The key is the dimension's id and
+the coordinates, so the same coordinates in two dimensions stay apart, and
+`Perf` stays free of Minecraft classes. The id is cached per dimension, so
+the hot path builds no string for it. An
+alternative, a second mixin or hook just for positions, would read the same
+state twice for no gain.
 
 ### D2: A plain cap, not a heavy-hitter sketch
 

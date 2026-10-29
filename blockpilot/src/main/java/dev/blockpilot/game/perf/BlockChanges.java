@@ -14,12 +14,13 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * What a block change the server sends to clients counts under, on the server thread: its block, the block entity
- * type when it has one, and with Sable the sub-level whose plot holds it. A plot's sections belong to one sub-level,
- * so the sub-level is looked up once per section and capture. The cache is keyed by dimension, so it holds no level
- * after the player leaves a world.
+ * type when it has one, with Sable the sub-level whose plot holds it, and its position. A plot's sections belong to
+ * one sub-level, so the sub-level is looked up once per section and capture. The caches are keyed by dimension, so
+ * they hold no level after the player leaves a world.
  */
 public final class BlockChanges {
     private static final Map<ResourceKey<Level>, Map<Long, String>> SUB_LEVELS = new HashMap<>();
+    private static final Map<ResourceKey<Level>, String> DIMENSIONS = new HashMap<>();
     private static int capture = -1;
 
     private BlockChanges() {
@@ -34,8 +35,10 @@ public final class BlockChanges {
         BlockEntity blockEntity = state.hasBlockEntity() ? level.getBlockEntity(pos) : null;
         String sub = SUB_LEVELS.computeIfAbsent(level.dimension(), key -> new HashMap<>())
             .computeIfAbsent(SectionPos.asLong(pos), section -> subLevel(level, pos));
-        Perf.blockChanged(Ids.of(state), blockEntity == null ? null : Ids.of(blockEntity.getType()),
-            sub.isEmpty() ? null : sub);
+        Perf.Change change = new Perf.Change(Ids.of(state),
+            blockEntity == null ? null : Ids.of(blockEntity.getType()), sub.isEmpty() ? null : sub);
+        String dimension = DIMENSIONS.computeIfAbsent(level.dimension(), key -> Ids.of(key.location()));
+        Perf.blockChanged(change, new Perf.Spot(dimension, pos.getX(), pos.getY(), pos.getZ()));
     }
 
     private static String subLevel(Level level, BlockPos pos) {
