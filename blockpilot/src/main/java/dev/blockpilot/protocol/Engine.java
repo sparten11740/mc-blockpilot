@@ -222,7 +222,12 @@ public final class Engine {
 
     /** Cancels every queued and running script with the code; returns how many were stopped. */
     public int stopAll(String code) {
-        int stopped = cancelWhere(job -> true, Result.error(code), false);
+        return stopAll(Result.error(code));
+    }
+
+    /** Cancels every queued and running script, failing it with the error; returns how many were stopped. */
+    public int stopAll(Result error) {
+        int stopped = cancelWhere(job -> true, error, false);
         game.releaseInputs();
         return stopped;
     }

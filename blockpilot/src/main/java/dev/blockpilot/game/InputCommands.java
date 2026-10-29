@@ -28,7 +28,7 @@ import net.minecraft.world.inventory.ClickType;
  * coordinates are GUI-scaled, as {@code screen} reports them.
  */
 final class InputCommands {
-    private static final String[] BUTTONS = {"left", "right", "middle"};
+    private static final String[] BUTTONS = KeyNames.BUTTONS.toArray(String[]::new);
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
@@ -96,7 +96,7 @@ final class InputCommands {
 
     /** One of {@link #BUTTONS}, as GLFW numbers them. */
     private static int button(String name) {
-        return List.of(BUTTONS).indexOf(name);
+        return KeyNames.BUTTONS.indexOf(name);
     }
 
     /** A {@code x,y} point or widget {@code w<i>}'s centre, in GUI units, on the open screen. */

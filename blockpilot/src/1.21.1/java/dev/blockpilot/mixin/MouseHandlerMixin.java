@@ -53,14 +53,14 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     @Inject(method = "onPress", at = @At("HEAD"))
     private void blockpilot$onPress(long window, int button, int action, int modifiers, CallbackInfo info) {
         if (!Injection.active()) {
-            HumanInput.mouseButton(window);
+            HumanInput.mouseButton(window, button);
         }
     }
 
     @Inject(method = "onScroll", at = @At("HEAD"))
     private void blockpilot$onScroll(long window, double xOffset, double yOffset, CallbackInfo info) {
         if (!Injection.active()) {
-            HumanInput.mouseButton(window);
+            HumanInput.scroll(window);
         }
     }
 

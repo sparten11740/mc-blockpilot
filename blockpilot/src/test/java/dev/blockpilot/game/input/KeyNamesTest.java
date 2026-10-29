@@ -24,6 +24,14 @@ class KeyNamesTest {
     }
 
     @Test
+    void buttonsAreNamedAsMouseCommandsTakeThemThenByNumber() {
+        assertEquals("left", KeyNames.buttonName(0));
+        assertEquals("right", KeyNames.buttonName(1));
+        assertEquals("middle", KeyNames.buttonName(2));
+        assertEquals("4", KeyNames.buttonName(3));
+    }
+
+    @Test
     void aMisspellingNamesTheClosestKeys() {
         assertEquals(List.of("left_shift", "left_alt", "left"), KeyNames.closest("leftshift", KNOWN, 3));
         assertEquals(List.of("f5", "left"), KeyNames.closest("f6", KNOWN, 2));

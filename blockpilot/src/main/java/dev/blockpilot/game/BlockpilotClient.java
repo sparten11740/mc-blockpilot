@@ -8,6 +8,7 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
+import dev.blockpilot.api.Result;
 import dev.blockpilot.cli.Launcher;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
@@ -388,10 +389,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         graphics.drawString(Minecraft.getInstance().font, text, 4, 4, color);
     }
 
-    private void onHumanInput() {
+    private void onHumanInput(Fields input) {
         if (engine != null && (engine.activity() != null || !InputState.isEmpty())) {
-            engine.stopAll("interrupted");
-            engine.broadcast(Event.of("interrupted", new Fields().bare("by", "player")));
+            engine.stopAll(Result.error("interrupted").with(input));
+            Fields event = new Fields().bare("by", "player");
+            input.list().forEach(field -> event.put(field.name(), field.value(), field.text()));
+            engine.broadcast(Event.of("interrupted", event));
         }
     }
 
