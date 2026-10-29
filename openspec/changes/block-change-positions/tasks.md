@@ -11,4 +11,4 @@
 
 ## 3. Integration checks
 
-- [ ] 3.1 Run `./gradlew build` for all four targets; verify all pass
+- [x] 3.1 Run `./gradlew build` for all four targets; verify all pass
