@@ -67,7 +67,9 @@ needed six `run` calls and about 1,300 characters (roughly 500 tokens) of tool i
 events as they happen.
 
 The window can stay in the background: while an agent is connected, and for a minute after its last connection closed (the CLI opens one per call), the game does not pause and keeps handling input.
-Real keyboard or mouse input to the focused window cancels running agent actions; F8 toggles agent control off and on.
+Real keyboard or mouse input to the focused window cancels running agent actions with `err interrupted`, which names
+the input (`input=key key=w`, `input=button button=left`, `input=scroll`, or `input=move dx=<px> dy=<px>`); F8
+toggles agent control off and on.
 A line in the top-left corner shows when an agent is active and what it is doing.
 
 ### In another mod's dev environment
