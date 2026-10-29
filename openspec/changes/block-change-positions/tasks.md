@@ -7,7 +7,7 @@
 
 ## 2. Overview and docs
 
-- [ ] 2.1 Show the top five positions as `change at <x,y,z> <block> [on <sub>] [in <dim>] <rate>/s` rows in the `perf stop` text overview, and name the positions in the `perf` help and the README's performance row (D4); verify on the 1.21.1 dev client with two observers facing each other (a clock) that `perf start; wait 100t; perf stop` lists both observers' positions as `change at` rows, with rates that add up to the observer's rate in the per-block list, and that the saved JSON has them in `block_change_positions`
+- [x] 2.1 Show the top five positions as `change at <x,y,z> <block> [on <sub>] [in <dim>] <rate>/s` rows in the `perf stop` text overview, and name the positions in the `perf` help and the README's performance row (D4); verify on the 1.21.1 dev client with two observers facing each other (a clock) that `perf start; wait 100t; perf stop` lists both observers' positions as `change at` rows, with rates that add up to the observer's rate in the per-block list, and that the saved JSON has them in `block_change_positions`
 
 ## 3. Integration checks
 

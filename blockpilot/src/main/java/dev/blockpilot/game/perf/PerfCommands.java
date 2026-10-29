@@ -13,6 +13,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
+import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Ids;
@@ -59,7 +60,9 @@ public final class PerfCommands {
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
                 + "tick with the chunks generated, loaded and sent and the entities added in them (every tick's are in "
                 + "the file), tick time per block-entity and entity type, the block "
-                + "changes the server sends to clients per block, block entity type and sub-level, "
+                + "changes the server sends to clients per block, block entity type and sub-level, and the 50 "
+                + "positions with the most (a capture tracks the first 65,536 positions it sees; "
+                + "block_change_positions_untracked counts the changes at the others), "
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
                 + "render time per type with live counts and the mod and class that spawned them on the client or "
                 + "sent them on the integrated server, "
@@ -230,11 +233,21 @@ public final class PerfCommands {
         if (server.has("block_changes")) {
             server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
                 .forEach(change -> {
-                    String where = change.get("block").getAsString()
-                        + (change.has("sub") ? " on " + change.get("sub").getAsString() : "");
+                    String where = changedBlock(change);
                     double rate = change.get("per_s").getAsDouble();
                     rows.add(Row.of("change:" + where, new Fields().bare("list", "change").bare("type", where)
                         .put("per_s", rate, Numbers.format(rate) + "/s")));
+                });
+        }
+        if (server.has("block_change_positions")) {
+            server.getAsJsonArray("block_change_positions").asList().stream().limit(TOP)
+                .map(JsonElement::getAsJsonObject).forEach(change -> {
+                    JsonArray pos = change.getAsJsonArray("pos");
+                    Position at = Position.absolute(pos.get(0).getAsInt(), pos.get(1).getAsInt(),
+                        pos.get(2).getAsInt());
+                    double rate = change.get("per_s").getAsDouble();
+                    rows.add(Row.of("change at:" + at, new Fields().bare("list", "change at").bare("at", at)
+                        .bare("type", changedBlock(change)).put("per_s", rate, Numbers.format(rate) + "/s")));
                 });
         }
         addTop(rows, "server be", server.getAsJsonArray("block_entities"), "ms_per_tick", "ms/t");
@@ -260,6 +273,12 @@ public final class PerfCommands {
         addTop(rows, "in", network.getAsJsonArray("clientbound"), "per_s", "/s");
         addTop(rows, "out", network.getAsJsonArray("serverbound"), "per_s", "/s");
         return rows;
+    }
+
+    /** A block change's block, with the sub-level it is aboard and its dimension outside the overworld. */
+    private static String changedBlock(JsonObject change) {
+        return change.get("block").getAsString() + (change.has("sub") ? " on " + change.get("sub").getAsString() : "")
+            + (change.has("dim") ? " in " + change.get("dim").getAsString() : "");
     }
 
     /** Who spawned a particle, for the text overview: the mod and class, or the server that sent it. */
