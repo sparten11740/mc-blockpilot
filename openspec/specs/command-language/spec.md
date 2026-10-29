@@ -282,9 +282,9 @@ Error codes are stable lowercase identifiers listed in `help errors`.
 
 ### Requirement: Position tokens
 A position SHALL be written either `x,y,z` (absolute; decimals allowed) or
-`~dx,dy,dz` (relative to the player's block position). Every position printed in
-a reply SHALL use one of these forms, so it can be pasted unchanged into a later
-command.
+`~dx,dy,dz` (relative to the player's block position as the command runs).
+Every position printed in a reply SHALL use one of these forms, so it can be
+pasted unchanged into a later command.
 
 #### Scenario: Relative position from look reused
 - **WHEN** `look` reports `iron_ore ~3,-1,2` and the agent then runs `mine

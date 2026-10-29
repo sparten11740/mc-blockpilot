@@ -13,13 +13,21 @@ text. It also sets the client options a test needs, and puts them back.
 The client SHALL record every sound it starts playing: sound event id, category,
 position, volume, pitch and the tick. It keeps the last 2,000 sounds. `sounds
 [since=<tick>] [match=<pattern>] [limit=<n>]` SHALL return matching sounds
-oldest first, plus the current tick as `tick` for the next `since`.
+oldest first, plus the current tick as `tick` for the next `since`. A row's
+position SHALL be relative to where the player stands when the query runs, and
+its JSON SHALL add `at_abs`, the absolute position the sound started at.
 
 #### Scenario: Gear sound verified
 - **WHEN** a mod plays `aerolarge:gear_extend` at the landing gear and an agent
   then runs `sounds since=<tick> match=aerolarge:*`
 - **THEN** a row lists the sound with its category, position relative to the
   player, volume and pitch
+
+#### Scenario: Player moved since the sound
+- **WHEN** a sound starts at the player, who then rises 100 blocks before an
+  agent runs `sounds`
+- **THEN** its row reads about `~0,-100,0`, and `at_abs` is the point it started
+  at
 
 #### Scenario: Waiting for a sound
 - **WHEN** an agent runs `wait sounds match=*thunder* since=<tick> until count>0

@@ -102,8 +102,10 @@ public final class ObservationCommands {
                 + "window. sounds playing: the sounds playing now, with loop and played=<s> since their start (game "
                 + "time); a sound whose category or the master volume is 0 never plays, so the log has it and this "
                 + "doesn't. A match= without * is a sound event id (minecraft: when it names no namespace); one the "
-                + "client doesn't know fails, naming the closest")
+                + "client doesn't know fails, naming the closest. A position is relative to where the player stands "
+                + "now, not where it stood when the sound started")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
+            .field("at_abs", "JSON: the absolute position the sound started at, or with playing where it is now")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
             .field("window", "the ticks the reply covers: from since= (or the oldest start), or from where the log "
                 + "still begins when it dropped older starts, to now")
