@@ -45,8 +45,9 @@ case, with `*` for any run of characters.
 #### Scenario: Waiting for a chat line
 - **WHEN** an agent runs `wait messages since=<tick> match=*engaged* until
   count>0 timeout=30s` and a mod later says "Autopilot engaged" in chat
-- **THEN** the wait returns with that message, and other chat lines in
-  between don't end it
+- **THEN** the wait returns `ok` with `count=1` as soon as that message is
+  logged, other chat lines in between don't end it, and `messages
+  since=<tick>` then reads the message
 
 ### Requirement: Message events
 Action-bar, title and subtitle messages SHALL also be delivered as events. Mods
