@@ -85,13 +85,16 @@ final class PerceptionCommands {
         registry.register(CommandSpec.query("entity", this::entity).needsWorld().group("perception")
             .form(form -> form.arg("ref", List.of("me"), ArgType.ENTITY))
             .option("side", "server: the integrated server's copy of the entity (cheats on)", Sides.NAMES)
-            .help("one entity's motion (me: the player): type, e<id>, position, yaw, pitch, velocity and age; with "
+            .help("one entity's motion (me: the player): type, e<id>, position, yaw, pitch, velocity, age and, for "
+                + "a living entity, its walk animation; with "
                 + "side=server as the integrated server has it, so sampling both sides shows how far the client's "
                 + "copy drifts")
             .field("type", "entity type").field("ref", "its e<id>").field("pos", "absolute position, to the thousandth")
             .field("yaw", "degrees, to the tenth").field("pitch", "degrees, to the tenth")
             .field("vel", "velocity, blocks per tick; left out at zero").field("on_ground", "false: airborne")
             .field("age", "ticks this copy has existed; a copy made again starts at 0")
+            .field("walk", "living entities: how fast the limbs swing in the walk animation, 0 at rest")
+            .field("walk_pos", "living entities: how far through their swing the limbs are")
             .field("net", "client only: updates the client applied since its previous tick, per kind (move, "
                 + "teleport, motion, data), as net move1 data1; left out when none")
             .field("uuid", "side=server only").example("entity e12 side=server"));
@@ -414,6 +417,10 @@ final class PerceptionCommands {
                 fields.put("on_ground", false, "airborne");
             }
             fields.put("age", entity.tickCount, "age=" + entity.tickCount);
+            if (entity instanceof LivingEntity living) {
+                fields.put("walk", round3(living.walkAnimation.speed()))
+                    .put("walk_pos", round3(living.walkAnimation.position()));
+            }
             if (server) {
                 fields.put("uuid", entity.getUUID().toString(), "uuid:" + entity.getUUID());
             } else {
