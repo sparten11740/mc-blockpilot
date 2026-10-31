@@ -110,8 +110,9 @@ final class PerceptionCommands {
         registry.register(CommandSpec.query("block", this::block).needsWorld().group("perception")
             .arg("pos", ArgType.POSITION).option("side", "server: read the integrated server's level (cheats on)",
                 Sides.NAMES)
-            .help("one block: id, non-default properties, block entity type")
-            .field("id", "block id").field("props", "non-default state properties").field("be", "block entity type")
+            .help("one block: id, every state property with its value (defaults too), block entity type")
+            .field("id", "block id").field("props", "every state property with its value")
+            .field("be", "block entity type")
             .field("sub", "with Sable: the sub-level whose plot holds the block")
             .field("world", "with Sable: where that block is in the world").example("block ~0,-1,0"));
         registry.register(CommandSpec.query("blocks", this::blocks).needsWorld().group("perception")
@@ -434,11 +435,11 @@ final class PerceptionCommands {
         });
     }
 
-    /** A block's id, non-default properties and block entity type, as {@code block} reports it. */
+    /** A block's id, every property and block entity type, as {@code block} reports it. */
     static Fields describe(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         Fields fields = new Fields().bare("id", Ids.of(state));
-        Map<String, String> properties = properties(state);
+        Map<String, String> properties = allProperties(state);
         if (!properties.isEmpty()) {
             List<String> pairs = new ArrayList<>();
             properties.forEach((name, value) -> pairs.add(name + "=" + value));
@@ -464,15 +465,20 @@ final class PerceptionCommands {
         return BlockFrame.UNTURNED;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    /** The properties that differ from the block's default state, as the {@code blocks} palette names them. */
     static Map<String, String> properties(BlockState state) {
+        Map<String, String> properties = allProperties(state);
+        Map<String, String> defaults = allProperties(state.getBlock().defaultBlockState());
+        properties.entrySet().removeIf(property -> property.getValue().equals(defaults.get(property.getKey())));
+        return properties;
+    }
+
+    /** Every property with its value, in the state's order. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    static Map<String, String> allProperties(BlockState state) {
         Map<String, String> properties = new LinkedHashMap<>();
-        BlockState defaults = state.getBlock().defaultBlockState();
         for (Property property : state.getProperties()) {
-            Comparable value = state.getValue(property);
-            if (!value.equals(defaults.getValue(property))) {
-                properties.put(property.getName(), property.getName(value));
-            }
+            properties.put(property.getName(), property.getName(state.getValue(property)));
         }
         return properties;
     }
