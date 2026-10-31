@@ -14,6 +14,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import net.fabricmc.api.ClientModInitializer;
+//? if >=26.1 {
+/*import net.fabricmc.fabric.api.client.creativetab.v1.FabricCreativeModeInventoryScreen;
+*///?} else {
+import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
+//?}
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //? if >=26.1 {
@@ -36,9 +41,11 @@ import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 //? if >=26.1 {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
+import net.minecraft.world.item.CreativeModeTab;
 
 /** The mod on Fabric: installs the platform and forwards Fabric API's events to the platform hooks. */
 public final class FabricClientEntrypoint implements ClientModInitializer {
@@ -135,6 +142,17 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             @Override
             public ModConfigs modConfigs() {
                 return ModConfigs.NONE;
+            }
+
+            @Override
+            public List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
+                //? if >=26.1 {
+                /*FabricCreativeModeInventoryScreen pages = (FabricCreativeModeInventoryScreen) screen;
+                return pages.getTabsOnPage(pages.getCurrentPage());
+                *///?} else {
+                FabricCreativeInventoryScreen pages = (FabricCreativeInventoryScreen) screen;
+                return pages.getItemGroupsOnPage(pages.getCurrentPage());
+                //?}
             }
         });
         Blockpilot.init();

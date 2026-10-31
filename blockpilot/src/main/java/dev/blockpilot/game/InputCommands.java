@@ -33,7 +33,9 @@ final class InputCommands {
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
             .group("gui").help("the open GUI: type, title, size, cursor, container slots s<i>, widgets w<i> "
-                + "with @x,y,w,h bounds (GUI-scaled)").example("screen"));
+                + "with @x,y,w,h bounds (GUI-scaled), and in the creative inventory the tabs on its current page as "
+                + "t<i>, the open one selected; click a tab's centre to open it, w<i> < and > turn the page")
+            .example("screen"));
         registry.register(CommandSpec.action("mouse", this::mouse).group("input")
             .form(form -> form.keyword("op", "down", "up").keyword("button", BUTTONS))
             .form(form -> form.keyword("op", "click").keyword("button", BUTTONS).optionalArg("ticks", ArgType.DURATION))

@@ -13,6 +13,8 @@ import java.util.List;
 *///?}
 import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
@@ -119,6 +121,11 @@ public final class NeoForgeClientEntrypoint {
             @Override
             public ModConfigs modConfigs() {
                 return configs;
+            }
+
+            @Override
+            public List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
+                return screen.getCurrentPage().getVisibleTabs();
             }
         });
         Blockpilot.init();

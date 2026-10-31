@@ -8,7 +8,9 @@ import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
 //? if >=26.1 {
 /*import dev.blockpilot.mixin.AbstractWidgetAccessor;
 *///?}
+import dev.blockpilot.mixin.CreativeModeInventoryScreenAccessor;
 import dev.blockpilot.mixin.SelectionListAccessor;
+import dev.blockpilot.platform.ClientPlatform;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
@@ -45,11 +47,15 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.CreativeModeTab;
 
 /** Describes the open GUI so agents can read it and click, type and drag on it by GUI-scaled coordinates. */
 final class Screens {
     /** Enough for a double chest; the creative inventory's item list is capped. */
     private static final int MAX_SLOT_ROWS = 64;
+    /** A creative inventory tab's clickable size, in GUI units. */
+    private static final int TAB_WIDTH = 26;
+    private static final int TAB_HEIGHT = 32;
 
     private Screens() {
     }
@@ -149,7 +155,28 @@ final class Screens {
         for (int index = 0; index < widgets.size(); index++) {
             rows.add(Row.of("w" + index, widget(index, widgets.get(index))));
         }
+        if (screen instanceof CreativeModeInventoryScreen creative) {
+            List<CreativeModeTab> tabs = ClientPlatform.creativeTabsOnPage(creative);
+            for (int index = 0; index < tabs.size(); index++) {
+                rows.add(Row.of("t" + index, tab(creative, index, tabs.get(index))));
+            }
+        }
         return Result.ok(fields).withRows(rows, more);
+    }
+
+    /** Creative tab {@code t<index>}: its name, its GUI-scaled bounds, and whether it is open. */
+    private static Fields tab(CreativeModeInventoryScreen screen, int index, CreativeModeTab tab) {
+        AbstractContainerScreenAccessor offsets = (AbstractContainerScreenAccessor) screen;
+        CreativeModeInventoryScreenAccessor tabs = (CreativeModeInventoryScreenAccessor) screen;
+        String name = tab.getDisplayName().getString();
+        List<Integer> bounds = List.of(offsets.blockpilot$leftPos() + tabs.blockpilot$tabX(tab),
+            offsets.blockpilot$topPos() + tabs.blockpilot$tabY(tab), TAB_WIDTH, TAB_HEIGHT);
+        Fields fields = new Fields().put("kind", "tab", "t" + index + ":tab").put("label", name, "\"" + name + "\"")
+            .put("bounds", bounds, "@" + bounds.get(0) + "," + bounds.get(1) + "," + TAB_WIDTH + "," + TAB_HEIGHT);
+        if (tab == CreativeModeInventoryScreenAccessor.blockpilot$selectedTab()) {
+            fields.put("selected", true, "selected");
+        }
+        return fields;
     }
 
     /** What {@code screen} numbers {@code w<i>}: a widget, or a row of a list, with its bounds when it has any. */

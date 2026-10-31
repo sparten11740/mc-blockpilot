@@ -9,8 +9,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.item.CreativeModeTab;
 
 /**
  * What the mod needs from the mod loader it runs on. The loader's entry point (platform.neoforge or platform.fabric,
@@ -46,6 +48,9 @@ public final class ClientPlatform {
         void registerKeyMapping(KeyMapping mapping);
 
         ModConfigs modConfigs();
+
+        /** The tabs the creative inventory shows on its current page, in the page's order. */
+        List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen);
     }
 
     /** Callbacks the loader's entry point forwards its events to. */
@@ -160,5 +165,9 @@ public final class ClientPlatform {
 
     public static ModConfigs modConfigs() {
         return services().modConfigs();
+    }
+
+    public static List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
+        return services().creativeTabsOnPage(screen);
     }
 }

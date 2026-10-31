@@ -15,6 +15,7 @@
     "ClientboundMoveEntityPacketAccessor",
     "ConnectionAccessor",
     "ConnectionMixin",
+    "CreativeModeInventoryScreenAccessor",
     "EntityRenderDispatcherMixin",
     "EntityTickMixin",
     "FrameMixin",
