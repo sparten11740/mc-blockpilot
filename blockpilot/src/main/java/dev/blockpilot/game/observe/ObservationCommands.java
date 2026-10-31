@@ -46,6 +46,9 @@ import net.minecraft.world.phys.Vec3;
 /** Queries over the sound, message and particle logs. */
 public final class ObservationCommands {
     private static final int MAX_BURST = 60;
+    /** How far {@code camera at … clear} moves the camera at most, and in what steps, in blocks. */
+    private static final double MAX_CLEAR = 8;
+    private static final double CLEAR_STEP = 0.25;
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("screenshot", this::screenshot).group("observe")
@@ -67,15 +70,21 @@ public final class ObservationCommands {
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
-                .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY)))
+                .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY))
+                .optionalKeyword("clear", "clear"))
             .form(form -> form.keyword("op", "reset", "off"))
-            .help("camera at <pos> [look <pos|e<id>>]: renders from that point (the player stays visible); "
+            .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
+                + "clear: when the point is in a block with a collision shape, moves the camera toward the look point "
+                + "(the player's eyes without look), a quarter block at a time, at most 8 blocks and never past it, to "
+                + "the first point clear of such blocks; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
                 + "around the player, so a camera beyond the render distance shows sky. To take in an effect that "
                 + "spans hundreds of blocks, widen the view with option fov 110 and clear it with option renderClouds "
                 + "off (option reset puts both back)")
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
             .field("unloaded", "set instead of block when the client hasn't loaded the camera's chunk")
+            .field("cleared", "clear: how far the camera moved, in blocks, when it had to")
+            .field("uncleared", "clear: set when no clear point was in reach, so the camera stayed at the point")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
             .help("waits until the chunks within the view distance of the player have arrived from the server and "
@@ -247,21 +256,27 @@ public final class ObservationCommands {
         }
         Level level = Minecraft.getInstance().level;
         Position at = context.resolve(args.position("pos"));
-        Vec3 position = new Vec3(at.x(), at.y(), at.z());
+        Vec3 asked = new Vec3(at.x(), at.y(), at.z());
         CameraControl.Point target;
+        Vec3 lookPoint;
         if (!args.has("target")) {
             var player = Minecraft.getInstance().player;
             target = partialTick -> player.getEyePosition();
+            lookPoint = player.getEyePosition();
         } else if (args.type("target") == ArgType.ENTITY) {
             Entity entity = level.getEntity(args.entity("target").id());
             if (entity == null) {
                 throw new CommandException("no_entity", args.word("target"));
             }
             target = partialTick -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
+            lookPoint = entity.getBoundingBox().getCenter();
         } else {
             Position look = context.resolve(args.position("target"));
-            target = rendered(level, new Vec3(look.x(), look.y(), look.z()));
+            lookPoint = new Vec3(look.x(), look.y(), look.z());
+            target = rendered(level, lookPoint);
         }
+        Vec3 clear = args.has("clear") ? clearPoint(level, asked, lookPoint) : asked;
+        Vec3 position = clear == null ? asked : clear;
         CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
         // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
         Position atAbsolute = Rel.absolute(position);
@@ -269,6 +284,11 @@ public final class ObservationCommands {
         return ActionSupport.afterFrames(2, () -> {
             Vec3 looking = target.at(1);
             Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+            if (clear == null) {
+                fields.put("uncleared", true, "uncleared");
+            } else if (!clear.equals(asked)) {
+                fields.put("cleared", Math.round(clear.distanceTo(asked) * 100) / 100.0);
+            }
             if (!Sides.loaded(level, cell)) {
                 // A missing chunk reads as air, but renders as nothing.
                 fields.put("unloaded", true, "unloaded");
@@ -289,6 +309,23 @@ public final class ObservationCommands {
 
     private Action settle(CommandContext context, Args args) throws CommandException {
         return new Settle("settle", Fields::new, args.durationOption("timeout"));
+    }
+
+    /**
+     * The first point from {@code from} toward {@code to}, a quarter block at a time, whose cell has no collision
+     * shape: at most {@link #MAX_CLEAR} blocks on and never past {@code to}; null when there is none.
+     */
+    private static Vec3 clearPoint(Level level, Vec3 from, Vec3 to) {
+        double reach = Math.min(MAX_CLEAR, from.distanceTo(to));
+        Vec3 direction = reach > 0 ? to.subtract(from).normalize() : Vec3.ZERO;
+        for (double moved = 0; moved <= reach; moved += CLEAR_STEP) {
+            Vec3 point = from.add(direction.scale(moved));
+            BlockPos cell = BlockPos.containing(point);
+            if (level.getBlockState(cell).getCollisionShape(level, cell).isEmpty()) {
+                return point;
+            }
+        }
+        return null;
     }
 
     /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
