@@ -942,7 +942,10 @@ final class ActionCommands {
         BlockPos pos = Rel.block(context.resolve(args.position("pos")));
         var level = minecraft().level;
         if (!level.getBlockState(pos).canBeReplaced()) {
-            throw new CommandException("syntax", Rel.of(pos) + " is occupied by " + Ids.of(level.getBlockState(pos)));
+            BlockPos above = pos.above();
+            String free = level.getBlockState(above).canBeReplaced() ? "; " + Rel.of(above) + " above is free" : "";
+            throw new CommandException("syntax", Rel.of(pos) + " is occupied by " + Ids.of(level.getBlockState(pos))
+                + free);
         }
         Direction support = null;
         for (Direction direction : Direction.values()) {
@@ -954,6 +957,10 @@ final class ActionCommands {
         }
         if (support == null) {
             throw new CommandException("no_block", "nothing next to " + Rel.of(pos) + " to place against");
+        }
+        String id = Ids.of(new ItemStack(item));
+        if (InventoryOps.find(item) < 0) {
+            throw new CommandException("no_item", id + "; not in the inventory, give it first (cmd give @s " + id + ")");
         }
         InventoryOps.select(item);
         BlockPos against = pos.relative(support);
