@@ -3,7 +3,7 @@
 ## 1. Block properties and find positions (game-perception)
 
 - [x] 1.1 Make `block` report every state property, defaults included, through a new helper, keeping `blocks`' palette on non-default ones, with the help field and README perception row (D1); verify on the 1.21.1 dev client that `block` on a placed unlit redstone lamp answers `redstone_lamp lit=false`, that `assert block <pos> props.lit==false` answers `ok props.lit=false`, and that a single chest answers with `facing`, `type` and `waterlogged`
-- [ ] 1.2 Say in the `find` help and the README's perception row that `~` positions are relative to the player's block as the find runs and that JSON's `at_abs` gives them absolute; verify `help find` shows it and `--json find stone 8 1` carries `at` and `at_abs`
+- [x] 1.2 Say in the `find` help and the README's perception row that `~` positions are relative to the player's block as the find runs and that JSON's `at_abs` gives them absolute; verify `help find` shows it and `--json find stone 8 1` carries `at` and `at_abs`
 
 ## 2. Screen, entity, camera and place (game-perception, client-observation, player-control)
 
