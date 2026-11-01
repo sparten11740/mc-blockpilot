@@ -12,4 +12,4 @@
 
 ## 3. Integration checks
 
-- [ ] 3.1 Run `./gradlew build` and `openspec validate add-grammar-file --strict`; verify both pass
+- [x] 3.1 Run `./gradlew build` and `openspec validate add-grammar-file --strict`; verify both pass
