@@ -143,6 +143,9 @@ def main():
                                           "server as=player setblock ~ ~ ~3 minecraft:dirt; ?mine ~0,0,3; "
                                           "server as=player fill ~ ~ ~2 ~ ~ ~3 minecraft:air",
          [r"err out_of_reach ~0,0,3 is behind stone ~0,0,2"], True),
+        # Regression: mine aimed at the middle of the carpet's cell, passed over it and hit the ground behind.
+        ("mine a thin block", "server as=player setblock ~ ~ ~2 minecraft:white_carpet; mine ~0,0,2; block ~0,0,2",
+         [r"mine 1/1 white_carpet", r"ok air"]),
         ("inventory moves", "offhand shield; equip iron_helmet; inv", [r"head:iron_helmet", r"offhand:shield"]),
         ("container transfer", "server as=player setblock ~3 ~ ~ minecraft:chest; open ~3,0,0; put cobblestone 5; "
                                "take cobblestone 2; close", [r"moved 5", r"moved 2"]),

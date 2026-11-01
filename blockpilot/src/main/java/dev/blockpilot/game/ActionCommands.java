@@ -798,7 +798,7 @@ final class ActionCommands {
         }
         if (args.type("target") == ArgType.POSITION) {
             BlockPos pos = Rel.block(context.resolve(args.position("target")));
-            Vec3 center = seen(minecraft().level, Vec3.atCenterOf(pos)).get();
+            Vec3 center = seen(minecraft().level, Shapes.centre(minecraft().level, pos)).get();
             if (center.distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
                 throw new CommandException("out_of_reach", Rel.of(pos).toString());
             }
@@ -882,7 +882,8 @@ final class ActionCommands {
                     return finish();
                 }
                 original = minecraft().level.getBlockState(current);
-                aim = seen(minecraft().level, Vec3.atCenterOf(current));
+                // The shape's centre, not the cell's: over a carpet or a rail that is in the air above it.
+                aim = seen(minecraft().level, Shapes.centre(minecraft().level, current));
                 walking = null;
                 blockedTicks = 0;
                 digTicks = 0;

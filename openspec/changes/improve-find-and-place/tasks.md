@@ -24,7 +24,7 @@
 ## 5. Review follow-ups
 
 - [x] 5.1 Correct the held-input wording in the help and README: a failing step not marked ? of any script with an action on the same connection releases everything the connection holds
-- [ ] 5.2 Make `mine` aim at the centre of the block's shape, as `use` does (D9), with a smoke-test regression step mining a carpet by position; verify on the 1.21.1 dev client that the step failed before the change (`err out_of_reach ~0,0,2 is behind grass_block ~0,-1,3`) and passes after, also for a rail
+- [x] 5.2 Make `mine` aim at the centre of the block's shape, as `use` does (D9), with a smoke-test regression step mining a carpet by position; verify on the 1.21.1 dev client that the step failed before the change (`err out_of_reach ~0,0,2 is behind grass_block ~0,-1,3`) and passes after, also for a rail
 - [ ] 5.3 Add smoke-test steps for block states: `find oak_log[axis=x] 4 1` listing a lying log beside a nearer standing one, and the `err syntax` replies for `oak_log[axis=up]` and `stone[axis=x]`
 - [x] 5.4 Make `SpecGrammarTest` read `A - B` across the line-terminator characters a token may hold, and add them to its random alphabet
 - [x] 5.5 Add generated block-state tokens, valid and corrupted, to `SpecGrammarTest`'s random inputs
