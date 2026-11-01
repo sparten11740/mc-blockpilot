@@ -10,6 +10,9 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 
 /** Visits matching blocks in loaded chunks, skipping sections whose palette can't match; never loads a chunk. */
 public final class BlockScan {
+    /** The most matches find and sable:find list. */
+    public static final int MAX_FIND_LIMIT = 1000;
+
     private BlockScan() {
     }
 

@@ -58,7 +58,6 @@ final class SableCommands {
     private static final double TP_ON_SPOT = 0.6;
     /** How far above the spot an untracked player is put to fall onto it: as far as the sub-level's step may miss. */
     private static final double TP_DROP = 0.25;
-    private static final int MAX_FIND_LIMIT = 1000;
     /**
      * The chunk columns sable:find may look through, half a default Sable plot's width. Plot bounds turned back from a
      * tilted world box take in far more than the sub-level, but the scan skips the empty sections around it.
@@ -125,7 +124,7 @@ final class SableCommands {
             .help("blocks aboard a sub-level (id, #tag or *pattern, each also with states: *_slab[type=top]), "
                 + "nearest to the player first, or to near=<pos>, or with sort=x|y|z|-x|-y|-z along the sub-level's "
                 + "own plot axes (level ones nearest first); the order covers all matches, then the limit (default 5, "
-                + "max " + MAX_FIND_LIMIT + ") cuts it, and count= gives all matches when it left some out; "
+                + "max " + BlockScan.MAX_FIND_LIMIT + ") cuts it, and count= gives all matches when it left some out; "
                 + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
             .field("count", "matches in all, when the limit left some out")
@@ -232,7 +231,7 @@ final class SableCommands {
     private static Result find(CommandContext context, Args args) throws CommandException {
         UUID known = knownSubLevel(args, "sub");
         BlockMatcher matcher = BlockMatcher.parse(args.word("what"));
-        int limit = Mth.clamp(args.integer("limit", 5), 1, MAX_FIND_LIMIT);
+        int limit = Mth.clamp(args.integer("limit", 5), 1, BlockScan.MAX_FIND_LIMIT);
         Comparator<Aboard> sort = args.option("sort") == null ? null : alongAxis(args.option("sort"));
         Position near = args.option("near") == null ? null : context.resolve(Position.parse(args.option("near")));
         Vec3 eyes = Minecraft.getInstance().player.getEyePosition();
