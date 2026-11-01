@@ -936,9 +936,9 @@ final class ActionCommands {
                 InputState.release(options().keyAttack);
                 if (++blockedTicks > 10) {
                     if (!walk) {
-                        String what = crosshair(hit);
-                        throw new CommandException("out_of_reach", Rel.of(current)
-                            + (what == null ? " is out of sight; the crosshair hits nothing" : " is behind " + what));
+                        String blocker = crosshair(hit);
+                        throw new CommandException("out_of_reach", Rel.of(current) + (blocker == null
+                            ? " is out of sight; the crosshair hits nothing" : " is behind " + blocker));
                     }
                     current = null;
                 }
@@ -1015,11 +1015,11 @@ final class ActionCommands {
                 // The click places beside whichever face it hits, so another face of the block would put it elsewhere.
                 if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(against)
                     || blockHit.getDirection() != face) {
-                    String what = crosshair(hit);
-                    String side = what != null && hit instanceof BlockHitResult blockHit
-                        ? " on its " + blockHit.getDirection().getName() + " face" : "";
+                    String blocker = crosshair(hit);
+                    String side = hit instanceof BlockHitResult faceHit && hit.getType() == HitResult.Type.BLOCK
+                        ? " on its " + faceHit.getDirection().getName() + " face" : "";
                     throw new CommandException("out_of_reach", "cannot see the face to place against; the crosshair "
-                        + "hits " + (what == null ? "nothing" : what + side));
+                        + "hits " + (blocker == null ? "nothing" : blocker + side));
                 }
                 // A sub-level under way moves on before the click's own pick.
                 lookAt(point.get());

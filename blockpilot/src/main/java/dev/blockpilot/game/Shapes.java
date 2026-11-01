@@ -21,7 +21,7 @@ public final class Shapes {
      * The centre of the face the block's outline shape turns toward its neighbour in that direction (a carpet's top, a
      * fence post's side), else of the block's own face.
      */
-    public static Vec3 faceToward(Level level, BlockPos pos, Direction direction) {
+    static Vec3 faceToward(Level level, BlockPos pos, Direction direction) {
         VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
         ShapeBounds bounds = ShapeBounds.enclosing(shape.toAabbs().stream()
             .map(box -> new ShapeBounds(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ)).toList());
