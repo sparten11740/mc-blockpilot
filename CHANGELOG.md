@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Blockpilot is licensed under Apache-2.0 instead of MIT.
+
 ## 1.0.0-alpha.0 (2026-11-01)
 
 The first release. Blockpilot lets AI agents and scripts observe and control Minecraft through a fast, token-efficient

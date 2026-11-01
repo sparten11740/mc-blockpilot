@@ -144,4 +144,4 @@ control off. MCP over HTTP, the raw line protocol and the launcher's options: [d
 
 ## License
 
-MIT; see [LICENSE](LICENSE).
+Apache-2.0; see [LICENSE](LICENSE). The license doesn't cover the name Blockpilot: forks need a name of their own.
