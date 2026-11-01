@@ -194,7 +194,10 @@ run/blockpilot/blockpilot "camera at ~6,3,6 look ~0,1,0; record 10s showcase hud
 
 The frames come from the game's framebuffer, so the window can be covered or in the background, and the video has the
 window's shape: a 16:9 video needs a 16:9 window. `repeated=` in the reply counts the frames the game had not rendered
-anew in time; when it is high, lower `fps=` or `width=`.
+anew in time; when it is high, lower `fps=` or `width=`. With vsync on, the game renders no faster than the display
+refreshes, and macOS may hold a window in the background to 60 Hz, so a recording at 60 fps repeats frames;
+`option enableVsync off` lets it render faster for the take. While recording, 26.1's lower frame rate for a player who
+hasn't touched the keyboard or mouse for a minute doesn't apply.
 
 Recording needs [ffmpeg](https://ffmpeg.org/) with an H.264 encoder (libx264, as in most builds, or the platform's own:
 VideoToolbox on macOS, Media Foundation on Windows): `brew install ffmpeg` on macOS, `winget install ffmpeg` on

@@ -19,6 +19,7 @@
     "EntityRenderDispatcherMixin",
     "EntityTickMixin",
     "FrameMixin",
+    "FramerateLimitTrackerMixin",
     "GameRendererMixin",
     "GraphicsPresetMixin",
     "GuiMixin",
