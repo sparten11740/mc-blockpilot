@@ -105,6 +105,8 @@ tasks.jar {
     // The project's own services win over the bundled libraries' ones, which name loaders this client doesn't have.
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(agent.output)
+    // The licenses of the bundled libraries whose jars carry none; Mixin's and MixinExtras' come with their classes.
+    from(treeDir.resolve("src/vanilla/licenses"))
     from(bundled.map { zipTree(it) }) {
         exclude("module-info.class", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF",
             "META-INF/services/javax.annotation.processing.Processor", "META-INF/services/cpw.mods.*",
