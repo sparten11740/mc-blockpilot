@@ -14,20 +14,22 @@ For a mod's dev environment, see [docs/dev-environment.md](docs/dev-environment.
 
 ## Two ways to drive it
 
-At every start the game writes a launcher, `<game dir>/blockpilot/blockpilot`, that needs nothing else installed.
+At every start the game writes a launcher, `<game dir>/blockpilot/blockpilot` (`blockpilot.cmd` on Windows), that
+needs nothing else installed. The game dir is `~/Library/Application Support/minecraft` on macOS, `%APPDATA%\.minecraft`
+on Windows and `~/.minecraft` on Linux, or the instance's folder in a launcher such as Prism or CurseForge.
 
 **MCP, for AI agents.** The launcher serves MCP over stdio. Add it to your agent once; it keeps working through
 restarts of the game. The agent gets three tools: `run` (a script of commands), `screenshot` and `help`.
 
 ```sh
-claude mcp add --transport stdio blockpilot -- "$PWD/run/blockpilot/blockpilot" --mcp
+claude mcp add --transport stdio blockpilot -- "<game dir>/blockpilot/blockpilot" --mcp
 ```
 
 **Commands, from a shell or a script.** The launcher runs a script of commands, separated by `;`, and prints one
 reply per command. The first `err` stops the script, and the exit code is 0 when every command answered `ok`.
 
 ```sh
-run/blockpilot/blockpilot --wait-world "select iron_pickaxe; mine #logs x3; inv"
+"<game dir>/blockpilot/blockpilot" --wait-world "select iron_pickaxe; mine #logs x3; inv"
 ```
 
 ```
