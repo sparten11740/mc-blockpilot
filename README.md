@@ -192,12 +192,12 @@ works with them:
   `nbt`, `face`, `use`, `mine`, `place` and `camera`. `status` shows `aboard:<name>` while the player stands on or
   rides a sub-level, and `! sable:boarded <name>` and `! sable:left <name>` arrive when that changes (falling or
   flying off, or the sub-level unloading under the player, counts as leaving; JSON adds the UUID as `id`).
-- `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship. As
-  everywhere, `use` fails with `err obstructed <id> <position>` when something else is in the way; `use <pos> any`
-  clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A camera placed at, or looking at, a plot
-  position rides along. `goto` refuses plot positions; `sable:tp` is the way aboard, and after `err obstructed`,
-  `sable:tp` to the same position moves the player to the nearest spot from which it is in sight, if there is one
-  (else it answers `hidden`).
+- `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship, where a
+  world position is left behind. As everywhere, `use` fails with `err obstructed <id> <position>` when something else is
+  in the way; `use <pos> any` clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A
+  camera placed at, or looking at, a plot position rides along. `goto` refuses plot positions; `sable:tp` is the way
+  aboard, and after `err obstructed`, `sable:tp` to the same position moves the player to the nearest spot from which it
+  is in sight, if there is one (else it answers `hidden`).
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
   the one under the crosshair):
   - `sable:list` lists the sub-levels within 128 blocks, nearest first. In singleplayer with cheats on it adds

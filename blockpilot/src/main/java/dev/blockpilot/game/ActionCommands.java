@@ -65,6 +65,8 @@ final class ActionCommands {
         + "frame its model is drawn in facing north (u west to east, v up, w north to south), turned with the block's "
         + "facing, so seen from the model's north side, usually the block's front, u runs right to left; status shows "
         + "hit=u,v,w for the point under the crosshair";
+    private static final String PLOT_AIM_HELP = "With Sable, a plot position follows its sub-level each tick, so the "
+        + "aim holds on a moving ship, where a world position is left behind. ";
     /** How long {@code use} re-aims at its target for the crosshair to rest on it before it gives up. */
     private static final int MAX_AIM_TICKS = 10;
     /** Set by {@code fly on}, cleared by {@code fly off}; see {@link #holdFlight(boolean)}. */
@@ -74,7 +76,8 @@ final class ActionCommands {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
             .form(form -> form.arg("target", ArgType.POSITION, ArgType.ENTITY).optional(WITHIN_BLOCK))
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
-                + "returns what the crosshair then hits; turn sets yaw and pitch instead. " + WITHIN_BLOCK_HELP)
+                + "returns what the crosshair then hits; turn sets yaw and pitch instead. " + PLOT_AIM_HELP
+                + WITHIN_BLOCK_HELP)
             .example("face 12.5,70.2,-3.4"));
         registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
             .arg("yaw", ArgType.NUMBER).arg("pitch", ArgType.NUMBER).optionalArg("ticks", ArgType.DURATION)
@@ -115,9 +118,9 @@ final class ActionCommands {
                 + "blocks), adding off_target when that was not the target. The server gets the game's own crosshair "
                 + "hit: where the aimed look ray first meets a block's shape, which the reply reports as aim and hit=. "
                 + "Sneaking with an item in either hand, the game skips the block's own use and uses the item, which "
-                + "the reply names as sneak_item. With Sable, after err obstructed at a plot position, sable:tp to "
-                + "that position moves the player to the nearest spot from which it is in sight, if there is one "
-                + "(else it answers hidden). " + WITHIN_BLOCK_HELP)
+                + "the reply names as sneak_item. " + PLOT_AIM_HELP + "After err obstructed at a plot position, "
+                + "sable:tp to that position moves the player to the nearest spot from which it is in sight, if there "
+                + "is one (else it answers hidden). " + WITHIN_BLOCK_HELP)
             .field("aim", "what was clicked")
             .field("off_target", "with any: the target, when the click went to something else")
             .field("sneak_item", "with sneak: the item in hand that took the click instead of the block")
