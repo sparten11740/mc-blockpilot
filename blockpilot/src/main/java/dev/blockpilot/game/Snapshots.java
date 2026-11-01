@@ -44,7 +44,7 @@ final class Snapshots {
         registry.register(CommandSpec.action("delete", this::delete).group("session")
             .keyword("what", "world").arg("folder", ArgType.TEXT)
             .help("delete world <folder>: removes a test world made by create world (and its snapshots); other "
-                + "saves are refused").example("delete world aerolarge-test"));
+                + "saves are refused").example("delete world mymod-test"));
     }
 
     private static Path snapshotsOf(String folder) {

@@ -102,7 +102,7 @@ public final class ObservationCommands {
             .form(form -> form.optionalKeyword("playing", "playing"))
             .option("since", "first tick to include (use the tick of a previous reply), or a duration back from "
                 + "now, e.g. 60t", ArgType.INT, ArgType.DURATION)
-            .option("match", "sound id or pattern, e.g. aerolarge:* or *thunder*; an id without * must be a sound "
+            .option("match", "sound id or pattern, e.g. mymod:* or *thunder*; an id without * must be a sound "
                 + "event the client knows", ArgType.PATTERN, ArgType.ID)
             .option("limit", "most recent n (default 50)", ArgType.INT)
             .help("sounds the client started: id, category, position, volume, pitch, tick (also when muted). vol and "

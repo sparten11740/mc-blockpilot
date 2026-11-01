@@ -9,21 +9,21 @@ import dev.blockpilot.api.Result;
 import java.util.List;
 
 /**
- * The README's extension examples ("Extending it"), copied verbatim so they are compiled and run; only Aerolarge's own
- * classes are stand-ins. Keep the two in sync.
+ * The examples in docs/extending.md, copied verbatim so they are compiled and run; only the mod's own classes are
+ * stand-ins. Keep the two in sync.
  */
-final class ReadmeSnippets {
-    private ReadmeSnippets() {
+final class GuideSnippets {
+    private GuideSnippets() {
     }
 
-    /** Stands in for Aerolarge's landing gear. */
+    /** Stands in for a mod's landing gear. */
     static final class Gear {
         static boolean isExtended() {
             return true;
         }
     }
 
-    /** Stands in for Aerolarge's flaps, which settle at once. */
+    /** Stands in for a mod's flaps, which settle at once. */
     static final class Flaps {
         static void move(String side, double degrees, int ticks) {
         }
@@ -33,7 +33,7 @@ final class ReadmeSnippets {
         }
     }
 
-    /** Stands in for an Aerolarge blueprint build that takes two ticks. */
+    /** Stands in for a mod's blueprint build that takes two ticks. */
     static final class Build {
         private int remaining = 2;
 
@@ -51,11 +51,11 @@ final class ReadmeSnippets {
     }
 
     static void register() {
-        BlockpilotApi.register("aerolarge", CommandSpec.query("gear", (context, args) ->
+        BlockpilotApi.register("mymod", CommandSpec.query("gear", (context, args) ->
                 Result.ok(new Fields().put("extended", Gear.isExtended(), "extended=" + Gear.isExtended())))
             .help("landing gear state").field("extended", "true when down"));
 
-        BlockpilotApi.register("aerolarge", CommandSpec.action("build", (context, args) -> {
+        BlockpilotApi.register("mymod", CommandSpec.action("build", (context, args) -> {
                 Build build = Build.start(args.text("blueprint"));
                 // null while still running; the result ends the action.
                 return () -> build.done()
@@ -63,7 +63,7 @@ final class ReadmeSnippets {
                     : null;
             }).onServer().arg("blueprint", ArgType.TEXT).help("builds a blueprint at the player"));
 
-        BlockpilotApi.register("aerolarge", CommandSpec.action("flaps", (context, args) -> {
+        BlockpilotApi.register("mymod", CommandSpec.action("flaps", (context, args) -> {
                 double degrees = args.word("op").equals("retract") ? 0 : args.number("degrees", 0);
                 Duration over = args.has("ticks") ? args.duration("ticks") : new Duration(1);
                 Flaps.move(args.option("side"), degrees, over.ticks());
@@ -73,11 +73,11 @@ final class ReadmeSnippets {
                 .optionalArg("ticks", ArgType.DURATION))
             .form(form -> form.keyword("op", "retract"))
             .option("side", "one wing only", List.of("left", "right"))
-            .help("moves the flaps").example("aerolarge:flaps set 15 20t"));
+            .help("moves the flaps").example("mymod:flaps set 15 20t"));
     }
 
     static void emit(String id) {
-        BlockpilotApi.emit("aerolarge", "assembled", new Fields().put("uuid", id,
+        BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id,
             "uuid=" + id));
     }
 }
