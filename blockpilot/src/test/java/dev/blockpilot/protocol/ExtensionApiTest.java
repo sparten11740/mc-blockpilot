@@ -59,7 +59,7 @@ class ExtensionApiTest {
             };
         }).onServer());
 
-        ReadmeSnippets.register();
+        GuideSnippets.register();
 
         CommandRegistry registry = new CommandRegistry();
         FakeGame game = new FakeGame();
@@ -74,11 +74,11 @@ class ExtensionApiTest {
 
         Session session = engine.openSession();
         assertEquals("ok speed=5", Formatter.text(engine.submit(session, null, "sample:info").join()));
-        CompletableFuture<Reply> flaps = engine.submit(session, null, "aerolarge:flaps set 15 20t side=left");
+        CompletableFuture<Reply> flaps = engine.submit(session, null, "mymod:flaps set 15 20t side=left");
         engine.tickClient();
         assertEquals("ok", Formatter.text(flaps.join()));
-        assertEquals("err syntax col 24: side= takes left|right, got up; aerolarge:flaps set <degrees> [ticks] "
-            + "[side=left|right]", Formatter.text(engine.submit(session, null, "aerolarge:flaps set 15 side=up")
+        assertEquals("err syntax col 20: side= takes left|right, got up; mymod:flaps set <degrees> [ticks] "
+            + "[side=left|right]", Formatter.text(engine.submit(session, null, "mymod:flaps set 15 side=up")
             .join()));
 
         // wait … until works on extension queries.
@@ -137,16 +137,16 @@ class ExtensionApiTest {
         assertEquals(List.of(), calls);
         game.serverGate = null;
 
-        // The README's examples work as documented.
-        assertEquals("ok extended=true", Formatter.text(engine.submit(session, null, "aerolarge:gear").join()));
-        CompletableFuture<Reply> readmeBuild = engine.submit(session, null, "aerolarge:build hangar");
-        for (int tick = 0; tick < 5 && !readmeBuild.isDone(); tick++) {
+        // The examples in docs/extending.md work as documented.
+        assertEquals("ok extended=true", Formatter.text(engine.submit(session, null, "mymod:gear").join()));
+        CompletableFuture<Reply> guideBuild = engine.submit(session, null, "mymod:build hangar");
+        for (int tick = 0; tick < 5 && !guideBuild.isDone(); tick++) {
             tickBoth.run();
         }
-        assertEquals("ok blocks=42", Formatter.text(readmeBuild.join()));
-        ReadmeSnippets.emit("abc");
-        assertEquals("ok extended=true\n! aerolarge:assembled uuid=abc",
-            Formatter.text(engine.submit(session, null, "aerolarge:gear").join()));
+        assertEquals("ok blocks=42", Formatter.text(guideBuild.join()));
+        GuideSnippets.emit("abc");
+        assertEquals("ok extended=true\n! mymod:assembled uuid=abc",
+            Formatter.text(engine.submit(session, null, "mymod:gear").join()));
 
         // Events and JSON output.
         engine.submit(session, null, "fmt json").join();

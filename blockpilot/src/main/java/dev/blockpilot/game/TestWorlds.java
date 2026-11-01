@@ -50,7 +50,7 @@ final class TestWorlds {
                 List.of("creative", "survival", "adventure", "spectator")).option("seed", "the world seed")
             .option("rule:*", "a game rule, e.g. rule:doDaylightCycle=false")
             .help("a new world with cheats on, joined when ready (defaults flat, peaceful, creative)")
-            .example("create world aerolarge-test flat peaceful rule:doDaylightCycle=false"));
+            .example("create world mymod-test flat peaceful rule:doDaylightCycle=false"));
     }
 
     static Path savesDir() {
