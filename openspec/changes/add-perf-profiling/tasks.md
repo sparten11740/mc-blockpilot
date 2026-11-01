@@ -3,7 +3,7 @@
 ## 1. Stack samples (performance-capture)
 
 - [x] 1.1 Add `ClientPlatform.modOf(String className)` with the services taking a class name (D3), and `StackSamples` with unit tests for the innermost-mod rule, library frames passed over, the `minecraft` and `java` fallbacks, `native` top frames and the rankings; verify the tests pass on all four targets
-- [ ] 1.2 Add the `profile` keyword, the in-tick flag in `MinecraftServerMixin` (both versions), the sampler thread (D1, D2), `server.stacks` in the summary with `mod` and `frame` rows, the help and the README performance row; verify on the 1.21.1 dev client that `perf start a profile` then `perf stop` after 10 s with a moving test sub-level lists `mod` rows including sable and `frame` rows, with the sample counts in the JSON, and that a capture without `profile` has no `stacks`
+- [x] 1.2 Add the `profile` keyword, the in-tick flag in `MinecraftServerMixin` (both versions), the sampler thread (D1, D2), `server.stacks` in the summary with `mod` and `frame` rows, the help and the README performance row; verify on the 1.21.1 dev client that `perf start a profile` then `perf stop` after 10 s with a moving test sub-level lists `mod` rows including sable and `frame` rows, with the sample counts in the JSON, and that a capture without `profile` has no `stacks`
 
 ## 2. Sections, timed form and loaded counts (performance-capture)
 

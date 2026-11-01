@@ -1,11 +1,13 @@
 package dev.blockpilot.game.perf;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import dev.blockpilot.protocol.CommandRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -14,6 +16,12 @@ import org.junit.jupiter.api.Test;
 /** The capture summary, fed the way the instrumentation mixins feed it. */
 class PerfTest {
     private static final Perf.Spot ORIGIN = new Perf.Spot("overworld", 0, 0, 0);
+
+    @Test
+    void theFormsAndExamplesRegister() {
+        // Registering checks that no optional slot takes another's token and that the example parses.
+        assertDoesNotThrow(() -> new PerfCommands().register(new CommandRegistry()));
+    }
 
     @Test
     void idleHooksRecordNothing() {

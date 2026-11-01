@@ -55,7 +55,10 @@ public final class PerfCommands {
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("perf", this::perf).group("performance")
-            .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
+            // profile right after start is the keyword, not a capture name.
+            .form(form -> form.keyword("op", "start").keyword("profile", "profile").optionalArg("name", ArgType.WORD))
+            .form(form -> form.keyword("op", "start")
+                .optional(named -> named.arg("name", ArgType.WORD).optionalKeyword("profile", "profile")))
             .form(form -> form.keyword("op", "stop", "status"))
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
                 + "tick with the chunks generated, loaded and sent and the entities added in them (every tick's are in "
@@ -67,7 +70,10 @@ public final class PerfCommands {
                 + "render time per type with live counts and the mod and class that spawned them on the client or "
                 + "sent them on the integrated server, "
                 + "render-level stage time (NeoForge), section rebuilds, "
-                + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json")
+                + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json. With profile "
+                + "(integrated server), stack samples of the server thread while it ticks, about 20 a second, each "
+                + "counted toward the mod owning the innermost frame outside the JDK, Minecraft, the loaders and Mixin "
+                + "and toward its top frame (native ones marked): stacks in the summary, mod and frame rows")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")
             .example("perf start before"));
     }
@@ -83,7 +89,7 @@ public final class PerfCommands {
                 if (!name.matches("[A-Za-z0-9_.-]{1,64}") || name.startsWith(".")) {
                     throw new CommandException("syntax", "capture names use letters, digits, _ . - (max 64)");
                 }
-                Perf.start(name);
+                Perf.start(name, args.has("profile") ? Profiling.start() : null);
                 return () -> Result.ok(new Fields().put("capture", name, "capturing " + name));
             }
             case "status" -> {
@@ -98,6 +104,18 @@ public final class PerfCommands {
                 }
                 return new Stop();
             }
+        }
+    }
+
+    /** What a profiled capture needs of the integrated server, kept apart so tests load no Minecraft classes. */
+    private static final class Profiling {
+        /** The thread to sample. */
+        static Thread start() throws CommandException {
+            MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+            if (server == null) {
+                throw new CommandException("no_server", "profile samples the integrated server");
+            }
+            return server.getRunningThread();
         }
     }
 
@@ -230,6 +248,9 @@ public final class PerfCommands {
                     rows.add(Row.of("spike:t" + spike.get("tick").getAsLong(), fields));
                 });
         }
+        if (server.has("stacks")) {
+            stackRows(rows, server.getAsJsonObject("stacks"));
+        }
         if (server.has("block_changes")) {
             server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
                 .forEach(change -> {
@@ -273,6 +294,31 @@ public final class PerfCommands {
         addTop(rows, "in", network.getAsJsonArray("clientbound"), "per_s", "/s");
         addTop(rows, "out", network.getAsJsonArray("serverbound"), "per_s", "/s");
         return rows;
+    }
+
+    /** The mods and top frames with the most stack samples, as shares of the samples taken in ticks. */
+    private static void stackRows(List<Row> rows, JsonObject stacks) {
+        stacks.getAsJsonArray("mods").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject).forEach(mod -> {
+            String id = mod.get("mod").getAsString();
+            rows.add(Row.of("mod:" + id, share(new Fields().bare("list", "mod").bare("type", id), mod)));
+        });
+        stacks.getAsJsonArray("frames").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
+            .forEach(frame -> {
+                String name = frame.get("frame").getAsString();
+                Fields fields = new Fields().bare("list", "frame").bare("type", name);
+                if (frame.has("native")) {
+                    fields.put("native", true, "native");
+                }
+                if (frame.has("mod")) {
+                    fields.bare("mod", frame.get("mod").getAsString());
+                }
+                rows.add(Row.of("frame:" + name, share(fields, frame)));
+            });
+    }
+
+    private static Fields share(Fields fields, JsonObject entry) {
+        double share = entry.get("share").getAsDouble();
+        return fields.put("share", share, Numbers.format(share) + "%");
     }
 
     /** A block change's block, with the sub-level it is aboard and its dimension outside the overworld. */

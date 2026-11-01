@@ -113,6 +113,10 @@ public final class Perf {
     }
 
     private static String name;
+    /** Whether the integrated server is inside a tick, as stack samples need to know; kept while a capture runs. */
+    private static volatile boolean serverTicking;
+    /** Samples the server thread in a profiled capture, else null. */
+    private static StackSampler sampler;
     private static volatile int capture;
     private static long startNanos;
     private static Timings serverBlockEntities = new Timings();
@@ -197,7 +201,14 @@ public final class Perf {
     }
 
     public static synchronized void start(String captureName) {
+        start(captureName, null);
+    }
+
+    /** Starts a capture; with a server thread, also samples its stack (a profiled capture). */
+    public static synchronized void start(String captureName, Thread server) {
         name = captureName;
+        serverTicking = false;
+        sampler = server == null ? null : new StackSampler(server, () -> serverTicking);
         capture++;
         serverBlockEntities = new Timings();
         serverEntities = new Timings();
@@ -242,6 +253,13 @@ public final class Perf {
     }
 
     // Hooks called by the instrumentation mixins. Each returns at once unless a capture is active.
+
+    /** At the start and the end of each integrated server tick. */
+    public static void serverTicking(boolean ticking) {
+        if (active) {
+            serverTicking = ticking;
+        }
+    }
 
     public static void blockEntityStart(boolean client) {
         if (!active) {
@@ -500,6 +518,8 @@ public final class Perf {
      */
     public static synchronized JsonObject stop(JsonObject serverCounts, Map<String, Integer> liveParticles) {
         active = false;
+        JsonObject stacks = sampler == null ? null : sampler.stop();
+        sampler = null;
         double seconds = (System.nanoTime() - startNanos) / 1e9;
         JsonObject summary = new JsonObject();
         summary.addProperty("name", name);
@@ -549,6 +569,9 @@ public final class Perf {
             if (serverCounts != null) {
                 server.add("loaded", serverCounts);
             }
+        }
+        if (stacks != null) {
+            server.add("stacks", stacks);
         }
         summary.add("server", server);
 
