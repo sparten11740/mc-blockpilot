@@ -960,7 +960,8 @@ final class ActionCommands {
         }
         String id = Ids.of(new ItemStack(item));
         if (InventoryOps.find(item) < 0) {
-            throw new CommandException("no_item", id + "; not in the inventory, give it first (cmd give @s " + id + ")");
+            throw new CommandException("no_item",
+                id + "; not in the inventory, give it first (cmd give @s " + id + ")");
         }
         InventoryOps.select(item);
         BlockPos against = pos.relative(support);
