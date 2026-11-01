@@ -11,12 +11,13 @@ and new targets can be added without forking the code.
 ### Requirement: One jar per target from one source tree
 The build SHALL produce one mod jar for each configured `<minecraft>-<loader>`
 target from a single shared source tree. The targets are `1.21.1-neoforge`,
-`1.21.1-fabric`, `26.1-neoforge` and `26.1-fabric`.
+`1.21.1-fabric`, `26.1-neoforge`, `26.1-fabric` and `26.1-vanilla`, which runs
+without a mod loader.
 
 #### Scenario: Full build produces every target
 - **WHEN** a developer runs the root build task
 - **THEN** a jar is produced for `1.21.1-neoforge`, `1.21.1-fabric`,
-  `26.1-neoforge` and `26.1-fabric`
+  `26.1-neoforge`, `26.1-fabric` and `26.1-vanilla`
 - **AND** each jar's file name includes the mod version, the Minecraft version
   and the loader (e.g. `blockpilot-0.1.0+26.1.2-fabric.jar`)
 
@@ -71,10 +72,16 @@ documented capability gaps that the target reports through `help`.
   fields
 
 ### Requirement: Mod metadata generated per target
-Each jar SHALL include loader metadata generated from shared mod properties plus
-that target's version ranges. The metadata declares the mod as client-side for
-this change.
+Each loader's jar SHALL include loader metadata generated from shared mod
+properties plus that target's version ranges. The metadata declares the mod as
+client-side for this change. The vanilla jar SHALL carry a Java agent manifest
+instead, with the mod version.
 
 #### Scenario: Version range enforced by loader
 - **WHEN** the 1.21.1 jar is installed on a different Minecraft version
 - **THEN** the loader refuses to load it and reports the version mismatch
+
+#### Scenario: Vanilla jar as an agent
+- **WHEN** the `26.1-vanilla` jar's manifest is read
+- **THEN** it names the agent's entry class and the mod version, and the jar
+  has no loader metadata
