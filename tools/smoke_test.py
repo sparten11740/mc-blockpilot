@@ -77,6 +77,19 @@ def json_problem(script, output, expected_error):
     return None
 
 
+def check_grammar_file(game_dir):
+    """Every row `help grammar` prints is a line of docs/grammar.ebnf; returns a problem, or None."""
+    code, output = run(game_dir, "help grammar", as_json=True)
+    if code != 0:
+        return f"exit {code}: {output.strip()}"
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "grammar.ebnf")
+    with open(path, encoding="utf-8") as source:
+        lines = set(source.read().splitlines())
+    missing = [row["ebnf"] for row in json.loads(output.splitlines()[0])["results"][0]["rows"]
+               if row["ebnf"] not in lines]
+    return f"not in docs/grammar.ebnf (rerun tools/grammar.py): {missing[:3]}" if missing else None
+
+
 def check_perception_is_passive(game_dir):
     """Runs every perception command across a few dozen ticks; returns a problem, or None if nothing changed."""
     script = "inv; status; perf start passive; " + "; ".join(f"{query}; wait 2t" for query in PERCEPTION) \
@@ -209,6 +222,12 @@ def main():
         print(f"FAIL perception is passive: {problem}")
     else:
         print("pass perception is passive")
+    problem = check_grammar_file(args.game_dir)
+    if problem:
+        failures += 1
+        print(f"FAIL grammar file: {problem}")
+    else:
+        print("pass grammar file")
     code, output = run(args.game_dir, "status; inv", as_json=True)
     try:
         reply = json.loads(output.splitlines()[0])
@@ -227,7 +246,7 @@ def main():
     else:
         failures += 1
         print(f"FAIL clean up: {output.strip()}")
-    total = len(steps) + 3 + (1 if args.shapes else 0)
+    total = len(steps) + 4 + (1 if args.shapes else 0)
     print(f"{total - failures}/{total} passed")
     return 1 if failures else 0
 
