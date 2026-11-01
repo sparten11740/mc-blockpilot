@@ -45,6 +45,7 @@ java {
 sourceSets.main {
     // The other loader's half of the mod (its entry points, event wiring and mixins) is left out of this build.
     java.exclude("dev/blockpilot/platform/neoforge/**")
+    java.exclude("dev/blockpilot/platform/vanilla/**")
     if (!withSable) {
         java.exclude("dev/blockpilot/compat/sable/**")
     }

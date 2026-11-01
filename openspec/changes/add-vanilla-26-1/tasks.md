@@ -2,7 +2,7 @@
 
 ## 1. Spike
 
-- [ ] 1.1 Prove an agent can boot Mixin on vanilla 26.1.2 (D2, D7): a `26.1-vanilla` node on ModDevGradle's vanilla mode, an agent with its own Mixin service applying one mixin that logs each frame; verify the dev vanilla client logs it; if it can't be made to work, stop and re-plan
+- [x] 1.1 Prove an agent can boot Mixin on vanilla 26.1.2 (D2, D7): a `26.1-vanilla` node on ModDevGradle's vanilla mode, an agent with its own Mixin service applying one mixin that logs each frame; verify the dev vanilla client logs it; if it can't be made to work, stop and re-plan
 
 ## 2. The vanilla target
 

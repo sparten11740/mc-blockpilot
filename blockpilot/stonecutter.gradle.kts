@@ -6,8 +6,8 @@ plugins {
 stonecutter active "1.21.1-neoforge"
 
 stonecutter parameters {
-    // `//? if fabric` and `//? if neoforge` in the sources, from the loader half of the node's name.
-    constants.match(current.project.substringAfterLast('-'), "fabric", "neoforge")
+    // `//? if fabric`, `//? if neoforge` and `//? if vanilla` in the sources, from the loader half of the node's name.
+    constants.match(current.project.substringAfterLast('-'), "fabric", "neoforge", "vanilla")
 
     // Plain renames, swapped in for the versions that have them; the sources keep the names of the version they are
     // checked in for (vcsVersion in settings.gradle.kts). Switching the active version swaps them back, so each new
