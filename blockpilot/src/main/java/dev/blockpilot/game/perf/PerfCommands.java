@@ -25,15 +25,18 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
 //? if >=26.1 {
@@ -42,6 +45,7 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.profiling.ProfileResults;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -52,6 +56,8 @@ public final class PerfCommands {
     private static final Gson GSON = new GsonBuilder().create();
     private static final Gson PRETTY = new GsonBuilder().setPrettyPrinting().create();
     private static final int COUNT_WAIT_TICKS = 100;
+    /** The share of the whole profile a section needs for its own row in the text reply, in percent. */
+    private static final double SECTION_ROW_MIN = 5;
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("perf", this::perf).group("performance")
@@ -73,7 +79,11 @@ public final class PerfCommands {
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json. With profile "
                 + "(integrated server), stack samples of the server thread while it ticks, about 20 a second, each "
                 + "counted toward the mod owning the innermost frame outside the JDK, Minecraft, the loaders and Mixin "
-                + "and toward its top frame (native ones marked): stacks in the summary, mod and frame rows")
+                + "and toward its top frame (native ones marked): stacks in the summary, mod and frame rows; and the "
+                + "server's metrics recorder (as F3+L, which must not be running), which records the first 10 s: "
+                + "sections in the summary with their share of the parent and of the whole, down to 0.5%, unspecified "
+                + "kept, the seconds covered and the recorder's report, kept as <name>-profile beside the summary, a "
+                + "sections row and section rows for those at 5% or more")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")
             .example("perf start before"));
     }
@@ -109,31 +119,88 @@ public final class PerfCommands {
 
     /** What a profiled capture needs of the integrated server, kept apart so tests load no Minecraft classes. */
     private static final class Profiling {
-        /** The thread to sample. */
+        /** The recorder's results and the path of the report it saves, for the running profiled capture. */
+        private static CompletableFuture<ProfileResults> results;
+        private static CompletableFuture<Path> report;
+
+        /** Starts the server's metrics recorder and gives the thread to sample. */
         static Thread start() throws CommandException {
             MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
             if (server == null) {
                 throw new CommandException("no_server", "profile samples the integrated server");
             }
+            if (server.isRecordingMetrics()) {
+                throw new CommandException("busy", "the server's metrics recorder runs (F3+L, or /perf on a "
+                    + "dedicated server); let it end first");
+            }
+            CompletableFuture<ProfileResults> recorded = new CompletableFuture<>();
+            CompletableFuture<Path> saved = new CompletableFuture<>();
+            results = recorded;
+            report = saved;
+            server.execute(() -> server.startRecordingMetrics(recorded::complete, saved::complete));
             return server.getRunningThread();
+        }
+
+        /** Ends the recorder if it still runs, which hands over its results at the end of the tick; server thread. */
+        static void finish(MinecraftServer server) {
+            if (server.isRecordingMetrics()) {
+                server.finishRecordingMetrics();
+            }
+        }
+
+        /** Whether the results and the report are in. */
+        static boolean done() {
+            return results.isDone() && report.isDone();
+        }
+
+        /**
+         * Adds the sections, the seconds they cover and the report, as far as they are in, to the server's part. The
+         * recorder writes its report to a temporary folder; it moves next to the summary as {@code <name>-profile}.
+         */
+        static void addTo(JsonObject server, String name) {
+            ProfileResults recorded = results.getNow(null);
+            if (recorded != null) {
+                // Each list starts with the section itself, then its children.
+                server.add("sections", SectionTree.of(path -> recorded.getTimes(path).stream().skip(1)
+                    .map(field -> new SectionTree.Section(field.name, field.percentage, field.globalPercentage,
+                        field.count)).toList(), ProfileResults.PATH_SEPARATOR, recorded.getTickDuration()));
+                server.addProperty("sections_s", Perf.round(recorded.getNanoDuration() / 1e9));
+            }
+            Path saved = report.getNow(null);
+            if (saved != null) {
+                server.addProperty("profile_report", keep(saved, name).toAbsolutePath().toString());
+            }
         }
     }
 
     /** Stops the capture: asks the integrated server for its counts (without blocking), then builds the summary. */
     private static final class Stop implements Action {
         private CompletableFuture<JsonObject> counts;
+        private boolean profiled;
+        private JsonObject summary;
         private int waited;
 
         @Override
         public Result tick() throws CommandException {
             if (counts == null) {
                 MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
-                counts = server == null ? CompletableFuture.completedFuture(null) : server.submit(() -> loaded(server));
+                profiled = Perf.profiled();
+                counts = server == null ? CompletableFuture.completedFuture(null)
+                    : server.submit(() -> loaded(server, profiled));
             }
             if (!counts.isDone() && waited++ < COUNT_WAIT_TICKS) {
                 return null;
             }
-            JsonObject summary = Perf.stop(counts.getNow(null), liveParticles());
+            if (summary == null) {
+                summary = Perf.stop(counts.getNow(null), liveParticles());
+            }
+            // The capture has ended; the recorder's results and report may take a few more ticks.
+            if (profiled && !Profiling.done() && waited++ < COUNT_WAIT_TICKS) {
+                return null;
+            }
+            if (profiled) {
+                Profiling.addTo(summary.getAsJsonObject("server"), summary.get("name").getAsString());
+            }
             Path file = save(summary);
             JsonObject reply = forReply(summary);
             return Result.ok(overview(reply, file)).withRows(top(reply));
@@ -163,8 +230,14 @@ public final class PerfCommands {
         return live;
     }
 
-    /** Loaded block entities and entities per type across the server's levels; on the server thread. */
-    private static JsonObject loaded(MinecraftServer server) {
+    /**
+     * Loaded block entities and entities per type across the server's levels, after ending the metrics recorder of a
+     * profiled capture; on the server thread.
+     */
+    private static JsonObject loaded(MinecraftServer server, boolean profiled) {
+        if (profiled) {
+            Profiling.finish(server);
+        }
         Map<String, Integer> blockEntities = new TreeMap<>();
         Map<String, Integer> entities = new TreeMap<>();
         for (ServerLevel level : server.getAllLevels()) {
@@ -187,8 +260,38 @@ public final class PerfCommands {
         return result;
     }
 
+    private static Path directory() {
+        return ClientPlatform.gameDir().resolve("blockpilot").resolve("perf");
+    }
+
+    /** Moves a recorder report from its temporary folder to {@code <name>-profile} beside the summary, if it can. */
+    private static Path keep(Path report, String name) {
+        Path kept = directory().resolve(name + "-profile");
+        try (Stream<Path> files = Files.walk(report)) {
+            Files.createDirectories(kept);
+            for (Path file : files.toList()) {
+                Path target = kept.resolve(report.relativize(file).toString());
+                if (Files.isDirectory(file)) {
+                    Files.createDirectories(target);
+                } else {
+                    Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (IOException e) {
+            return report;
+        }
+        try (Stream<Path> files = Files.walk(report)) {
+            for (Path file : files.sorted(Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(file);
+            }
+        } catch (IOException e) {
+            // The copy is kept; a leftover temporary folder does no harm.
+        }
+        return kept;
+    }
+
     private static Path save(JsonObject summary) throws CommandException {
-        Path directory = ClientPlatform.gameDir().resolve("blockpilot").resolve("perf");
+        Path directory = directory();
         Path file = directory.resolve(summary.get("name").getAsString() + ".json");
         try {
             Files.createDirectories(directory);
@@ -251,6 +354,20 @@ public final class PerfCommands {
         if (server.has("stacks")) {
             stackRows(rows, server.getAsJsonObject("stacks"));
         }
+        if (server.has("sections")) {
+            double seconds = server.get("sections_s").getAsDouble();
+            Fields covered = new Fields().bare("list", "sections").put("seconds", seconds,
+                Numbers.format(seconds) + "s");
+            if (server.has("profile_report")) {
+                covered.bare("report", server.get("profile_report").getAsString());
+            }
+            rows.add(Row.of("sections", covered));
+            for (JsonObject section : SectionTree.atLeast(server.getAsJsonArray("sections"), SECTION_ROW_MIN)) {
+                String path = section.get("path").getAsString();
+                rows.add(Row.of("section:" + path, share(new Fields().bare("list", "section").bare("type", path),
+                    section.get("of_whole").getAsDouble())));
+            }
+        }
         if (server.has("block_changes")) {
             server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
                 .forEach(change -> {
@@ -300,7 +417,8 @@ public final class PerfCommands {
     private static void stackRows(List<Row> rows, JsonObject stacks) {
         stacks.getAsJsonArray("mods").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject).forEach(mod -> {
             String id = mod.get("mod").getAsString();
-            rows.add(Row.of("mod:" + id, share(new Fields().bare("list", "mod").bare("type", id), mod)));
+            rows.add(Row.of("mod:" + id, share(new Fields().bare("list", "mod").bare("type", id),
+                mod.get("share").getAsDouble())));
         });
         stacks.getAsJsonArray("frames").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
             .forEach(frame -> {
@@ -312,12 +430,11 @@ public final class PerfCommands {
                 if (frame.has("mod")) {
                     fields.bare("mod", frame.get("mod").getAsString());
                 }
-                rows.add(Row.of("frame:" + name, share(fields, frame)));
+                rows.add(Row.of("frame:" + name, share(fields, frame.get("share").getAsDouble())));
             });
     }
 
-    private static Fields share(Fields fields, JsonObject entry) {
-        double share = entry.get("share").getAsDouble();
+    private static Fields share(Fields fields, double share) {
         return fields.put("share", share, Numbers.format(share) + "%");
     }
 

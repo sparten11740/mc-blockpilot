@@ -191,6 +191,11 @@ public final class Perf {
         return name;
     }
 
+    /** Whether the running capture samples stacks and profiles sections. */
+    public static synchronized boolean profiled() {
+        return sampler != null;
+    }
+
     /** Which capture runs or ran last, so per-capture caches elsewhere know when to start over. */
     public static int capture() {
         return capture;
