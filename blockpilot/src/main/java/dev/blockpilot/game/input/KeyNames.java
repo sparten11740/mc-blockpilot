@@ -1,5 +1,6 @@
 package dev.blockpilot.game.input;
 
+import dev.blockpilot.api.CommandException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -14,6 +15,15 @@ public final class KeyNames {
     private static final String KEYBOARD = "key.keyboard.";
 
     private KeyNames() {
+    }
+
+    /** The keys of a chord as written, joined by {@code +}; a single key is a chord of one. */
+    public static List<String> chord(String word) throws CommandException {
+        List<String> keys = List.of(word.split("\\+", -1));
+        if (keys.contains("")) {
+            throw new CommandException("syntax", "a chord joins key names with +, not " + word);
+        }
+        return keys;
     }
 
     /** What to look up for a name as written: the name itself, then with {@code _} between words as {@code .}. */

@@ -17,6 +17,7 @@ import dev.blockpilot.game.input.KeyNames;
 import dev.blockpilot.mixin.InputKeyAccessor;
 import dev.blockpilot.mixin.KeyMappingAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
+import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -70,7 +71,8 @@ final class InputCommands {
             .form(form -> form.arg("key", ArgType.WORD).optionalArg("ticks", ArgType.DURATION))
             .help("a key by name (w, space, left_shift or left.shift, e, f5, escape, enter) or key mapping id "
                 + "(key.use, key.inventory, a mod's mapping); press = down then up after Nt (default 1t), as a key "
-                + "alone does (key escape; key up is the up arrow)")
+                + "alone does (key escape; key up is the up arrow); + joins keys into a chord (key f3+l): press holds "
+                + "the earlier keys while it presses the last, down holds them all, and they go up in reverse order")
             .example("key press key.inventory"));
         registry.register(CommandSpec.action("type", this::type).group("input").arg("text", ArgType.TEXT)
             .help("types text into the focused text field").example("type hello"));
@@ -349,32 +351,24 @@ final class InputCommands {
     }
 
     private Action key(CommandContext context, Args args) throws CommandException {
-        InputConstants.Key key = resolveKey(args.word("key"));
-        if (key.equals(((KeyMappingAccessor) BlockpilotClient.get().toggleKey()).blockpilot$key())) {
-            throw new CommandException("syntax", "the agent control toggle is the player's; agents can't press it");
+        InputConstants.Key toggle = ((KeyMappingAccessor) BlockpilotClient.get().toggleKey()).blockpilot$key();
+        List<InputConstants.Key> keys = new ArrayList<>();
+        for (String name : KeyNames.chord(args.word("key"))) {
+            InputConstants.Key key = resolveKey(name);
+            if (key.equals(toggle)) {
+                throw new CommandException("syntax", "the agent control toggle is the player's; agents can't press it");
+            }
+            keys.add(key);
         }
-        boolean mouse = key.getType() == InputConstants.Type.MOUSE;
-        int code = key.getValue();
         int session = context.sessionId();
         String op = args.has("op") ? args.word("op") : "press";
         if (op.equals("down")) {
-            if (mouse) {
-                InputState.holdButton(session, code);
-            } else {
-                InputState.holdKey(session, code);
-            }
+            keys.forEach(key -> hold(session, key));
             return () -> Result.ok();
         }
         if (op.equals("up")) {
-            if (mouse) {
-                InputState.releaseButton(code);
-            } else {
-                InputState.releaseKey(code);
-            }
+            release(keys);
             return () -> Result.ok();
-        }
-        if (mouse) {
-            return holdFor(session, code, ticks(args, 1));
         }
         int ticks = ticks(args, 1);
         int[] step = {0};
@@ -382,25 +376,44 @@ final class InputCommands {
             @Override
             public Result tick() {
                 if (step[0]++ == 0) {
-                    InputState.holdKey(session, code);
+                    keys.forEach(key -> hold(session, key));
                 }
                 if (step[0] < ticks) {
                     return null;
                 }
-                InputState.releaseKey(code);
+                release(keys);
                 return Result.ok();
             }
 
             @Override
             public void cancel() {
-                InputState.releaseKey(code);
+                release(keys);
             }
 
             @Override
             public String label() {
-                return "key";
+                return keys.size() == 1 && keys.get(0).getType() == InputConstants.Type.MOUSE ? "mouse" : "key";
             }
         };
+    }
+
+    private static void hold(int session, InputConstants.Key key) {
+        if (key.getType() == InputConstants.Type.MOUSE) {
+            InputState.holdButton(session, key.getValue());
+        } else {
+            InputState.holdKey(session, key.getValue());
+        }
+    }
+
+    /** Lets go of the keys in reverse order, so modifiers held first go up last. */
+    private static void release(List<InputConstants.Key> keys) {
+        for (InputConstants.Key key : keys.reversed()) {
+            if (key.getType() == InputConstants.Type.MOUSE) {
+                InputState.releaseButton(key.getValue());
+            } else {
+                InputState.releaseKey(key.getValue());
+            }
+        }
     }
 
     private Action type(CommandContext context, Args args) {

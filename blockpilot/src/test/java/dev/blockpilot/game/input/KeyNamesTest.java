@@ -1,13 +1,29 @@
 package dev.blockpilot.game.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import dev.blockpilot.api.CommandException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class KeyNamesTest {
     private static final List<String> KNOWN = List.of("left_shift", "right_shift", "left_control", "left_alt", "left",
         "space", "f5", "key.mouse.left");
+
+    @Test
+    void aChordSplitsAtPlus() throws CommandException {
+        assertEquals(List.of("f3"), KeyNames.chord("f3"));
+        assertEquals(List.of("left_control", "left_shift", "key.use"),
+            KeyNames.chord("left_control+left_shift+key.use"));
+    }
+
+    @Test
+    void aChordWithAnEmptyPartIsRefused() {
+        for (String word : List.of("f3+", "+l", "f3++l", "+")) {
+            assertEquals("syntax", assertThrows(CommandException.class, () -> KeyNames.chord(word)).code());
+        }
+    }
 
     @Test
     void underscoresAlsoTryDots() {
