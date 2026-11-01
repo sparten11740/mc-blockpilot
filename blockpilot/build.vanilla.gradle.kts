@@ -21,6 +21,7 @@ base {
 
 tasks.jar {
     destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    from(rootProject.file("LICENSE")) { rename { "LICENSE_$modId" } }
 }
 
 java {

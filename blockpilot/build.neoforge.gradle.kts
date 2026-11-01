@@ -30,9 +30,10 @@ base {
     archivesName = modId
 }
 
-// Every jar lands in the root build/libs.
+// Every jar lands in the root build/libs, with the license, named so it can't clash with another jar's.
 tasks.jar {
     destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
+    from(rootProject.file("LICENSE")) { rename { "LICENSE_$modId" } }
 }
 
 java {
