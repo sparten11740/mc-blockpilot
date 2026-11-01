@@ -6,7 +6,7 @@
 
 ## 2. The vanilla target
 
-- [ ] 2.1 Make the node build the whole mod (D5): exclude the loader packages, teach Stonecutter's loader constant `vanilla`, give loader conditions that use Fabric API a vanilla branch, bundle Mixin, MixinExtras, ASM and access-widener, and write the agent manifest; verify all five targets compile and the vanilla jar holds the agent, the libraries and no loader metadata
+- [x] 2.1 Make the node build the whole mod (D5): exclude the loader packages, teach Stonecutter's loader constant `vanilla`, give loader conditions that use Fabric API a vanilla branch, bundle Mixin, MixinExtras, ASM and access-widener, and write the agent manifest; verify all five targets compile and the vanilla jar holds the agent, the libraries and no loader metadata
 - [ ] 2.2 Add the agent's version check (vanilla-agent) and the access widener (D4); verify a 1.21.1 vanilla client started with the agent logs why and starts as without it, and that the 26.1.2 client applies the widener
 
 ## 3. The platform layer
