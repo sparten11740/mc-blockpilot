@@ -70,7 +70,9 @@ final class ServerCommands {
                 + "~ and @p count from the player; options go before the command (server as=player settle=0t "
                 + "<command>); a command that fails, an execute if test that doesn't pass among them, answers err "
                 + "command_failed with its message and result, which ends the script unless the step starts with ? "
-                + "(?server execute if block ~ ~-1 ~ minecraft:stone)")
+                + "(?server execute if block ~ ~-1 ~ minecraft:stone); a ; inside the command, as in an NBT int "
+                + "array, is written \\; so it doesn't end the step (server data modify storage test:x ids "
+                + "set value [I\\;1,2])")
             .field("result", "the command's return value").field("success", "true/false")
             .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
