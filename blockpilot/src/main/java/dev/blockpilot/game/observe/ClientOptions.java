@@ -17,6 +17,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
 import net.minecraft.client.PrioritizeChunkUpdates;
+import net.minecraft.sounds.SoundSource;
 //? if >=26.1 {
 /*import net.minecraft.client.GraphicsPreset;
 import net.minecraft.server.level.ParticleStatus;
@@ -374,6 +375,11 @@ public final class ClientOptions {
             new Decimal("glintSpeed", Options::glintSpeed),
             new Hud());
         settings.forEach(setting -> SETTINGS.put(setting.name(), setting));
+        for (SoundSource source : SoundSource.values()) {
+            Setting volume = new Decimal("soundCategory_" + source.getName(),
+                options -> options.getSoundSourceOptionInstance(source));
+            SETTINGS.put(volume.name(), volume);
+        }
     }
 
     private ClientOptions() {

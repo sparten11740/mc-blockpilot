@@ -14,19 +14,19 @@ import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.List;
 
-/** {@code option}: lists, reads and sets the client's video options, and puts back what agents changed. */
+/** {@code option}: lists, reads and sets the client's video and sound options, and puts back what agents changed. */
 public final class OptionCommands {
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("option", this::option).group("observe")
             .form(form -> { })
             .form(form -> form.keyword("op", "reset"))
             .form(form -> form.arg("name", ArgType.WORD).optionalArg("value", ArgType.WORD))
-            .help("option: the video options and their values; option <name>: its value and what it takes; option "
-                + "<name> <value>: sets it and answers once the chunks have arrived and rebuilt, as settle does "
-                + "(settled=<s>, or unsettled pending=<n> at timeout=, default 20s); option reset: puts back what "
-                + "agents changed, as leave, quitting, the agent-control key and shutdown do, with the options the "
-                + "game changed along with them. Names as in options.txt (renderDistance, particles, …) plus hud "
-                + "on|off. Never written to options.txt")
+            .help("option: the video and sound options and their values; option <name>: its value and what it "
+                + "takes; option <name> <value>: sets it and answers once the chunks have arrived and rebuilt, as "
+                + "settle does (settled=<s>, or unsettled pending=<n> at timeout=, default 20s); option reset: puts "
+                + "back what agents changed, as leave, quitting, the agent-control key and shutdown do, with the "
+                + "options the game changed along with them. Names as in options.txt (renderDistance, particles, "
+                + "soundCategory_music, …) plus hud on|off. Never written to options.txt")
             .field("was", "the value before the first agent change").field("takes", "the accepted values")
             .field("settled", "seconds until the chunks had arrived and were rebuilt")
             .field("missing", "chunks still to arrive at the timeout, when there are any")

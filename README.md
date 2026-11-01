@@ -166,12 +166,14 @@ ok
 | sable | with Sable only: `sable:list [r] [side=server]`, `sable:info <sub> [brief] [side=server]` (`brief`: yaw, pitch, roll, speed, climb, world y, height above ground), `sable:find <sub> <block\|#tag\|*pattern> [limit] [sort=x\|y\|z\|-x\|-y\|-z] [near=<pos>]`, `sable:world <pos>`, `sable:plot <sub> <pos>`, `sable:tp <pos>`, `sable:tp <sub> <block\|#tag\|*pattern>` (see [With Sable](#with-sable)) |
 | meta | `help`, `help grammar`, `fmt text\|json`, `sub on\|off`, `sub log <level>\|off`, `stop`, `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`, `assert <query> <field><op><value>`, `if <query> <field><op><value> then <command>`, `sample <query> [and <query>…] every <Nt> x<n> [clock=server]` (a row per query and run; client and server queries together, also `side=server` ones, run on the client's ticks with one server read per run, and those rows add the client's own tick `c<n>`; under `load server` such reads hold the client, which `held_client=` reports), `sample <query> [and <query>…] every <Nt> [x<n>] while <action|wait>` (samples beside the action or wait) |
 
-Video options an agent changes with `option` (graphics, render distance, particles, `hud`, …) apply at once, are never
-written to `options.txt`, and are put back when the player or the agent leaves the world, when the player turns agent
-control off (F8) and when the game closes; Blockpilot's own world switches (`join`, `create world`, snapshots) keep
-them. The log names what was put back. Names are those of the running version's `options.txt`: from 26.1, where Fast,
-Fancy and Fabulous became presets, `graphicsPreset`, `cutoutLeaves` and `improvedTransparency` take the place of
-`graphicsMode`. A preset sets a dozen other options; `option reset` puts those back too.
+Video and sound options an agent changes with `option` (graphics, render distance, particles, `hud`, sound volumes, …)
+apply at once, are never written to `options.txt`, and are put back when the player or the agent leaves the world, when
+the player turns agent control off (F8) and when the game closes; Blockpilot's own world switches (`join`,
+`create world`, snapshots) keep them. The log names what was put back. Names are those of the running version's
+`options.txt`: from 26.1, where Fast, Fancy and Fabulous became presets, `graphicsPreset`, `cutoutLeaves` and
+`improvedTransparency` take the place of `graphicsMode`. A preset sets a dozen other options; `option reset` puts
+those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<category>` (`soundCategory_master`,
+`soundCategory_music`, `soundCategory_block`, …; `soundCategory_ui` from 26.1).
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
 on, or opened to LAN with cheats); `create world` makes one. That is deliberate: an agent playing a survival world
