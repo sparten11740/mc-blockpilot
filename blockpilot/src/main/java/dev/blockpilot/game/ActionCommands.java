@@ -10,6 +10,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Form;
+import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.input.AimedClick;
@@ -76,8 +77,11 @@ final class ActionCommands {
         registry.register(CommandSpec.action("face", this::face).needsWorld().group("movement")
             .form(form -> form.arg("target", ArgType.POSITION, ArgType.ENTITY).optional(WITHIN_BLOCK))
             .help("turns to look at a point (decimals allowed, block centers for whole numbers) or an entity; "
-                + "returns what the crosshair then hits; turn sets yaw and pitch instead. " + PLOT_AIM_HELP
-                + WITHIN_BLOCK_HELP)
+                + "returns what the crosshair then hits, and when that is nothing, how far the target is and how far "
+                + "the player reaches, to tell a target out of reach from empty air; turn sets yaw and pitch instead. "
+                + PLOT_AIM_HELP + WITHIN_BLOCK_HELP)
+            .field("dist", "with aim:nothing: blocks from the eyes to the point aimed at")
+            .field("reach", "with aim:nothing: the player's reach for that kind of target (block or entity), in blocks")
             .example("face 12.5,70.2,-3.4"));
         registry.register(CommandSpec.action("turn", this::turn).needsWorld().group("movement")
             .arg("yaw", ArgType.NUMBER).arg("pitch", ArgType.NUMBER).optionalArg("ticks", ArgType.DURATION)
@@ -362,6 +366,7 @@ final class ActionCommands {
     private Action face(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Supplier<Vec3> target = point(context, args, "target");
+        boolean entity = args.type("target") == ArgType.ENTITY;
         int[] step = {0};
         return named("face", () -> {
             Vec3 point = target.get();
@@ -369,7 +374,16 @@ final class ActionCommands {
                 throw new CommandException("no_entity", args.word("target"));
             }
             lookAt(point);
-            return step[0]++ == 0 ? null : Result.ok(hit());
+            if (step[0]++ == 0) {
+                return null;
+            }
+            Fields fields = hit();
+            if ("nothing".equals(fields.get("aim"))) {
+                double reach = entity ? player().entityInteractionRange() : player().blockInteractionRange();
+                fields.put("dist", Numbers.round(player().getEyePosition().distanceTo(point)))
+                    .put("reach", Numbers.round(reach));
+            }
+            return Result.ok(fields);
         });
     }
 
