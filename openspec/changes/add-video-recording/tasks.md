@@ -30,4 +30,4 @@
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 and 26.1 dev clients, in text and JSON mode; verify all pass, including the new steps
+- [x] 5.1 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 and 26.1 dev clients, in text and JSON mode; verify all pass, including the new steps
