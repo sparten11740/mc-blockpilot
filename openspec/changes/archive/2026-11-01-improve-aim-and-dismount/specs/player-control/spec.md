@@ -1,29 +1,14 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
-### Requirement: Basic movement and orientation
-The mod SHALL provide `move <forward|back|left|right> <blocks|Nt>`, `jump`,
-`sneak on|off`, `sprint on|off`, `face <pos|e<id>>` (aim at the target's center
-or a block face), and `turn <yaw> <pitch> [Nt]` (set absolute rotation,
-optionally smoothed over N ticks). A move by distance SHALL fail with `err
-stuck moved=<blocks>` once the player has made no progress for 20 ticks. A bare
-`sneak` SHALL tap sneak: hold it for a few ticks and let go, long enough for
-the server to see it, which dismounts a seated or riding player.
-
-#### Scenario: Face a block
-- **WHEN** an agent runs `face ~2,0,1`
-- **THEN** the crosshair target afterwards is that block
-
-#### Scenario: Walking into a wall
-- **WHEN** an agent runs `move forward 16` facing a wall
-- **THEN** the result is `err stuck moved=0` about a second later, not a
-  timeout
+### Requirement: A bare sneak taps it
+A bare `sneak` SHALL tap sneak: hold it for a few ticks and let go, long enough
+for the server to see it, which dismounts a seated or riding player. `sneak on`
+and `sneak off` keep holding and releasing it.
 
 #### Scenario: Dismount with a tap
 - **WHEN** an agent riding a minecart runs `sneak`
 - **THEN** the player leaves the minecart, and sneak is no longer held once
   the command has answered
-
-## ADDED Requirements
 
 ### Requirement: Face says how far a missed target is
 When `face` ends with the crosshair on nothing, its reply SHALL add
