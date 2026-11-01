@@ -23,7 +23,8 @@
   injects into `tickChildren`. `tickServer` brackets a whole tick in both
   versions.
 - Sable's companion finds a sub-level by chunk (`getContaining`), which
-  `SubLevels.at` wraps, and `near(level, EVERYWHERE)` lists them all.
+  `SubLevels.at` wraps, and `SubLevels.all` lists them. Its plot chunks are
+  served by position, outside the chunk map's full chunks.
 
 ## Goals / Non-Goals
 
@@ -108,10 +109,14 @@ it.
 
 ### D6: Loaded chunks and sub-levels
 
-The stop task counts each level's visible chunk holders, as it already walks
-them for block entities, and sorts each chunk into `plots` when `SubLevels.at`
-finds a sub-level at its origin, else into `world`. With Sable it adds
-`sub_levels` from `near(level, EVERYWHERE)` per level. These go into
+Sable keeps plot chunks out of the chunk map's full chunks and hands them out
+by position through `getChunkNow`, so the stop task counts them per
+sub-level. For each sub-level from `SubLevels.all`, it asks `getChunkNow` for
+every chunk under its plot bounds and counts each distinct chunk once as
+`plots`, with its block entities. The visible chunk
+holders give the `world` chunks: those whose latest chunk is full, passing
+over holders in a plot, which Sable registers too and which the plot count
+already covers. With Sable, `sub_levels` counts the sub-levels. These go into
 `server.loaded` beside the existing counts, and into one `loaded` text row.
 
 ## Risks / Trade-offs
@@ -123,4 +128,6 @@ finds a sub-level at its origin, else into `world`. With Sable it adds
   into, usually Minecraft's] → The frames below it, in the mod's own classes,
   usually carry the cost. The help says how samples are attributed.
 - [A short capture has few samples] → The summary gives the sample count. 10 s
-  gives about 200.
+  gives about 200, kept only for the part of it the server spends in ticks.
+- [Plot bounds grow while a sub-level is turned, so `plots` can include plot
+  chunks it doesn't fill] → They are chunks Sable holds for it all the same.
