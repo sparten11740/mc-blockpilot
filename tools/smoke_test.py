@@ -146,6 +146,11 @@ def main():
         # Regression: mine aimed at the middle of the carpet's cell, passed over it and hit the ground behind.
         ("mine a thin block", "server as=player setblock ~ ~ ~2 minecraft:white_carpet; mine ~0,0,2; block ~0,0,2",
          [r"mine 1/1 white_carpet", r"ok air"]),
+        ("find by state", "server as=player setblock ~1 ~ ~-2 minecraft:oak_log[axis=y]; "
+                          "server as=player setblock ~2 ~ ~-2 minecraft:oak_log[axis=x]; find oak_log[axis=x] 4 1; "
+                          "server as=player fill ~1 ~ ~-2 ~2 ~ ~-2 minecraft:air", [r"^  oak_log ~2,0,-2$"]),
+        ("block state errors", "?find oak_log[axis=up]; ?find stone[axis=x]",
+         [r"err syntax axis of oak_log takes x\|y\|z, not up", r"err syntax stone has no states"], True),
         ("inventory moves", "offhand shield; equip iron_helmet; inv", [r"head:iron_helmet", r"offhand:shield"]),
         ("container transfer", "server as=player setblock ~3 ~ ~ minecraft:chest; open ~3,0,0; put cobblestone 5; "
                                "take cobblestone 2; close", [r"moved 5", r"moved 2"]),
