@@ -2,7 +2,7 @@
 
 ## 1. Plot positions in camera and face (sable-sublevels)
 
-- [ ] 1.1 Put `camera at … clear`'s look point into the camera point's frame before stepping (D1), and say in the `camera` help that with Sable a plot position follows its sub-level each frame; verify on the 1.21.1 dev client in a world with a sub-level that `camera at <plot position inside one of its blocks> clear` without `look` answers `cleared=` of a few blocks at most with the camera in air, that the same with `look <plot position aboard>` still clears, and that `help camera` names plot positions
+- [x] 1.1 Put `camera at … clear`'s look point into the camera point's frame before stepping (D1), and say in the `camera` help that with Sable a plot position follows its sub-level each frame; verify on the 1.21.1 dev client in a world with a sub-level that `camera at <plot position inside one of its blocks> clear` without `look` answers `cleared=` of a few blocks at most with the camera in air, that the same with `look <plot position aboard>` still clears, and that `help camera` names plot positions
 - [ ] 1.2 Say in the `face` and `use` help that with Sable a plot position follows its sub-level each tick, and point to it in the README's Sable section; verify `help face` and `help use` show it
 
 ## 2. Face reach and the sneak tap (player-control)

@@ -20,6 +20,7 @@ import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.game.Sides;
 import dev.blockpilot.game.input.KeyNames;
 import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.SoundEngineAccessor;
 import dev.blockpilot.mixin.SoundManagerAccessor;
 import dev.blockpilot.protocol.CommandFailure;
@@ -74,6 +75,7 @@ public final class ObservationCommands {
                 .optionalKeyword("clear", "clear"))
             .form(form -> form.keyword("op", "reset", "off"))
             .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
+                + "with Sable, a plot position, for the point or the look, rides along with its sub-level each frame; "
                 + "clear: when the point is in a block with a collision shape, moves the camera toward the look point "
                 + "(the player's eyes without look), a quarter block at a time, at most 8 blocks and never past it, to "
                 + "the first point clear of such blocks; "
@@ -275,7 +277,7 @@ public final class ObservationCommands {
             lookPoint = new Vec3(look.x(), look.y(), look.z());
             target = rendered(level, lookPoint);
         }
-        Vec3 clear = args.has("clear") ? clearPoint(level, asked, lookPoint) : asked;
+        Vec3 clear = args.has("clear") ? clearPoint(level, asked, inFrameOf(level, asked, lookPoint)) : asked;
         Vec3 position = clear == null ? asked : clear;
         CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
         // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
@@ -326,6 +328,25 @@ public final class ObservationCommands {
             }
         }
         return null;
+    }
+
+    /**
+     * The look point in the camera point's frame, so that {@link #clearPoint} steps along the real view line: the plot
+     * of the camera point's sub-level, else the world. As given when that sub-level is gone.
+     */
+    private static Vec3 inFrameOf(Level level, Vec3 camera, Vec3 look) {
+        SubLevels subLevels = SableSupport.subLevels();
+        SubLevels.Info cameraSubLevel = subLevels.at(level, BlockPos.containing(camera));
+        SubLevels.Info lookSubLevel = subLevels.at(level, BlockPos.containing(look));
+        if (cameraSubLevel != null && lookSubLevel != null && cameraSubLevel.id().equals(lookSubLevel.id())) {
+            return look;
+        }
+        Vec3 world = subLevels.toWorld(level, look);
+        if (cameraSubLevel == null) {
+            return world;
+        }
+        Vec3 plot = subLevels.toPlot(level, cameraSubLevel.id(), world);
+        return plot == null ? look : plot;
     }
 
     /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
