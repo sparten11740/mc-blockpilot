@@ -16,11 +16,11 @@ import net.minecraft.world.item.CreativeModeTab;
 
 /**
  * What the mod needs from the mod loader it runs on. The loader's entry point (platform.neoforge or platform.fabric,
- * only one of which is in any jar) installs the implementation before anything else runs, so the rest of the mod
- * calls these without knowing which loader it is on.
+ * or on the plain client the agent's platform.vanilla; only one of them is in any jar) installs the implementation
+ * before anything else runs, so the rest of the mod calls these without knowing which loader it is on.
  */
 public final class ClientPlatform {
-    /** The loader-specific half; see the entry points in platform.neoforge and platform.fabric. */
+    /** The loader-specific half; see the entry points in platform.neoforge, platform.fabric and platform.vanilla. */
     public interface Services {
         String loaderName();
 

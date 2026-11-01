@@ -4,7 +4,15 @@
   "package": "dev.blockpilot.platform.vanilla.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "SpikeMixin"
+    "ChatComponentMixin",
+    "ChatListenerMixin",
+    "ClientLanguageMixin",
+    "GuiMixin",
+    "LevelChunkMixin",
+    "MinecraftMixin",
+    "MinecraftServerMixin",
+    "OptionsMixin",
+    "ScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
