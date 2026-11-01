@@ -11,6 +11,7 @@ import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
@@ -56,6 +57,7 @@ public final class PerfCommands {
     private static final Gson GSON = new GsonBuilder().create();
     private static final Gson PRETTY = new GsonBuilder().setPrettyPrinting().create();
     private static final int COUNT_WAIT_TICKS = 100;
+    private static final long NANOS_PER_TICK = 50_000_000L;
     /** The share of the whole profile a section needs for its own row in the text reply, in percent. */
     private static final double SECTION_ROW_MIN = 5;
 
@@ -66,6 +68,10 @@ public final class PerfCommands {
             .form(form -> form.keyword("op", "start")
                 .optional(named -> named.arg("name", ArgType.WORD).optionalKeyword("profile", "profile")))
             .form(form -> form.keyword("op", "stop", "status"))
+            .form(form -> form.arg("for", ArgType.DURATION).keyword("profile", "profile")
+                .optionalArg("name", ArgType.WORD))
+            .form(form -> form.arg("for", ArgType.DURATION)
+                .optional(named -> named.arg("name", ArgType.WORD).optionalKeyword("profile", "profile")))
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
                 + "tick with the chunks generated, loaded and sent and the entities added in them (every tick's are in "
                 + "the file), tick time per block-entity and entity type, the block "
@@ -83,23 +89,21 @@ public final class PerfCommands {
                 + "server's metrics recorder (as F3+L, which must not be running), which records the first 10 s: "
                 + "sections in the summary with their share of the parent and of the whole, down to 0.5%, unspecified "
                 + "kept, the seconds covered and the recorder's report, kept as <name>-profile beside the summary, a "
-                + "sections row and section rows for those at 5% or more")
+                + "sections row and section rows for those at 5% or more. perf <duration> [name] [profile] starts a "
+                + "capture, ends it after that long on the wall clock (a tick counting 50 ms) and answers as perf stop "
+                + "does; stop cancels the wait and leaves the capture running until perf stop")
             .field("summary", "the full summary (JSON mode)").field("file", "where it was saved")
             .example("perf start before"));
     }
 
     private Action perf(CommandContext context, Args args) throws CommandException {
+        if (args.has("for")) {
+            start(args);
+            return new Timed(args.duration("for"));
+        }
         switch (args.word("op")) {
             case "start" -> {
-                if (Perf.active) {
-                    throw new CommandException("busy", "capture " + Perf.name() + " is running; perf stop first");
-                }
-                String name = args.has("name") ? args.word("name")
-                    : "capture-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-                if (!name.matches("[A-Za-z0-9_.-]{1,64}") || name.startsWith(".")) {
-                    throw new CommandException("syntax", "capture names use letters, digits, _ . - (max 64)");
-                }
-                Perf.start(name, args.has("profile") ? Profiling.start() : null);
+                String name = start(args);
                 return () -> Result.ok(new Fields().put("capture", name, "capturing " + name));
             }
             case "status" -> {
@@ -114,6 +118,49 @@ public final class PerfCommands {
                 }
                 return new Stop();
             }
+        }
+    }
+
+    /** Starts a capture by the name given or one made from the time, profiled with {@code profile}; gives the name. */
+    private static String start(Args args) throws CommandException {
+        if (Perf.active) {
+            throw new CommandException("busy", "capture " + Perf.name() + " is running; perf stop first");
+        }
+        String name = args.has("name") ? args.word("name")
+            : "capture-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        if (!name.matches("[A-Za-z0-9_.-]{1,64}") || name.startsWith(".")) {
+            throw new CommandException("syntax", "capture names use letters, digits, _ . - (max 64)");
+        }
+        Perf.start(name, args.has("profile") ? Profiling.start() : null);
+        return name;
+    }
+
+    /**
+     * {@code perf <duration>}: waits that long on the wall clock, then stops the capture as {@code perf stop} does.
+     * Cancelled before then, it leaves the capture running, so nothing measured is lost.
+     */
+    private static final class Timed implements Action {
+        private final long endNanos;
+        private Stop stop;
+
+        Timed(Duration duration) {
+            endNanos = System.nanoTime() + duration.ticks() * NANOS_PER_TICK;
+        }
+
+        @Override
+        public Result tick() throws CommandException {
+            if (stop == null) {
+                if (System.nanoTime() < endNanos) {
+                    return null;
+                }
+                stop = new Stop();
+            }
+            return stop.tick();
+        }
+
+        @Override
+        public String label() {
+            return "perf";
         }
     }
 
