@@ -8,7 +8,7 @@
 ## 2. Face reach and the sneak tap (player-control)
 
 - [x] 2.1 Add `dist=` and `reach=` to `face`'s reply when the crosshair hits nothing (D2), with the help fields and the README movement row; verify on the 1.21.1 dev client in survival that `face` at a block 8 blocks away answers `aim:nothing` with `dist=` above 7 and `reach=4.5`, that `face` at air within reach gives `dist=` below `reach=`, and that `face` at a block in reach carries neither
-- [ ] 2.2 Make a bare `sneak` a four-tick tap (D3), with the help and README movement row; verify on the 1.21.1 dev client that `sneak` while riding a minecart leaves it, that `status` afterwards shows no `sneaking`, and that `sneak on` and `sneak off` still hold and release
+- [x] 2.2 Make a bare `sneak` a four-tick tap (D3), with the help and README movement row; verify on the 1.21.1 dev client that `sneak` while riding a minecart leaves it, that `status` afterwards shows no `sneaking`, and that `sneak on` and `sneak off` still hold and release
 
 ## 3. Integration checks
 

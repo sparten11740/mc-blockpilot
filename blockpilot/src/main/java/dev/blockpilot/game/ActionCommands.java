@@ -93,9 +93,12 @@ final class ActionCommands {
                 + "without progress").field("moved", "blocks moved").example("move forward 3"));
         registry.register(CommandSpec.action("jump", (context, args) -> pulse(context, options().keyJump, 2, "jump"))
             .needsWorld().group("movement").help("one jump").example("jump"));
-        registry.register(CommandSpec.action("sneak", (context, args) -> toggle(context, options().keyShift,
-            args.word("state"))).needsWorld().group("movement").keyword("state", "on", "off")
-            .help("holds or releases sneak").example("sneak on"));
+        registry.register(CommandSpec.action("sneak", (context, args) -> args.has("state")
+                ? toggle(context, options().keyShift, args.word("state"))
+                : pulse(context, options().keyShift, 5, "sneak"))
+            .needsWorld().group("movement").optionalKeyword("state", "on", "off")
+            .help("holds or releases sneak; alone, taps it for a fifth of a second, as to leave a seat or vehicle")
+            .example("sneak on"));
         registry.register(CommandSpec.action("sprint", (context, args) -> toggle(context, options().keySprint,
             args.word("state"))).needsWorld().group("movement").keyword("state", "on", "off")
             .help("holds or releases sprint").example("sprint on"));
