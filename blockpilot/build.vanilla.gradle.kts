@@ -70,6 +70,18 @@ dependencies {
     bundled("net.fabricmc:access-widener:2.1.0") {
         isTransitive = false
     }
+    // The shared tests, as in the loader builds.
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("com.google.code.gson:gson:2.10.1")
+    testImplementation("io.netty:netty-handler:4.1.97.Final")
+    testImplementation("org.slf4j:slf4j-api:2.0.9")
+    testImplementation("org.apache.logging.log4j:log4j-core:2.22.1")
+    testImplementation("org.joml:joml:1.10.5")
+    testImplementation("de.bottlecaps.rr:rr-lib:2.6") {
+        exclude(group = "org.apache.xmlgraphics")
+    }
 }
 
 neoForge {
@@ -112,6 +124,15 @@ tasks.jar {
             "META-INF/services/javax.annotation.processing.Processor", "META-INF/services/cpw.mods.*",
             "META-INF/services/org.spongepowered.tools.*")
     }
+}
+
+tasks.test {
+    useJUnitPlatform()
+    // The grammar tests read the specs, the active changes and the grammar file, so editing them reruns the tests.
+    inputs.dir(rootProject.file("openspec")).withPropertyName("openspec")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.file("docs/grammar.ebnf"), rootProject.file("docs/grammar.xhtml"))
+        .withPropertyName("grammarFile").withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 tasks.withType<JavaCompile>().configureEach {
