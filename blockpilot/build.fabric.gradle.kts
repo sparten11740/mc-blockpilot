@@ -145,6 +145,9 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+    // The grammar tests read the specs and the active changes, so editing them reruns the tests.
+    inputs.dir(rootProject.file("openspec")).withPropertyName("openspec")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))
