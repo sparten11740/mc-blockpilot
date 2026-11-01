@@ -20,7 +20,8 @@ class ArgTypeTest {
     private static List<String> tokens() {
         List<String> tokens = new ArrayList<>(List.of("5", "-5", "5.5", "0", "x6", "e5", "w3", "s5", "20t", "1.5s",
             "0.5", "1,2", "1,2,3", "~1,2,3", "stone", "minecraft:stone", "#logs", "*ore*", "full", "a:b",
-            "0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6", "0F3A9C2E-1B2C-4D5E-8F90-A1B2C3D4E5F6", "Stone", "a=b", "hp<5"));
+            "0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6", "0F3A9C2E-1B2C-4D5E-8F90-A1B2C3D4E5F6", "Stone", "a=b", "hp<5",
+            "oak_log[axis=y]"));
         Random random = new Random(1703);
         String alphabet = "0123456789aestwxzAZ~,.-:#*/_=<>!";
         for (int index = 0; index < 30_000; index++) {

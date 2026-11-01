@@ -3,12 +3,9 @@ package dev.blockpilot.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.blockpilot.Specs;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +39,7 @@ class SpecGrammarTest {
         RECOGNIZERS.put("id", Lexicon::isId);
         RECOGNIZERS.put("tag", Lexicon::isTag);
         RECOGNIZERS.put("pattern", Lexicon::isPattern);
+        RECOGNIZERS.put("block-state", Lexicon::isBlockState);
         RECOGNIZERS.put("identifier", Lexicon::isIdentifier);
         RECOGNIZERS.put("field-path", Lexicon::isFieldPath);
         RECOGNIZERS.put("option", token -> Lexicon.optionEquals(token) >= 0);
@@ -53,26 +51,21 @@ class SpecGrammarTest {
         RECOGNIZERS.put("namespace", Lexicon::isNamespace);
     }
 
-    private static final String ALPHABET = "0123456789aestwxzAZ~,.-:#*/_=<>!$&|";
+    private static final String ALPHABET = "0123456789aestwxzAZ~,.-:#*/_=<>!$&|[]";
     private static final List<String> EXAMPLES = List.of("1,2,3", "~0,-1,0", "-1.5,64", "e812", "w3", "s5", "x6",
         "0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6", "0F3A9C2E-1B2C-4D5E-8F90-A1B2C3D4E5F6", "-12", "1.5", "20t", "0.5s",
         "stone", "minecraft:stone", "c:ores/iron", "#logs", "*ore*", "create:*", "max_hp", "rows.0.id", "near=2",
         "rule:keepInventory=true", "id==air", "hp<$max_hp", "hp<max_hp", "a>==b", "pos==1,2,3", "full", "5.5t",
-        "-5t", "5.", "since=", "mine", "my.mod-id_2", "stone[facing=north]");
+        "-5t", "5.", "since=", "mine", "my.mod-id_2", "stone[facing=north]", "#logs[axis=y]", "create:*[a=b]",
+        "minecraft:oak_log[axis=y,waterlogged=false]", "oak_log[]", "oak_log[axis]", "oak_log[axis=y",
+        "oak_log[Axis=y]", "oak_log[axis=y,]", "x6[a=b]", "5[a=b]", "e2[a=b]", "a:b:c[d=e]", "*#[a=b]",
+        "a[b=c][d=e]");
 
     private static Map<String, String> productions;
-    private static final Map<String, String> REGEXES = new HashMap<>();
 
     @BeforeAll
     static void readTheSpec() throws IOException {
-        Path root = Paths.get("").toAbsolutePath();
-        while (!Files.exists(root.resolve("settings.gradle.kts"))) {
-            root = root.getParent();
-        }
-        String spec = Files.readString(root.resolve("openspec/specs/command-language/spec.md"));
-        int start = spec.indexOf("```ebnf");
-        String block = spec.substring(start + "```ebnf".length(), spec.indexOf("```", start + 3));
-        productions = Ebnf.productions(block.replaceAll("(?s)/\\*.*?\\*/", ""));
+        productions = Ebnf.productions(Specs.grammar().replaceAll("(?s)/\\*.*?\\*/", ""));
     }
 
     @Test
@@ -101,17 +94,14 @@ class SpecGrammarTest {
         });
     }
 
+    /** Translated afresh at each reference, so the groups an exception names stay unique within one pattern. */
     private static String regex(String name) {
-        String cached = REGEXES.get(name);
-        if (cached == null) {
-            cached = new Ebnf(productions.get(name), SpecGrammarTest::regex).translate();
-            REGEXES.put(name, cached);
-        }
-        return cached;
+        return new Ebnf(productions.get(name), SpecGrammarTest::regex).translate();
     }
 
     /** Just enough W3C EBNF to translate the token productions: references, literals, classes and operators. */
     private static final class Ebnf {
+        private static int groups;
         private final String text;
         private final Function<String, String> references;
         private int position;
@@ -135,33 +125,32 @@ class SpecGrammarTest {
             return productions;
         }
 
-        /** The whole right-hand side; an exception at the top applies to the whole token. */
+        /** The whole right-hand side. */
         String translate() {
-            String result = choice(true);
+            String result = choice();
             if (position < text.length()) {
                 throw new IllegalStateException("unread EBNF: " + text.substring(position));
             }
             return result;
         }
 
-        private String choice(boolean whole) {
+        private String choice() {
             boolean atomic = !excluding;
             excluding = false;
             List<String> alternatives = new ArrayList<>();
-            alternatives.add(sequence(whole));
+            alternatives.add(sequence());
             while (peek() == '|') {
                 position++;
-                alternatives.add(sequence(whole));
+                alternatives.add(sequence());
             }
             // An atomic group: the first alternative that matches is taken and never revisited, as the spec reads.
-            // What a whole token is checked against (A - B) is any alternative of B matching the whole token.
+            // What A - B checks A's match against is any alternative of B matching all of it.
             String group = atomic ? "(?>" : "(?:";
             return alternatives.size() == 1 ? alternatives.get(0) : group + String.join("|", alternatives) + ")";
         }
 
-        private String sequence(boolean whole) {
+        private String sequence() {
             StringBuilder out = new StringBuilder();
-            int items = 0;
             while (position < text.length() && peek() != '|' && peek() != ')') {
                 String item = postfixed();
                 if (peek() == '-') {
@@ -169,12 +158,15 @@ class SpecGrammarTest {
                     excluding = true;
                     String excluded = postfixed();
                     excluding = false;
-                    // A whole-token exception looks at the end of the input, a character's at one character.
-                    boolean wholeToken = whole && items == 0 && (position >= text.length() || peek() == '|');
-                    item = "(?!(?:" + excluded + ")" + (wholeToken ? "$" : "") + ")(?:" + item + ")";
+                    // B mustn't match exactly what A matched, whatever follows it: A's match and the rest of the input
+                    // are captured, then B followed by that rest must not reach the end.
+                    int group = groups++;
+                    String matched = "a" + group;
+                    String rest = "r" + group;
+                    item = "(?=(?<" + matched + ">" + item + ")(?<" + rest + ">.*+))(?!(?:" + excluded + ")\\k<" + rest
+                        + ">$)\\k<" + matched + ">";
                 }
                 out.append(item);
-                items++;
             }
             return out.toString();
         }
@@ -194,7 +186,7 @@ class SpecGrammarTest {
             char next = peek();
             if (next == '(') {
                 position++;
-                String inner = choice(false);
+                String inner = choice();
                 expect(')');
                 return "(?:" + inner + ")";
             }

@@ -23,6 +23,7 @@ public final class Lexicon {
     private static final String NAMESPACE_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789_.-";
     private static final String PATH_CHARACTERS = NAMESPACE_CHARACTERS + "/";
     private static final String PATTERN_CHARACTERS = PATH_CHARACTERS + ":*";
+    private static final String STATE_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789_";
     private static final String HEX_DIGITS = "0123456789abcdefABCDEF";
     private static final String NAME_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789_";
     private static final int DECIMAL_DIGITS = 9;
@@ -176,6 +177,33 @@ public final class Lexicon {
     public static boolean isPattern(String token) {
         Scanner scanner = new Scanner(token);
         return scanner.run(PATTERN_CHARACTERS) > 0 && scanner.atEnd() && token.indexOf('*') >= 0;
+    }
+
+    /**
+     * {@code block-state ::= ( pattern | tag | id ) "[" state ( "," state )* "]"}, with
+     * {@code state ::= state-name "=" state-value} and both names {@code [a-z0-9_]+}.
+     */
+    public static boolean isBlockState(String token) {
+        int open = token.indexOf('[');
+        if (open < 0 || !token.endsWith("]")) {
+            return false;
+        }
+        String block = token.substring(0, open);
+        if (!isPattern(block) && !isTag(block) && !isId(block)) {
+            return false;
+        }
+        for (String state : token.substring(open + 1, token.length() - 1).split(",", -1)) {
+            int equals = state.indexOf('=');
+            if (equals < 0 || !isStateName(state.substring(0, equals)) || !isStateName(state.substring(equals + 1))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isStateName(String token) {
+        Scanner scanner = new Scanner(token);
+        return scanner.run(STATE_CHARACTERS) > 0 && scanner.atEnd();
     }
 
     /** {@code identifier ::= [A-Za-z_] [A-Za-z0-9_]*} */

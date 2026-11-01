@@ -159,6 +159,21 @@ class LexiconTest {
         assertFalse(Lexicon.isPattern("*Ore"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"oak_log[axis=y]", "#logs[axis=y]", "create:*[a=b]", "*_stairs[half=top,facing=east]",
+        "minecraft:oak_log[axis=y,waterlogged=false]", "mymod:window[size=3]"})
+    void blockStates(String token) {
+        assertTrue(Lexicon.isBlockState(token));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"oak_log", "oak_log[]", "oak_log[axis]", "oak_log[axis=y", "oak_log[Axis=y]",
+        "oak_log[axis=Y]", "oak_log[axis=y,]", "oak_log[=y]", "[axis=y]", "x6[a=b]", "a:b:c[d=e]",
+        "oak_log[axis=y][b=c]", "oak_log[axis=y]x"})
+    void notBlockStates(String token) {
+        assertFalse(Lexicon.isBlockState(token));
+    }
+
     @Test
     void namesAndNamespaces() {
         assertTrue(Lexicon.isName("mine"));

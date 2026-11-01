@@ -116,6 +116,10 @@ final class Grammar {
         path         ::= [a-z0-9_./-]+
         tag          ::= "#" id
         pattern      ::= ( [a-z0-9_.:/-]* "*" )+ [a-z0-9_.:/-]*
+        block-state  ::= ( pattern | tag | id ) "[" state ( "," state )* "]"
+        state        ::= state-name "=" state-value
+        state-name   ::= [a-z0-9_]+
+        state-value  ::= [a-z0-9_]+
         """;
 
     private Grammar() {

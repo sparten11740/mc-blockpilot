@@ -21,6 +21,8 @@ public enum ArgType {
     ID("id", "an id like stone or create:cogwheel", Lexicon::isId),
     TAG("tag", "a tag like #logs", Lexicon::isTag),
     PATTERN("pattern", "a pattern like *ore*", Lexicon::isPattern),
+    /** A block id, tag or pattern with states in brackets. */
+    BLOCK_STATE("block-state", "a block with states like oak_log[axis=y]", Lexicon::isBlockState),
     WORD("word", "a word", Lexicon::isWord),
     /** The rest of the step as written; only as a form's last slot. */
     TEXT("text", "text", null),

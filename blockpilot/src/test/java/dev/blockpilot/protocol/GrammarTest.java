@@ -3,46 +3,20 @@ package dev.blockpilot.protocol;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.blockpilot.Specs;
 import dev.blockpilot.api.Action;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class GrammarTest {
-    private static final String EBNF = "```ebnf\n";
     private static final CommandSpec.QueryHandler QUERY = (context, args) -> Result.ok();
     private static final CommandSpec.ActionHandler ACTION = (context, args) -> (Action) () -> Result.ok();
-
-    /** The grammar the code implements: that of an active change that modifies it, else the main spec's. */
-    private static String specGrammar() throws IOException {
-        Path root = Paths.get("").toAbsolutePath();
-        while (!Files.exists(root.resolve("settings.gradle.kts"))) {
-            root = root.getParent();
-        }
-        List<String> changed = new ArrayList<>();
-        try (Stream<Path> changes = Files.list(root.resolve("openspec/changes"))) {
-            for (Path change : changes.filter(path -> !path.getFileName().toString().equals("archive")).toList()) {
-                Path delta = change.resolve("specs/command-language/spec.md");
-                if (Files.exists(delta) && Files.readString(delta).contains(EBNF)) {
-                    changed.add(Files.readString(delta));
-                }
-            }
-        }
-        assertTrue(changed.size() <= 1, "more than one active change modifies the grammar");
-        String spec = changed.isEmpty() ? Files.readString(root.resolve("openspec/specs/command-language/spec.md"))
-            : changed.get(0);
-        int start = spec.indexOf(EBNF) + EBNF.length();
-        return spec.substring(start, spec.indexOf("```", start));
-    }
 
     private static List<String> productions(CommandSpec spec) {
         return productions(spec.name(), spec);
@@ -54,14 +28,14 @@ class GrammarTest {
 
     @Test
     void theCoreGrammarIsTheSpecs() throws IOException {
-        assertEquals(specGrammar(), Grammar.CORE);
+        assertEquals(Specs.grammar(), Grammar.CORE);
     }
 
     @Test
     void theCoreGrammarIsPrintedAProductionOrCommentALine() throws IOException {
         List<String> lines = Grammar.coreLines();
-        long productions = specGrammar().lines().filter(line -> line.matches("[a-z][a-z0-9-]*\\s+::=.*")).count();
-        long comments = specGrammar().lines().filter(line -> line.strip().startsWith("/*")).count();
+        long productions = Specs.grammar().lines().filter(line -> line.matches("[a-z][a-z0-9-]*\\s+::=.*")).count();
+        long comments = Specs.grammar().lines().filter(line -> line.strip().startsWith("/*")).count();
         assertEquals(productions + comments, lines.size());
         for (String line : lines) {
             assertTrue(line.matches("/\\*.*\\*/|[a-z][a-z0-9-]* ::= .*"), line);
