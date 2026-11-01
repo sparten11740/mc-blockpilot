@@ -32,8 +32,8 @@ final class InputCommands {
     private static final String[] BUTTONS = KeyNames.BUTTONS.toArray(String[]::new);
     /** How long held input lasts, as the movement and input help say it. */
     static final String HELD_UNTIL = "held input lasts until it is let go (up, off, release), or until stop, a "
-        + "step of its script failing (not one marked ?), a human taking over, leaving the world, or its connection "
-        + "(an MCP session) closing";
+        + "failing step (not marked ?) of any script with an action on the same connection, a human taking over, "
+        + "leaving the world, or the connection (an MCP session) closing";
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
