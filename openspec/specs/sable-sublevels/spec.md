@@ -416,3 +416,12 @@ isn't loaded.
 - **WHEN** an agent runs `block <plot position of a slab aboard a ship> light`
 - **THEN** the reply carries `sky=`, `block_light=`, `world_sky=` and
   `world_block_light=`, each from 0 to 15
+
+### Requirement: The limit of blocks found aboard
+`sable:find`'s limit SHALL be at most 1000, as `find`'s is, and a larger one
+is cut to 1000.
+
+#### Scenario: Every window aboard
+- **WHEN** an agent runs `sable:find ship *window* 1000` on a ship with 360
+  windows
+- **THEN** the reply lists all 360 and carries no `count=`

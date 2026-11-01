@@ -194,7 +194,7 @@ aren't loaded as `?`.
   key per cell
 
 ### Requirement: Find counts what its limit left out
-`find`'s limit SHALL be at most 100, and a larger one is cut to 100. When more
+`find`'s limit SHALL be at most 1000, and a larger one is cut to 1000. When more
 matches are found than the limit lets it list, the result SHALL carry
 `count=<n>`, the number of matches in all; when it lists them all, it carries
 no `count`.
