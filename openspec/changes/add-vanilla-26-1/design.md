@@ -115,11 +115,12 @@ one-line `accesstransformer.cfg` opening the same class.
   metadata;
 - the dev client runs with `-javaagent` pointing at the freshly built jar.
 
-### D6: Released on GitHub and Modrinth
+### D6: Released on GitHub only
 
-The release workflow attaches the vanilla jar to the GitHub release and
-uploads it to Modrinth, which lists mods by loader and has a `java-agent` one
-for jars like this. CurseForge has no such loader, so it isn't uploaded there.
+The release workflow attaches the vanilla jar to the GitHub release. The one
+store it uploads to, CurseForge, lists mods by loader and has none for
+agents, so the jar isn't uploaded there. Modrinth has a `java-agent` loader
+that fits, but the workflow leaves Modrinth out for now.
 
 ### D7: A spike first
 
