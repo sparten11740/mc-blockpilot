@@ -35,6 +35,15 @@ sourceSets.main {
     resources.srcDir(treeDir.resolve("src/vanilla/resources"))
 }
 
+// The agent's entry class, built for Java 8 so it loads on any game's runtime and can turn a wrong version away.
+val agent: SourceSet = sourceSets.create("agent") {
+    java.setSrcDirs(listOf(treeDir.resolve("src/vanilla/agent")))
+}
+tasks.named<JavaCompile>(agent.compileJavaTaskName) {
+    options.release = 8
+    options.compilerArgs.add("-Xlint:-options")
+}
+
 repositories {
     mavenCentral()
     maven("https://maven.fabricmc.net/") {
@@ -44,6 +53,7 @@ repositories {
 
 // What the agent brings along, since a vanilla client has none of it: Mixin, MixinExtras, ASM and the access widener.
 val bundled: Configuration by configurations.creating
+val asmVersion = "9.11"
 configurations.implementation {
     extendsFrom(bundled)
 }
@@ -52,7 +62,7 @@ dependencies {
     bundled("net.fabricmc:sponge-mixin:0.17.5+mixin.0.8.7") {
         isTransitive = false
     }
-    listOf("asm", "asm-tree", "asm-commons", "asm-util", "asm-analysis").forEach { bundled("org.ow2.asm:$it:9.11") }
+    listOf("asm", "asm-tree", "asm-commons", "asm-util", "asm-analysis").forEach { bundled("org.ow2.asm:$it:$asmVersion") }
     bundled("io.github.llamalad7:mixinextras-common:0.5.5")
     bundled("net.fabricmc:access-widener:2.1.0") {
         isTransitive = false
@@ -85,9 +95,13 @@ tasks.jar {
             "Implementation-Title" to treeProp("mod_name"),
             "Implementation-Version" to treeProp("mod_version"),
         )
+        // Mixin reads ASM's version from its package's manifest entry, which bundling would otherwise drop, and
+        // without it refuses Java 21 mixin configs.
+        attributes(mapOf("Implementation-Version" to asmVersion), "org/objectweb/asm/")
     }
     // The project's own services win over the bundled libraries' ones, which name loaders this client doesn't have.
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(agent.output)
     from(bundled.map { zipTree(it) }) {
         exclude("module-info.class", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF",
             "META-INF/services/javax.annotation.processing.Processor", "META-INF/services/cpw.mods.*",

@@ -4,14 +4,19 @@ import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
-/** Hands each class the game's class loader defines to Mixin; the JDK's and the agent's own libraries are skipped. */
+/**
+ * Hands each class the game's class loader defines to the access widener, then to Mixin; the JDK's and the agent's own
+ * libraries are skipped.
+ */
 final class AgentTransformer implements ClassFileTransformer {
     private static final String[] SKIPPED = {"java/", "javax/", "jdk/", "sun/", "com/sun/", "org/spongepowered/",
         "org/objectweb/", "com/llamalad7/", "net/fabricmc/accesswidener/"};
 
+    private final AccessWidening widening;
     private final IMixinTransformer mixins;
 
-    AgentTransformer(IMixinTransformer mixins) {
+    AgentTransformer(AccessWidening widening, IMixinTransformer mixins) {
+        this.widening = widening;
         this.mixins = mixins;
     }
 
@@ -28,7 +33,7 @@ final class AgentTransformer implements ClassFileTransformer {
         }
         String name = className.replace('/', '.');
         try {
-            byte[] transformed = mixins.transformClassBytes(name, name, bytes);
+            byte[] transformed = mixins.transformClassBytes(name, name, widening.apply(name, bytes));
             return transformed == bytes ? null : transformed;
         } catch (Throwable failure) {
             // The JVM drops a transformer's exception silently and loads the class unchanged; say so instead.

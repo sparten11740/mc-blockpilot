@@ -43,6 +43,12 @@ it checks the game version (from the client jar's `version.json`), boots
 Mixin, adds a `ClassFileTransformer`, and leaves the rest to the mixins,
 which start Blockpilot from the game's own startup.
 
+The entry class is compiled for Java 8 and needs nothing but the JDK. A
+client of another version can run on an older Java than 26.1's 25, where a
+class built for Java 25 wouldn't load and the JVM would stop before the game
+starts. The entry class loads anywhere, turns another version away with a
+line in the log, and starts the Java 25 bootstrap only on 26.1.2.
+
 Alternatives:
 - Editing the client jar or the version JSON: changes the installation, and
   breaks with every launcher update.
@@ -61,7 +67,9 @@ one:
 
 Fabric's Mixin build (`net.fabricmc:sponge-mixin`), MixinExtras, ASM and the
 access-widener library are bundled into the jar, unrelocated, as no other
-copy is on a vanilla class path. The configs are the shared
+copy is on a vanilla class path. Mixin reads ASM's version from the manifest
+entry of ASM's package, and refuses Java 21 mixin configs when it finds
+none, so the jar's manifest carries that entry. The configs are the shared
 `blockpilot.mixins.json` and a `blockpilot-vanilla.mixins.json` for the
 platform's own mixins.
 
