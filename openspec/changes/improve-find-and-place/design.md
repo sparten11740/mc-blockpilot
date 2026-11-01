@@ -77,8 +77,9 @@ unit-tested.
   block's state definition and fails with the states or values it has.
 - For a tag or pattern, a block without the state, or with another value,
   doesn't match.
-- The per-block cache keeps answering for the id, tag or pattern. The states
-  are tested on each block state.
+- The cache answers per block state, which Minecraft shares between all
+  blocks in that state. The id, tag or pattern and the states are then
+  tested once per state a scan meets, not once per block.
 
 ### D4: A higher limit, not paging
 
@@ -96,9 +97,11 @@ Alternatives:
 `place` aims at the centre of the support's shape bounds, moved to the side
 of those bounds that faces the target cell. On a carpet that is its top
 surface; on a fence post, the side of the post. A pure `ShapeBounds` does
-the arithmetic so a unit test covers it. An empty shape keeps aiming at the
-cell face, as today. A support whose bounds' face centre isn't on the shape,
-such as the top of stairs, can still miss; D6 then says what was hit.
+the arithmetic so a unit test covers it, including the choice of bounds:
+those enclosing the shape's boxes, or the whole cell for an empty shape,
+which keeps aiming at the cell face, as today. A support whose bounds' face
+centre isn't on the shape, such as the top of stairs, can still miss; D6
+then says what was hit.
 
 The click places the block beside whichever face it hits. Until now `place`
 only checked that the crosshair hit the support, so a ray that met another
@@ -117,7 +120,9 @@ The error codes stay `out_of_reach`.
 ### D7: Help and README only, for held input and `\;`
 
 The behaviour is specified and implemented. The movement and input help and
-the README say how long held input lasts. `help server` and the README give
+the README say how long held input lasts. A failing step not marked `?`, in
+any script with an action, releases everything its connection holds, not
+only what that script held. `help server` and the README give
 `\;` with the NBT int-array example.
 
 ### D8: `SpecGrammarTest` reads the change's grammar
@@ -125,6 +130,14 @@ the README say how long held input lasts. `help server` and the README give
 It takes the grammar the way `GrammarTest` does: an active change's that
 modifies it, else the main spec's. The lexicon then changes together with
 the delta, and the tests pass before the change is archived.
+
+### D9: `mine` aims at the block's shape
+
+`mine` aimed at the middle of the cell. Over a carpet, a rail or a pressure
+plate that point is in the air, so the crosshair passed over the block, hit
+the ground behind it, and `mine` failed naming the ground as what was in the
+way. It now aims at the centre of the block's shape (`Shapes.centre`), as
+`use` already does, for the reach check too.
 
 ## Risks / Trade-offs
 

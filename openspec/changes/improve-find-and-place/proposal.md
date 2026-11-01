@@ -10,6 +10,8 @@ several gaps:
   so counting by state took a `block` per piece.
 - `place` fails with "cannot see the face" when the block it places against
   is thin, such as a carpet or a slab, while `use` at the same point works.
+- `mine <pos>` misses a thin block such as a carpet or a rail: it aims at the
+  middle of the cell, above the block.
 - When `mine` or `place` can't see their target, the error doesn't say what
   is in the way. Here it was another part of the same large block, which
   would have made the cause plain.
@@ -34,6 +36,8 @@ README:
 - `find`'s and `sable:find`'s limit go up from 100 to 1000.
 - `place` aims at the face of the supporting block's shape rather than of its
   cell, so thin and narrow blocks can be placed against.
+- `mine` aims at the centre of the block's shape, as `use` does, so thin
+  blocks are mined by position.
 - `mine`'s "is behind another block" and `place`'s "cannot see the face" name
   what the crosshair hits instead: a block and its position, an entity, or
   nothing.
@@ -51,8 +55,8 @@ None.
   state filters.
 - `game-perception`: `find`'s limit.
 - `sable-sublevels`: `sable:find`'s limit.
-- `player-control`: `place` aims at the support's shape, and blocked-view
-  errors name what is in the way.
+- `player-control`: `place` aims at the support's shape, `mine` at the
+  block's shape, and blocked-view errors name what is in the way.
 
 ## Impact
 
