@@ -70,7 +70,7 @@ alternatives are atomic: tried first, `id` would take `create` from
 
 ### D3: States checked against the block, matched per state
 
-A pure `BlockStates` splits the bracket part into ordered name–value pairs
+A pure `BlockToken` splits the bracket part into ordered name–value pairs
 and rejects a state named twice. It needs no Minecraft classes, so it is
 unit-tested.
 - For a block id, `BlockMatcher` checks each name and value against the

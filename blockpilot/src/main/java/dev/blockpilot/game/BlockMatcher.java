@@ -30,7 +30,7 @@ public final class BlockMatcher implements Predicate<BlockState> {
     }
 
     public static BlockMatcher parse(String token) throws CommandException {
-        BlockStates parsed = BlockStates.of(token);
+        BlockToken parsed = BlockToken.of(token);
         String what = parsed.block();
         if (what.startsWith("#")) {
             TagKey<Block> tag = TagKey.create(Registries.BLOCK, Ids.parse(what.substring(1)));
