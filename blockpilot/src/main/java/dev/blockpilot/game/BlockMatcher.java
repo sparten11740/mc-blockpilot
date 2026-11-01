@@ -19,10 +19,10 @@ import net.minecraft.world.level.block.state.properties.Property;
  * optionally with states ({@code oak_log[axis=y]}).
  */
 public final class BlockMatcher implements Predicate<BlockState> {
-    /** Depends on the block alone, so its answer is kept per block; the states are tested on each block state. */
     private final Predicate<BlockState> test;
     private final Map<String, String> states;
-    private final Map<Block, Boolean> cache = new IdentityHashMap<>();
+    /** Answers per block state, which Minecraft shares between all blocks in that state, so a scan asks once each. */
+    private final Map<BlockState, Boolean> cache = new IdentityHashMap<>();
 
     private BlockMatcher(Predicate<BlockState> test, Map<String, String> states) {
         this.test = test;
@@ -102,12 +102,11 @@ public final class BlockMatcher implements Predicate<BlockState> {
         if (state.isAir()) {
             return false;
         }
-        Block block = state.getBlock();
-        Boolean known = cache.get(block);
+        Boolean known = cache.get(state);
         if (known == null) {
-            known = test.test(state);
-            cache.put(block, known);
+            known = test.test(state) && holdsStates(state);
+            cache.put(state, known);
         }
-        return known && holdsStates(state);
+        return known;
     }
 }
