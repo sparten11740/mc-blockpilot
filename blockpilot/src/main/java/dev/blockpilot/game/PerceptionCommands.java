@@ -100,13 +100,14 @@ final class PerceptionCommands {
                 + "teleport, motion, data), as net move1 data1; left out when none")
             .field("uuid", "side=server only").example("entity e12 side=server"));
         registry.register(CommandSpec.query("find", this::find).needsWorld().group("perception")
-            .form(form -> form.arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .form(form -> form.arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID, ArgType.BLOCK_STATE)
                 .optional(range -> range.arg("radius", ArgType.INT).optionalArg("limit", ArgType.INT)))
             .option("side", "server: read the integrated server's level (cheats on), incl. chunks the client lacks",
                 Sides.NAMES)
-            .help("nearest blocks (id, #tag or *pattern), entities or dropped items, in loaded chunks within a cube "
-                + "reaching radius blocks each way from the player (default 32, max " + MAX_FIND_RADIUS + "), the "
-                + "nearest limit of them (default 5, max 100); with Sable, blocks aboard a sub-level are in its plot, "
+            .help("nearest blocks (id, #tag or *pattern, each also with states as Minecraft writes them: "
+                + "oak_log[axis=y]), entities or dropped items, in loaded chunks within a cube reaching radius blocks "
+                + "each way from the player (default 32, max " + MAX_FIND_RADIUS + "), the nearest limit of them "
+                + "(default 5, max 100); with Sable, blocks aboard a sub-level are in its plot, "
                 + "which sable:find searches. A ~ position is relative to the player's block as the find runs")
             .field("count", "matches in all, when the limit left some out")
             .field("at_abs", "JSON: each row's position, absolute")

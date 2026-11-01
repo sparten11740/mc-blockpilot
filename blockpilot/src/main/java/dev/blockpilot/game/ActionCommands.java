@@ -137,11 +137,12 @@ final class ActionCommands {
             .help("left-clicks the crosshair, or fights e<id> / the nearest of an entity type until it dies, "
                 + "at full attack cooldown").example("attack e812"));
         registry.register(CommandSpec.action("mine", this::mine).needsWorld().group("interact")
-            .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID, ArgType.BLOCK_STATE)
             .optionalArg("count", ArgType.COUNT)
             .help("digs the block at <pos> (in reach), what the crosshair hits (no target), or walks to and digs "
-                + "the n nearest <block|#tag>; picks the best tool. A block the player can't break (bedrock outside "
-                + "creative, adventure mode) fails at once with err unbreakable; by type such blocks are passed over")
+                + "the n nearest <block|#tag>, also with states (oak_log[axis=x]); picks the best tool. A block the "
+                + "player can't break (bedrock outside creative, adventure mode) fails at once with err unbreakable; "
+                + "by type such blocks are passed over")
             .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)

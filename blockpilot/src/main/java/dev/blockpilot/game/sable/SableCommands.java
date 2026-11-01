@@ -113,7 +113,8 @@ final class SableCommands {
             .help("the point in a sub-level's plot that is at a world position now; " + REFERENCE)
             .field("plot", "plot position").field("sub", "the sub-level").example("sable:plot here ~0,1,0"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("find", SableCommands::find)
-            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD)
+            .arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID, ArgType.BLOCK_STATE)
             .optionalArg("limit", ArgType.INT)
             .option("side", "server: read the integrated server's copy of the plot, also of a sub-level the client "
                 + "has not received (cheats on)", Sides.NAMES)
@@ -121,24 +122,24 @@ final class SableCommands {
                 List.of("x", "y", "z", "-x", "-y", "-z"))
             .option("near", "a world or plot position to order by distance from, instead of the player",
                 ArgType.POSITION)
-            .help("blocks aboard a sub-level (id, #tag or *pattern), nearest to the player first, or to near=<pos>, "
-                + "or with sort=x|y|z|-x|-y|-z along the sub-level's own plot axes (level ones nearest first); the "
-                + "order covers all matches, then the limit (default 5, max 100) cuts it, and count= gives all "
-                + "matches when it left some out; " + REFERENCE)
+            .help("blocks aboard a sub-level (id, #tag or *pattern, each also with states: *_slab[type=top]), "
+                + "nearest to the player first, or to near=<pos>, or with sort=x|y|z|-x|-y|-z along the sub-level's "
+                + "own plot axes (level ones nearest first); the order covers all matches, then the limit (default 5, "
+                + "max 100) cuts it, and count= gives all matches when it left some out; " + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
             .field("count", "matches in all, when the limit left some out")
             .example("sable:find here *door* 3"));
         BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.action("tp", SableCommands::teleport)
             .needsServer().form(form -> form.arg("pos", ArgType.POSITION))
             .form(form -> form.arg("sub", ArgType.UUID, ArgType.WORD).arg("what", ArgType.TAG, ArgType.PATTERN,
-                ArgType.ID))
+                ArgType.ID, ArgType.BLOCK_STATE))
             .help("puts the player aboard: on a free spot within " + TP_REACH + " blocks of a block in a sub-level's "
                 + "plot, standing on that sub-level (cheats on); the nearest spot from which the block is in sight, "
                 + "else the nearest, with hidden. It answers once the client shows the player standing on that spot, "
                 + "also on a sub-level under way, else fails after " + TP_BOARD_TICKS / 20 + "s with err not_aboard "
-                + "and what the client shows. sable:tp <sub> <block|#tag|*pattern> boards next to the matching "
-                + "block aboard nearest the player, read from the server's copy, so also a sub-level the client "
-                + "hasn't received; " + REFERENCE)
+                + "and what the client shows. sable:tp <sub> <block|#tag|*pattern> (also with states) boards next to "
+                + "the matching block aboard nearest the player, read from the server's copy, so also a sub-level the "
+                + "client hasn't received; " + REFERENCE)
             .field("at", "where the player stands, world position").field("plot", "that spot's plot position")
             .field("sub", "the sub-level").field("dist", "blocks from the player's eyes to the block's centre")
             .field("hidden", "no free spot within reach has the block in sight")
