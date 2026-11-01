@@ -5,8 +5,9 @@
 ```
 
 Gradle runs on JDK 25 and fetches the JDK each build needs. Every jar lands in `build/libs/`, tagged with the Minecraft
-version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0+26.1.2-fabric.jar`. `./gradlew
-:blockpilot:1.21.1-neoforge:runClient` (or `1.21.1-fabric`, `26.1-neoforge`, `26.1-fabric`) starts a dev client.
+version and loader, e.g. `blockpilot-1.0.0-alpha.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0-alpha.0+26.1.2-fabric.jar`.
+`./gradlew :blockpilot:1.21.1-neoforge:runClient` (or `1.21.1-fabric`, `26.1-neoforge`, `26.1-fabric`) starts a dev
+client.
 
 The mod is one source tree, built with [Stonecutter](https://stonecutter.kikugie.dev/) once per Minecraft version and
 loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilot/versions/` with its own
