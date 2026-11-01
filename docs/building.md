@@ -33,13 +33,12 @@ Measured on a dev client: `status` round trip over the line protocol about 15-30
 
 Set `mod_version` in `blockpilot/gradle.properties`, add a `## <version> (<date>)` section to `CHANGELOG.md`, commit,
 and push a tag `v<version>`. The `release` workflow checks that the tag matches `mod_version`, builds and tests every
-target, and uploads the jars with [mod-publish-actions](https://github.com/sparten11740/mod-publish-actions): all five
-to Modrinth, the vanilla agent under its `java-agent` loader, and the four loader jars to CurseForge, which has no
-loader for agents. Once every upload has gone through, it creates the GitHub release with the five jars and the API jar.
-A version ending in `-alpha…` or `-beta…` goes out as that release type, anything else as a release. The upload jobs run
-in the `release` environment, which holds the secrets `MODRINTH_TOKEN` (with the scopes `VERSION_CREATE`, `VERSION_READ`
-and `PROJECT_READ`) and `CURSEFORGE_TOKEN` and the variables `MODRINTH_PROJECT_ID` (the project's 8-character ID, not
-its slug) and `CURSEFORGE_PROJECT_ID`. When an upload fails, fix its cause and use Re-run failed jobs on the run: the
-uploads that went through stay done, and the GitHub release follows.
+target, and uploads the four loader jars to CurseForge with
+[mod-publish-actions](https://github.com/sparten11740/mod-publish-actions); CurseForge has no loader for the vanilla
+agent. Once the uploads have gone through, it creates the GitHub release with the five jars and the API jar. A version
+ending in `-alpha…` or `-beta…` goes out as that release type, anything else as a release. The upload jobs run in the
+`release` environment, which holds the secret `CURSEFORGE_TOKEN` and the variable `CURSEFORGE_PROJECT_ID`. When an
+upload fails, fix its cause and use Re-run failed jobs on the run: the uploads that went through stay done, and the
+GitHub release follows.
 
 [Back to the README](../README.md)
