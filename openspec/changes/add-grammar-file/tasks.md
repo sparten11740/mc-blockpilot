@@ -7,7 +7,7 @@
 
 ## 2. Checks
 
-- [ ] 2.1 Add a grammar file test (D2): `rr-lib` parse, unique and defined names, reachability, core lines, the engine's command productions, diagrams for exactly the productions; verify it passes, and fails on an unclosed group, a name defined twice, an undefined name and a stale core line
+- [x] 2.1 Add a grammar file test (D2): `rr-lib` parse, unique and defined names, reachability, core lines, the engine's command productions, diagrams for exactly the productions; verify it passes, and fails on an unclosed group, a name defined twice, an undefined name and a stale core line
 - [ ] 2.2 Add a smoke-test step checking every `help grammar` row is in the file; verify it passes against the 1.21.1 and 26.1 dev clients and fails when a row is removed from the file
 
 ## 3. Integration checks

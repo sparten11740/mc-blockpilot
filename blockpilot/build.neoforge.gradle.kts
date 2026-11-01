@@ -73,6 +73,10 @@ dependencies {
     testImplementation("org.slf4j:slf4j-api:2.0.9")
     testImplementation("org.apache.logging.log4j:log4j-core:2.22.1")
     testImplementation("org.joml:joml:1.10.5")
+    // The grammar file test parses docs/grammar.ebnf with the Railroad Diagram Generator's W3C EBNF parser.
+    testImplementation("de.bottlecaps.rr:rr-lib:2.6") {
+        exclude(group = "org.apache.xmlgraphics")
+    }
 }
 
 neoForge {
@@ -138,9 +142,11 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
-    // The grammar tests read the specs and the active changes, so editing them reruns the tests.
+    // The grammar tests read the specs, the active changes and the grammar file, so editing them reruns the tests.
     inputs.dir(rootProject.file("openspec")).withPropertyName("openspec")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(rootProject.file("docs/grammar.ebnf"), rootProject.file("docs/grammar.xhtml"))
+        .withPropertyName("grammarFile").withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))
