@@ -183,6 +183,29 @@ world, copies the save back and rejoins, the same as quitting to the title scree
 static state across worlds may therefore behave differently than after a fresh launch; relaunch the client when a test
 needs full isolation.
 
+### Recording videos
+
+`record` makes a video of the game, such as a mod's showcase for its project page or a clip for a bug report. A script
+can set the shot up and take it again until it is right:
+
+```sh
+run/blockpilot/blockpilot "camera at ~6,3,6 look ~0,1,0; record 10s showcase hud=off audio=off"
+```
+
+The frames come from the game's framebuffer, so the window can be covered or in the background, and the video has the
+window's shape: a 16:9 video needs a 16:9 window. `repeated=` in the reply counts the frames the game had not rendered
+anew in time; when it is high, lower `fps=` or `width=`.
+
+Recording needs [ffmpeg](https://ffmpeg.org/) with an H.264 encoder (libx264, as in most builds, or the platform's own:
+VideoToolbox on macOS, Media Foundation on Windows): `brew install ffmpeg` on macOS, `winget install ffmpeg` on
+Windows, the distribution's package on Linux. A game started from a launcher doesn't get the shell's `PATH`, so besides
+the `PATH` Blockpilot looks in the usual install folders: `/opt/homebrew/bin`, `/usr/local/bin` and `/opt/local/bin` on
+macOS; `/usr/bin`, `/usr/local/bin` and `/snap/bin` on Linux; WinGet's links, Scoop's shims, Chocolatey's `bin` and
+`C:\ffmpeg\bin` on Windows. Anywhere else, set its path as `"ffmpeg"` in `config/blockpilot/config.json`. Without one,
+`record start` fails with `err unsupported` naming where it looked. If ffmpeg fails while recording, for example on a
+full disk, the recording ends, `record status` and `record stop` answer `err record_failed` with ffmpeg's last lines,
+and the partial file is removed.
+
 ### With Sable
 
 Sable builds sub-levels: structures such as ships whose blocks live in a *plot*, a grid far out in the same dimension

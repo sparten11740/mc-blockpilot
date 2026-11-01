@@ -45,10 +45,12 @@ public final class Errors {
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
         CODES.put("busy", "a performance capture or a recording is already running (perf stop or record stop first)");
         CODES.put("no_capture", "no performance capture or recording is running (perf start or record start first)");
+        CODES.put("record_failed", "ffmpeg failed while recording, e.g. on a full disk; its last lines are attached, "
+            + "and the partial file is removed");
         CODES.put("needs_restart", "config: the value takes effect only after a game restart, or for a server "
             + "config after the world loads its file again; edit the file instead");
-        CODES.put("unsupported", "the command needs something this loader lacks (config: NeoForge's config "
-            + "system)");
+        CODES.put("unsupported", "the command needs something this loader or machine lacks (config: NeoForge's "
+            + "config system; record: ffmpeg with an H.264 encoder)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");
