@@ -14,7 +14,7 @@
 
 ## 3. Help and README (D7)
 
-- [ ] 3.1 Say in the `sneak`, `sprint`, `key` and `mouse` help and in the README movement and input rows that held input lasts until it is released, `stop`, a failed step of its script, or its connection (MCP session) closing
+- [x] 3.1 Say in the `sneak`, `sprint`, `key` and `mouse` help and in the README movement and input rows that held input lasts until it is released, `stop`, a failed step of its script, or its connection (MCP session) closing
 - [ ] 3.2 Give `\;` with an NBT int-array example in `help server` and the README server row
 
 ## 4. Integration checks

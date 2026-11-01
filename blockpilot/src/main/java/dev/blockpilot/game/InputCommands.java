@@ -30,6 +30,10 @@ import net.minecraft.world.inventory.ClickType;
  */
 final class InputCommands {
     private static final String[] BUTTONS = KeyNames.BUTTONS.toArray(String[]::new);
+    /** How long held input lasts, as the movement and input help say it. */
+    static final String HELD_UNTIL = "held input lasts until it is let go (up, off, release), or until stop, a "
+        + "step of its script failing (not one marked ?), a human taking over, leaving the world, or its connection "
+        + "(an MCP session) closing";
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.query("screen", (context, args) -> Screens.describe()).diffable()
@@ -42,9 +46,9 @@ final class InputCommands {
             .form(form -> form.keyword("op", "click").keyword("button", BUTTONS).optionalArg("ticks", ArgType.DURATION))
             .form(form -> form.keyword("op", "move").arg("dx", ArgType.NUMBER).arg("dy", ArgType.NUMBER)
                 .optionalArg("ticks", ArgType.DURATION))
-            .help("down|up holds or lets go of a button (held buttons stay held); click presses it for ticks "
-                + "(default 1t); move turns the camera by raw pixels in-world, or moves the cursor by GUI units on a "
-                + "screen, spread over ticks").example("mouse down right"));
+            .help("down|up holds or lets go of a button; click presses it for ticks (default 1t); move turns the "
+                + "camera by raw pixels in-world, or moves the cursor by GUI units on a screen, spread over ticks; "
+                + HELD_UNTIL).example("mouse down right"));
         registry.register(CommandSpec.action("drag", this::drag).group("input")
             .form(form -> form.keyword("button", BUTTONS).arg("dx", ArgType.NUMBER).arg("dy", ArgType.NUMBER)
                 .optionalArg("ticks", ArgType.DURATION))
@@ -72,7 +76,8 @@ final class InputCommands {
             .help("a key by name (w, space, left_shift or left.shift, e, f5, escape, enter) or key mapping id "
                 + "(key.use, key.inventory, a mod's mapping); press = down then up after Nt (default 1t), as a key "
                 + "alone does (key escape; key up is the up arrow); + joins keys into a chord (key f3+l): press holds "
-                + "the earlier keys while it presses the last, down holds them all, and they go up in reverse order")
+                + "the earlier keys while it presses the last, down holds them all, and they go up in reverse "
+                + "order; " + HELD_UNTIL)
             .example("key press key.inventory"));
         registry.register(CommandSpec.action("type", this::type).group("input").arg("text", ArgType.TEXT)
             .help("types text into the focused text field").example("type hello"));

@@ -97,11 +97,12 @@ final class ActionCommands {
                 ? toggle(context, options().keyShift, args.word("state"))
                 : pulse(context, options().keyShift, 5, "sneak"))
             .needsWorld().group("movement").optionalKeyword("state", "on", "off")
-            .help("holds or releases sneak; alone, taps it for a fifth of a second, as to leave a seat or vehicle")
+            .help("holds or releases sneak; alone, taps it for a fifth of a second, as to leave a seat or vehicle; "
+                + InputCommands.HELD_UNTIL)
             .example("sneak on"));
         registry.register(CommandSpec.action("sprint", (context, args) -> toggle(context, options().keySprint,
             args.word("state"))).needsWorld().group("movement").keyword("state", "on", "off")
-            .help("holds or releases sprint").example("sprint on"));
+            .help("holds or releases sprint; " + InputCommands.HELD_UNTIL).example("sprint on"));
         registry.register(CommandSpec.action("fly", this::fly).needsWorld().group("movement")
             .keyword("state", "on", "off")
             .help("starts or stops flying where the game mode allows it (creative, spectator); fly on holds through "
