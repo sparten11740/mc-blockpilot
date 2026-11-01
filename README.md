@@ -192,6 +192,8 @@ works with them:
   `nbt`, `face`, `use`, `mine`, `place` and `camera`. `status` shows `aboard:<name>` while the player stands on or
   rides a sub-level, and `! sable:boarded <name>` and `! sable:left <name>` arrive when that changes (falling or
   flying off, or the sub-level unloading under the player, counts as leaving; JSON adds the UUID as `id`).
+- `block <plot position> light` gives the plot's own light for that cell and adds `world_sky=` and
+  `world_block_light=`, the light at the world cell where the block is drawn, to compare with.
 - `face` and `use` at a plot position aim where the sub-level is on each tick, so they work on a moving ship, where a
   world position is left behind. As everywhere, `use` fails with `err obstructed <id> <position>` when something else is
   in the way; `use <pos> any` clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A

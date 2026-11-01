@@ -116,12 +116,15 @@ final class PerceptionCommands {
             .arg("pos", ArgType.POSITION).optionalKeyword("light", "light")
             .option("side", "server: read the integrated server's level (cheats on)", Sides.NAMES)
             .help("one block: id, every state property with its value (defaults too), block entity type; light adds "
-                + "the light the level stores for the cell, each 0 to 15, sky light before the time of day dims it")
+                + "the light the level stores for the cell, each 0 to 15, sky light before the time of day dims it; "
+                + "with Sable, for a plot position also the light at the world cell where the block is drawn")
             .field("id", "block id").field("props", "every state property with its value")
             .field("be", "block entity type")
             .field("sub", "with Sable: the sub-level whose plot holds the block")
             .field("world", "with Sable: where that block is in the world")
             .field("sky", "with light: the cell's sky light").field("block_light", "with light: the cell's block light")
+            .field("world_sky", "with light, for a plot position: sky light at the world cell where it is drawn")
+            .field("world_block_light", "with light, for a plot position: block light at that world cell")
             .example("block ~0,-1,0"));
         registry.register(CommandSpec.query("blocks", this::blocks).needsWorld().group("perception")
             .arg("from", ArgType.POSITION).arg("to", ArgType.POSITION).optionalKeyword("grid", "grid")
@@ -451,9 +454,18 @@ final class PerceptionCommands {
         });
     }
 
+    /** The light stored for the cell and, for a cell in a sub-level's plot, for the world cell where it is drawn. */
     private static void light(Fields fields, Level level, BlockPos pos) {
         fields.put("sky", level.getBrightness(LightLayer.SKY, pos))
             .put("block_light", level.getBrightness(LightLayer.BLOCK, pos));
+        if (SableSupport.subLevels().at(level, pos) != null) {
+            BlockPos world = BlockPos.containing(SableSupport.subLevels().toWorld(level, Vec3.atCenterOf(pos)));
+            // An unloaded chunk reads as full sky light.
+            if (Sides.loaded(level, world)) {
+                fields.put("world_sky", level.getBrightness(LightLayer.SKY, world))
+                    .put("world_block_light", level.getBrightness(LightLayer.BLOCK, world));
+            }
+        }
     }
 
     /** A block's id, every property and block entity type, as {@code block} reports it. */
