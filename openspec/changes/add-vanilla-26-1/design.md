@@ -88,7 +88,9 @@ mod discovery and its own launcher, which is what this target goes without.
 
 The agent reads the same `blockpilot.accesswidener` with the access-widener
 library and applies it in its transformer, so the one file serves Fabric and
-vanilla.
+vanilla on the client. Compiling against vanilla goes through ModDevGradle,
+which takes access transformers rather than wideners, so the node also has a
+one-line `accesstransformer.cfg` opening the same class.
 
 ### D5: A `26.1-vanilla` node
 

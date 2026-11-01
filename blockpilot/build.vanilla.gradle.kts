@@ -28,8 +28,11 @@ java {
 }
 
 sourceSets.main {
-    java.include("dev/blockpilot/platform/vanilla/**")
-    resources.setSrcDirs(listOf(treeDir.resolve("src/vanilla/resources")))
+    // The loaders' halves of the mod, and the Sable integration, which needs a loader for Sable, are left out.
+    java.exclude("dev/blockpilot/platform/neoforge/**", "dev/blockpilot/platform/fabric/**", "dev/blockpilot/compat/sable/**")
+    java.srcDir(treeDir.resolve("src/${prop("version_sources")}/java"))
+    resources.srcDir(treeDir.resolve("src/${prop("version_sources")}/resources"))
+    resources.srcDir(treeDir.resolve("src/vanilla/resources"))
 }
 
 repositories {
@@ -50,10 +53,15 @@ dependencies {
         isTransitive = false
     }
     listOf("asm", "asm-tree", "asm-commons", "asm-util", "asm-analysis").forEach { bundled("org.ow2.asm:$it:9.11") }
+    bundled("io.github.llamalad7:mixinextras-common:0.5.5")
+    bundled("net.fabricmc:access-widener:2.1.0") {
+        isTransitive = false
+    }
 }
 
 neoForge {
     neoFormVersion = prop("neoform_version")
+    accessTransformers.from(treeDir.resolve("src/vanilla/accesstransformer.cfg"))
 
     runs {
         register("client") {
