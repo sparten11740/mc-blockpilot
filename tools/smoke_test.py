@@ -135,8 +135,9 @@ def main():
         # Regression: the crosshair met the stone's near face, and the click put the block there, on the wrong side.
         ("place against a face out of sight", "server as=player setblock ~2 ~2 ~ minecraft:stone; "
                                               "?place cobblestone ~3,2,0; find cobblestone 6; "
-                                              "server as=player setblock ~2 ~2 ~ minecraft:air",
-         [r"err out_of_reach", r"^ok none"], True),
+                                              "server as=player fill ~1 ~2 ~ ~2 ~2 ~ minecraft:air",
+         [r"err out_of_reach cannot see the face to place against; the crosshair hits stone ~2,2,0 on its west face",
+          r"^ok none"], True),
         ("craft at a table", "craft furnace", [r"craft 1 furnace"]),
         ("mine", "select iron_sword; mine ~2,0,0; block ~2,0,0", [r"mine 1/1 crafting_table", r"ok air"]),
         ("mine names what is in the way", "server as=player setblock ~ ~ ~2 minecraft:stone; "
