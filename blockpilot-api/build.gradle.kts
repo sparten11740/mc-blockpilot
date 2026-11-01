@@ -31,6 +31,10 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+tasks.jar {
+    from(rootProject.file("LICENSE")) { rename { "LICENSE_blockpilot-api" } }
+}
+
 publishing {
     publications {
         register<MavenPublication>("api") {
