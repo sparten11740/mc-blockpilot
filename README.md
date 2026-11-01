@@ -4,6 +4,8 @@ A client-side Minecraft mod that lets AI agents and scripts see and play the gam
 local interface: to play, or to play-test a mod while you develop it. For NeoForge and Fabric on Minecraft 1.21.1 and
 26.1.2.
 
+![A script chops a tree, crafts a crafting table and places it, with the replies below the game](docs/images/01-scripted-play.png)
+
 ## Install
 
 Put the jar for your loader and Minecraft version from the [releases](../../releases) into the game's `mods` folder
@@ -36,6 +38,11 @@ ok
   + 5:oak_log x3
 ! got oak_log x3
 ```
+
+Agents see what happens through replies, logs and screenshots, like this `screenshot burst=8 every=7t sheet` of TNT
+going off:
+
+![Eight frames of a TNT blast in a grid, each labelled with its frame number and game tick](docs/images/03-a-contact-sheet-of-a-blast.png)
 
 The window can stay in the background. Real keyboard or mouse input stops what the agent is doing, and F8 turns agent
 control off. MCP over HTTP, the raw line protocol and the launcher's options: [docs/connecting.md](docs/connecting.md).
