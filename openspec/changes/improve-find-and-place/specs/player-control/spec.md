@@ -1,0 +1,28 @@
+## ADDED Requirements
+
+### Requirement: Place aims at the support's shape
+`place` SHALL aim at the centre of the supporting block's shape on the side
+facing the target cell, not at the face of the supporting block's cell, so a
+block can be placed against a thin or narrow block such as a carpet, a slab
+or a fence.
+
+#### Scenario: On a carpet
+- **WHEN** an agent runs `place cobblestone ~2,1,0` with a carpet at `~2,0,0`
+  and air above it
+- **THEN** the cobblestone stands on the carpet
+
+#### Scenario: Against a fence
+- **WHEN** an agent runs `place cobblestone ~2,1,1` with a fence post at
+  `~2,1,0` and nothing else next to `~2,1,1`
+- **THEN** the cobblestone is placed against the fence
+
+### Requirement: Blocked-view errors name what is in the way
+When `mine <pos>` fails because its block is behind another, and when `place`
+can't see the face it places against, the error SHALL name what the crosshair
+hits instead: the block and its position, the entity and its reference, or
+nothing.
+
+#### Scenario: A block behind another
+- **WHEN** an agent runs `mine ~3,0,0` with stone at `~2,0,0` in the way
+- **THEN** the result is `err out_of_reach` saying `~3,0,0` is behind stone at
+  `~2,0,0`
