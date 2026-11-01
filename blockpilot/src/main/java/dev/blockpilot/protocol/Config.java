@@ -27,6 +27,8 @@ public final class Config {
         "crafting_table", "*_bed", "*_door", "ladder", "*_log", "spawner", "nether_portal", "end_portal_frame"));
     /** Upper bound on rows in list results such as {@code look}. */
     public int maxRows = 24;
+    /** The ffmpeg {@code record} encodes with; empty: the first on the PATH or in the platform's usual folders. */
+    public String ffmpeg = "";
 
     public static Config load(Path file) {
         Config config = new Config();
