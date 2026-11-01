@@ -2,7 +2,7 @@
 
 ## 1. Documentation
 
-- [ ] 1.1 Move the README's detailed sections to `docs/` (connecting, commands, command language, recording, Sable, dev environment, extending, building and releasing), with the command reference as one entry per command per group instead of table cells; verify that every fact of the old README is in exactly one docs file and that every docs file is linked from the README
+- [x] 1.1 Move the README's detailed sections to `docs/` (connecting, commands, command language, recording, Sable, dev environment, extending, building and releasing), with the command reference as one entry per command per group instead of table cells; verify that every fact of the old README is in exactly one docs file and that every docs file is linked from the README
 - [x] 1.2 Use a generic `mymod` in the extension examples (`docs/extending.md`, `ReadmeSnippets` renamed `GuideSnippets`, `ExtensionApiTest`) and in the help examples of `create world`, `delete world` and `sounds match=`; verify the tests pass
 - [ ] 1.3 Rewrite the README to about one page: what Blockpilot is, installing, the two ways to drive it (MCP and commands through the launcher), a short example, a table with one row per command, and links to `docs/`; verify the table lists every command `help` lists, and nothing else
 
