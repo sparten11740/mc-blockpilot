@@ -151,3 +151,5 @@ control off. MCP over HTTP, the raw line protocol and the launcher's options: [d
 
 Apache-2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The license doesn't cover the name Blockpilot: forks need
 a name of their own.
+
+Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
