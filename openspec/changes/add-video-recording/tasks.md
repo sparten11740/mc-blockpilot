@@ -2,7 +2,7 @@
 
 ## 1. Sound volume options (client-observation)
 
-- [ ] 1.1 Add a `soundCategory_<category>` decimal option (0 to 1) to `ClientOptions` for every `SoundSource` of the running version, with the help and the README option row; verify on the 1.21.1 dev client that `option` lists `soundCategory_master` to `soundCategory_voice`, that `option soundCategory_music 0` silences playing music at once and `option reset` brings the volume back, that `option soundCategory_music 2` fails with `err syntax` naming the range, and on the 26.1 dev client that `soundCategory_ui` is listed too
+- [x] 1.1 Add a `soundCategory_<category>` decimal option (0 to 1) to `ClientOptions` for every `SoundSource` of the running version, with the help and the README option row; verify on the 1.21.1 dev client that `option` lists `soundCategory_master` to `soundCategory_voice`, that `option soundCategory_music 0` silences playing music at once and `option reset` brings the volume back, that `option soundCategory_music 2` fails with `err syntax` naming the range, and on the 26.1 dev client that `soundCategory_ui` is listed too
 
 ## 2. Encoder, files and clock, without Minecraft
 
