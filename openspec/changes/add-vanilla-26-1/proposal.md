@@ -24,9 +24,9 @@ makes a loader-free build practical there.
   chunks and stop), through mixins of its own.
 - What needs a loader stays unavailable and says so: `config` answers
   `err unsupported` as on Fabric, and no other mod can add commands.
-- The jar is built, tested and released with the others: attached to GitHub
-  releases and uploaded to Modrinth under its Java agent loader. CurseForge
-  has no loader for agents, so it isn't uploaded there.
+- The jar is built, tested and attached to GitHub releases with the others.
+  CurseForge, the one store the release workflow uploads to, has no loader
+  for agents, so it isn't uploaded there.
 - The README and docs explain installing it.
 
 ## Capabilities
@@ -46,6 +46,5 @@ makes a loader-free build practical there.
 - A new `dev.blockpilot.platform.vanilla` package, in the vanilla jar only,
   with the agent, its Mixin service and its mixins; Stonecutter conditions that
   assume a loader learn about `vanilla`.
-- The release workflow attaches the vanilla jar to GitHub releases and
-  uploads it to Modrinth.
+- The release workflow attaches the vanilla jar to GitHub releases.
 - README and `docs/connecting.md`.
