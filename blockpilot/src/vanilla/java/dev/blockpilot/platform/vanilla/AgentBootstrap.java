@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.MixinExtrasBootstrap;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
@@ -13,12 +14,17 @@ import org.spongepowered.asm.mixin.Mixins;
  * transformer. Started by {@code BlockpilotAgent} once it has checked the game's version.
  */
 public final class AgentBootstrap {
+    private static Path jar;
+
     private AgentBootstrap() {
     }
 
-    public static void start(Instrumentation instrumentation) throws ReflectiveOperationException, IOException {
+    /** {@code jar} is the agent's own, which the platform names as the mod's files. */
+    public static void start(Instrumentation instrumentation, Path jar) throws ReflectiveOperationException,
+        IOException {
+        AgentBootstrap.jar = jar;
         MixinBootstrap.init();
-        MixinExtrasBootstrap.init();
+        Mixins.addConfiguration("blockpilot.mixins.json");
         Mixins.addConfiguration("blockpilot-vanilla.mixins.json");
         MixinEnvironment.getDefaultEnvironment().setSide(MixinEnvironment.Side.CLIENT);
         // Mixin moves to its default phase only when told, as Fabric's loader tells it.
@@ -26,7 +32,13 @@ public final class AgentBootstrap {
         gotoPhase.setAccessible(true);
         gotoPhase.invoke(null, MixinEnvironment.Phase.INIT);
         gotoPhase.invoke(null, MixinEnvironment.Phase.DEFAULT);
+        // MixinExtras registers its sugar with the active transformer, which exists from here on.
+        MixinExtrasBootstrap.init();
         instrumentation.addTransformer(new AgentTransformer(new AccessWidening("blockpilot.accesswidener"),
             AgentMixinService.transformer()));
+    }
+
+    public static Path jar() {
+        return jar;
     }
 }

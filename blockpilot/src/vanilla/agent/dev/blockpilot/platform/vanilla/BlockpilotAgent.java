@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +29,9 @@ public final class BlockpilotAgent {
                 + (version == null ? "a game without version.json" : version) + "; the game starts without it");
             return;
         }
+        Path jar = Paths.get(BlockpilotAgent.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         Class.forName("dev.blockpilot.platform.vanilla.AgentBootstrap")
-            .getMethod("start", Instrumentation.class).invoke(null, instrumentation);
+            .getMethod("start", Instrumentation.class, Path.class).invoke(null, instrumentation, jar);
     }
 
     /** The version the client jar's version.json names, or null. */

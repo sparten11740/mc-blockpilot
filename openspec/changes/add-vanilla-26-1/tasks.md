@@ -11,7 +11,7 @@
 
 ## 3. The platform layer
 
-- [ ] 3.1 Implement `Services` and the hooks through mixins (D3), with the key mapping and translations; verify on the vanilla dev client that the endpoint opens, the launcher is written, the F8 key shows under its translated name, and `status`, `look`, `goto`, `screenshot`, `record 3s` and `server` work, while `config` answers `err unsupported`
+- [x] 3.1 Implement `Services` and the hooks through mixins (D3), with the key mapping and translations; verify on the vanilla dev client that the endpoint opens, the launcher is written, the F8 key shows under its translated name, and `status`, `look`, `goto`, `screenshot`, `record 3s` and `server` work, while `config` answers `err unsupported`
 
 ## 4. Docs and release
 
