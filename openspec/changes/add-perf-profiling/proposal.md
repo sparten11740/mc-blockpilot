@@ -17,9 +17,10 @@ those, such as a physics engine stepping in native code.
     inside a tick. Each sample counts toward the mod whose code is innermost on
     the stack, and toward its top frame, native methods included. The summary
     gives each mod's share and the most frequent top frames.
-  - The server's time profiler, the one `/debug start` uses, for the same
-    window. The summary gives its section tree, with each section's share of
-    the tick, and keeps the profiler's "unspecified" remainders.
+  - The server's metrics recorder, the one F3+L and `/perf start` use, for
+    the capture's first 10 s, its own limit. The summary gives its section
+    tree, with each section's share of the tick, keeps the profiler's
+    "unspecified" remainders, and names the report the recorder saves.
 - `perf <duration> [name] [profile]` starts a capture, ends it after that long
   and answers as `perf stop` does: `perf 15s profile` in one line.
 - At the end of every capture, the loaded counts add chunks split into world

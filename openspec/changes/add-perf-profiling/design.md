@@ -9,11 +9,16 @@
   rows.
 - `ClientPlatform.modOf(Class)` finds the mod whose files hold a class, on
   both loaders, and caches the answer per class. Particle sources use it.
-- `MinecraftServer` has `startTimeProfiler()`, `stopTimeProfiler()` (returning
-  `ProfileResults`) and `isTimeProfilerRunning()`, unchanged between 1.21.1
-  and 26.1. `ProfileResults.getTimes(path)` gives a section's children as
-  `ResultField`s (share of parent, share of the whole, count), with the
-  section itself first. Stopping must happen on the server thread.
+- `MinecraftServer`'s `startTimeProfiler()` (`/debug start`) times ticks only:
+  its results list no sections. The sections come from the metrics recorder
+  (`/perf start`, F3+L): `startRecordingMetrics(results, report)`,
+  `finishRecordingMetrics()` and `isRecordingMetrics()`, unchanged between
+  1.21.1 and 26.1. The recorder ends itself after
+  `PROFILING_MAX_DURATION_SECONDS` (10). At the end of a server tick it hands
+  over its `ProfileResults`, then writes its report to a temporary folder and
+  hands over that folder.
+  `ProfileResults.getTimes(path)` gives a section and then its children as
+  `ResultField`s (share of parent, share of the whole, count).
 - `MinecraftServerMixin` (identical in both version source sets) already
   injects into `tickChildren`. `tickServer` brackets a whole tick in both
   versions.
@@ -37,7 +42,7 @@
 ### D1: One `profile` keyword for both costly parts
 
 Sampling makes the server thread stop briefly about 20 times a second, and the
-time profiler records every section push and pop. Both change the MSPT a
+metrics recorder records every section push and pop. Both change the MSPT a
 capture measures, so they run only when asked. The loaded counts cost one pass
 over the chunks at stop, so every capture gets them.
 
@@ -68,17 +73,30 @@ count as a mod, so its cost shows.
 and `modOf(Class)` goes through it. The loader services then take a class
 name, which is all they used.
 
-### D4: Sections from the server's own profiler
+### D4: Sections from the server's metrics recorder
 
-With `profile`, the capture calls `startTimeProfiler()` at start. It refuses
-first if `isTimeProfilerRunning()` is already true, so a `/debug` profile in
-progress is never cut short. At stop, the task that already runs on the
-server thread also calls `stopTimeProfiler()` and walks `getTimes` from
-`root`. It skips each list's first entry (the section itself), keeps entries
-at 0.5% of the whole or more, and goes at most 8 levels deep. The tree goes
+With `profile`, the capture starts the recorder on the server thread, handing
+it a future for the results and one for the report path. It refuses first if
+`isRecordingMetrics()` is already true, so a recording in progress is never
+cut short. The recorder covers the capture's first 10 s, by its own limit. At
+stop, the task that already runs on the server thread calls
+`finishRecordingMetrics()` if the recorder still runs. The stop then waits, as
+it waits for the counts, until the results arrive at the end of the next
+server tick. It walks `getTimes` from `root`, skipping each list's first entry
+(the section itself), keeps entries at 0.5% of the whole or more, and goes at
+most 8 levels deep. The tree goes
 into `server.sections` as nested objects with `name`, `share` (of the
-parent), `of_tick` (of the whole) and `per_tick` (calls per tick). The text
-rows show the sections at 5% of the whole or more by path, `root/tick/…`.
+parent), `of_whole` and `per_tick` (calls per tick). The text rows show the
+sections at 5% of the whole or more by path, `root/tick/…`. `sections_s`
+gives the seconds covered. The recorder writes its report, the same files as
+an F3+L zip's server part, to a temporary folder. The capture ends before the
+stop waits for that folder, so the wait doesn't stretch the measured window.
+The folder then moves beside the summary as `<name>-profile`, which
+`profile_report` names. A `sections` row gives both.
+
+Alternative: install a profiler of our own on the server thread for the whole
+window. 1.21.1 keeps the profiler in a server field and 26.1 behind a
+thread-local, so that would mean two hooks to maintain.
 
 ### D5: The timed form
 

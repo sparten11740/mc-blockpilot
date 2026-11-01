@@ -28,26 +28,27 @@ SHALL also count toward its top frame, named as class and method and marked
   `native`
 
 ### Requirement: Profiler sections in a profiled capture
-With `profile`, a capture SHALL run the integrated server's time profiler, the
-one `/debug start` uses, for its window and give its section tree: each
-section's share of its parent and of the whole, and its calls per tick,
-leaving out sections under 0.5% of the whole and keeping the profiler's
-`unspecified` remainders. The text reply SHALL list the sections at 5% or more
-as `section` rows by path.
+With `profile`, a capture SHALL run the integrated server's metrics recorder,
+the one F3+L and `/perf start` use, which records at most the first 10 s, and
+give its section tree: each section's share of its parent and of the whole
+and its calls per tick, down to 0.5% of the whole, `unspecified` remainders
+kept, with the seconds covered and the recorder's report. The text reply
+SHALL list the sections at 5% or more as `section` rows by path.
 
 #### Scenario: Sections of a capture
-- **WHEN** an agent runs `perf 10s profile`
+- **WHEN** an agent runs `perf 15s profile`
 - **THEN** the reply carries `section` rows such as `root/tick`, each with its
-  share
+  share, and says the sections cover 10 s
 
 ### Requirement: Starting a profiled capture
-`perf start … profile` SHALL fail with `err busy` while the server's time
-profiler already runs, and with `err no_server` without an integrated server.
-Without `profile`, a capture SHALL neither sample stacks nor run the time
-profiler.
+`perf start … profile` SHALL fail with `err busy` while the server's metrics
+recorder already runs, and with `err no_server` without an integrated server.
+Without `profile`, a capture SHALL neither sample stacks nor run the metrics
+recorder.
 
-#### Scenario: The profiler already runs
-- **WHEN** an agent runs `server debug start` and then `perf start x profile`
+#### Scenario: The recorder already runs
+- **WHEN** an agent runs `key f3+l`, which starts the recorder in
+  singleplayer, and then `perf start x profile`
 - **THEN** the result is `err busy` and no capture runs
 
 ### Requirement: Timed capture
