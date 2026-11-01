@@ -16,6 +16,7 @@ loaders can be compared with diff.
 Every step goes through the launcher the game writes into <run dir>/blockpilot at start.
 """
 import argparse
+import glob
 import json
 import os
 import re
@@ -174,6 +175,9 @@ def main():
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
         ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
         ("screenshot burst", "screenshot burst=2 every=5t 256", [r"frames=2"]),
+        # Needs ffmpeg; without it the answer is err unsupported, which passes too.
+        ("record", f"?record 1s {world} width=256 fps=10 audio=off",
+         [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off|^err unsupported"], True),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
                  "particles; log mark", [r"actionbar t\d+ smoke", r"mark=\d+"]),
@@ -214,6 +218,8 @@ def main():
     if args.shapes:
         failures += 1 if write_shapes(args.game_dir, args.shapes) else 0
     code, output = run(args.game_dir, f"leave; delete world {world}")
+    for recording in glob.glob(os.path.join(args.game_dir, "blockpilot", "recordings", f"{world}*.mp4")):
+        os.remove(recording)
     if code == 0 and f"deleted {world}" in output:
         print("pass clean up")
     else:
