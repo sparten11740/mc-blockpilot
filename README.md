@@ -402,4 +402,4 @@ Measured on a dev client: `status` round trip over the line protocol about 15-30
 
 ## License
 
-All Rights Reserved.
+MIT; see [LICENSE](LICENSE).
