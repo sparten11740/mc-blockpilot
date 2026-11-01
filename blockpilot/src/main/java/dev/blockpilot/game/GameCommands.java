@@ -6,6 +6,7 @@ import dev.blockpilot.game.observe.ObservationCommands;
 import dev.blockpilot.game.observe.OptionCommands;
 import dev.blockpilot.game.observe.PixelCommands;
 import dev.blockpilot.game.perf.PerfCommands;
+import dev.blockpilot.game.record.RecordCommands;
 import dev.blockpilot.protocol.CommandRegistry;
 
 /** Registers every built-in command that needs the game. */
@@ -27,6 +28,7 @@ final class GameCommands {
         new ConfigCommands().register(registry);
         new PixelCommands().register(registry);
         new PerfCommands().register(registry);
+        new RecordCommands(() -> client.config().ffmpeg).register(registry);
         new LoadCommands().register(registry);
         new LogCommands().register(registry);
     }

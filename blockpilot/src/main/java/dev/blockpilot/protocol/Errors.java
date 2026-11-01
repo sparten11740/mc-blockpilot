@@ -39,12 +39,12 @@ public final class Errors {
         CODES.put("too_large", "the requested region or output exceeds the limit");
         CODES.put("unloaded", "the position is in a chunk that is not loaded");
         CODES.put("join_failed", "joining the world or server failed; the reason is attached");
-        CODES.put("exists", "a world with that name already exists");
+        CODES.put("exists", "a world, or a recording, with that name already exists");
         CODES.put("no_snapshot", "this world has no snapshot with that name (snapshot list)");
         CODES.put("not_test_world", "only worlds made by create world can be deleted");
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
-        CODES.put("busy", "a performance capture is already running (perf stop first)");
-        CODES.put("no_capture", "no performance capture is running (perf start first)");
+        CODES.put("busy", "a performance capture or a recording is already running (perf stop or record stop first)");
+        CODES.put("no_capture", "no performance capture or recording is running (perf start or record start first)");
         CODES.put("needs_restart", "config: the value takes effect only after a game restart, or for a server "
             + "config after the world loads its file again; edit the file instead");
         CODES.put("unsupported", "the command needs something this loader lacks (config: NeoForge's config "
