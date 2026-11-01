@@ -100,6 +100,11 @@ the arithmetic so a unit test covers it. An empty shape keeps aiming at the
 cell face, as today. A support whose bounds' face centre isn't on the shape,
 such as the top of stairs, can still miss; D6 then says what was hit.
 
+The click places the block beside whichever face it hits. Until now `place`
+only checked that the crosshair hit the support, so a ray that met another
+face first, as it does for a narrow post seen from the side, put the block
+in another cell. `place` now also checks the face and fails instead.
+
 ### D6: Blocked-view errors name the hit
 
 The error text names what the crosshair hits:

@@ -9,7 +9,7 @@
 
 ## 2. Place and blocked-view errors (player-control)
 
-- [ ] 2.1 Make `place` aim at the face of the support's shape (D5) through a pure `ShapeBounds` with a regression unit test (a carpet's top face, a fence post's side, a full block's face, an empty shape falling back to the cell face), and a smoke-test step placing cobblestone on a carpet; verify on the 1.21.1 dev client that `place cobblestone ~2,1,0` on a carpet at `~2,0,0` failed with "cannot see the face" before the change and places it after, and that placing against a fence post works
+- [x] 2.1 Make `place` aim at the face of the support's shape (D5) through a pure `ShapeBounds` with a regression unit test (a carpet's top face, a fence post's side, a full block's face, an empty shape falling back to the cell face), a smoke-test step placing cobblestone on a carpet, the check that the crosshair hits the support on the side facing the target, and a smoke-test step for a side out of sight; verify on the 1.21.1 dev client that `place cobblestone ~2,1,0` on a carpet at `~2,0,0` failed with "cannot see the face" before the change and places it after, that placing against a fence post from the side facing the player works, and that a side out of sight fails without placing anything (before, the block went beside the face the crosshair hit)
 - [ ] 2.2 Name what the crosshair hits in `mine`'s "is behind another block" and `place`'s "cannot see the face" errors (D6), with a smoke-test step for `mine` behind stone; verify on the 1.21.1 dev client that `mine ~3,0,0` with stone at `~2,0,0` fails naming stone at `~2,0,0`
 
 ## 3. Help and README (D7)

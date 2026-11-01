@@ -128,6 +128,15 @@ def main():
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
         ("place and read a block", "place crafting_table ~2,0,0; block ~2,0,0", [r"ok crafting_table"]),
+        # Regression: place aimed at the top of the carpet's cell, in the air above it: "cannot see the face".
+        ("place on a thin block", "server as=player setblock ~0 ~ ~2 minecraft:white_carpet; "
+                                  "place cobblestone ~0,1,2; block ~0,1,2; "
+                                  "server as=player fill ~0 ~ ~2 ~0 ~1 ~2 minecraft:air", [r"ok cobblestone"]),
+        # Regression: the crosshair met the stone's near face, and the click put the block there, on the wrong side.
+        ("place against a face out of sight", "server as=player setblock ~2 ~2 ~ minecraft:stone; "
+                                              "?place cobblestone ~3,2,0; find cobblestone 6; "
+                                              "server as=player setblock ~2 ~2 ~ minecraft:air",
+         [r"err out_of_reach", r"^ok none"], True),
         ("craft at a table", "craft furnace", [r"craft 1 furnace"]),
         ("mine", "select iron_sword; mine ~2,0,0; block ~2,0,0", [r"mine 1/1 crafting_table", r"ok air"]),
         ("inventory moves", "offhand shield; equip iron_helmet; inv", [r"head:iron_helmet", r"offhand:shield"]),

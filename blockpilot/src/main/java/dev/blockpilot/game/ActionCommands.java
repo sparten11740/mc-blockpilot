@@ -986,8 +986,8 @@ final class ActionCommands {
         }
         InventoryOps.select(item);
         BlockPos against = pos.relative(support);
-        Supplier<Vec3> point = seen(level, Vec3.atCenterOf(against)
-            .add(Vec3.atLowerCornerOf(support.getOpposite().getNormal()).scale(0.5)));
+        Direction face = support.getOpposite();
+        Supplier<Vec3> point = seen(level, Shapes.faceToward(level, against, face));
         int[] step = {0};
         return named("place", () -> {
             step[0]++;
@@ -997,7 +997,9 @@ final class ActionCommands {
             }
             if (step[0] == 2) {
                 HitResult hit = minecraft().hitResult;
-                if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(against)) {
+                // The click places beside whichever face it hits, so another face of the block would put it elsewhere.
+                if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(against)
+                    || blockHit.getDirection() != face) {
                     throw new CommandException("out_of_reach", "cannot see the face to place against");
                 }
                 // A sub-level under way moves on before the click's own pick.
