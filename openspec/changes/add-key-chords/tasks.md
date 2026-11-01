@@ -6,4 +6,4 @@
 
 ## 2. Integration checks
 
-- [ ] 2.1 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 dev client; verify all pass
+- [x] 2.1 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 dev client; verify all pass
