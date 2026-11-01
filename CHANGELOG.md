@@ -4,7 +4,8 @@
 
 The first release. Blockpilot lets AI agents and scripts observe and control Minecraft through a fast, token-efficient
 local interface, to play the game or play-test a mod. It comes for NeoForge and Fabric on Minecraft 1.21.1 and 26.1.2,
-with `blockpilot-api` 2.0.0 for mods that add their own commands.
+and as a Java agent for plain Minecraft 26.1.2 without a mod loader, with `blockpilot-api` 2.0.0 for mods that add their
+own commands.
 
 - **Interfaces:** MCP over stdio through the launcher the game writes to `<game dir>/blockpilot/blockpilot`, which
   outlives restarts of the game; MCP over Streamable HTTP; a line protocol; and a command-line client. All of them

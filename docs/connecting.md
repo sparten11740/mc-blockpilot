@@ -5,6 +5,21 @@ Put the jar for your loader into the client's `mods` folder (or a dev environmen
 the port (25599, or the next free one when several instances run) and the token file. The endpoint listens on
 `127.0.0.1` only and needs the token.
 
+## Without a mod loader
+
+On plain Minecraft 26.1.2, the vanilla jar (`blockpilot-<version>+26.1.2-vanilla.jar`) runs as a Java agent instead:
+
+1. Keep the jar in a folder whose path has no spaces, such as `/Users/<you>/blockpilot` on macOS (where the game folder
+   has one) or `C:\blockpilot` on Windows.
+2. In the Minecraft Launcher, add an installation under Installations with the version release 26.1.2, and under More
+   options append ` -javaagent:<full path to the jar>` to its JVM arguments.
+3. Start that installation. Blockpilot then writes its launcher and `endpoint.json` to the installation's game folder,
+   as with a loader.
+
+On any other version the agent logs that it supports only 26.1.2, and the game starts without it. Use it on plain
+Minecraft only, not in an installation with a mod loader. There are no mod configs, so `config` answers
+`err unsupported`, and no other mod can add commands.
+
 ## From a shell
 
 At every start the game writes a launcher, `<game dir>/blockpilot/blockpilot` (`blockpilot.cmd` on Windows), that runs
