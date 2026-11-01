@@ -62,9 +62,12 @@ Minecraft, which the tests don't have.
 ### D3: Diagrams from `rr-lib`'s command line
 
 A `grammarDiagrams` Gradle task runs `de.bottlecaps.railroad.Railroad
--out:docs/grammar.xhtml docs/grammar.ebnf` on its own configuration, so
-`rr-lib` and Saxon never reach the mod's jars. The tests get `rr-lib` and
-Saxon as test dependencies.
+-noinline -out:docs/grammar.xhtml docs/grammar.ebnf` on its own
+configuration, so `rr-lib` and Saxon never reach the mod's jars. `-noinline`
+draws every production, also one that is a single literal, which the
+generator otherwise folds into the productions using it; each diagram is
+then an anchor named after its production. The tests get `rr-lib` and Saxon
+as test dependencies, without Batik, which only PNG output needs.
 
 ## Risks / Trade-offs
 

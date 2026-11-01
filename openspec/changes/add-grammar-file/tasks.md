@@ -2,7 +2,7 @@
 
 ## 1. The file and its diagrams
 
-- [ ] 1.1 Add `tools/grammar.py --game-dir <run>` writing `docs/grammar.ebnf` from `help grammar` (D1), and a `grammarDiagrams` Gradle task writing `docs/grammar.xhtml` with `rr-lib` (D3); generate both from the 1.21.1 NeoForge dev client; verify the file has the core and a production per command including `sable:`, and that the page opens with a diagram per production
+- [x] 1.1 Add `tools/grammar.py --game-dir <run>` writing `docs/grammar.ebnf` from `help grammar` (D1), and a `grammarDiagrams` Gradle task writing `docs/grammar.xhtml` with `rr-lib` (D3); generate both from the 1.21.1 NeoForge dev client; verify the file has the core and a production per command including `sable:`, and that the page opens with a diagram per production
 - [ ] 1.2 Link both files from `docs/command-language.md`, with the two commands that regenerate them; verify the links resolve
 
 ## 2. Checks
