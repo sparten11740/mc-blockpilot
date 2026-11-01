@@ -32,4 +32,4 @@
 - [x] 5.7 Cache `BlockMatcher`'s answer per block state (D3)
 - [x] 5.8 Choose a shape's bounds, or the whole cell for an empty shape, in `ShapeBounds` with a unit test (D5)
 - [x] 5.9 Tidy: one state charset in the lexicon, no comment repeating `BLOCK_STATE`'s description, `place`'s face suffix gated on the hit type, no local shadowing `Dig`'s `what`, `Shapes.faceToward` package-private, one find limit constant, `BlockStates` renamed `BlockToken`
-- [ ] 5.10 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 dev client, in text and JSON mode; verify all pass, including the new steps
+- [x] 5.10 Run `./gradlew build` for all four targets and the smoke test against the 1.21.1 dev client, in text and JSON mode; verify all pass, including the new steps
