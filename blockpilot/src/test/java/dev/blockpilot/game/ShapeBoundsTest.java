@@ -2,6 +2,7 @@ package dev.blockpilot.game;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Where place aims on the block it places against: the face of that block's shape, not of its cell. */
@@ -27,6 +28,21 @@ class ShapeBoundsTest {
         ShapeBounds post = new ShapeBounds(0.375, 0, 0.375, 0.625, 1, 0.625);
         assertPoint(0.5, 0.5, 0.625, post.faceToward(0, 0, 1));
         assertPoint(0.375, 0.5, 0.5, post.faceToward(-1, 0, 0));
+    }
+
+    @Test
+    void aShapeWithoutBoxesIsAimedAtAsTheWholeCell() {
+        assertEquals(ShapeBounds.FULL, ShapeBounds.enclosing(List.of()));
+    }
+
+    @Test
+    void theBoundsEncloseAllOfAShapesBoxes() {
+        // Bottom stairs: a slab and a step on its north half.
+        ShapeBounds stairs = ShapeBounds.enclosing(List.of(new ShapeBounds(0, 0, 0, 1, 0.5, 1),
+            new ShapeBounds(0, 0.5, 0, 1, 1, 0.5)));
+        assertEquals(new ShapeBounds(0, 0, 0, 1, 1, 1), stairs);
+        ShapeBounds post = new ShapeBounds(0.375, 0, 0.375, 0.625, 1, 0.625);
+        assertEquals(post, ShapeBounds.enclosing(List.of(post)));
     }
 
     @Test
