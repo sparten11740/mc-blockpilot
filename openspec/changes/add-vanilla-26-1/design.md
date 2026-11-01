@@ -69,7 +69,9 @@ Fabric's Mixin build (`net.fabricmc:sponge-mixin`), MixinExtras, ASM and the
 access-widener library are bundled into the jar, unrelocated, as no other
 copy is on a vanilla class path. Mixin reads ASM's version from the manifest
 entry of ASM's package, and refuses Java 21 mixin configs when it finds
-none, so the jar's manifest carries that entry. The configs are the shared
+none, so the jar's manifest carries that entry. The jar also carries each
+bundled library's license, adding those of ASM and the access-widener
+library, whose jars have none. The configs are the shared
 `blockpilot.mixins.json` and a `blockpilot-vanilla.mixins.json` for the
 platform's own mixins.
 
