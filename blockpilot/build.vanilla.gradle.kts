@@ -32,6 +32,8 @@ sourceSets.main {
     java.exclude("dev/blockpilot/platform/neoforge/**", "dev/blockpilot/platform/fabric/**", "dev/blockpilot/compat/sable/**")
     java.srcDir(treeDir.resolve("src/${prop("version_sources")}/java"))
     resources.srcDir(treeDir.resolve("src/${prop("version_sources")}/resources"))
+    // The vanilla platform, written against 26.1 directly like the version sources.
+    java.srcDir(treeDir.resolve("src/vanilla/java"))
     resources.srcDir(treeDir.resolve("src/vanilla/resources"))
 }
 

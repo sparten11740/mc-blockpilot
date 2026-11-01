@@ -105,7 +105,8 @@ one-line `accesstransformer.cfg` opening the same class.
 `target("26.1", ..., "vanilla")` in `settings.gradle.kts` and a
 `build.vanilla.gradle.kts` on ModDevGradle's vanilla mode:
 - it excludes the NeoForge and Fabric platform packages, as they exclude each
-  other's;
+  other's; its own platform package is in `src/vanilla`, outside the tree
+  Stonecutter rewrites, so it is written against 26.1 names directly;
 - the Stonecutter loader constant learns `vanilla`; conditions whose
   non-NeoForge branch uses Fabric API get a `vanilla` branch;
 - the jar bundles D2's libraries and gets the agent manifest instead of loader
