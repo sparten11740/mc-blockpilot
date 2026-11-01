@@ -167,11 +167,33 @@ class LexiconTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"oak_log", "oak_log[]", "oak_log[axis]", "oak_log[axis=y", "oak_log[Axis=y]",
-        "oak_log[axis=Y]", "oak_log[axis=y,]", "oak_log[=y]", "[axis=y]", "x6[a=b]", "a:b:c[d=e]",
-        "oak_log[axis=y][b=c]", "oak_log[axis=y]x"})
+    @ValueSource(strings = {
+        // Brackets missing, empty, unclosed, doubled or with something after them.
+        "oak_log", "oak_log[]", "oak_log[axis=y", "oak_logaxis=y]", "oak_log[axis=y]]", "oak_log[[axis=y]]",
+        "oak_log[axis=y][b=c]", "oak_log[axis=y]x", "oak_log[axis=y]#logs", "oak_log[axis=y]{}", "oak_log(axis=y)",
+        "oak_log{axis:y}",
+        // A state without a name, a value or its =, with two =, or an empty one between commas.
+        "oak_log[axis]", "oak_log[=y]", "oak_log[axis=]", "oak_log[axis==y]", "oak_log[axis=y=x]", "oak_log[,axis=y]",
+        "oak_log[axis=y,]", "oak_log[axis=y,,half=top]", "oak_log[axis=y,half]",
+        // Characters a state name or value never has: capitals, blanks, patterns, separators, escapes, non-ASCII.
+        "oak_log[Axis=y]", "oak_log[axis=Y]", "oak_log[ axis=y]", "oak_log[axis=y ]", "oak_log[axis=*]",
+        "oak_log[a.b=y]", "oak_log[a:b=y]", "oak_log[axis=y;x=z]", "oak_log[axis=y\\;]", "oak_log[axis=ÿ]",
+        "oak_log[axis=y]\n",
+        // A block part that is no id, tag or pattern.
+        "[axis=y]", "x6[a=b]", "5[a=b]", "e2[a=b]", "a:b:c[d=e]", ":oak_log[a=b]", "minecraft:[a=b]", "#[a=b]",
+        "##logs[a=b]", "#*ore*[a=b]", "Oak_log[a=b]", "oak log[a=b]", "~1,2,3[a=b]", "$x[a=b]"})
     void notBlockStates(String token) {
         assertFalse(Lexicon.isBlockState(token));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"oak_log[axis=y]", "minecraft:oak_log[axis=y]", "#logs[axis=y]", "*_stairs[half=top]"})
+    void aBlockStateIsNoOtherSlotAndNoOptionOrPredicate(String token) {
+        assertFalse(Lexicon.isId(token) || Lexicon.isTag(token) || Lexicon.isPattern(token));
+        assertEquals(-1, Lexicon.optionEquals(token));
+        assertNull(Lexicon.testShape(token));
+        assertFalse(Lexicon.isTest(token));
+        assertTrue(Lexicon.isWord(token));
     }
 
     @Test

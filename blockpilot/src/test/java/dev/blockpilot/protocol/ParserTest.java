@@ -40,7 +40,7 @@ class ParserTest {
         registry.register(CommandSpec.query("probe", QUERY).onServer());
         registry.register(CommandSpec.query("note", QUERY).form(form -> form.optionalText("text")));
         registry.register(CommandSpec.action("mine", ACTION)
-            .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID)
+            .optionalArg("target", ArgType.POSITION, ArgType.TAG, ArgType.PATTERN, ArgType.ID, ArgType.BLOCK_STATE)
             .optionalArg("count", ArgType.COUNT).option("near", "distance", ArgType.NUMBER));
         registry.register(CommandSpec.action("mouse", ACTION)
             .form(form -> form.keyword("op", "down", "up").keyword("button", "left", "right", "middle"))
@@ -167,6 +167,36 @@ class ParserTest {
     }
 
     @Test
+    void aBlockStateIsOneTokenWhereASlotTakesIt() {
+        assertArgs(call("mine oak_log[axis=y,waterlogged=false] x2 near=3"), Map.of("target",
+            value("oak_log[axis=y,waterlogged=false]", ArgType.BLOCK_STATE), "count", value("x2", ArgType.COUNT)),
+            Map.of("near", value("3", ArgType.NUMBER)));
+        assertEquals(ArgType.BLOCK_STATE, call("mine #logs[axis=y]").args().type("target"));
+        assertEquals(ArgType.BLOCK_STATE, call("mine *_stairs[half=top]").args().type("target"));
+    }
+
+    @Test
+    void aBlockStateDoesNotBreakOutOfItsStepOrSlot() {
+        // A semicolon still ends the step, and a blank the token.
+        List<Parser.Line> lines = parser.script("mine oak_log[axis=y];status");
+        assertEquals(2, lines.size());
+        assertEquals("oak_log[axis=y]", assertInstanceOf(Statement.Call.class, lines.get(0).statement()).args()
+            .word("target"));
+        assertEquals("status", assertInstanceOf(Statement.Call.class, lines.get(1).statement()).entry()
+            .qualifiedName());
+        assertErrorAt("mine oak_log [axis=y]", "[axis=y]", "<count> (a count x<n>) expected, got [axis=y]");
+        // A slot that doesn't take block states refuses one; malformed brackets, or an = after them, are none.
+        assertErrorAt("list oak_log[axis=y]", "oak_log", "<filter> (an id like stone or create:cogwheel) expected, "
+            + "got oak_log[axis=y]");
+        for (String token : List.of("oak_log[axis=y", "oak_log[axis=y]]", "oak_log[axis==y]", "oak_log[Axis=y]",
+            "oak_log[axis=y]=1")) {
+            assertTrue(error("mine " + token).startsWith("col 6: "), token);
+        }
+        // Nor does one pass for an option's value.
+        assertErrorAt("mine #logs near=oak_log[axis=y]", "near", "near= takes a number, got oak_log[axis=y]");
+    }
+
+    @Test
     void formsAreChosenByWhatMatches() {
         // Spec scenario "Form chosen by keyword".
         assertArgs(call("mouse move 30 -10 4t"), Map.of("op", value("move", ArgType.KEYWORD), "dx", value("30",
@@ -203,7 +233,8 @@ class ParserTest {
         assertErrorAt("turn 90 20 10", "10", "<ticks> (a duration like 20t or 3s) expected, got 10");
         assertErrorAt("mouse click left 4", "4", "<ticks> (a duration like 20t or 3s) expected, got 4");
         assertErrorAt("mine 1,2", "1,2", "<target> (a position x,y,z or ~dx,dy,dz or a tag like #logs or a pattern "
-            + "like *ore* or an id like stone or create:cogwheel) or <count> (a count x<n>) expected, got 1,2");
+            + "like *ore* or an id like stone or create:cogwheel or a block with states like oak_log[axis=y]) or "
+            + "<count> (a count x<n>) expected, got 1,2");
         assertErrorAt("turn 90", null, "missing <pitch> (a number)");
     }
 
