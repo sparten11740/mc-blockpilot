@@ -8,7 +8,7 @@
 
 ## 2. Gallery
 
-- [ ] 2.1 Capture gallery media in a world that shows the mod well: numbered screenshots and short animated GIFs in `docs/images/`, each at most 5 MiB with unique titles from their file names, and MP4 videos with sound kept out of git; verify the sizes and the titles `modrinth/gallery` would give them
+- [x] 2.1 Capture gallery media in a world that shows the mod well: numbered screenshots and short animated GIFs in `docs/images/`, each at most 5 MiB with unique titles from their file names, and MP4 videos with sound kept out of git; verify the sizes and the titles `modrinth/gallery` would give them
 - [ ] 2.2 Show one or two of the images in the README; verify they render on GitHub
 
 ## 3. Integration checks
