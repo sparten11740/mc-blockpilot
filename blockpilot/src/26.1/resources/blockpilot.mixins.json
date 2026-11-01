@@ -27,6 +27,7 @@
     "InputKeyAccessor",
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
+    "LibraryMixin",
     "MinecraftMixin",
     "MinecraftServerMixin",
     "MouseHandlerMixin",

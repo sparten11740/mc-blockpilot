@@ -52,11 +52,15 @@ public final class RecordCommands {
                 + "Names use letters, digits, _ . - (default recording-<date>-<time>); a taken name fails with err "
                 + "exists. width= is the video's width (default the frame's, up to 1920, never wider; the height "
                 + "follows the frame's shape), fps= 1..120 (default 60), hud=off hides the GUI while recording. A "
-                + "frame the game had not rendered anew by its time repeats the one before. record stop answers with "
-                + "the file, its seconds, size and fps, the frames, how many repeat, and the encoder. record status: "
-                + "whether one runs. record <duration> [name]: records that long and answers as record stop does; stop "
-                + "cancels the wait and leaves the recording running. Needs ffmpeg, on the PATH, in the usual install "
-                + "folders, or set as \"ffmpeg\" in config/blockpilot/config.json")
+                + "frame the game had not rendered anew by its time repeats the one before. The sound is the game's "
+                + "mix at its volumes (option soundCategory_music 0 leaves the music out), heard from the camera, in "
+                + "plain stereo, and still plays through the speakers; starting and stopping with sound reopens the "
+                + "sound device, so one-shot sounds and music playing then end while loops carry on. record stop "
+                + "answers with the file, its seconds, size and fps, the frames, how many repeat, whether it has "
+                + "sound, and the encoder. record status: whether one runs. record <duration> [name]: records that "
+                + "long and answers as record stop does; stop cancels the wait and leaves the recording running. Needs "
+                + "ffmpeg, on the PATH, in the usual install folders, or set as \"ffmpeg\" in "
+                + "config/blockpilot/config.json")
             .field("recording", "the recording's name").field("file", "the saved video")
             .field("seconds", "how long the video lasts").field("width", "the video's width")
             .field("height", "the video's height").field("fps", "frames per second")
@@ -74,7 +78,7 @@ public final class RecordCommands {
             case "start" -> {
                 Recording started = start(args);
                 Fields fields = new Fields().put("recording", started.name(), "recording " + started.name());
-                return () -> Result.ok(size(fields, started).put("audio", "off"));
+                return () -> Result.ok(size(fields, started).put("audio", started.audio() ? "on" : "off"));
             }
             case "status" -> {
                 if (Recorder.failure() != null) {
@@ -126,8 +130,9 @@ public final class RecordCommands {
         if (fps < 1 || fps > MAX_FPS) {
             throw new CommandException("syntax", "fps takes 1.." + MAX_FPS);
         }
-        if (!"off".equals(args.option("audio"))) {
-            throw new CommandException("unsupported", "recording sound is not available yet; add audio=off");
+        boolean audio = !"off".equals(args.option("audio"));
+        if (audio && AudioCapture.unavailable() != null) {
+            throw new CommandException("unsupported", AudioCapture.unavailable() + "; audio=off records without sound");
         }
         // H.264 in 4:2:0 needs even sides.
         int width = Math.min(asked, frame.width) & ~1;
@@ -138,13 +143,22 @@ public final class RecordCommands {
             throw new CommandException("exists", file + " exists; choose another name");
         }
         Ffmpeg.Tool tool = Ffmpeg.find(ffmpeg.get());
+        if (audio) {
+            String failed = AudioCapture.use(true);
+            if (failed != null) {
+                throw new CommandException("unsupported", failed + "; audio=off records without sound");
+            }
+        }
         try {
             Files.createDirectories(directory);
             Recording started = new Recording(name, directory, width, height, fps, tool,
-                "off".equals(args.option("hud")));
+                "off".equals(args.option("hud")), audio);
             Recorder.started(started);
             return started;
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
+            if (audio) {
+                AudioCapture.use(false);
+            }
             throw new CommandException("record_failed", "could not start ffmpeg: " + e.getMessage());
         }
     }

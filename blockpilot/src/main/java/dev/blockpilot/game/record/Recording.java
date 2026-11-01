@@ -15,13 +15,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import net.minecraft.client.Minecraft;
 
 /**
  * One recording: frames read back on the client thread, written to ffmpeg's input by a thread of its own, encoded into
- * a temporary Matroska video, and muxed into the MP4 at the end. When the writer falls behind, the client thread waits
- * for a free buffer at the next frame instead of dropping frames, so a slow encoder shows as repeated frames, as a slow
- * game does.
+ * a temporary Matroska video, and muxed into the MP4 at the end with the sound, written to a temporary WAV meanwhile.
+ * When the writer falls behind, the client thread waits for a free buffer at the next frame instead of dropping frames,
+ * so a slow encoder shows as repeated frames, as a slow game does.
  */
 final class Recording {
     record Summary(Path file, double seconds, int width, int height, int fps, long frames, long repeats,
@@ -37,11 +38,14 @@ final class Recording {
     private static final long ERRORS_WAIT_MILLIS = 5_000;
     /** How long the client thread waits for the writer to free a buffer before giving the encoder up. */
     private static final long STALL_SECONDS = 10;
+    /** How long stopping waits for the sound to reach the end; the audio thread renders about every 10 ms. */
+    private static final long SOUND_WAIT_NANOS = 200_000_000L;
     private static final long NANOS = 1_000_000_000L;
 
     private final String name;
     private final Path output;
     private final Path video;
+    private final Path sound;
     private final int width;
     private final int height;
     private final int fps;
@@ -51,22 +55,25 @@ final class Recording {
     private final Process encoder;
     private final FrameReadback readback;
     private final FrameSlots slots;
+    /** Null for a silent recording. */
+    private final SoundTrack track;
     private final BlockingQueue<Frame> queue = new LinkedBlockingQueue<>();
     private final BlockingQueue<ByteBuffer> free = new ArrayBlockingQueue<>(QUEUE + 2);
     private final Deque<String> errorLines = new ArrayDeque<>();
     private final Thread errors;
     private final Thread writer;
     private final CompletableFuture<Summary> finished = new CompletableFuture<>();
-    private long startNanos = -1;
+    private volatile long startNanos = -1;
     private int readBack;
     private boolean stopping;
     private volatile String failure;
 
-    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, boolean hideHud)
-        throws IOException {
+    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, boolean hideHud,
+        boolean audio) throws IOException {
         this.name = name;
         this.output = directory.resolve(name + ".mp4");
         this.video = directory.resolve("." + name + ".video.mkv");
+        this.sound = directory.resolve("." + name + ".wav");
         this.width = width;
         this.height = height;
         this.fps = fps;
@@ -84,13 +91,17 @@ final class Recording {
                 free.add(ByteBuffer.allocate(width * height * 4));
             }
             readback = new FrameReadback(width, height);
-        } catch (RuntimeException | OutOfMemoryError e) {
+            track = audio ? new SoundTrack(new WavWriter(sound)) : null;
+        } catch (IOException | RuntimeException | OutOfMemoryError e) {
             encoder.destroyForcibly();
             throw e;
         }
         writer = new Thread(this::write, "Blockpilot recording writer");
         writer.setDaemon(true);
         writer.start();
+        if (track != null) {
+            AudioCapture.listen(this::sound);
+        }
         hideHud();
     }
 
@@ -108,6 +119,10 @@ final class Recording {
 
     int fps() {
         return fps;
+    }
+
+    boolean audio() {
+        return track != null;
     }
 
     boolean stopping() {
@@ -161,6 +176,14 @@ final class Recording {
         Blockpilot.LOGGER.info("Recording {}: {} frames read back at {}x{}, {} of them waited for", name, readBack,
             width, height, readback.waits());
         queue.add(new Frame(endNanos, null, true));
+        if (track != null) {
+            track.end(endNanos);
+            long deadline = System.nanoTime() + SOUND_WAIT_NANOS;
+            while (!track.complete() && System.nanoTime() < deadline) {
+                LockSupport.parkNanos(SOUND_WAIT_NANOS / 100);
+            }
+            stopSound();
+        }
         Thread finisher = new Thread(this::finish, "Blockpilot recording finisher");
         finisher.setDaemon(true);
         finisher.start();
@@ -173,9 +196,31 @@ final class Recording {
         readback.close();
         queue.add(new Frame(0, null, true));
         encoder.destroyForcibly();
+        if (track != null) {
+            stopSound();
+            try {
+                track.close();
+            } catch (IOException e) {
+                Blockpilot.LOGGER.warn("Could not close {}", sound, e);
+            }
+        }
         deleteQuietly(video);
+        deleteQuietly(sound);
         deleteQuietly(output);
         finished.completeExceptionally(new IOException(failure));
+    }
+
+    /** Puts the sound engine back on its own device; client thread. */
+    private void stopSound() {
+        AudioCapture.listen(null);
+        AudioCapture.use(false);
+    }
+
+    private void sound(long nanos, ByteBuffer frames) {
+        long start = startNanos;
+        if (start >= 0) {
+            track.add(nanos - start, frames);
+        }
     }
 
     private void enqueue(long nanos, ByteBuffer rgba) {
@@ -240,18 +285,24 @@ final class Recording {
             if (failure != null || exit != 0) {
                 throw new IOException(failure != null ? failure : errors("ffmpeg exited with " + exit));
             }
-            Process mux = new ProcessBuilder(FfmpegCommands.mux(ffmpeg.path(), video, null, output))
+            if (track != null) {
+                track.close();
+            }
+            Process mux = new ProcessBuilder(FfmpegCommands.mux(ffmpeg.path(), video, track != null ? sound : null,
+                output))
                 .redirectErrorStream(true).start();
             String muxOutput = new String(mux.getInputStream().readAllBytes(), StandardCharsets.UTF_8).strip();
             if (mux.waitFor() != 0) {
                 throw new IOException("muxing failed: " + muxOutput);
             }
             deleteQuietly(video);
+            deleteQuietly(sound);
             finished.complete(new Summary(output, slots.nanos() / (double) NANOS, width, height, fps, slots.slots(),
-                slots.repeats(), false, ffmpeg.encoder()));
+                slots.repeats(), track != null, ffmpeg.encoder()));
         } catch (IOException e) {
             failure = e.getMessage();
             deleteQuietly(video);
+            deleteQuietly(sound);
             deleteQuietly(output);
             finished.completeExceptionally(e);
         } catch (InterruptedException e) {

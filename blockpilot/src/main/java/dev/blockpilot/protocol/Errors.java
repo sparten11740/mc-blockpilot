@@ -50,7 +50,8 @@ public final class Errors {
         CODES.put("needs_restart", "config: the value takes effect only after a game restart, or for a server "
             + "config after the world loads its file again; edit the file instead");
         CODES.put("unsupported", "the command needs something this loader or machine lacks (config: NeoForge's "
-            + "config system; record: ffmpeg with an H.264 encoder)");
+            + "config system; record: ffmpeg with an H.264 encoder, and for sound a running sound engine on OpenAL "
+            + "Soft)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");
