@@ -56,8 +56,8 @@ jobs:
           cp blockpilot-api/build/libs/blockpilot-api-"$api_version".jar dist/
           awk -v heading="## $VERSION " 'index($0, heading) == 1 { found = 1; next } found && /^## / { exit } found' \
             CHANGELOG.md > dist/release-notes.md
-          if [ "$(ls dist/blockpilot-"$VERSION"+*.jar | wc -l)" -ne 4 ]; then
-            echo "::error::Expected 4 mod jars for $VERSION in build/libs"
+          if [ "$(ls dist/blockpilot-"$VERSION"+*.jar | wc -l)" -ne 5 ]; then
+            echo "::error::Expected 5 mod jars for $VERSION in build/libs"
             exit 1
           fi
           if ! grep -q '[^[:space:]]' dist/release-notes.md; then
