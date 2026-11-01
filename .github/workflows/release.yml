@@ -110,7 +110,7 @@ jobs:
         with:
           name: release
           path: dist
-      - uses: sparten11740/mod-publish-actions/modrinth/upload@<commit-sha>
+      - uses: sparten11740/mod-publish-actions/modrinth/upload@v1
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project-id: ${{ vars.MODRINTH_PROJECT_ID }}
@@ -141,7 +141,7 @@ jobs:
         with:
           name: release
           path: dist
-      - uses: sparten11740/mod-publish-actions/curseforge/upload@<commit-sha>
+      - uses: sparten11740/mod-publish-actions/curseforge/upload@v1
         with:
           token: ${{ secrets.CURSEFORGE_TOKEN }}
           project-id: ${{ vars.CURSEFORGE_PROJECT_ID }}
