@@ -98,8 +98,8 @@ public final class NeoForgeClientEntrypoint {
             }
 
             @Override
-            public String modOf(Class<?> type) {
-                String file = type.getName().replace('.', '/') + ".class";
+            public String modOf(String className) {
+                String file = className.replace('.', '/') + ".class";
                 for (IModFileInfo info : ModList.get().getModFiles()) {
                     //? if >=26.1 {
                     /*boolean holds = info.getFile().getContents().containsFile(file);

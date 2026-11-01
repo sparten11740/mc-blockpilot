@@ -116,8 +116,8 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             }
 
             @Override
-            public String modOf(Class<?> type) {
-                String file = type.getName().replace('.', '/') + ".class";
+            public String modOf(String className) {
+                String file = className.replace('.', '/') + ".class";
                 for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
                     if (mod.findPath(file).isPresent()) {
                         return mod.getMetadata().getId();

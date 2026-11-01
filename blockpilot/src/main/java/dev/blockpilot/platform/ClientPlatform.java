@@ -41,8 +41,8 @@ public final class ClientPlatform {
         /** The jar, or in a dev run the folders, the loader loaded this mod from. */
         List<Path> modPaths();
 
-        /** The id of the mod whose files hold the class, or null when none does. */
-        String modOf(Class<?> type);
+        /** The id of the mod whose files hold the class (by its binary name), or null when none does. */
+        String modOf(String className);
 
         /** Registers a key mapping; must be called while the mod is being constructed. */
         void registerKeyMapping(KeyMapping mapping);
@@ -93,8 +93,8 @@ public final class ClientPlatform {
     }
 
     private static Services services;
-    /** {@link #modOf} per class, "" for none; a class doesn't change mods. */
-    private static final Map<Class<?>, String> MODS_OF = new ConcurrentHashMap<>();
+    /** {@link #modOf} per class name, "" for none; a class doesn't change mods. */
+    private static final Map<String, String> MODS_OF = new ConcurrentHashMap<>();
     private static Hooks hooks = new Hooks() {
     };
 
@@ -155,7 +155,12 @@ public final class ClientPlatform {
 
     /** The id of the mod whose files hold the class, or null when none does. */
     public static String modOf(Class<?> type) {
-        String mod = MODS_OF.computeIfAbsent(type, key -> Objects.requireNonNullElse(services().modOf(key), ""));
+        return modOf(type.getName());
+    }
+
+    /** As {@link #modOf(Class)}, by the class's binary name, as a stack frame gives it. */
+    public static String modOf(String className) {
+        String mod = MODS_OF.computeIfAbsent(className, key -> Objects.requireNonNullElse(services().modOf(key), ""));
         return mod.isEmpty() ? null : mod;
     }
 
