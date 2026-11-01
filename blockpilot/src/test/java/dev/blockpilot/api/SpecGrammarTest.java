@@ -83,18 +83,52 @@ class SpecGrammarTest {
         Random random = new Random(1703);
         List<String> inputs = new ArrayList<>(EXAMPLES);
         for (int index = 0; index < 30_000; index++) {
-            StringBuilder token = new StringBuilder();
-            for (int length = 1 + random.nextInt(8); length > 0; length--) {
-                token.append(ALPHABET.charAt(random.nextInt(ALPHABET.length())));
-            }
-            inputs.add(token.toString());
+            inputs.add(text(random, ALPHABET, 1 + random.nextInt(8)));
         }
+        inputs.addAll(blockStates(random, 10_000));
         RECOGNIZERS.forEach((name, recognizer) -> {
             Pattern pattern = Pattern.compile(regex(name));
             for (String input : inputs) {
                 assertEquals(pattern.matcher(input).matches(), recognizer.test(input), name + " on " + input);
             }
         });
+    }
+
+    private static String text(Random random, String alphabet, int length) {
+        StringBuilder text = new StringBuilder();
+        for (int index = 0; index < length; index++) {
+            text.append(alphabet.charAt(random.nextInt(alphabet.length())));
+        }
+        return text.toString();
+    }
+
+    /**
+     * Tokens shaped like block states, which random tokens almost never are: a block part, mostly a valid one, then one
+     * to three states of mostly valid characters, and in a quarter of them one character inserted, dropped or replaced.
+     */
+    private static List<String> blockStates(Random random, int count) {
+        List<String> blocks = List.of("stone", "minecraft:oak_log", "#logs", "#c:ores", "*_stairs", "create:*", "a/b",
+            "x6", "5t", "Stone", "#*", "");
+        String stateCharacters = "abz019_abz019_abz019_A-.";
+        List<String> tokens = new ArrayList<>();
+        for (int index = 0; index < count; index++) {
+            StringBuilder token = new StringBuilder(random.nextInt(4) > 0 ? blocks.get(random.nextInt(blocks.size()))
+                : text(random, ALPHABET, 1 + random.nextInt(4))).append('[');
+            for (int state = 1 + random.nextInt(3); state > 0; state--) {
+                token.append(text(random, stateCharacters, 1 + random.nextInt(3))).append('=')
+                    .append(text(random, stateCharacters, 1 + random.nextInt(3))).append(state > 1 ? "," : "]");
+            }
+            if (random.nextInt(4) == 0) {
+                int at = random.nextInt(token.length());
+                switch (random.nextInt(3)) {
+                    case 0 -> token.insert(at, ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+                    case 1 -> token.deleteCharAt(at);
+                    default -> token.setCharAt(at, ALPHABET.charAt(random.nextInt(ALPHABET.length())));
+                }
+            }
+            tokens.add(token.toString());
+        }
+        return tokens;
     }
 
     /** Translated afresh at each reference, so the groups an exception names stay unique within one pattern. */
