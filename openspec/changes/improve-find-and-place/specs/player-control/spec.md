@@ -31,5 +31,4 @@ nothing.
 
 #### Scenario: A block behind another
 - **WHEN** an agent runs `mine ~3,0,0` with stone at `~2,0,0` in the way
-- **THEN** the result is `err out_of_reach` saying `~3,0,0` is behind stone at
-  `~2,0,0`
+- **THEN** the result is `err out_of_reach ~3,0,0 is behind stone ~2,0,0`

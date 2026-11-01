@@ -142,11 +142,14 @@ final class ActionCommands {
             .help("digs the block at <pos> (in reach), what the crosshair hits (no target), or walks to and digs "
                 + "the n nearest <block|#tag>, also with states (oak_log[axis=x]); picks the best tool. A block the "
                 + "player can't break (bedrock outside creative, adventure mode) fails at once with err unbreakable; "
-                + "by type such blocks are passed over")
+                + "by type such blocks are passed over. A block at <pos> behind another fails with err out_of_reach "
+                + "naming what the crosshair hits")
             .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)
-            .help("places the item at pos against an adjacent block").example("place torch ~1,0,0"));
+            .help("places the item at pos against an adjacent block, aiming at the face of that block's shape (a "
+                + "carpet's top); when the crosshair hits something else, or another face, it fails with err "
+                + "out_of_reach naming what it hits, and places nothing").example("place torch ~1,0,0"));
         registry.register(CommandSpec.action("select", this::select).needsWorld().group("inventory")
             .arg("what", ArgType.INT, ArgType.ID)
             .help("selects hotbar slot 0-8, or puts the item into the selected slot")
@@ -353,14 +356,23 @@ final class ActionCommands {
     /** Why {@code use} gave up on its target: what the crosshair rests on instead, or that it is out of reach. */
     private static CommandException obstruction(Checked target) {
         HitResult hit = minecraft().hitResult;
-        if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK && !target.on().test(hit)) {
-            BlockPos pos = block.getBlockPos();
-            return new CommandException("obstructed", Ids.of(minecraft().level.getBlockState(pos)) + " " + Rel.of(pos));
-        }
-        if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY && !target.on().test(hit)) {
-            return new CommandException("obstructed", Ids.of(entity.getEntity()) + " e" + entity.getEntity().getId());
+        String what = crosshair(hit);
+        if (what != null && !target.on().test(hit)) {
+            return new CommandException("obstructed", what);
         }
         return new CommandException("out_of_reach", String.valueOf(target.name().get()));
+    }
+
+    /** What the crosshair hits: a block and its position, or an entity and its reference; null for nothing. */
+    private static String crosshair(HitResult hit) {
+        if (hit instanceof BlockHitResult block && hit.getType() == HitResult.Type.BLOCK) {
+            BlockPos pos = block.getBlockPos();
+            return Ids.of(minecraft().level.getBlockState(pos)) + " " + Rel.of(pos);
+        }
+        if (hit instanceof EntityHitResult entity && hit.getType() == HitResult.Type.ENTITY) {
+            return Ids.of(entity.getEntity()) + " e" + entity.getEntity().getId();
+        }
+        return null;
     }
 
     static void lookAt(Vec3 point) {
@@ -923,7 +935,9 @@ final class ActionCommands {
                 InputState.release(options().keyAttack);
                 if (++blockedTicks > 10) {
                     if (!walk) {
-                        throw new CommandException("out_of_reach", Rel.of(current) + " is behind another block");
+                        String what = crosshair(hit);
+                        throw new CommandException("out_of_reach", Rel.of(current)
+                            + (what == null ? " is out of sight; the crosshair hits nothing" : " is behind " + what));
                     }
                     current = null;
                 }
@@ -1000,7 +1014,11 @@ final class ActionCommands {
                 // The click places beside whichever face it hits, so another face of the block would put it elsewhere.
                 if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(against)
                     || blockHit.getDirection() != face) {
-                    throw new CommandException("out_of_reach", "cannot see the face to place against");
+                    String what = crosshair(hit);
+                    String side = what != null && hit instanceof BlockHitResult blockHit
+                        ? " on its " + blockHit.getDirection().getName() + " face" : "";
+                    throw new CommandException("out_of_reach", "cannot see the face to place against; the crosshair "
+                        + "hits " + (what == null ? "nothing" : what + side));
                 }
                 // A sub-level under way moves on before the click's own pick.
                 lookAt(point.get());
