@@ -13,4 +13,4 @@
 
 ## 3. Integration checks
 
-- [ ] 3.1 Run `./gradlew build` and `openspec validate rework-readme --strict`; verify both pass
+- [x] 3.1 Run `./gradlew build` and `openspec validate rework-readme --strict`; verify both pass
