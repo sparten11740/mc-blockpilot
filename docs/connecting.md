@@ -13,8 +13,8 @@ Python and no Blockpilot checkout. It stays after the game exits and works acros
 loads, so only the very first start in a directory has to wait for the file before using it.
 
 ```sh
-run/blockpilot/blockpilot --wait-ready 300 --wait-world "status; look"
-run/blockpilot/blockpilot --json "inv"
+"<game dir>/blockpilot/blockpilot" --wait-ready 300 --wait-world "status; look"
+"<game dir>/blockpilot/blockpilot" --json "inv"
 ```
 
 `--wait-ready <seconds>` waits for the game to come up, and `--wait-world` also for the player to be in a world. A crash
@@ -36,11 +36,11 @@ game process has exited (within `--timeout`, else exit code 2), so a restart can
 
 The launcher also serves MCP over stdio, with three tools: `run` (a script of commands), `screenshot` and `help`. The
 MCP client starts it once per session, so the tools are there before the game is and keep working through every restart
-of the game, with no reconnect. Start the game once in that directory first, so the launcher exists, then from the
-directory that holds `run`:
+of the game, with no reconnect. Start the game once first, so the launcher exists, then add it with its full path (in a
+mod's dev environment, `"$PWD/run/blockpilot/blockpilot"` from the project directory):
 
 ```sh
-claude mcp add --transport stdio blockpilot -- "$PWD/run/blockpilot/blockpilot" --mcp
+claude mcp add --transport stdio blockpilot -- "<game dir>/blockpilot/blockpilot" --mcp
 ```
 
 On Windows the command is `cmd /c <game dir>\blockpilot\blockpilot.cmd --mcp`. While no game runs, a tool call answers
@@ -51,7 +51,7 @@ The game also serves MCP itself, over Streamable HTTP, for clients that can't la
 with each restart of the game, and Claude Code doesn't retry an HTTP server that was down when its session started:
 
 ```sh
-claude mcp add --transport http blockpilot http://127.0.0.1:25599/mcp --header "Authorization: Bearer $(cat run/config/blockpilot/token)"
+claude mcp add --transport http blockpilot http://127.0.0.1:25599/mcp --header "Authorization: Bearer $(cat "<game dir>/config/blockpilot/token")"
 ```
 
 The port is in `endpoint.json` (another game may already hold 25599). As a baseline, a Claude Code session that created

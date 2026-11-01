@@ -4,7 +4,7 @@
 can set the shot up and take it again until it is right:
 
 ```sh
-run/blockpilot/blockpilot "camera at ~6,3,6 look ~0,1,0; option soundCategory_music 0; record 10s showcase hud=off"
+"<game dir>/blockpilot/blockpilot" "camera at ~6,3,6 look ~0,1,0; option soundCategory_music 0; record 10s showcase hud=off"
 ```
 
 The frames come from the game's framebuffer, so the window can be covered or in the background, and the video has the
@@ -27,7 +27,7 @@ A project gallery takes images, not videos; an animated GIF cut from a recording
 to a few seconds and a small size (with libwebp in ffmpeg, `showcase.webp` instead makes a smaller animated WebP):
 
 ```sh
-ffmpeg -t 6 -i run/blockpilot/recordings/showcase.mp4 -vf "fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" -loop 0 showcase.gif
+ffmpeg -t 6 -i "<game dir>/blockpilot/recordings/showcase.mp4" -vf "fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" -loop 0 showcase.gif
 ```
 
 Recording needs [ffmpeg](https://ffmpeg.org/) with an H.264 encoder (libx264, as in most builds, or the platform's own:
