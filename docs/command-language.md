@@ -20,6 +20,17 @@ syntax col <n>: <hint>`, naming what the command takes there, and every other st
 hint, e.g. `id=air` in a predicate (predicates compare with `==`), `hp < 10` (a predicate is one token), or `wait 5` (a
 duration needs its unit).
 
+The whole grammar, every command included, is in [grammar.ebnf](grammar.ebnf), and drawn as railroad diagrams in
+[grammar.xhtml](grammar.xhtml) (GitHub shows that file as source; open it in a browser). A test parses the file with the
+[Railroad Diagram Generator](https://github.com/GuntherRademacher/rr)'s W3C EBNF parser and checks that every name is
+defined once and used. After a command's forms change, rewrite the file from the 1.21.1 NeoForge dev client, which has
+Sable, and redraw the diagrams:
+
+```sh
+python3 tools/grammar.py --game-dir blockpilot/versions/1.21.1-neoforge/run
+./gradlew grammarDiagrams
+```
+
 ```
 > select iron_pickaxe; mine #logs x3; inv
 ok hand:iron_pickaxe
