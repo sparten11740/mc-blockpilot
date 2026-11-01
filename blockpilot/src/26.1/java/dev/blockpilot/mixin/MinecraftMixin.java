@@ -1,5 +1,6 @@
 package dev.blockpilot.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.blockpilot.game.input.AimedClick;
 import dev.blockpilot.game.input.Focus;
 import net.minecraft.client.Minecraft;
@@ -30,5 +31,12 @@ public abstract class MinecraftMixin {
         if (Focus.keepActive()) {
             info.setReturnValue(true);
         }
+    }
+
+    // The pause on lost focus asks the window itself, not isWindowActive.
+    @ModifyExpressionValue(method = "pauseIfInactive",
+        at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;isFocused()Z"))
+    private boolean blockpilot$noPauseWhileActive(boolean focused) {
+        return focused || Focus.keepActive();
     }
 }
