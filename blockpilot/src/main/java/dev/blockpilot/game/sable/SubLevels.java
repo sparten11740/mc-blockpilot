@@ -41,6 +41,11 @@ public interface SubLevels {
         return List.of();
     }
 
+    /** Every sub-level in the level: they are seen inside the world border, which this box holds. */
+    default List<Info> all(Level level) {
+        return near(level, new AABB(-3.0E7, -3.0E7, -3.0E7, 3.0E7, 3.0E7, 3.0E7));
+    }
+
     /** The sub-level the entity stands on or rides, or null. */
     default Info carrying(Entity entity) {
         return null;

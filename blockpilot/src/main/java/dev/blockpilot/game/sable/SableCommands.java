@@ -66,8 +66,6 @@ final class SableCommands {
     private static final long MAX_FIND_COLUMNS = 64L * 64;
     /** Keeps a bound that ends on a block edge from taking in the next block. */
     private static final double EDGE = 1.0E-6;
-    /** Sub-levels are seen inside the world border, so this box holds them all. */
-    private static final AABB EVERYWHERE = new AABB(-3.0E7, -3.0E7, -3.0E7, 3.0E7, 3.0E7, 3.0E7);
     private static final String REFERENCE = "a sub-level: its UUID, its name, or here (the one the player stands on "
         + "or rides, else the one under the crosshair)";
 
@@ -519,7 +517,7 @@ final class SableCommands {
         if (word.equals("here")) {
             return here(minecraft, subLevels);
         }
-        List<SubLevels.Info> named = subLevels.near(level, EVERYWHERE).stream()
+        List<SubLevels.Info> named = subLevels.all(level).stream()
             .filter(info -> info.name().equals(word)).toList();
         if (named.isEmpty()) {
             throw new CommandException("no_sublevel", word);

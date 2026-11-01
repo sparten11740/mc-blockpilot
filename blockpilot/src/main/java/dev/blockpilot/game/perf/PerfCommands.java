@@ -18,6 +18,8 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.ChunkMapAccessor;
 import dev.blockpilot.mixin.ParticleEngineAccessor;
 import dev.blockpilot.platform.ClientPlatform;
@@ -32,9 +34,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -43,13 +47,17 @@ import net.minecraft.client.particle.Particle;
 //? if >=26.1 {
 /*import net.minecraft.client.particle.ParticleGroup;
 *///?}
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.profiling.ProfileResults;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.AABB;
 
 /** {@code perf start|stop|status}: performance captures summarized as JSON and saved under blockpilot/perf/. */
 public final class PerfCommands {
@@ -74,7 +82,8 @@ public final class PerfCommands {
                 .optional(named -> named.arg("name", ArgType.WORD).optionalKeyword("profile", "profile")))
             .help("perf start [name] … perf stop: server MSPT (avg/p95/p99/max), TPS, the ticks over 50 ms by game "
                 + "tick with the chunks generated, loaded and sent and the entities added in them (every tick's are in "
-                + "the file), tick time per block-entity and entity type, the block "
+                + "the file), tick time per block-entity and entity type, the chunks loaded in the world and in "
+                + "sub-level plots and, with Sable, the sub-levels loaded at the end, the block "
                 + "changes the server sends to clients per block, block entity type and sub-level, and the 50 "
                 + "positions with the most (a capture tracks the first 65,536 positions it sees; "
                 + "block_change_positions_untracked counts the changes at the others), "
@@ -220,6 +229,79 @@ public final class PerfCommands {
         }
     }
 
+    /** The loaded counts at the end of a capture, kept apart so tests load no Minecraft classes. */
+    private static final class Counts {
+        /**
+         * Loaded block entities and entities per type, chunks in the world and in sub-level plots, and with Sable the
+         * sub-levels, across the server's levels, after ending the metrics recorder of a profiled capture; on the
+         * server thread.
+         */
+        static JsonObject of(MinecraftServer server, boolean profiled) {
+            if (profiled) {
+                Profiling.finish(server);
+            }
+            Map<String, Integer> blockEntities = new TreeMap<>();
+            Map<String, Integer> entities = new TreeMap<>();
+            SubLevels subLevels = SableSupport.subLevels();
+            int worldChunks = 0;
+            int plotChunks = 0;
+            int subLevelCount = 0;
+            for (ServerLevel level : server.getAllLevels()) {
+                for (ChunkHolder holder : ((ChunkMapAccessor) level.getChunkSource().chunkMap)
+                    .blockpilot$visibleChunks().values()) {
+                    ChunkPos pos = holder.getPos();
+                    if (subLevels.at(level, new BlockPos(pos.getMinBlockX(), 0, pos.getMinBlockZ())) != null) {
+                        // A plot's chunk, counted below.
+                        continue;
+                    }
+                    if (holder.getLatestChunk() instanceof LevelChunk) {
+                        worldChunks++;
+                    }
+                    countBlockEntities(holder.getTickingChunk(), blockEntities);
+                }
+                // Sable keeps plot chunks out of the chunk map's full chunks and hands them out by position.
+                Set<ChunkPos> plots = new HashSet<>();
+                for (SubLevels.Info subLevel : subLevels.all(level)) {
+                    subLevelCount++;
+                    AABB bounds = subLevel.plotBounds();
+                    for (int x = SectionPos.blockToSectionCoord(bounds.minX);
+                        x <= SectionPos.blockToSectionCoord(bounds.maxX); x++) {
+                        for (int z = SectionPos.blockToSectionCoord(bounds.minZ);
+                            z <= SectionPos.blockToSectionCoord(bounds.maxZ); z++) {
+                            LevelChunk chunk = level.getChunkSource().getChunkNow(x, z);
+                            if (chunk != null && plots.add(new ChunkPos(x, z))) {
+                                countBlockEntities(chunk, blockEntities);
+                            }
+                        }
+                    }
+                }
+                plotChunks += plots.size();
+                for (Entity entity : level.getAllEntities()) {
+                    entities.merge(Ids.of(entity), 1, Integer::sum);
+                }
+            }
+            JsonObject result = new JsonObject();
+            result.add("block_entities", GSON.toJsonTree(blockEntities));
+            result.add("entities", GSON.toJsonTree(entities));
+            JsonObject chunks = new JsonObject();
+            chunks.addProperty("world", worldChunks);
+            chunks.addProperty("plots", plotChunks);
+            result.add("chunks", chunks);
+            if (subLevels != SubLevels.NONE) {
+                result.addProperty("sub_levels", subLevelCount);
+            }
+            return result;
+        }
+
+        private static void countBlockEntities(LevelChunk chunk, Map<String, Integer> blockEntities) {
+            if (chunk != null) {
+                for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
+                    blockEntities.merge(Ids.of(blockEntity.getType()), 1, Integer::sum);
+                }
+            }
+        }
+    }
+
     /** Stops the capture: asks the integrated server for its counts (without blocking), then builds the summary. */
     private static final class Stop implements Action {
         private CompletableFuture<JsonObject> counts;
@@ -233,7 +315,7 @@ public final class PerfCommands {
                 MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
                 profiled = Perf.profiled();
                 counts = server == null ? CompletableFuture.completedFuture(null)
-                    : server.submit(() -> loaded(server, profiled));
+                    : server.submit(() -> Counts.of(server, profiled));
             }
             if (!counts.isDone() && waited++ < COUNT_WAIT_TICKS) {
                 return null;
@@ -275,36 +357,6 @@ public final class PerfCommands {
             }
         }
         return live;
-    }
-
-    /**
-     * Loaded block entities and entities per type across the server's levels, after ending the metrics recorder of a
-     * profiled capture; on the server thread.
-     */
-    private static JsonObject loaded(MinecraftServer server, boolean profiled) {
-        if (profiled) {
-            Profiling.finish(server);
-        }
-        Map<String, Integer> blockEntities = new TreeMap<>();
-        Map<String, Integer> entities = new TreeMap<>();
-        for (ServerLevel level : server.getAllLevels()) {
-            for (ChunkHolder holder : ((ChunkMapAccessor) level.getChunkSource().chunkMap).blockpilot$visibleChunks()
-                .values()) {
-                LevelChunk chunk = holder.getTickingChunk();
-                if (chunk != null) {
-                    for (BlockEntity blockEntity : chunk.getBlockEntities().values()) {
-                        blockEntities.merge(Ids.of(blockEntity.getType()), 1, Integer::sum);
-                    }
-                }
-            }
-            for (Entity entity : level.getAllEntities()) {
-                entities.merge(Ids.of(entity), 1, Integer::sum);
-            }
-        }
-        JsonObject result = new JsonObject();
-        result.add("block_entities", GSON.toJsonTree(blockEntities));
-        result.add("entities", GSON.toJsonTree(entities));
-        return result;
     }
 
     private static Path directory() {
@@ -414,6 +466,17 @@ public final class PerfCommands {
                 rows.add(Row.of("section:" + path, share(new Fields().bare("list", "section").bare("type", path),
                     section.get("of_whole").getAsDouble())));
             }
+        }
+        if (server.has("loaded") && server.getAsJsonObject("loaded").has("chunks")) {
+            JsonObject loaded = server.getAsJsonObject("loaded");
+            JsonObject chunks = loaded.getAsJsonObject("chunks");
+            Fields fields = new Fields().bare("list", "loaded")
+                .put("world", chunks.get("world").getAsInt(), "chunks world=" + chunks.get("world").getAsInt())
+                .put("plots", chunks.get("plots").getAsInt());
+            if (loaded.has("sub_levels")) {
+                fields.put("sub_levels", loaded.get("sub_levels").getAsInt());
+            }
+            rows.add(Row.of("loaded", fields));
         }
         if (server.has("block_changes")) {
             server.getAsJsonArray("block_changes").asList().stream().limit(TOP).map(JsonElement::getAsJsonObject)
