@@ -1,9 +1,14 @@
 package dev.blockpilot.game.record;
 
+import dev.blockpilot.Blockpilot;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** The recording, at most one, which outlasts the connection that started it; client thread only. */
 public final class Recorder {
+    private static final long CLOSE_WAIT_SECONDS = 60;
     private static Recording recording;
     /** An encoder failure that neither record status nor record stop has reported yet. */
     private static String failure;
@@ -37,6 +42,25 @@ public final class Recorder {
         }
     }
 
+    /** Ends a running recording and waits for its file, so closing the game leaves it saved. */
+    public static void onClientStopping() {
+        if (recording == null) {
+            return;
+        }
+        Recording closing = recording;
+        recording = null;
+        closing.stop();
+        try {
+            Recording.Summary summary = closing.finished().get(CLOSE_WAIT_SECONDS, TimeUnit.SECONDS);
+            Blockpilot.LOGGER.info("Saved recording {} as the game closed", summary.file());
+        } catch (ExecutionException | TimeoutException e) {
+            Blockpilot.LOGGER.warn("Recording {} could not be saved as the game closed: {}", closing.name(),
+                message(e));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     static Recording recording() {
         return recording;
     }
@@ -64,8 +88,8 @@ public final class Recorder {
     }
 
     static String message(Throwable failed) {
-        Throwable cause = failed instanceof CompletionException && failed.getCause() != null ? failed.getCause()
-            : failed;
+        Throwable cause = (failed instanceof CompletionException || failed instanceof ExecutionException)
+            && failed.getCause() != null ? failed.getCause() : failed;
         return cause.getMessage();
     }
 }

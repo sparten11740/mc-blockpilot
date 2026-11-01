@@ -20,6 +20,7 @@ import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.game.observe.EntityUpdates;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
+import dev.blockpilot.game.record.Recorder;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -190,6 +191,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onClientStopping() {
+        Recorder.onClientStopping();
         try {
             restoreAgentChanges("the game is closing");
         } catch (RuntimeException e) {
@@ -231,7 +233,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         long now = System.currentTimeMillis();
         presence.update(engine.sessionCount(), engine.activity(), now);
         boolean agentInControl = enabled && presence.present(now);
-        Focus.setKeepActive(agentInControl);
+        Focus.setKeepActive(agentInControl || Recorder.active());
         ActionCommands.holdFlight(agentInControl);
         InputState.reassert();
         events.tick();
@@ -379,7 +381,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     public void onHudRender(GuiGraphics graphics) {
         CameraControl.recordRendered();
         long now = System.currentTimeMillis();
-        if (engine == null || !presence.present(now) || Minecraft.getInstance().options.hideGui) {
+        if (engine == null || !presence.present(now) || Minecraft.getInstance().options.hideGui
+            || Recorder.active()) {
             return;
         }
         String activity = presence.shownActivity();
