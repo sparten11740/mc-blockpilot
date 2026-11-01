@@ -16,8 +16,8 @@
 ## 4. Docs and release
 
 - [ ] 4.1 Describe installing the vanilla jar through the launcher's JVM arguments in the README and `docs/connecting.md`, and attach the jar in the release workflow (D6); verify the instructions on a vanilla launcher profile, and that the workflow collects five mod jars
-- [ ] 4.2 Run the smoke test against the vanilla dev client; verify it passes in text and JSON mode
+- [x] 4.2 Run the smoke test against the vanilla dev client; verify it passes in text and JSON mode
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `./gradlew build` for all targets and the smoke test against the 1.21.1 and 26.1 loader clients; verify all pass
+- [x] 5.1 Run `./gradlew build` for all targets and the smoke test against the 1.21.1 and 26.1 loader clients; verify all pass
