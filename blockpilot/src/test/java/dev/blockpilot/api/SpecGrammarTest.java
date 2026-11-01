@@ -51,7 +51,8 @@ class SpecGrammarTest {
         RECOGNIZERS.put("namespace", Lexicon::isNamespace);
     }
 
-    private static final String ALPHABET = "0123456789aestwxzAZ~,.-:#*/_=<>!$&|[]";
+    /** Includes U+0085 and U+2028, which a token may hold and Java regexes treat as line terminators. */
+    private static final String ALPHABET = "0123456789aestwxzAZ~,.-:#*/_=<>!$&|[]\u0085\u2028";
     private static final List<String> EXAMPLES = List.of("1,2,3", "~0,-1,0", "-1.5,64", "e812", "w3", "s5", "x6",
         "0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6", "0F3A9C2E-1B2C-4D5E-8F90-A1B2C3D4E5F6", "-12", "1.5", "20t", "0.5s",
         "stone", "minecraft:stone", "c:ores/iron", "#logs", "*ore*", "create:*", "max_hp", "rows.0.id", "near=2",
@@ -59,7 +60,9 @@ class SpecGrammarTest {
         "-5t", "5.", "since=", "mine", "my.mod-id_2", "stone[facing=north]", "#logs[axis=y]", "create:*[a=b]",
         "minecraft:oak_log[axis=y,waterlogged=false]", "oak_log[]", "oak_log[axis]", "oak_log[axis=y",
         "oak_log[Axis=y]", "oak_log[axis=y,]", "x6[a=b]", "5[a=b]", "e2[a=b]", "a:b:c[d=e]", "*#[a=b]",
-        "a[b=c][d=e]");
+        "a[b=c][d=e]",
+        // A line terminator to a regex, though a token may hold one, after an exception's match.
+        "a==\u0085b", "a==$\u0085x", "a==b<\u0085c", "a==\u2028b");
 
     private static Map<String, String> productions;
 
@@ -159,12 +162,13 @@ class SpecGrammarTest {
                     String excluded = postfixed();
                     excluding = false;
                     // B mustn't match exactly what A matched, whatever follows it: A's match and the rest of the input
-                    // are captured, then B followed by that rest must not reach the end.
+                    // are captured, then B followed by that rest must not reach the end. The rest may hold characters
+                    // regexes take for line terminators, hence DOTALL and \z.
                     int group = groups++;
                     String matched = "a" + group;
                     String rest = "r" + group;
-                    item = "(?=(?<" + matched + ">" + item + ")(?<" + rest + ">.*+))(?!(?:" + excluded + ")\\k<" + rest
-                        + ">$)\\k<" + matched + ">";
+                    item = "(?=(?<" + matched + ">" + item + ")(?<" + rest + ">(?s:.*+)))(?!(?:" + excluded + ")\\k<"
+                        + rest + ">\\z)\\k<" + matched + ">";
                 }
                 out.append(item);
             }
