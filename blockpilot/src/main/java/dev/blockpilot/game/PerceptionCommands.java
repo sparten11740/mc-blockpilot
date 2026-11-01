@@ -55,6 +55,7 @@ import net.minecraft.world.phys.Vec3;
 /** Read-only commands: what the player can perceive. None of them change the game. */
 final class PerceptionCommands {
     private static final int MAX_FIND_RADIUS = 128;
+    private static final int MAX_FIND_LIMIT = 1000;
     private static final int MAX_REGION_BLOCKS = 4096;
     private static final List<EquipmentSlot> ARMOR =
         List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
@@ -107,7 +108,7 @@ final class PerceptionCommands {
             .help("nearest blocks (id, #tag or *pattern, each also with states as Minecraft writes them: "
                 + "oak_log[axis=y]), entities or dropped items, in loaded chunks within a cube reaching radius blocks "
                 + "each way from the player (default 32, max " + MAX_FIND_RADIUS + "), the nearest limit of them "
-                + "(default 5, max 100); with Sable, blocks aboard a sub-level are in its plot, "
+                + "(default 5, max " + MAX_FIND_LIMIT + "); with Sable, blocks aboard a sub-level are in its plot, "
                 + "which sable:find searches. A ~ position is relative to the player's block as the find runs")
             .field("count", "matches in all, when the limit left some out")
             .field("at_abs", "JSON: each row's position, absolute")
@@ -364,7 +365,7 @@ final class PerceptionCommands {
         String what = args.word("what");
         int asked = args.integer("radius", 32);
         int radius = Mth.clamp(asked, 1, MAX_FIND_RADIUS);
-        int limit = Mth.clamp(args.integer("limit", 5), 1, 100);
+        int limit = Mth.clamp(args.integer("limit", 5), 1, MAX_FIND_LIMIT);
         var id = args.type("what") == ArgType.ID ? Ids.parse(what) : null;
         BlockMatcher matcher = id != null && !BuiltInRegistries.BLOCK.containsKey(id) ? null : BlockMatcher.parse(what);
         BlockPos center = player.blockPosition();
