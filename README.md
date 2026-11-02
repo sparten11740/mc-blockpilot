@@ -1,5 +1,7 @@
 # Blockpilot
 
+[![release](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml/badge.svg)](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml)
+
 A client-side Minecraft mod that lets AI agents and scripts see and play the game through a fast, token-efficient local
 interface: to play, or to play-test a mod while you develop it. For NeoForge and Fabric on Minecraft 1.21.1 and 26.1.2,
 and for plain Minecraft 26.1.2 without a mod loader.
