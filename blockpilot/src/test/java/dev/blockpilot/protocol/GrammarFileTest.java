@@ -37,7 +37,7 @@ class GrammarFileTest {
         return root;
     }
 
-    private static String grammar() throws IOException {
+    static String grammar() throws IOException {
         return Files.readString(root().resolve("docs/grammar.ebnf"));
     }
 
