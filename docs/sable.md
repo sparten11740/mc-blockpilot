@@ -55,8 +55,8 @@ Blockpilot talks to Sable only through its published [companion API](https://git
 bundles nothing of it. Without Sable nothing changes and nothing has to be installed; `help sable` says why the `sable:`
 commands are missing. Companion versions 1.x from 1.6 are supported (Sable 2.0.5 and 2.0.6 ship 1.6.0). With any other
 version the integration stays off, and the log and `help sable` name the version found. Tested with Sable 2.0.6
-(companion 1.6.0), Create 6.0.10 and Create Aeronautics 1.3.2 on NeoForge 1.21.1. Sable has no release for 26.1 yet, so
-the 26.1 jars are built without the integration; with a Sable installed they run as without it, and `help sable` says
+(companion 1.6.0), Create 6.0.10 and Create Aeronautics 1.3.2 on NeoForge 1.21.1. Sable has no release for 26.x yet, so
+the 26.x jars are built without the integration; with a Sable installed they run as without it, and `help sable` says
 the build has no Sable integration.
 
 [Back to the README](../README.md)

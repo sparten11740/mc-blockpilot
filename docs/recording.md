@@ -11,8 +11,8 @@ The frames come from the game's framebuffer, so the window can be covered or in 
 window's shape: a 16:9 video needs a 16:9 window. `repeated=` in the reply counts the frames the game had not rendered
 anew in time; when it is high, lower `fps=` or `width=`. With vsync on, the game renders no faster than the display
 refreshes, and macOS may hold a window in the background to 60 Hz, so a recording at 60 fps repeats frames; `option
-enableVsync off` lets it render faster for the take. While recording, 26.1's lower frame rate for a player who hasn't
-touched the keyboard or mouse for a minute doesn't apply.
+enableVsync off` lets it render faster for the take. While recording, the lower frame rate from 26.1 on for a player who
+hasn't touched the keyboard or mouse for a minute doesn't apply.
 
 The sound is the game's own mix: at the game's volumes, so `option soundCategory_music 0` keeps the music out of a take
 until `option reset`, and heard from the camera, so from a placed camera's position. It is plain stereo, even with

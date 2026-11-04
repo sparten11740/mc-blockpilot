@@ -3,8 +3,8 @@
 [![release](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml/badge.svg)](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml)
 
 A client-side Minecraft mod that lets AI agents and scripts see and play the game through a fast, token-efficient local
-interface: to play, or to play-test a mod while you develop it. For NeoForge and Fabric on Minecraft 1.21.1 and 26.1.2,
-and for plain Minecraft 26.1.2 without a mod loader.
+interface: to play, or to play-test a mod while you develop it. For NeoForge and Fabric on Minecraft 1.21.1, 26.1.2,
+26.2 and 26.3, and for plain Minecraft 26.1.2, 26.2 and 26.3 without a mod loader.
 
 ![A script chops a tree, crafts a crafting table and places it, with the replies below the game](docs/images/01-scripted-play.png)
 
@@ -14,9 +14,9 @@ Put the jar for your loader and Minecraft version from the [releases](../../rele
 (Fabric also needs Fabric API) and start the game. Blockpilot listens on `127.0.0.1` only, behind a token it creates.
 For a mod's dev environment, see [docs/dev-environment.md](docs/dev-environment.md).
 
-Without a mod loader, on Minecraft 26.1.2: keep the vanilla jar in a folder whose path has no spaces, add a 26.1.2
-installation in the Minecraft Launcher (or a vanilla instance in the CurseForge app) and append
-`-javaagent:<full path to the jar>` to its JVM arguments; see
+Without a mod loader, on Minecraft 26.1.2, 26.2 or 26.3: keep that version's vanilla jar in a folder whose path has no
+spaces, add an installation of that version in the Minecraft Launcher (or a vanilla instance in the CurseForge app) and
+append `-javaagent:<full path to the jar>` to its JVM arguments; see
 [docs/connecting.md](docs/connecting.md#without-a-mod-loader).
 
 ## Two ways to drive it
