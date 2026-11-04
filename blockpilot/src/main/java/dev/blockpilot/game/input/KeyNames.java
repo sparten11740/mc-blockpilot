@@ -10,8 +10,13 @@ import java.util.List;
  * ({@code key.keyboard.left.shift} is {@code left_shift}); {@code .} between words works too.
  */
 public final class KeyNames {
-    /** Mouse buttons as agents name them, in the order GLFW numbers them. */
+    /** Mouse buttons as agents name them. */
     public static final List<String> BUTTONS = List.of("left", "right", "middle");
+    //? if >=26.3 {
+    /*private static final List<Integer> BUTTON_NUMBERS = List.of(1, 3, 2);
+    *///?} else {
+    private static final List<Integer> BUTTON_NUMBERS = List.of(0, 1, 2);
+    //?}
     private static final String KEYBOARD = "key.keyboard.";
 
     private KeyNames() {
@@ -37,9 +42,22 @@ public final class KeyNames {
         return gameName.startsWith(KEYBOARD) ? gameName.substring(KEYBOARD.length()).replace('.', '_') : gameName;
     }
 
-    /** A mouse button by its GLFW number, as agents name it; past the third by the game's number (4 for the fourth). */
-    public static String buttonName(int button) {
-        return button >= 0 && button < BUTTONS.size() ? BUTTONS.get(button) : String.valueOf(button + 1);
+    /** The number the game's mouse handling gives one of {@link #BUTTONS}. */
+    public static int buttonNumber(String name) {
+        return BUTTON_NUMBERS.get(BUTTONS.indexOf(name));
+    }
+
+    /** A mouse button by the game's number for it, as agents name it; past the third as its key is named (4, …). */
+    public static String buttonName(int number) {
+        int known = BUTTON_NUMBERS.indexOf(number);
+        if (known >= 0) {
+            return BUTTONS.get(known);
+        }
+        //? if >=26.3 {
+        /*return String.valueOf(number);
+        *///?} else {
+        return String.valueOf(number + 1);
+        //?}
     }
 
     /** The names closest to the wanted one by edit distance, nearest first, ties in alphabetical order. */

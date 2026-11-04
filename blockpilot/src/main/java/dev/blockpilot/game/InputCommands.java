@@ -103,9 +103,8 @@ final class InputCommands {
         return Minecraft.getInstance();
     }
 
-    /** One of {@link #BUTTONS}, as GLFW numbers them. */
     private static int button(String name) {
-        return KeyNames.BUTTONS.indexOf(name);
+        return KeyNames.buttonNumber(name);
     }
 
     /** A {@code x,y} point or widget {@code w<i>}'s centre, in GUI units, on the open screen. */

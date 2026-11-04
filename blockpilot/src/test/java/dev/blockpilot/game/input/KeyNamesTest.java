@@ -41,10 +41,24 @@ class KeyNamesTest {
 
     @Test
     void buttonsAreNamedAsMouseCommandsTakeThemThenByNumber() {
+        //? if >=26.3 {
+        /*assertEquals("left", KeyNames.buttonName(1));
+        assertEquals("middle", KeyNames.buttonName(2));
+        assertEquals("right", KeyNames.buttonName(3));
+        assertEquals("4", KeyNames.buttonName(4));
+        *///?} else {
         assertEquals("left", KeyNames.buttonName(0));
         assertEquals("right", KeyNames.buttonName(1));
         assertEquals("middle", KeyNames.buttonName(2));
         assertEquals("4", KeyNames.buttonName(3));
+        //?}
+    }
+
+    @Test
+    void everyNamedButtonHasANumberThatNamesItBack() {
+        for (String button : KeyNames.BUTTONS) {
+            assertEquals(button, KeyNames.buttonName(KeyNames.buttonNumber(button)));
+        }
     }
 
     @Test
