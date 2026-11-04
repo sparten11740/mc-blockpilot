@@ -10,7 +10,7 @@ match those saved from the other targets of its loader; the vanilla targets coun
 Ends with a table of the targets and exits non-zero if any assertion failed, naming the target and the assertion. A
 failure doesn't stop the targets after it. Logs and shapes are in build/test-targets/<target>/.
 
-A full run takes about an hour. Leave the game windows alone meanwhile: real input takes control back from the test.
+A full run takes about 25 minutes. Leave the game windows alone meanwhile: real input takes control back from the test.
 Only the client this script started is ever stopped.
 """
 import argparse

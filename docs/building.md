@@ -43,7 +43,7 @@ One target at a time, this builds it with its unit tests, checks its jar, starts
 `tools/smoke_test.py` in text and JSON mode, and closes the client. It ends with a table of the targets and exits
 non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after it. JSON
 shapes must match those of the other targets of the loader, as saved in `build/test-targets/<target>/` along with the
-logs. All the targets take about an hour. Leave the game windows alone meanwhile: real input takes control back from the
+logs. All the targets take about 25 minutes. Leave the game windows alone meanwhile: real input takes control back from the
 test.
 
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
