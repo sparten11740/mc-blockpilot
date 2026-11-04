@@ -1,0 +1,273 @@
+# Design
+
+## Context
+
+See `proposal.md` for why. This design rests on a spike in a throwaway clone:
+six nodes declared against the unchanged sources, compiled, and every mixin
+target compared with the 26.1.2, 26.2 and 26.3 game jars.
+
+- **Dependencies:** all six nodes resolve their loader and game jars.
+- **Compile errors:** 65 on 26.2 and 128 on 26.3, the same ones on all three
+  loaders. Loader entry points compile unchanged.
+- **Shape of the 26.2 errors:** 49 of the 65 are `minecraft.screen`,
+  `setScreen`, `getOverlay` and `options.hideGui`; the rest are the camera,
+  framebuffer, section counts, particles and the GPU API.
+- **Shape of the 26.3 errors:** those, plus GLFW's removal (`org.lwjgl.glfw` no
+  longer exists), the GPU classes' move to `com.mojang.renderpearl.api`, and a
+  changed `CommandSourceStack` constructor.
+- **What the compiler can't see:** mixin targets are strings. Of 53 mixins, 3
+  lost a target by name on both versions, and more changed signature (D5, D7).
+  With `defaultRequire: 1`, a stale target stops the game at load.
+
+`src/1.21.1/` and `src/26.1/` are plain source directories today: unlike
+`src/main/`, they don't go through Stonecutter, so `//? if` and rename rules
+have no effect in them.
+
+## Goals / Non-Goals
+
+**Goals:**
+- All eleven targets build from the shared tree, and pass one test script with
+  the same JSON shapes per loader.
+- Adding the next 26.x release stays a node plus a few conditions.
+- The 1.21.1 and 26.1 jars keep their behavior.
+
+**Non-Goals:**
+- Sable on these versions: no node pins `sable_companion_version`.
+- Guaranteeing the Vulkan backend. Both versions default to OpenGL, and D6 uses
+  only the backend-neutral API, so it is tried once and not a gate.
+- Exposing anything new from these versions, such as the graphics backend as an
+  `option`, or a command for the new key names.
+- A release, a `mod_version` bump, or the changelog entry that goes with one.
+
+## Decisions
+
+### D1. One 26.x source tree, preprocessed like the shared code
+
+`src/26.1/` keeps serving every 26.x node (`version_sources=26.1`). The three
+build scripts declare a source set named after `version_sources`, which makes
+Stonecutter process it as it does `src/main/`, and add that set's directories to
+`main`. `src/vanilla/` goes the same way. The extra set's own compile task is
+disabled, since its classes only compile together with `main`.
+
+The spike confirmed this on all three scripts. A `//? if >=26.2` block in
+`GuiMixin` flips correctly on the 26.1 and 26.2 Fabric nodes, the five existing
+nodes still build and pass their tests, and 26.2 shows the same 65 errors.
+
+- **Merge task off:** "Set active project" writes a node's sources back to
+  `src/`, and 1.21.1 nodes don't have this tree, so switching to a 26.x node and
+  back left `src/26.1/` modified in Git. Disabling `stonecutterMerge<set>` for
+  that set keeps the checkout clean; the spike showed the switch and a compile
+  of the active node both still work.
+- **Checked-in state:** the tree stays in its 26.1 form, the code for later
+  versions commented out by its conditions.
+- *Alternative:* a copy per version. Rejected: three copies of 47 files, of
+  which about ten differ, and each fix has to land three times.
+- *Alternative:* overlays, where `src/26.2/` replaces same-named files from
+  `src/26.1/`. Rejected: it needs per-directory excludes or a copy task in all
+  three scripts, and still duplicates whole classes for one changed line.
+
+### D2. Exact versions, as on 26.1
+
+Each jar names one game version, and these are what the nodes pin:
+- **26.2:** Fabric API `0.161.0+26.2`, which requires loader 0.18.4; NeoForge
+  `26.2.0.93`; NeoForm `26.2-2`.
+- **26.3:** Fabric API `0.165.2+26.3`, which requires loader 0.19.3; NeoForge
+  `26.3.0.101`; NeoForm `26.3-1`.
+- **All:** Java 25, Fabric Loader 0.20.1 in development.
+
+### D3. Moved game state: renames, and a seam for the HUD
+
+Reads that only moved become rename rules from 26.2: `minecraft.screen` and
+`minecraft().screen` to `gui.screen()`, `setScreen`, `getOverlay`,
+`getMainCamera`, `getMainRenderTarget`, `getSectionRenderDispatcher`, and
+`countRenderedSections`, now on `levelExtractor`. Each rule carries enough
+context to be unique, as the existing rules do.
+
+`options.hideGui` can't be renamed: it is used in 15 places, some of them
+assignments, and 26.2's `Hud` offers only `isHidden()` and `toggle()`. A small
+class holds `hidden()` and `setHidden(boolean)` with one inline condition,
+toggling only on a change, and all versions call it. The `hud` option and the
+placed camera keep their behavior.
+
+`ParticleGroup.getAll()` is gone, so `perf` reads the group's `particles` queue
+through an accessor. The field exists on every 26.x version, so the accessor
+needs no condition.
+
+### D4. HUD messages and hooks
+
+- **Messages:** action-bar, title and subtitle moved to `Hud` with the same
+  signatures, so `GuiMixin` retargets by condition.
+- **Vanilla HUD hook:** `Gui.extractRenderState` no longer takes the graphics;
+  `Hud.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` does, so the hook
+  moves there.
+- **Vanilla shutdown hook:** `Minecraft.destroy` became `exitWorldAndClose`,
+  which disconnects and closes as before.
+
+### D5. Other retargeted mixins
+
+- **`RebuildTaskMixin`:** `RebuildTask` is now `CompileTask`, with `doTask` the
+  same.
+- **`GraphicsPresetMixin`:** `set` became `private static`, so its handler turns
+  static by condition.
+- **`GameRendererMixin` on 26.3:** `renderLevel` takes no arguments, and the
+  `getBuffer` target's return type moved package. The handler is unaffected.
+- **Injection points:** the targets above were checked by name and signature
+  only. Whether each call still sits inside its method shows at load (D9).
+
+### D6. Frame capture and video readback on the new GPU API
+
+`FrameCapture` and `FrameReadback` keep their design: copy to a buffer, then map
+it, which waits for the copy. What changes:
+- **26.2:** `buffer.map(true, false)` replaces `encoder.mapBuffer`; `GpuFormat`
+  replaces `TextureFormat`, `blockSize` replaces `pixelSize`, and render passes
+  take new arguments.
+- **26.3:** the same code with `com.mojang.blaze3d.buffers` and `.textures`
+  moved to `com.mojang.renderpearl.api`, done as rename rules.
+- **Row order:** rows stay flipped. The game's own `Screenshot` flips them the
+  same way on both versions, with no branch on the backend.
+
+### D7. Input on 26.3: SDL instead of GLFW
+
+`org.lwjgl.glfw` is gone, so shared input code changes. Constants that exist on
+every version (`InputConstants.PRESS`, `RELEASE`, `KEY_F8`) replace the GLFW
+ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits
+and `Window.isFocused()`.
+- **Keys:** a key's value is now an SDL scancode, and it reaches the game
+  through the same `InputConstants.Key` lookups, so names keep working.
+- **Key events:** `KeyEvent` is `(scancode, keycode, modifiers)`, and text-field
+  shortcuts compare the keycode (`shortcutKey() == 97` for select-all). Injected
+  keys get it from `SDL_GetKeyFromScancode`, or those shortcuts would silently
+  stop working.
+- **Modifiers:** the bits come from `InputConstants.MOD_*`. Left and right super
+  are `KEY_LGUI` and `KEY_RGUI`.
+- **Mouse buttons:** left, middle and right are now 1, 2 and 3, not 0, 2 and 1.
+  `KeyNames.BUTTONS` keeps its order, which `help` and the grammar show, and a
+  separate mapping turns names into the game's numbers, with an inline condition
+  and a matching one in `KeyNamesTest`. Without it, `mouse click left` would
+  press nothing and `mouse click right` would click as left.
+- **Mouse movement:** `onMove` gained relative `xrel` and `yrel`, which is what
+  it uses while the mouse is grabbed. `blockpilot$move` computes them from the
+  shadowed `xpos` and `ypos`, or the camera wouldn't turn.
+- **Polling:** `InputConstants.isKeyDown(int)` drops the window, so the handler
+  signature changes by condition.
+- **Focus:** `Focus.reallyFocused` uses `Window.isFocused()` on 26.3. The pause
+  mixin only overrides the result at its call site, so this stays the real
+  state.
+- **Typing:** `charTyped` remains, and the game's own `textInput` calls it per
+  code point, so `type` is unchanged.
+- **Take-over:** real events now arrive through `minecraft.execute`, on the same
+  client thread, and `Injection.active()` still tells them from injected ones.
+
+*Alternative:* a per-version class hiding all input constants. Rejected: only
+26.3 differs, and in a few lines each.
+
+### D8. The vanilla agent's version comes from its manifest
+
+`BlockpilotAgent` hardcodes `26.1.2`, and its source set is compiled for Java 8,
+outside Stonecutter. The build writes a `Blockpilot-Minecraft` attribute from
+the node's `minecraft_version`, and the agent reads it from its own jar.
+
+*Alternative:* a chiselled constant. Rejected: it would bring the agent's
+separate source set into Stonecutter for one string.
+
+`AccessWidening` and `accesstransformer.cfg` stay. `OptionInstance$ValueSet` is
+already public on 26.2 and 26.3, and widening a public class does nothing.
+
+### D9. Checking the port
+
+- **Compile and unit tests:** all eleven nodes, in `./gradlew build`.
+- **Load:** each new client starts with every mixin applied. `defaultRequire: 1`
+  makes a missing injection point stop the game, so this is the check for D5.
+- **Everything else that can be asserted:** the script in D10, on every target,
+  so the 1.21.1 and 26.1 regression run is the same run as the port's.
+- **By hand:** what D10 lists as out of a script's reach.
+- **Clients:** dev clients are closed with `quit`. Only one that never opened
+  its endpoint is stopped by process id, and only Blockpilot's own dev client.
+
+### D10. One script for every target
+
+`tools/smoke_test.py` stays the test of one running game, and gains assertions.
+A new `tools/test_targets.py` runs it on each target: it starts the dev client,
+waits for the endpoint, runs the smoke test in text and JSON mode, quits the
+client and moves on. It finishes with a per-target table, compares JSON shapes
+across targets of a loader, and exits non-zero on any failure.
+
+- **Target list:** read from `settings.gradle.kts`, so a new node is tested
+  without editing the script. `--targets` narrows it.
+- **Jar checks with no game:** each jar exists under its expected name and lacks
+  the other loaders' classes, loader metadata pins its version, a vanilla
+  manifest names its version, and 26.3 jars don't reference `org.lwjgl.glfw`.
+- **Wrong-version agent:** the agent runs against a directory holding only a
+  `version.json` naming another version, under `java -version`. That needs no
+  game, and it asserts the refusal and its log line.
+- **New assertions, each on what the game then does:**
+    - `left`, `right` and `middle` in a world break, place and pick a block.
+    - Buttons in a screen: left activates a widget, and right picks up half a
+      stack, which also catches a wrong number reaching `onButton`.
+    - `mouse move` changes `status`'s yaw in a world and moves the cursor in a
+      screen.
+    - `type` fills the chat box, then select-all and typing replaces it. The
+      chord is `left_win+a` on macOS and `left_control+a` elsewhere, as the
+      game's own `EDIT_SHORTCUT_KEY_MODIFIER` requires.
+    - Shift-click moves a stack, which needs the modifier bits.
+    - A `w` held with a screen open walks the player once the screen closes,
+      which reaches `isKeyDown` through `KeyMapping.setAll`.
+    - `key press f8` is refused as the toggle, which proves the toggle resolved
+      to F8 under each version's key numbers.
+    - `scroll` changes the selected slot.
+    - `pixels` reads sky above ground, `@<pos>` on a coloured block reads that
+      colour, and an ffmpeg-decoded frame of a `record` is upright too.
+    - `perf` reports a section rebuild, a block entity's time and live
+      particles.
+    - `hud` and `graphicsPreset` (or `graphicsMode`) set and reset, by version.
+- **Honest failures:** each new assertion is made to fail once by breaking what
+  it checks, so none passes vacuously. A prerequisite missing on the machine
+  (ffmpeg) is a skip with its reason, never a pass.
+- **Out of a script's reach, so by hand:**
+    - Real input taking control back, and a real F8 press: `Injection.active()`
+      separates injected from real input by design, and agents are refused F8.
+      Faking them would need OS-level events, and a test hook in the shipped
+      jar.
+    - The Minecraft Launcher and CurseForge app install paths: they are GUI apps
+      behind a Microsoft login.
+    - Whether a video or screenshot looks right beyond orientation and colour.
+    - Windows and Linux, until someone runs the script there.
+
+*Alternative:* a separate assertion suite beside the smoke test. Rejected: the
+two would drift, and most steps would be copies.
+
+*Alternative:* running targets in parallel. Rejected: clients compete for the
+GPU and window, which makes timing-sensitive assertions flaky.
+
+## Risks / Trade-offs
+
+- [The spike only sees compile errors and mixin signatures, so behavior can
+  change with no error] → D10's assertions check effects rather than replies,
+  and the JSON shapes catch reply changes.
+- [A full run takes about an hour, and a person using the game window interrupts
+  it, because real input takes control] → `--targets` narrows a run, and the
+  docs say so. Any failure names its target and assertion, so a stray one is
+  rerun alone.
+- [Rename rules can rewrite shared text by accident, and `minecraft.screen` is
+  short] → All nodes are rebuilt after each rule. The spike's sources show only
+  the field uses `minecraft.screen`.
+- [Eleven nodes make builds and CI slower] → Gradle already caches and runs
+  nodes in parallel. Accepted as the cost of the targets.
+- [CurseForge may not list 26.2 or 26.3 as game versions yet, which only shows
+  at upload] → The workflow runs on a tag, so this surfaces at the next release,
+  and `fail-fast: false` keeps one bad row from stopping the others. It can't be
+  tested beforehand.
+- [SDL input is tested only on the development Mac] → The key tables and event
+  flow are the game's own and shared across platforms. Windows and Linux are
+  covered by what players report, as on other targets.
+- [The vanilla agent bundles Mixin for a Java 25 game that keeps changing] → The
+  load check runs on both `-vanilla` nodes.
+- [Each new 26.x adds conditions to one tree] → Accepted; a condition older than
+  the oldest supported 26.x can be dropped when that target goes.
+
+## Migration Plan
+
+Nothing to migrate. Developers building from source need nothing new: Gradle
+fetches Java 25 as it already does. `src/26.1/` keeps its name, and
+`docs/building.md` says it serves 26.1 and later. To roll back, revert the
+change; no stored data or protocol is touched.
