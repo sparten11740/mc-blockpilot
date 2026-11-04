@@ -7,6 +7,7 @@ import java.lang.instrument.Instrumentation;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,22 +17,28 @@ import java.util.regex.Pattern;
  * as it is; on that one, it starts {@code AgentBootstrap}.
  */
 public final class BlockpilotAgent {
-    private static final String SUPPORTED = "26.1.2";
     private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*\"([^\"]+)\"");
 
     private BlockpilotAgent() {
     }
 
     public static void premain(String arguments, Instrumentation instrumentation) throws Exception {
+        Path jar = Paths.get(BlockpilotAgent.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        String supported = builtFor(jar);
         String version = gameVersion();
-        if (!SUPPORTED.equals(version)) {
-            System.out.println("[Blockpilot] This agent runs on Minecraft " + SUPPORTED + " only, not "
+        if (!supported.equals(version)) {
+            System.out.println("[Blockpilot] This agent runs on Minecraft " + supported + " only, not "
                 + (version == null ? "a game without version.json" : version) + "; the game starts without it");
             return;
         }
-        Path jar = Paths.get(BlockpilotAgent.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         Class.forName("dev.blockpilot.platform.vanilla.AgentBootstrap")
             .getMethod("start", Instrumentation.class, Path.class).invoke(null, instrumentation, jar);
+    }
+
+    private static String builtFor(Path jar) throws IOException {
+        try (JarFile file = new JarFile(jar.toFile())) {
+            return file.getManifest().getMainAttributes().getValue("Blockpilot-Minecraft");
+        }
     }
 
     /** The version the client jar's version.json names, or null. */
