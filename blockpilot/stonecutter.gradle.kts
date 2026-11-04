@@ -12,7 +12,7 @@ stonecutter parameters {
     // Plain renames, swapped in for the versions that have them; the sources keep the names of the version they are
     // checked in for (vcsVersion in settings.gradle.kts). Switching the active version swaps them back, so each new
     // text must not appear in code both versions share. Changes beyond a rename go in `//? if` blocks instead. Each
-    // rule names the earliest release known to have the new name; only 26.1 has been built against.
+    // rule names the earliest release known to have the new name; only those from 26.1 on have been built against.
     fun rename(since: String, from: String, to: String) =
         replacements.string(current.parsed >= since) { replace(from, to) }
 
@@ -43,4 +43,14 @@ stonecutter parameters {
     rename("26.1", "ClickType", "ContainerInput")
     rename("26.1", "client.gui.GuiGraphics;", "client.gui.GuiGraphicsExtractor;")
     rename("26.1", "GuiGraphics graphics", "GuiGraphicsExtractor graphics")
+    // 26.2 keeps the screen on Gui, and the frame's state on GameRenderer and LevelExtractor.
+    rename("26.2", "minecraft.screen", "minecraft.gui.screen()")
+    rename("26.2", "minecraft().screen", "minecraft().gui.screen()")
+    rename("26.2", "minecraft.setScreen(", "minecraft.gui.setScreen(")
+    rename("26.2", "minecraft().setScreen(", "minecraft().gui.setScreen(")
+    rename("26.2", ".getOverlay()", ".gui.overlay()")
+    rename("26.2", "gameRenderer.getMainCamera()", "gameRenderer.mainCamera()")
+    rename("26.2", ".getMainRenderTarget()", ".gameRenderer.mainRenderTarget()")
+    rename("26.2", "renderer.getSectionRenderDispatcher()", "renderer.sectionRenderDispatcher()")
+    rename("26.2", "renderer.countRenderedSections()", "Minecraft.getInstance().levelExtractor.countRenderedSections()")
 }
