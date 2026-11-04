@@ -22,7 +22,7 @@ neoForge {
 }
 ```
 
-Fabric Loom (for 26.1, whose Loom doesn't remap mods, `localRuntime` instead of `modLocalRuntime`):
+Fabric Loom (from 26.1, whose Loom doesn't remap mods, `localRuntime` instead of `modLocalRuntime`):
 
 ```kotlin
 dependencies {
@@ -48,6 +48,6 @@ claude mcp add --transport stdio blockpilot -- "$PWD/run/blockpilot/blockpilot" 
 `run/blockpilot/blockpilot --wait-ready 300 --wait-world "status"`, run from that project, returns once the player is in
 the test world (on the first start, once the game has written the launcher). In this repository the same properties go
 through Gradle: `./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test
--Pblockpilot.autocreate=flat` (or `26.1-neoforge`, `1.21.1-fabric`, `26.1-fabric`).
+-Pblockpilot.autocreate=flat` (or another node, such as `1.21.1-fabric` or `26.3-neoforge`).
 
 [Back to the README](../README.md)

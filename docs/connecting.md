@@ -7,20 +7,21 @@ the port (25599, or the next free one when several instances run) and the token 
 
 ## Without a mod loader
 
-On plain Minecraft 26.1.2, the vanilla jar (`blockpilot-<version>+26.1.2-vanilla.jar`) runs as a Java agent instead:
+On plain Minecraft 26.1.2, 26.2 or 26.3, that version's vanilla jar (`blockpilot-<version>+26.3-vanilla.jar` for 26.3)
+runs as a Java agent instead:
 
 1. Keep the jar in a folder whose path has no spaces, such as `/Users/<you>/blockpilot` on macOS (where the game folder
    has one) or `C:\blockpilot` on Windows.
-2. In the Minecraft Launcher, add an installation under Installations with the version release 26.1.2, and under More
+2. In the Minecraft Launcher, add an installation under Installations with that release as its version, and under More
    options append ` -javaagent:<full path to the jar>` to its JVM arguments.
 3. Start that installation. Blockpilot then writes its launcher and `endpoint.json` to the installation's game folder,
    as with a loader.
 
-In the CurseForge app, create a vanilla 26.1.2 instance and add the same argument to its Java arguments. It starts the
-game in the instance's folder, so a path relative to that works too and avoids spaces in the instance's name: with the
-jar in the instance's `mods` folder, `-javaagent:mods/<jar>`.
+In the CurseForge app, create a vanilla instance of that version and add the same argument to its Java arguments. It
+starts the game in the instance's folder, so a path relative to that works too and avoids spaces in the instance's name:
+with the jar in the instance's `mods` folder, `-javaagent:mods/<jar>`.
 
-On any other version the agent logs that it supports only 26.1.2, and the game starts without it. Use it on plain
+On any other version the agent logs the one it supports, and the game starts without it. Use it on plain
 Minecraft only, not in an installation with a mod loader. There are no mod configs, so `config` answers
 `err unsupported`, and no other mod can add commands.
 
