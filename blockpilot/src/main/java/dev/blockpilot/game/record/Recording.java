@@ -1,6 +1,7 @@
 package dev.blockpilot.game.record;
 
 import dev.blockpilot.Blockpilot;
+import dev.blockpilot.game.observe.HudVisibility;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -79,7 +80,7 @@ final class Recording {
         this.fps = fps;
         this.ffmpeg = ffmpeg;
         this.hideHud = hideHud;
-        hudBefore = Minecraft.getInstance().options.hideGui;
+        hudBefore = HudVisibility.hidden();
         slots = new FrameSlots(fps);
         encoder = new ProcessBuilder(FfmpegCommands.encode(ffmpeg.path(), ffmpeg.encoder(), width, height, fps, video))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
@@ -347,13 +348,13 @@ final class Recording {
 
     private void hideHud() {
         if (hideHud) {
-            Minecraft.getInstance().options.hideGui = true;
+            HudVisibility.setHidden(true);
         }
     }
 
     private void restoreHud() {
         if (hideHud) {
-            Minecraft.getInstance().options.hideGui = hudBefore;
+            HudVisibility.setHidden(hudBefore);
         }
     }
 

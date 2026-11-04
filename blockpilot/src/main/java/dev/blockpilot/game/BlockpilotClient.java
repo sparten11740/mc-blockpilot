@@ -18,6 +18,7 @@ import dev.blockpilot.game.log.LogCapture;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.game.observe.EntityUpdates;
+import dev.blockpilot.game.observe.HudVisibility;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.game.record.Recorder;
@@ -381,7 +382,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     public void onHudRender(GuiGraphics graphics) {
         CameraControl.recordRendered();
         long now = System.currentTimeMillis();
-        if (engine == null || !presence.present(now) || Minecraft.getInstance().options.hideGui
+        if (engine == null || !presence.present(now) || HudVisibility.hidden()
             || Recorder.active()) {
             return;
         }

@@ -165,8 +165,7 @@ public final class ObservationCommands {
         Duration every = args.durationOption("every");
         int interval = every == null ? 10 : Math.max(1, every.ticks());
         boolean hideHud = "off".equals(args.option("hud"));
-        var options = Minecraft.getInstance().options;
-        boolean hudBefore = options.hideGui;
+        boolean hudBefore = HudVisibility.hidden();
         List<Row> rows = new ArrayList<>();
         List<NativeImage> tiles = new ArrayList<>();
         // The first capture is of a frame rendered after this request, so it shows what the commands before it did
@@ -180,7 +179,7 @@ public final class ObservationCommands {
             @Override
             public Result tick() throws CommandException {
                 if (hideHud) {
-                    options.hideGui = true;
+                    HudVisibility.setHidden(true);
                 }
                 if (elapsed[0] < 0 && Screenshots.frames() == requested) {
                     return null;
@@ -238,7 +237,7 @@ public final class ObservationCommands {
             @Override
             public void cancel() {
                 if (hideHud) {
-                    options.hideGui = hudBefore;
+                    HudVisibility.setHidden(hudBefore);
                 }
                 tiles.forEach(NativeImage::close);
                 tiles.clear();

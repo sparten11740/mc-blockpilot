@@ -291,10 +291,6 @@ public final class ClientOptions {
 
     /** The F1 switch, a plain field rather than an {@link OptionInstance}: {@code on} shows the GUI. */
     private static final class Hud implements Setting {
-        private static Options options() {
-            return Minecraft.getInstance().options;
-        }
-
         @Override
         public String name() {
             return "hud";
@@ -302,7 +298,7 @@ public final class ClientOptions {
 
         @Override
         public String value() {
-            return options().hideGui ? "off" : "on";
+            return HudVisibility.hidden() ? "off" : "on";
         }
 
         @Override
@@ -313,16 +309,16 @@ public final class ClientOptions {
         @Override
         public void set(String text) throws CommandException {
             switch (text) {
-                case "on" -> options().hideGui = false;
-                case "off" -> options().hideGui = true;
+                case "on" -> HudVisibility.setHidden(false);
+                case "off" -> HudVisibility.setHidden(true);
                 default -> throw new CommandException("syntax", "hud takes on|off, not " + text);
             }
         }
 
         @Override
         public Runnable snapshot() {
-            boolean hidden = options().hideGui;
-            return () -> options().hideGui = hidden;
+            boolean hidden = HudVisibility.hidden();
+            return () -> HudVisibility.setHidden(hidden);
         }
     }
 
