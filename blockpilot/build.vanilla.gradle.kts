@@ -106,6 +106,7 @@ tasks.jar {
             "Premain-Class" to "dev.blockpilot.platform.vanilla.BlockpilotAgent",
             "Implementation-Title" to treeProp("mod_name"),
             "Implementation-Version" to treeProp("mod_version"),
+            "Blockpilot-Minecraft" to minecraft,
         )
         // Mixin reads ASM's version from its package's manifest entry, which bundling would otherwise drop, and
         // without it refuses Java 21 mixin configs.
