@@ -1,6 +1,9 @@
 package dev.blockpilot.game;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+//? if >=26.2 {
+/*import com.mojang.blaze3d.buffers.GpuBufferSlice;
+*///?}
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -41,7 +44,11 @@ public final class FrameCapture {
             CommandEncoder encoder = device.createCommandEncoder();
             encoder.copyTextureToBuffer(texture, buffer, 0L, () -> {
             }, 0);
+            //? if >=26.2 {
+            /*try (GpuBufferSlice.MappedView view = buffer.map(true, false)) {
+            *///?} else {
             try (GpuBuffer.MappedView view = encoder.mapBuffer(buffer, true, false)) {
+            //?}
                 NativeImage image = new NativeImage(width, height, false);
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
