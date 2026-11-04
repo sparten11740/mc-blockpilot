@@ -180,6 +180,9 @@ final class FrameReadback implements AutoCloseable {
         try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
             OptionalInt.empty())) {
         //?}
+            //? if >=26.2 {
+            /*RenderSystem.bindDefaultUniforms(pass);
+            *///?}
             pass.setPipeline(RenderPipelines.TRACY_BLIT);
             pass.bindTexture("InSampler", from, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
             pass.draw(0, 3);
