@@ -8,7 +8,7 @@
 
 ## 2. A test script for every target
 
-- [ ] 2.1 Add the input assertions of D10 to `tools/smoke_test.py` (mouse buttons in a world and a screen, camera and cursor, typing and select-all, shift-click, a key held across a closing screen, F8 refused, scroll); verify they pass on a running 26.1 and 1.21.1 client, and that each fails once when what it checks is deliberately broken.
+- [ ] 2.1 Add the input assertions of D10 to `tools/smoke_test.py` (mouse buttons in a world and a screen, camera and cursor, typing and select-all, shift-click, a key the game polls, F8 refused, scroll); verify they pass on a running 26.1 and 1.21.1 client, and that each fails once when what it checks is deliberately broken.
 - [ ] 2.2 Add the capture and observation assertions of D10 (`pixels` upright, a coloured block by `@<pos>`, an ffmpeg-decoded video frame, `perf` rebuilds and block-entity times and particles, `hud`, graphics options by version), with a missing ffmpeg reported as skipped; verify they pass on a 26.1 and a 1.21.1 client, and each fails once when deliberately broken.
 - [ ] 2.3 Add `tools/test_targets.py` as in D10: targets from `settings.gradle.kts`, `--targets`, start and wait for the client, smoke test in text and JSON mode, quit, shape comparison per loader, a per-target table, non-zero exit naming target and assertion; verify a passing run exits 0, a planted failure exits non-zero naming both, and a client that can't start is reported and the next target still runs.
 - [ ] 2.4 Add the jar checks and the wrong-version agent check of D10 to `tools/test_targets.py`; verify they pass on the five existing targets and fail on a jar with a wrong name or a missing manifest attribute.

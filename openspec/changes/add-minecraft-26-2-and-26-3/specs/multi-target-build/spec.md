@@ -139,10 +139,9 @@ assertion.
 
 ### Requirement: The script asserts effects, not only replies
 The script SHALL check what input and capture do in the game on every target:
-each mouse button, a camera turn, typing and the select-all shortcut, a key held
-with a screen open, and that captured frames and videos are upright. An
-assertion it can't run on a target SHALL be reported as skipped with the reason,
-not passed.
+each mouse button, a camera turn, typing and the select-all shortcut, a key the
+game polls for, and that captured frames and videos are upright. An assertion it
+can't run on a target SHALL be reported as skipped with the reason, not passed.
 
 #### Scenario: Mouse buttons do what their names say
 - **WHEN** the script clicks each button in a world, aimed at a block
