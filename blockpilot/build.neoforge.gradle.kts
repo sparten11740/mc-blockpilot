@@ -46,10 +46,9 @@ sourceSets.main {
     if (!withSable) {
         java.exclude("dev/blockpilot/compat/sable/**")
     }
-    // What differs too much between Minecraft versions for inline conditions (mixins): one copy per range.
-    java.srcDir(treeDir.resolve("src/${prop("version_sources")}/java"))
-    resources.srcDir(treeDir.resolve("src/${prop("version_sources")}/resources"))
 }
+// What differs too much between Minecraft versions to share with 1.21.1 (mixins): one tree per range.
+apply(from = treeDir.resolve("version-sources.gradle.kts"))
 
 repositories {
     mavenCentral()

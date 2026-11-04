@@ -2,7 +2,7 @@
 
 ## 1. Build: preprocessed sources and the new nodes
 
-- [ ] 1.1 Send `src/<version_sources>/` through Stonecutter in `build.fabric`, `build.neoforge` and `build.vanilla`, and `src/vanilla/` in `build.vanilla`, disabling the extra sets' compile and merge tasks (D1); verify `./gradlew build` passes on the five existing nodes with unchanged jar contents, and that "Set active project to 26.1-fabric" and back leaves `src/26.1/` unmodified in Git.
+- [x] 1.1 Send `src/<version_sources>/` through Stonecutter in `build.fabric`, `build.neoforge` and `build.vanilla`, and `src/vanilla/` in `build.vanilla`, disabling the extra sets' compile and merge tasks (D1); verify `./gradlew build` passes on the five existing nodes with unchanged jar contents, and that "Set active project to 26.1-fabric" and back leaves `src/26.1/` unmodified in Git.
 - [ ] 1.2 Declare the 26.2 and 26.3 nodes in `settings.gradle.kts` with `versions/<node>/gradle.properties` as pinned in D2; verify `./gradlew projects` lists eleven nodes and each new node reaches `compileJava` with dependencies resolved.
 - [ ] 1.3 Update "To add a target" and the layout notes in `docs/building.md` (`src/26.1/` serves 26.1 and later and goes through Stonecutter; no copy of `src/<version>/` unless a range truly diverges); verify the steps match what 1.2 did.
 
