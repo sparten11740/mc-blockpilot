@@ -23,8 +23,8 @@
 
 ## 4. 26.2: rendering and mixins
 
-- [ ] 4.1 Port `FrameCapture` and `FrameReadback` to the 26.2 GPU API with inline conditions (D6); verify `26.2-fabric:compileJava` has no errors left.
-- [ ] 4.2 Retarget `GuiMixin` to `Hud` and `RebuildTaskMixin` to `CompileTask`, and make the `GraphicsPresetMixin` handler static by condition (D4, D5); verify all 26.x nodes compile.
+- [x] 4.1 Port `FrameCapture` and `FrameReadback` to the 26.2 GPU API with inline conditions (D6); verify `26.2-fabric:compileJava` has no errors left.
+- [x] 4.2 Retarget `GuiMixin` to `Hud` and `RebuildTaskMixin` to `CompileTask`, and make the `GraphicsPresetMixin` handler static by condition (D4, D5); verify all 26.x nodes compile.
 - [ ] 4.3 Move the vanilla HUD hook to `Hud` and the shutdown hook to `exitWorldAndClose` (D4); verify `26.2-vanilla` compiles and its client closes cleanly, putting back an option an agent changed.
 - [ ] 4.4 Run `tools/test_targets.py --targets` on `26.2-neoforge`, `26.2-fabric` and `26.2-vanilla`, fixing any injection point that stops the game (D9); verify every assertion passes and the shapes match the saved ones of the same loader.
 

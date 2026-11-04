@@ -56,4 +56,10 @@ stonecutter parameters {
     rename("26.2", ".pixelSize()", ".blockSize()")
     rename("26.2", "TextureFormat.RGBA8", "GpuFormat.RGBA8_UNORM")
     rename("26.2", "pass.draw(0, 3)", "pass.draw(3, 1, 0, 0)")
+    // The HUD's messages and drawing moved from Gui to the new Hud, and the mixins with them.
+    rename("26.2", "client.gui.Gui;", "client.gui.Hud;")
+    rename("26.2", "@Mixin(Gui.class)", "@Mixin(Hud.class)")
+    rename("26.2", "RenderSection\$RebuildTask", "RenderSection\$CompileTask")
+    rename("26.2", "private <T> void blockpilot\$setting(", "private static <T> void blockpilot\$setting(")
+    rename("26.2", "@Inject(method = \"destroy\",", "@Inject(method = \"exitWorldAndClose\",")
 }
