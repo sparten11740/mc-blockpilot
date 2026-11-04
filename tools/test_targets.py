@@ -103,7 +103,7 @@ def check_jar(target, minecraft, loader, result):
             result.check("vanilla jar has no loader metadata", f"has {stray}" if stray else None)
         else:
             metadata = jar.read(METADATA[loader]).decode()
-            pinned = f'"minecraft": "{minecraft}"' if loader == "fabric" else f'versionRange = "[{minecraft}]"'
+            pinned = f'"minecraft": "{minecraft}"' if loader == "fabric" else f'versionRange="[{minecraft}]"'
             result.check("loader metadata pins the game version",
                          None if pinned in metadata else f"no {pinned} in {METADATA[loader]}")
         # 26.3 has no GLFW at all, so a reference would fail when that class loads, not at build time.
