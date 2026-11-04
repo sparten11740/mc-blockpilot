@@ -5,7 +5,8 @@
 
 Creates a throwaway flat test world, exercises the command groups (perception, actions, inventory, containers,
 crafting, raw input, observation, the integrated server, sampling, performance capture, snapshots, JSON output),
-checks each reply, then leaves and deletes the world. Exit code 0 when every step passed.
+checks each reply and what input and capture do in the game, then leaves and deletes the world. Exit code 0 when every
+step passed; a step that can't run here, such as one needing ffmpeg, is reported as skipped, with why.
 
 --json runs the same steps in JSON mode and checks the structure of each reply instead of its text: one JSON line
 with one result per step, each ok unless the step expects an error.
@@ -14,12 +15,14 @@ with one result per step, each ok unless the step expects an error.
 loaders can be compared with diff.
 
 Every step goes through the launcher the game writes into <run dir>/blockpilot at start.
+tools/test_targets.py runs this on every target.
 """
 import argparse
 import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -36,6 +39,17 @@ SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1
                  "blocks ~0,-1,0 ~1,-1,1", "worlds", "snapshot list", "tick query", "log mark",
                  "server time query day", "sample status every 1t x2", "wait status until ok", "help status",
                  "messages limit=1", "particles", "nbt e999999"]
+# The game's select-all shortcut: Command on macOS, Control elsewhere.
+SELECT_ALL = "left_win+a" if sys.platform == "darwin" else "left_control+a"
+# Facing south from a block's centre at a known place: a block at ~0,0,2 is under the crosshair at pitch 40.
+AIMED = "server as=player tp @s 0.5 -60 0.5 0 40; wait 3t"
+LEVEL = "server as=player tp @s 0.5 -60 0.5 0 0; wait 5t"
+# Leaves that place empty; the stone is there so that the fill always changes something, which it must not to fail.
+CLEAR = "server setblock 6 -57 6 minecraft:stone; server fill -3 -60 -3 6 -57 6 minecraft:air"
+
+
+class Skipped(Exception):
+    """A check that can't run here, with why."""
 
 
 def launcher(game_dir):
@@ -104,6 +118,151 @@ def check_perception_is_passive(game_dir):
         return "the inventory or selected slot changed"
     sent = set(re.findall(r"^  out (\S+) ", output, re.MULTILINE)) - BACKGROUND_PACKETS
     return f"perception sent packets: {sorted(sent)}" if sent else None
+
+
+def game_version(game_dir):
+    """The running game's version, as a tuple of numbers to compare."""
+    with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as source:
+        return tuple(int(part) for part in json.load(source)["minecraft"].split("."))
+
+
+def version_steps(version):
+    """The steps whose commands or answers depend on the game's version."""
+    if version >= (26, 1):
+        graphics = "option graphicsPreset fast; option reset", [r"graphicsPreset fast was", r"restored graphicsPreset"]
+    else:
+        graphics = "option graphicsMode fast; option reset", [r"graphicsMode fast was", r"restored graphicsMode"]
+    # Key names are the running game's, and 26.3's key table has no F25.
+    if version >= (26, 3):
+        function_key = "?key press f25", [r"^err syntax unknown key f25; closest: "], True
+    else:
+        function_key = "key press f25", [r"^ok"]
+    # The game polls for this key as it handles the drop key: Command on macOS before 26.1, else Control.
+    drop_all = "left_win" if sys.platform == "darwin" and version < (26, 1) else "left_control"
+    polled_key = (f"server item replace entity @p hotbar.6 with minecraft:cobblestone 16; select 6; wait 2t; "
+                  f"key press key.drop; wait 5t; status; key down {drop_all}; wait 2t; key press key.drop; wait 5t; "
+                  f"key up {drop_all}; status", [r"hand:cobblestone x15", r"!hand:cobblestone x14"])
+    return [("graphics option sets and resets", *graphics), ("key names are the game's", *function_key),
+            ("a held key is seen when the game polls for it", *polled_key)]
+
+
+def means(output, name):
+    """The mean red, green and blue a `pixels` reply gives for a named part of the frame."""
+    match = re.search(rf"\b{name} rgb=([\d.]+),([\d.]+),([\d.]+)", output)
+    if not match:
+        raise AssertionError(f"no {name} in: {output.strip()}")
+    return tuple(float(channel) for channel in match.groups())
+
+
+def upright(sky, ground):
+    """Whether sky is above ground in a level view over grass: blue over red at the top, red over blue at the bottom."""
+    return sky[2] > sky[0] and ground[2] < ground[0]
+
+
+def check_buttons_in_screen(game_dir):
+    """Left click on a pause menu button, through the cursor as a player's mouse does."""
+    _, output = run(game_dir, "key escape; wait 5t; screen full")
+    widget = re.search(r"\bw(\d+):button \"Advancements\"", output)
+    if not widget:
+        return f"no Advancements button: {output.strip()}"
+    _, output = run(game_dir, f"cursor w{widget.group(1)}; wait 2t; mouse click left; wait 5t; screen; close")
+    changed = re.search(r"^ok advancements", output, re.MULTILINE)
+    return None if changed else f"the screen didn't change: {output.strip()}"
+
+
+def check_mouse_on_slots(game_dir):
+    """Right and shift clicks at a slot's place on screen, through the mouse, unlike `click s<i>`."""
+    _, output = run(game_dir, f"{CLEAR}; {AIMED}; server as=player setblock ~3 ~ ~ minecraft:chest; "
+                              "server item replace block ~3 ~ ~ container.0 with minecraft:oak_sapling 16; "
+                              "open ~3,0,0; screen full")
+    size = re.search(r"\bsize (\d+)x(\d+)", output)
+    if not size:
+        return f"no chest screen: {output.strip()}"
+    # A 9x3 chest's window is 176x168 and centred; the middle of its first slot is 16,26 from the corner.
+    x = (int(size.group(1)) - 176) // 2 + 16
+    y = (int(size.group(2)) - 168) // 2 + 26
+    _, output = run(game_dir, f"click {x},{y} right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count")
+    if not re.search(r"^ok 8$", output, re.MULTILINE):
+        return f"a right click didn't take half the stack: {output.strip()}"
+    # Without the modifier in the event, the click only picks the stack up, so it never reaches the player's slots.
+    _, output = run(game_dir, f"key down left_shift; wait 2t; click {x + 18},{y}; wait 3t; key up left_shift; wait 2t; "
+                              "screen full; close")
+    moved = re.search(r"\bs[2-6]\d:oak_sapling x8", output)
+    return None if moved else f"a shift click didn't move the stack: {output.strip()}"
+
+
+def check_camera_turns(game_dir):
+    """`mouse move` to the right turns the camera to the right, by about as much as the mouse's sensitivity gives."""
+    code, output = run(game_dir, f"{LEVEL}; status; mouse move 40 0 4t; wait 3t; status", as_json=True)
+    if code != 0:
+        return f"exit {code}: {output.strip()}"
+    yaws = [result["yaw"] for result in json.loads(output.splitlines()[0])["results"] if "yaw" in result]
+    return None if len(yaws) == 2 and 0 < yaws[1] - yaws[0] < 20 else f"yaw went {yaws}"
+
+
+def check_cursor_moves(game_dir):
+    """`mouse move` moves the cursor in a screen."""
+    _, output = run(game_dir, "key escape; wait 5t; cursor 10,10; wait 2t; mouse move 30 20 3t; wait 2t; screen; close")
+    return None if re.search(r"\bcursor (?!10,10\b)\d+,\d+", output) else f"the cursor stayed: {output.strip()}"
+
+
+def check_frame_upright(game_dir):
+    """The frame `pixels` reads has the sky at the top, in the sky's colour."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; pixels top=0,0,1,0.2 bottom=0,0.8,1,1; "
+                              "option reset")
+    sky, ground = means(output, "top"), means(output, "bottom")
+    return None if upright(sky, ground) else f"sky {sky}, ground {ground}"
+
+
+def check_world_position_in_frame(game_dir):
+    """`pixels @<pos>` finds a block in the frame, which takes the camera the game rendered with."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server as=player setblock ~ ~1 ~3 minecraft:red_concrete; "
+                              "server as=player setblock ~1 ~1 ~3 minecraft:blue_concrete; wait 5t; "
+                              "pixels red=@~0,1,3 blue=@~1,1,3 r=0.3")
+    red, blue = means(output, "red"), means(output, "blue")
+    return None if red[0] > red[2] and blue[2] > blue[0] else f"red block {red}, blue block {blue}"
+
+
+def check_hud_hides(game_dir):
+    """`option hud off` takes the hotbar off the frame."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; pixels hidden=0.35,0.9,0.65,1; "
+                              "option hud on; wait 3t; pixels shown=0.35,0.9,0.65,1; option reset")
+    hidden, shown = means(output, "hidden"), means(output, "shown")
+    return None if max(abs(a - b) for a, b in zip(hidden, shown)) > 3 else f"without {hidden}, with {shown}"
+
+
+def check_live_particles(game_dir):
+    """A capture counts the particles alive when it stops."""
+    script = f"{CLEAR}; {LEVEL}; perf start live; wait 5t; " \
+             "server as=player particle minecraft:flame ~ ~1 ~2 0.5 0.5 0.5 0 200; wait 5t; perf stop"
+    _, output = run(game_dir, script, as_json=True)
+    live = json.loads(output.splitlines()[0])["results"][-1]["summary"]["client"]["particles"]["live"]
+    return None if live.get("flame", 0) > 0 else f"live particles: {live}"
+
+
+def check_video_upright(game_dir, world):
+    """A recorded video is upright too; its frames come from another readback than `pixels` reads."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise Skipped("ffmpeg isn't installed")
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; "
+                              f"record 1s {world}-upright width=256 fps=10 audio=off; option reset")
+    video = re.search(r"^ok (.+\.mp4) ", output, re.MULTILINE)
+    if not video:
+        return f"no video: {output.strip()}"
+    # The reply's path is absolute, or relative to the game's folder on the vanilla client.
+    frame = subprocess.run([ffmpeg, "-v", "error", "-i", os.path.join(game_dir, video.group(1)), "-frames:v", "1", "-f",
+                            "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True, check=True).stdout
+    row = 256 * 3
+    rows = len(frame) // row
+    band = rows // 5
+
+    def mean(first, last):
+        pixels = frame[first * row:last * row]
+        return tuple(sum(pixels[channel::3]) / (len(pixels) / 3) for channel in range(3))
+
+    sky, ground = mean(0, band), mean(rows - band, rows)
+    return None if upright(sky, ground) else f"sky {sky}, ground {ground}"
 
 
 def write_shapes(game_dir, path):
@@ -185,6 +344,29 @@ def main():
         ("region dump", "blocks ~-1,-1,-1 ~1,0,1", [r"a=grass_block", r"y-61:"]),
         ("raw input", "key press key.inventory; wait 3t; screen; close; mouse move 40 0 4t",
          [r"creative_inventory|inventory"]),
+        ("mouse left breaks the block aimed at",
+         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:stone; wait 3t; mouse click left; wait 5t; "
+         "block ~0,0,2", [r"^ok air$"]),
+        ("mouse right places the held block",
+         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:stone; "
+         "server item replace entity @p hotbar.7 with minecraft:cobblestone 16; select 7; wait 3t; "
+         "mouse click right; wait 5t; block ~0,0,1", [r"^ok cobblestone$"]),
+        ("mouse middle picks the block aimed at",
+         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:gold_block; "
+         "server item replace entity @p hotbar.8 with minecraft:air; select 8; wait 3t; mouse click middle; wait 5t; "
+         "inv full", [r"\*8:gold_block"]),
+        ("right click in a screen takes half a stack",
+         f"{CLEAR}; {AIMED}; server as=player setblock ~3 ~ ~ minecraft:chest; "
+         "server item replace block ~3 ~ ~ container.0 with minecraft:oak_sapling 16; open ~3,0,0; click s0 right; "
+         "wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count; close", [r"^ok 8$"]),
+        ("typing and select-all", f"key t; wait 3t; key {SELECT_ALL}; key backspace; type hello; wait 2t; screen full; "
+                                  f"key {SELECT_ALL}; wait 2t; type x; wait 2t; screen full; key {SELECT_ALL}; "
+                                  "key backspace; close", [r'value="hello"', r'value="x"']),
+        ("scroll changes the selected slot",
+         "server item replace entity @p hotbar.0 with minecraft:stone; "
+         "server item replace entity @p hotbar.1 with minecraft:dirt; select 0; wait 2t; status; scroll -1; wait 3t; "
+         "status", [r"hand:stone", r"hand:dirt"]),
+        ("the agent control toggle is F8", "?key press f8", [r"^err syntax the agent control toggle"], True),
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
         ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
         ("screenshot burst", "screenshot burst=2 every=5t 256", [r"frames=2"]),
@@ -196,19 +378,32 @@ def main():
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
                  "particles; log mark", [r"actionbar t\d+ smoke", r"mark=\d+"]),
+        ("titles and subtitles", "server title @p subtitle {\"text\":\"smoke-sub\"}; "
+                                 "server title @p title {\"text\":\"smoke-title\"}; wait 3t; messages kind=title; "
+                                 "messages kind=subtitle", [r"title t\d+ smoke-title", r"subtitle t\d+ smoke-sub"]),
         ("tick control", "tick freeze; tick step 10; tick unfreeze", [r"frozen=true", r"frozen=false"]),
         ("wait until", "wait block ~0,-1,0 until id==grass_block timeout=2s", [r"ok \d"]),
         ("sample", "sample status every 2t x3", [r"samples=3"]),
         ("perf", "perf start smoke; wait 1s; perf stop", [r"smoke \d", r"mspt="]),
+        ("perf times renderers and counts rebuilds",
+         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~3 minecraft:chest; "
+         "server as=player summon minecraft:cow ~2 ~ ~4; perf start effects; wait 5t; "
+         "server as=player particle minecraft:flame ~ ~1 ~2 0.5 0.5 0.5 0 200; "
+         "server as=player setblock ~1 ~ ~3 minecraft:stone; wait 1s; perf stop; server kill @e[type=minecraft:cow]",
+         [r"rebuilds/s=(0\.[1-9]|[1-9])", r"^  renderer chest ", r"^  entity renderer cow ",
+          r"^  particle render flame ", r"^  particle tick flame "]),
         ("snapshot", "snapshot save s1; snapshot list; snapshot restore s1", [r"saved s1", r"restored s1"]),
-    ]
+    ] + version_steps(game_version(args.game_dir))
     failures = 0
+    skipped = 0
     for name, script, expectations, *expected_error in steps:
         code, output = run(args.game_dir, script, as_json=args.json)
         if args.json:
             problem = json_problem(script, output, expected_error)
         else:
-            missing = [pattern for pattern in expectations if not re.search(pattern, output, re.MULTILINE)]
+            # A pattern with a leading ! must not appear.
+            missing = [pattern for pattern in expectations
+                       if bool(re.search(pattern.removeprefix("!"), output, re.MULTILINE)) == pattern.startswith("!")]
             # A step that checks an error reply exits non-zero, as every reply with an err line does.
             problem = f"exit {code}, missing {missing}" if (code != 0 and not expected_error) or missing else None
         if problem:
@@ -216,18 +411,33 @@ def main():
             print(f"FAIL {name}: {problem}\n    " + output.strip().replace("\n", "\n    "))
         else:
             print(f"pass {name}")
-    problem = check_perception_is_passive(args.game_dir)
-    if problem:
-        failures += 1
-        print(f"FAIL perception is passive: {problem}")
-    else:
-        print("pass perception is passive")
-    problem = check_grammar_file(args.game_dir)
-    if problem:
-        failures += 1
-        print(f"FAIL grammar file: {problem}")
-    else:
-        print("pass grammar file")
+    checks = [
+        ("perception is passive", lambda: check_perception_is_passive(args.game_dir)),
+        ("grammar file", lambda: check_grammar_file(args.game_dir)),
+        ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
+        ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),
+        ("mouse move turns the camera", lambda: check_camera_turns(args.game_dir)),
+        ("mouse move moves the cursor in a screen", lambda: check_cursor_moves(args.game_dir)),
+        ("frames are upright", lambda: check_frame_upright(args.game_dir)),
+        ("pixels finds a world position", lambda: check_world_position_in_frame(args.game_dir)),
+        ("hud off hides the hud", lambda: check_hud_hides(args.game_dir)),
+        ("perf counts live particles", lambda: check_live_particles(args.game_dir)),
+        ("videos are upright", lambda: check_video_upright(args.game_dir, world)),
+    ]
+    for name, check in checks:
+        try:
+            problem = check()
+        except Skipped as reason:
+            skipped += 1
+            print(f"skip {name}: {reason}")
+            continue
+        except (AssertionError, ValueError, IndexError, KeyError, subprocess.CalledProcessError) as error:
+            problem = repr(error)
+        if problem:
+            failures += 1
+            print(f"FAIL {name}: {problem}")
+        else:
+            print(f"pass {name}")
     code, output = run(args.game_dir, "status; inv", as_json=True)
     try:
         reply = json.loads(output.splitlines()[0])
@@ -246,8 +456,8 @@ def main():
     else:
         failures += 1
         print(f"FAIL clean up: {output.strip()}")
-    total = len(steps) + 4 + (1 if args.shapes else 0)
-    print(f"{total - failures}/{total} passed")
+    total = len(steps) + len(checks) + 2 + (1 if args.shapes else 0) - skipped
+    print(f"{total - failures}/{total} passed, {skipped} skipped")
     return 1 if failures else 0
 
 
