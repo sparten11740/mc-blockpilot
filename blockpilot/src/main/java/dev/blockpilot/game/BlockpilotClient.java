@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import com.google.gson.JsonObject;
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandException;
@@ -52,7 +53,6 @@ import net.minecraft.network.chat.Component;
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
 import net.minecraft.server.MinecraftServer;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Brings Blockpilot up in the client: once mod loading completes it builds the command table (built-in commands
@@ -63,7 +63,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private static BlockpilotClient instance;
 
     /** The player's switch for agent control; agents can't press it (see InputCommands). */
-    private final KeyMapping toggleKey = new KeyMapping("key.blockpilot.toggle", GLFW.GLFW_KEY_F8,
+    private final KeyMapping toggleKey = new KeyMapping("key.blockpilot.toggle", InputConstants.KEY_F8,
         //? if >=26.1 {
         /*new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(Blockpilot.MOD_ID, Blockpilot.MOD_ID)));
         *///?} else {

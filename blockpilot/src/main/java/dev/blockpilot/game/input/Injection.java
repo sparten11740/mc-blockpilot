@@ -1,13 +1,18 @@
 package dev.blockpilot.game.input;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+//? if >=26.3 {
+/*import org.lwjgl.sdl.SDLKeyboard;
+*///?} else {
 import org.lwjgl.glfw.GLFW;
+//?}
 
 /**
- * Sends input to the game the way GLFW would: through vanilla's mouse and keyboard handlers, so the game and every
- * mod hooking those handlers see it as real input. While an injection runs, {@link #active()} is true, which tells
- * the human-input detection to ignore it. Client thread only.
+ * Sends input to the game the way the window system would: through vanilla's mouse and keyboard handlers, so the game
+ * and every mod hooking those handlers see it as real input. While an injection runs, {@link #active()} is true, which
+ * tells the human-input detection to ignore it. Client thread only.
  */
 public final class Injection {
     /** Implemented by the mouse handler mixin. */
@@ -29,15 +34,23 @@ public final class Injection {
         void blockpilot$charTyped(long window, int codePoint, int modifiers);
     }
 
-    /** A modifier key's left and right key codes, and the bit GLFW sets in events while either is down. */
+    /** A modifier key's left and right key codes, and the bit real events carry while either is down. */
     private record Modifier(int left, int right, int bit) {
     }
 
+    //? if >=26.3 {
+    /*private static final List<Modifier> MODIFIERS = List.of(
+        new Modifier(InputConstants.KEY_LSHIFT, InputConstants.KEY_RSHIFT, InputConstants.MOD_SHIFT),
+        new Modifier(InputConstants.KEY_LCONTROL, InputConstants.KEY_RCONTROL, InputConstants.MOD_CONTROL),
+        new Modifier(InputConstants.KEY_LALT, InputConstants.KEY_RALT, InputConstants.MOD_ALT),
+        new Modifier(InputConstants.KEY_LGUI, InputConstants.KEY_RGUI, InputConstants.MOD_SUPER));
+    *///?} else {
     private static final List<Modifier> MODIFIERS = List.of(
         new Modifier(GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT, GLFW.GLFW_MOD_SHIFT),
         new Modifier(GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL, GLFW.GLFW_MOD_CONTROL),
         new Modifier(GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT, GLFW.GLFW_MOD_ALT),
         new Modifier(GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER, GLFW.GLFW_MOD_SUPER));
+    //?}
 
     private static int depth;
 
@@ -88,7 +101,8 @@ public final class Injection {
             if (down && minecraft().screen == null) {
                 mouse().blockpilot$markGrabbed();
             }
-            mouse().blockpilot$press(window(), button, down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, modifiers());
+            int action = down ? InputConstants.PRESS : InputConstants.RELEASE;
+            mouse().blockpilot$press(window(), button, action, modifiers());
         });
     }
 
@@ -111,8 +125,20 @@ public final class Injection {
     }
 
     public static void key(int key, boolean down) {
-        run(() -> keyboard().blockpilot$keyPress(window(), key, GLFW.glfwGetKeyScancode(key),
-            down ? GLFW.GLFW_PRESS : GLFW.GLFW_RELEASE, modifiers()));
+        run(() -> keyboard().blockpilot$keyPress(window(), key, otherKeyCode(key),
+            down ? InputConstants.PRESS : InputConstants.RELEASE, modifiers()));
+    }
+
+    /**
+     * What a real event carries beside the key, which the game's text shortcuts read: up to 26.2 the key is a key
+     * code and this its scan code; from 26.3 the key is a scan code and this its key code.
+     */
+    private static int otherKeyCode(int key) {
+        //? if >=26.3 {
+        /*return SDLKeyboard.SDL_GetKeyFromScancode(key, (short) 0, false);
+        *///?} else {
+        return GLFW.glfwGetKeyScancode(key);
+        //?}
     }
 
     public static void typeCharacter(int codePoint) {

@@ -3,7 +3,6 @@ package dev.blockpilot.game.input;
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.blockpilot.api.Fields;
 import java.util.function.Consumer;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Real keyboard and mouse input from the player while an agent acts, described as {@code input=} fields for the
@@ -24,12 +23,12 @@ public final class HumanInput {
     }
 
     public static void key(long window, int key, int action) {
-        if (action == GLFW.GLFW_PRESS && Focus.reallyFocused()) {
+        if (action == InputConstants.PRESS && Focus.reallyFocused()) {
             listener.accept(keyInput(KeyNames.agentName(InputConstants.Type.KEYSYM.getOrCreate(key).getName())));
         }
     }
 
-    /** A press of the mouse button GLFW numbers {@code button}. */
+    /** A press of the mouse button the game numbers {@code button}. */
     public static void mouseButton(long window, int button) {
         if (Focus.reallyFocused()) {
             listener.accept(buttonInput(button));
