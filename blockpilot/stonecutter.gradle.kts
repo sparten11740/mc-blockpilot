@@ -62,4 +62,15 @@ stonecutter parameters {
     rename("26.2", "RenderSection\$RebuildTask", "RenderSection\$CompileTask")
     rename("26.2", "private <T> void blockpilot\$setting(", "private static <T> void blockpilot\$setting(")
     rename("26.2", "@Inject(method = \"destroy\",", "@Inject(method = \"exitWorldAndClose\",")
+    // 26.3 replaces GLFW with SDL, and moves the GPU classes to their own library.
+    rename("26.3", "InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
+    rename("26.3", "com.mojang.blaze3d.buffers.", "com.mojang.renderpearl.api.buffers.")
+    rename("26.3", "com/mojang/blaze3d/buffers/", "com/mojang/renderpearl/api/buffers/")
+    rename("26.3", "com.mojang.blaze3d.textures.", "com.mojang.renderpearl.api.textures.")
+    rename("26.3", "com.mojang.blaze3d.systems.CommandEncoder;", "com.mojang.renderpearl.api.commands.CommandEncoder;")
+    rename("26.3", "com.mojang.blaze3d.systems.RenderPass;", "com.mojang.renderpearl.api.commands.RenderPass;")
+    rename("26.3", "com.mojang.blaze3d.systems.GpuDevice;", "com.mojang.renderpearl.api.device.GpuDevice;")
+    rename("26.3", "pass.bindTexture(", "pass.setUniform(")
+    rename("26.3", "pass.setPipeline(RenderPipelines.TRACY_BLIT)",
+        "pass.setPipeline(RenderSystem.getCompiledPipeline(RenderPipelines.TRACY_BLIT))")
 }

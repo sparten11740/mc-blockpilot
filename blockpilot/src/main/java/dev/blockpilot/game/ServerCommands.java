@@ -168,8 +168,13 @@ final class ServerCommands {
             ServerLevel level = serverLevel();
             Vec3 at = player == null ? Vec3.atLowerCornerOf(level.getSharedSpawnPos()) : player.position();
             Vec2 facing = player == null ? Vec2.ZERO : player.getRotationVector();
+            //? if >=26.3 {
+            /*source = new CommandSourceStack(capture, at, facing, level, OWNER, Component.literal("Blockpilot"),
+                server);
+            *///?} else {
             source = new CommandSourceStack(capture, at, facing, level, OWNER, "Blockpilot",
                 Component.literal("Blockpilot"), server, null);
+            //?}
         }
         source = source.withCallback((ok, result) -> {
             success[0] = ok;
