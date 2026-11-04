@@ -23,9 +23,21 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     private void onButton(long window, MouseButtonInfo button, int action) {
     }
 
+    //? if >=26.3 {
+    /*@Shadow
+    private double xpos;
+
+    @Shadow
+    private double ypos;
+
+    @Shadow
+    private void onMove(long window, double x, double y, double xRelative, double yRelative) {
+    }
+    *///?} else {
     @Shadow
     private void onMove(long window, double x, double y) {
     }
+    //?}
 
     @Shadow
     private void onScroll(long window, double xOffset, double yOffset) {
@@ -38,7 +50,12 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
 
     @Override
     public void blockpilot$move(long window, double x, double y) {
+        //? if >=26.3 {
+        /*// A grabbed mouse turns the camera by the relative movement, which the window system reports with the place.
+        onMove(window, x, y, x - xpos, y - ypos);
+        *///?} else {
         onMove(window, x, y);
+        //?}
     }
 
     @Override
@@ -66,7 +83,12 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     }
 
     @Inject(method = "onMove", at = @At("HEAD"))
+    //? if >=26.3 {
+    /*private void blockpilot$onMove(long window, double x, double y, double xRelative, double yRelative,
+        CallbackInfo info) {
+    *///?} else {
     private void blockpilot$onMove(long window, double x, double y, CallbackInfo info) {
+    //?}
         if (!Injection.active()) {
             HumanInput.mouseMove(window, x, y);
         }
