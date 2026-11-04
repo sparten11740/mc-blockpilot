@@ -366,6 +366,8 @@ def main():
          "server item replace entity @p hotbar.0 with minecraft:stone; "
          "server item replace entity @p hotbar.1 with minecraft:dirt; select 0; wait 2t; status; scroll -1; wait 3t; "
          "status", [r"hand:stone", r"hand:dirt"]),
+        ("a chord presses its last key with the others held", "key left_shift+e; wait 3t; screen; close",
+         [r"^ok (creative_)?inventory"]),
         ("the agent control toggle is F8", "?key press f8", [r"^err syntax the agent control toggle"], True),
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
         ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
