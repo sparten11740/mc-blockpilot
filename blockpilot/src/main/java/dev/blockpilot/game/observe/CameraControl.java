@@ -51,11 +51,10 @@ public final class CameraControl {
 
     /** Places the camera and hides the GUI and hand, as F1 does, so outside views are clean. Client thread. */
     public static void place(Placement value) {
-        var options = Minecraft.getInstance().options;
         if (hiddenGuiBefore == null) {
-            hiddenGuiBefore = options.hideGui;
+            hiddenGuiBefore = HudVisibility.hidden();
         }
-        options.hideGui = true;
+        HudVisibility.setHidden(true);
         placement = value;
         // Until the next frame records them, report the placed camera's own angles, not the previous view's.
         float[] angles = value.angles(1);
@@ -67,7 +66,7 @@ public final class CameraControl {
         placement = null;
         rendered = null;
         if (hiddenGuiBefore != null) {
-            Minecraft.getInstance().options.hideGui = hiddenGuiBefore;
+            HudVisibility.setHidden(hiddenGuiBefore);
             hiddenGuiBefore = null;
         }
     }
