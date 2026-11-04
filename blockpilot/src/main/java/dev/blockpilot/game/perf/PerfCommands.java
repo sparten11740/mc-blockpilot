@@ -22,6 +22,9 @@ import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.ChunkMapAccessor;
 import dev.blockpilot.mixin.ParticleEngineAccessor;
+//? if >=26.1 {
+/*import dev.blockpilot.mixin.ParticleGroupAccessor;
+*///?}
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -347,7 +350,7 @@ public final class PerfCommands {
         //? if >=26.1 {
         /*for (ParticleGroup<?> group : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
             .blockpilot$particles().values()) {
-            for (Particle particle : group.getAll()) {
+            for (Particle particle : ((ParticleGroupAccessor) group).blockpilot$particles()) {
         *///?} else {
         for (Queue<Particle> queue : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
             .blockpilot$particles().values()) {
