@@ -17,7 +17,7 @@
 
 ## 3. 26.2: shared code
 
-- [ ] 3.1 Add rename rules from 26.2 for the moved screen, overlay, camera, framebuffer and section reads (D3); verify every error of those kinds is gone from `26.2-fabric:compileJava` and the 1.21.1 and 26.1 nodes still compile.
+- [x] 3.1 Add rename rules from 26.2 for the moved screen, overlay, camera, framebuffer and section reads (D3); verify every error of those kinds is gone from `26.2-fabric:compileJava` and the 1.21.1 and 26.1 nodes still compile.
 - [ ] 3.2 Add the HUD visibility class and move all 15 `options.hideGui` uses to it (D3); verify all nodes compile and the script's `hud` assertions pass on 1.21.1 and 26.1.
 - [ ] 3.3 Read particles through a `ParticleGroup` accessor on every 26.x version (D3); verify all nodes compile and the script's `perf` assertions pass on 26.1.
 
