@@ -81,7 +81,10 @@ Reads that only moved become rename rules from 26.2: `minecraft.screen` and
 `minecraft().screen` to `gui.screen()`, `setScreen`, `getOverlay`,
 `getMainCamera`, `getMainRenderTarget`, `getSectionRenderDispatcher`, and
 `countRenderedSections`, now on `levelExtractor`. Each rule carries enough
-context to be unique, as the existing rules do.
+context to be unique, as the existing rules do. A rule also runs backwards on
+older versions, so its new text can't appear in shared code: `OptionalInt` to
+`Optional` rewrites every real `Optional`, and takes an inline condition
+instead.
 
 `options.hideGui` can't be renamed: it is used in 15 places, some of them
 assignments, and 26.2's `Hud` offers only `isHidden()` and `toggle()`. A small
@@ -123,6 +126,9 @@ it, which waits for the copy. What changes:
   take new arguments.
 - **26.3:** the same code with `com.mojang.blaze3d.buffers` and `.textures`
   moved to `com.mojang.renderpearl.api`, done as rename rules.
+- **Uniforms:** from 26.2 the blit binds the default uniforms, as the game's own
+  capture does. Its pipeline declares `Globals`, and NeoForge crashes on the
+  first recorded frame without them.
 - **Row order:** rows stay flipped. The game's own `Screenshot` flips them the
   same way on both versions, with no branch on the backend.
 
@@ -202,16 +208,19 @@ across targets of a loader, and exits non-zero on any failure.
   game, and it asserts the refusal and its log line.
 - **New assertions, each on what the game then does:**
     - `left`, `right` and `middle` in a world break, place and pick a block.
-    - Buttons in a screen: left activates a widget, and right picks up half a
-      stack, which also catches a wrong number reaching `onButton`.
+    - Buttons in a screen: left activates a widget, and right and shift clicks
+      act on a stack, at the slot's place on screen. `click s<i>` wouldn't do:
+      it drives the container directly, past the mouse and its modifiers.
     - `mouse move` changes `status`'s yaw in a world and moves the cursor in a
       screen.
     - `type` fills the chat box, then select-all and typing replaces it. The
       chord is `left_win+a` on macOS and `left_control+a` elsewhere, as the
       game's own `EDIT_SHORTCUT_KEY_MODIFIER` requires.
     - Shift-click moves a stack, which needs the modifier bits.
-    - A `w` held with a screen open walks the player once the screen closes,
-      which reaches `isKeyDown` through `KeyMapping.setAll`.
+    - Control held across ticks makes the drop key throw the whole stack, which
+      reaches `isKeyDown` through the game's `hasControlDown` (Command on macOS
+      before 26.1). A key held across a closing screen wouldn't do: macOS skips
+      that polling.
     - `key press f8` is refused as the toggle, which proves the toggle resolved
       to F8 under each version's key numbers.
     - `scroll` changes the selected slot.
