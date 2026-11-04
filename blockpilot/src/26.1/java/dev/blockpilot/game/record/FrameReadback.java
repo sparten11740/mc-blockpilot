@@ -1,18 +1,33 @@
 package dev.blockpilot.game.record;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+//? if >=26.2 {
+/*import com.mojang.blaze3d.buffers.GpuBufferSlice;
+*///?}
 import com.mojang.blaze3d.pipeline.RenderTarget;
+//? if <26.2 {
 import com.mojang.blaze3d.systems.CommandEncoder;
+//?}
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
+//? if >=26.3 {
+/*import com.mojang.renderpearl.api.GpuFormat;
+*///?} else if >=26.2 {
+/*import com.mojang.blaze3d.GpuFormat;
+*///?} else {
 import com.mojang.blaze3d.textures.TextureFormat;
+//?}
 import java.util.ArrayList;
 import java.util.List;
+//? if >=26.2 {
+/*import java.util.Optional;
+*///?} else {
 import java.util.OptionalInt;
+//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 
@@ -120,8 +135,12 @@ final class FrameReadback implements AutoCloseable {
         if (!copied[slot] && !wait) {
             return false;
         }
+        //? if >=26.2 {
+        /*try (GpuBufferSlice.MappedView view = buffers[slot].map(true, false)) {
+        *///?} else {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         try (GpuBuffer.MappedView view = encoder.mapBuffer(buffers[slot], true, false)) {
+        //?}
             sink.frame(stamps[slot], view.data());
         }
         generations[slot]++;
@@ -154,8 +173,13 @@ final class FrameReadback implements AutoCloseable {
     }
 
     private static void blit(GpuDevice device, GpuTextureView from, GpuTextureView to) {
+        //? if >=26.2 {
+        /*try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
+            Optional.empty())) {
+        *///?} else {
         try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
             OptionalInt.empty())) {
+        //?}
             pass.setPipeline(RenderPipelines.TRACY_BLIT);
             pass.bindTexture("InSampler", from, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
             pass.draw(0, 3);

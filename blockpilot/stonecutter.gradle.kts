@@ -53,4 +53,7 @@ stonecutter parameters {
     rename("26.2", ".getMainRenderTarget()", ".gameRenderer.mainRenderTarget()")
     rename("26.2", "renderer.getSectionRenderDispatcher()", "renderer.sectionRenderDispatcher()")
     rename("26.2", "renderer.countRenderedSections()", "Minecraft.getInstance().levelExtractor.countRenderedSections()")
+    rename("26.2", ".pixelSize()", ".blockSize()")
+    rename("26.2", "TextureFormat.RGBA8", "GpuFormat.RGBA8_UNORM")
+    rename("26.2", "pass.draw(0, 3)", "pass.draw(3, 1, 0, 0)")
 }
