@@ -253,10 +253,10 @@ GPU and window, which makes timing-sensitive assertions flaky.
 - [The spike only sees compile errors and mixin signatures, so behavior can
   change with no error] → D10's assertions check effects rather than replies,
   and the JSON shapes catch reply changes.
-- [A full run takes about an hour, and a person using the game window interrupts
-  it, because real input takes control] → `--targets` narrows a run, and the
-  docs say so. Any failure names its target and assertion, so a stray one is
-  rerun alone.
+- [A full run takes about 25 minutes, and a person using the game window
+  interrupts it, because real input takes control] → `--targets` narrows a run,
+  and the docs say so. Any failure names its target and assertion, so a stray
+  one is rerun alone.
 - [Rename rules can rewrite shared text by accident, and `minecraft.screen` is
   short] → All nodes are rebuilt after each rule. The spike's sources show only
   the field uses `minecraft.screen`.
