@@ -123,7 +123,8 @@ those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<ca
 - `drag <button> <dx> <dy> [Nt]`, `drag <button> <from> <to> [Nt]`.
 - `scroll <n>`.
 - `key down|up|press <key|key.mapping>`: a key alone is pressed: `key escape`; `+` joins keys into a chord, the
-  earlier held while the last is pressed: `key f3+l`.
+  earlier held while the last is pressed: `key f3+l`. Key names are the running game's: 26.3 has no `f25` and adds
+  others, such as `ac_home`.
 - `type <text>`: types into the focused text field.
 - `release`: lets go of held keys, buttons and movement.
 
