@@ -32,13 +32,36 @@ Set `sable_companion_version` only for versions Sable publishes its companion AP
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 
+## Testing every target
+
+```sh
+python3 tools/test_targets.py
+python3 tools/test_targets.py --targets 26.3-fabric,26.3-neoforge
+```
+
+One target at a time, this builds it with its unit tests, checks its jar, starts its dev client, runs
+`tools/smoke_test.py` in text and JSON mode, and closes the client. It ends with a table of the targets and exits
+non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after it. JSON
+shapes must match those of the other targets of the loader, as saved in `build/test-targets/<target>/` along with the
+logs. All the targets take about an hour. Leave the game windows alone meanwhile: real input takes control back from the
+test.
+
+`tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
+the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
+game polls, that frames and videos are upright, the HUD, and perf timings. The video check needs ffmpeg, and without it
+is reported as skipped.
+
+A script can't check real input taking control back, a real press of F8 (agents are refused it), or installing through
+the Minecraft Launcher or the CurseForge app, so those are tested by hand. Whether a video looks right beyond its
+orientation and colours is too, and so is any platform the script hasn't been run on.
+
 ## Releasing
 
 Set `mod_version` in `blockpilot/gradle.properties`, add a `## <version> (<date>)` section to `CHANGELOG.md`, commit,
 and push a tag `v<version>`. The `release` workflow checks that the tag matches `mod_version`, builds and tests every
-target, and uploads the four loader jars to CurseForge with
+target, and uploads the eight loader jars to CurseForge with
 [mod-publish-actions](https://github.com/sparten11740/mod-publish-actions); CurseForge has no loader for the vanilla
-agent. Once the uploads have gone through, it creates the GitHub release with the five jars and the API jar. A version
+agent. Once the uploads have gone through, it creates the GitHub release with the eleven jars and the API jar. A version
 ending in `-alpha…` or `-beta…` goes out as that release type, anything else as a release. The upload jobs run in the
 `release` environment, which holds the secret `CURSEFORGE_TOKEN` and the variable `CURSEFORGE_PROJECT_ID`. When an
 upload fails, fix its cause and use Re-run failed jobs on the run: the uploads that went through stay done, and the
