@@ -303,6 +303,9 @@ def write_shapes(game_dir, path):
     """Writes one line per query; returns how many replies could not be read."""
     lines = []
     unreadable = 0
+    # `look`'s rows have the shape of what is near, which would otherwise be whatever earlier steps happened to drop.
+    run(game_dir, "server as=player summon minecraft:item ~2 ~ ~ "
+                  "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 2t")
     for script in SHAPE_SCRIPTS:
         _, output = run(game_dir, script, as_json=True)
         try:
