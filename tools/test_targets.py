@@ -11,7 +11,8 @@ Ends with a table of the targets and exits non-zero if any assertion failed, nam
 failure doesn't stop the targets after it. Logs and shapes are in build/test-targets/<target>/.
 
 A full run takes about 25 minutes. Leave the game windows alone meanwhile: real input takes control back from the test.
-Only the client this script started is ever stopped.
+Only the client this script started is ever stopped, though a client still loading has no endpoint to be seen by, so
+don't start one by hand meanwhile. It runs on macOS and Linux.
 """
 import argparse
 import json
@@ -29,7 +30,7 @@ import smoke_test
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 OUTPUT = os.path.join(ROOT, "build", "test-targets")
-GRADLE = os.path.join(ROOT, "gradlew.bat" if os.name == "nt" else "gradlew")
+GRADLE = os.path.join(ROOT, "gradlew")
 LOADERS = ("fabric", "neoforge", "vanilla")
 METADATA = {"fabric": "fabric.mod.json", "neoforge": "META-INF/neoforge.mods.toml"}
 START_SECONDS = 600
@@ -206,16 +207,9 @@ def game_pid(game_dir):
 
 
 def alive(pid):
-    if os.name == "nt":
-        listed = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, check=False)
-        return str(pid) in listed.stdout
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+    """Whether that process can be a game: another program may have the id of one long gone."""
+    name = subprocess.run(["ps", "-o", "comm=", "-p", str(pid)], capture_output=True, text=True, check=False).stdout
+    return "java" in name
 
 
 def test_target(target, result):
@@ -224,6 +218,13 @@ def test_target(target, result):
     directory = os.path.join(OUTPUT, target)
     os.makedirs(directory, exist_ok=True)
 
+    game_dir = os.path.join(node_dir(target), "run")
+    endpoint = os.path.join(game_dir, "blockpilot", "endpoint.json")
+    # First of all: a running vanilla client runs from the jar the next lines delete.
+    running = game_pid(game_dir)
+    if running and alive(running):
+        result.check("no client is running there already", f"process {running} has {endpoint}; close it first")
+        return
     # What an earlier build or run left would pass for this one's.
     for leftover in [jar_path(minecraft, loader), os.path.join(directory, "shapes.txt")]:
         if os.path.exists(leftover):
@@ -240,12 +241,6 @@ def test_target(target, result):
     if built.returncode != 0:
         return
 
-    game_dir = os.path.join(node_dir(target), "run")
-    endpoint = os.path.join(game_dir, "blockpilot", "endpoint.json")
-    running = game_pid(game_dir)
-    if running and alive(running):
-        result.check("no client is running there already", f"process {running} has {endpoint}; close it first")
-        return
     if os.path.exists(endpoint):
         os.remove(endpoint)
     # A client started while the display sleeps fails with "Failed to locate a primary monitor".
@@ -321,6 +316,8 @@ def main():
     unknown = [target for target in chosen if target not in configured]
     if unknown:
         parser.error(f"unknown targets {unknown}; these exist: {' '.join(configured)}")
+    if os.name == "nt":
+        parser.error("this can't stop a client on Windows yet; run tools/smoke_test.py against one there")
     if shutil.which("java") is None:
         parser.error("java isn't on the PATH; the vanilla agent's checks need it")
     # A stop request ends the run as an interrupt does, which stops the client it started.
