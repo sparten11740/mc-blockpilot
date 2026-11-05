@@ -13,7 +13,8 @@ trees.forEach { tree ->
     }
     // Switching the active node writes its sources back to src/, but a tree isn't on every node: switching to 26.1 and
     // back to 1.21.1 would leave src/26.1/ as 26.1 had it. Every build reads the conditions as checked in instead.
-    tasks.matching { it.name == "stonecutterMerge$tree" }.configureEach {
+    // The task's name capitalises the tree's.
+    tasks.matching { it.name == "stonecutterMerge${tree.replaceFirstChar(Char::uppercase)}" }.configureEach {
         enabled = false
     }
 }
