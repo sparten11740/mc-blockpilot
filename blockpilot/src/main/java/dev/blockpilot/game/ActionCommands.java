@@ -864,6 +864,7 @@ final class ActionCommands {
         private int mined;
         private int blockedTicks;
         private int digTicks;
+        private boolean attacking;
         private String minedId;
 
         Dig(int session, Targets targets, int wanted, boolean walk, String what) {
@@ -881,20 +882,30 @@ final class ActionCommands {
                 if (current == null) {
                     return finish();
                 }
-                original = minecraft().level.getBlockState(current);
-                // The shape's centre, not the cell's: over a carpet or a rail that is in the air above it.
-                aim = seen(minecraft().level, Shapes.centre(minecraft().level, current));
+                aimFor(minecraft().level.getBlockState(current));
                 walking = null;
                 blockedTicks = 0;
-                digTicks = 0;
+                attacking = false;
             }
             BlockState state = minecraft().level.getBlockState(current);
             if (state != original && !state.is(original.getBlock()) || state.isAir()) {
-                InputState.release(options().keyAttack);
-                mined++;
-                minedId = Ids.of(original);
-                current = null;
-                return mined >= wanted ? finish() : null;
+                if (attacking) {
+                    InputState.release(options().keyAttack);
+                    mined++;
+                    minedId = Ids.of(original);
+                    current = null;
+                    return mined >= wanted ? finish() : null;
+                }
+                // Not the player's doing: grass spread onto dirt, a block fell, another player was first.
+                if (walk) {
+                    stopWalking();
+                    current = null;
+                    return null;
+                }
+                if (state.isAir()) {
+                    throw new CommandException("no_block", Rel.of(current) + " is air");
+                }
+                aimFor(state);
             }
             Vec3 center = aim.get();
             boolean inReach = center.distanceTo(player().getEyePosition()) <= player().blockInteractionRange() - 0.5;
@@ -914,10 +925,7 @@ final class ActionCommands {
                 }
                 return null;
             }
-            if (walking != null) {
-                walking.cancel();
-                walking = null;
-            }
+            stopWalking();
             if (digTicks++ == 0) {
                 InventoryOps.selectBestTool(state);
                 InventoryOps.selectItemThatCanBreak(state, current);
@@ -935,6 +943,7 @@ final class ActionCommands {
                 && blockHit.getBlockPos().equals(current);
             if (!aimed) {
                 InputState.release(options().keyAttack);
+                attacking = false;
                 if (++blockedTicks > 10) {
                     if (!walk) {
                         String blocker = crosshair(hit);
@@ -945,8 +954,23 @@ final class ActionCommands {
                 }
                 return null;
             }
+            attacking = true;
             InputState.hold(session, options().keyAttack);
             return null;
+        }
+
+        private void aimFor(BlockState state) {
+            original = state;
+            // The shape's centre, not the cell's: over a carpet or a rail that is in the air above it.
+            aim = seen(minecraft().level, Shapes.centre(minecraft().level, current));
+            digTicks = 0;
+        }
+
+        private void stopWalking() {
+            if (walking != null) {
+                walking.cancel();
+                walking = null;
+            }
         }
 
         private Result finish() throws CommandException {
@@ -962,9 +986,7 @@ final class ActionCommands {
         @Override
         public void cancel() {
             InputState.release(options().keyAttack);
-            if (walking != null) {
-                walking.cancel();
-            }
+            stopWalking();
         }
 
         @Override
