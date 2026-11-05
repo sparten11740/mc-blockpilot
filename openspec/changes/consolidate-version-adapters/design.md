@@ -72,7 +72,8 @@ compile error on that node.
 A new `RenameRulesTest` reads `stonecutter.gradle.kts` and fails if a rule has
 no use, or if its new text appears in `src/main` or `src/1.21.1`. That second
 check is the trap `docs/building.md` warns about, because rules run backwards
-when switching versions.
+when switching versions. Switching rewrites `src/main` too, so the test skips on
+any active node but the checked-in one.
 
 ### D3. `ClientScreens` for what moved in 26.2
 

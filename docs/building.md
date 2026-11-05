@@ -34,10 +34,10 @@ builds from, and add rename rules and `//? if` blocks for what changed, as was d
 in the class that already holds its kind where there is one: `ClientScreens` for the open screen, `WindowSystem` for
 GLFW or SDL, `Gpu` for the GPU API. Copy a tree only when a range of versions has diverged too far for that, as 26.1 did
 from 1.21.1. A rename rule's new text must not already appear in the shared sources: switching versions applies the
-rules backwards, which would rename that text too. `RenameRulesTest` checks this, and that every rule has a use. Set
-`sable_companion_version` only for versions Sable publishes its companion API for. In `.github/workflows/release.yml`,
-add a row for each loader jar to upload, or that jar never reaches CurseForge; `tools/test_targets.py` refuses to start
-without it.
+rules backwards, which would rename that text too. `RenameRulesTest` checks this, and that every rule has a use, while
+the checked-in node is the active one. Set `sable_companion_version` only for versions Sable publishes its companion API
+for. In `.github/workflows/release.yml`, add a row for each loader jar to upload, or that jar never reaches CurseForge;
+`tools/test_targets.py` refuses to start without it.
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 

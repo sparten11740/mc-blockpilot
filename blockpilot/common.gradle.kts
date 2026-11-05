@@ -46,9 +46,11 @@ tasks.named<Test>("test") {
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.files(rootProject.file("docs/grammar.ebnf"), rootProject.file("docs/grammar.xhtml"))
         .withPropertyName("grammarFile").withPathSensitivity(PathSensitivity.RELATIVE)
-    // Other tests read every source tree and the rename rules, not only what this node builds.
+    // Other tests read every source tree, the rename rules and the checked-in node, not only what this node builds.
     inputs.dir(treeDir.resolve("src")).withPropertyName("sourceTrees").withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(treeDir.resolve("stonecutter.gradle.kts")).withPropertyName("renameRules")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("settings.gradle.kts")).withPropertyName("checkedInNode")
         .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 

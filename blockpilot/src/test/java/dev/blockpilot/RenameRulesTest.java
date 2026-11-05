@@ -1,6 +1,8 @@
 package dev.blockpilot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** The rules in stonecutter.gradle.kts are plain text, which nothing else checks until a node fails to compile. */
@@ -17,8 +20,24 @@ class RenameRulesTest {
     private static final Pattern RULE =
         Pattern.compile("rename\\(\\s*" + TEXT + ",\\s*" + TEXT + ",\\s*" + TEXT + "\\s*\\)");
     private static final Pattern CALL = Pattern.compile("^\\s*rename\\(", Pattern.MULTILINE);
+    private static final Pattern ACTIVE_NODE = Pattern.compile("^stonecutter active \"([^\"]+)\"", Pattern.MULTILINE);
+    private static final Pattern CHECKED_IN_NODE = Pattern.compile("vcsVersion = \"([^\"]+)\"");
 
     private record Rule(String since, String from, String to) {
+    }
+
+    /** Switching the active node rewrites src/main, and these tests say what holds of it as checked in. */
+    @BeforeEach
+    void sourcesAreAsCheckedIn() throws IOException {
+        Path project = Sources.project();
+        assumeTrue(found(ACTIVE_NODE, project.resolve("stonecutter.gradle.kts"))
+            .equals(found(CHECKED_IN_NODE, project.getParent().resolve("settings.gradle.kts"))));
+    }
+
+    private static String found(Pattern pattern, Path file) throws IOException {
+        Matcher match = pattern.matcher(Files.readString(file));
+        assertTrue(match.find(), pattern + " in " + file);
+        return match.group(1);
     }
 
     private static List<Rule> rules() throws IOException {
