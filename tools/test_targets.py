@@ -162,8 +162,9 @@ def run_smoke_test(game_dir, directory, as_json, result):
         result.check(f"{mode}: smoke test", f"exit {done.returncode}; see {log}")
 
 
-def stop_client(gradle, game_dir, pid):
+def stop_client(gradle, game_dir):
     """Closes the client with `quit`; only if that fails, stops it: the build it runs under, then its process."""
+    pid = game_pid(game_dir)
     if os.path.exists(os.path.join(game_dir, "blockpilot", "endpoint.json")):
         smoke_test.run(game_dir, "quit", timeout=60)
     try:
@@ -221,13 +222,17 @@ def test_target(target):
     with open(log, "w", encoding="utf-8") as output:
         gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
                                   stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-    problem = wait_for_client(gradle, game_dir, log)
-    result.check("client starts with every mixin applied", problem)
-    pid = game_pid(game_dir)
-    if not problem:
-        run_smoke_test(game_dir, directory, False, result)
-        run_smoke_test(game_dir, directory, True, result)
-    result.check("client closes on quit", stop_client(gradle, game_dir, pid))
+    problem = "interrupted"
+    try:
+        problem = wait_for_client(gradle, game_dir, log)
+        result.check("client starts with every mixin applied", problem)
+        if not problem:
+            run_smoke_test(game_dir, directory, False, result)
+            run_smoke_test(game_dir, directory, True, result)
+    finally:
+        # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
+        stopped = stop_client(gradle, game_dir)
+    result.check("client closes on quit", stopped)
     if not problem:
         # The shutdown hook removes the file, which nothing else does.
         result.check("the shutdown hook ran", f"{endpoint} is still there" if os.path.exists(endpoint) else None)
@@ -280,11 +285,19 @@ def main():
         parser.error(f"unknown targets {unknown}; these exist: {' '.join(configured)}")
     if shutil.which("java") is None:
         parser.error("java isn't on the PATH; the vanilla agent's checks need it")
+    # A stop request ends the run as an interrupt does, which stops the client it started.
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
     results = []
-    for target in chosen:
-        print(f"testing {target}", flush=True)
-        results.append(test_target(target))
-        print(f"  {'FAIL' if results[-1].problems else 'pass'} {results[-1].summary()}", flush=True)
+    try:
+        for target in chosen:
+            print(f"testing {target}", flush=True)
+            results.append(test_target(target))
+            print(f"  {'FAIL' if results[-1].problems else 'pass'} {results[-1].summary()}", flush=True)
+    except KeyboardInterrupt:
+        print("interrupted; the target under way is left out", flush=True)
+        if results:
+            report(results)
+        return 130
     compare_shapes(results)
     report(results)
     return 1 if any(result.problems for result in results) else 0
