@@ -119,8 +119,16 @@ needs no condition.
 
 ### D6. Frame capture and video readback on the new GPU API
 
-`FrameCapture` and `FrameReadback` keep their design: copy to a buffer, then map
-it, which waits for the copy. What changes:
+`FrameCapture` and `FrameReadback` keep their design: copy to a buffer, wait for
+the copy, then map it. What changes:
+- **The wait:** mapping doesn't do it, whatever 26.1's code assumed. Only OpenGL
+  without `GL_ARB_buffer_storage` synchronises; a buffer mapped for good and a
+  Vulkan one hand over their memory at once, so a read can get an old frame.
+  This Mac's OpenGL 4.1 lacks the extension, so that path has never run here.
+  Vulkan through MoltenVK showed the old frame on 26.3, and passes with the wait
+  on 26.2 and 26.3. So they wait on a fence: from 26.2 that takes ending the
+  submit first, between frames, as the game's own frame loop does. On 26.1 it
+  takes a flush, which only NeoForge's fence does itself.
 - **26.2:** `buffer.map(true, false)` replaces `encoder.mapBuffer`; `GpuFormat`
   replaces `TextureFormat`, `blockSize` replaces `pixelSize`, and render passes
   take new arguments.
