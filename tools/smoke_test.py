@@ -304,9 +304,10 @@ def write_shapes(game_dir, path):
     returns how many couldn't."""
     lines = []
     unreadable = 0
-    # `look`'s rows have the shape of what is near, which would otherwise be whatever earlier steps happened to drop.
-    run(game_dir, "server as=player summon minecraft:item ~2 ~ ~ "
-                  "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 2t")
+    # `look`'s rows have the shape of what is near: entities and notable blocks, which earlier steps leave or don't.
+    run(game_dir, f"{CLEAR}; {LEVEL}; server as=player setblock ~2 ~ ~2 minecraft:chest; "
+                  "server as=player summon minecraft:item ~-2 ~ ~ "
+                  "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 5t")
     for script in SHAPE_SCRIPTS:
         _, output = run(game_dir, script, as_json=True)
         try:
