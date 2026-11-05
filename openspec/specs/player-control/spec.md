@@ -448,6 +448,27 @@ once with `err unbreakable <block> <pos>` instead of digging until a timeout.
 - **WHEN** an agent in creative runs `mine <pos of bedrock in reach>`
 - **THEN** the bedrock is broken, as creative breaks any block
 
+### Requirement: Only what the player dug counts as mined
+`mine` SHALL count a block as mined only if the crosshair was on it with attack
+held when it changed. If something else changes the block first, `mine <pos>`
+and `mine` at the crosshair SHALL dig what is there now, or fail with `err
+no_block <pos> is air` if nothing is, and `mine <block|#tag> x<n>` SHALL go on
+to the next block, with the walk to the old one stopped.
+
+#### Scenario: A block turns into another behind a wall
+- **WHEN** an agent runs `mine <pos>` with stone in the way, and grass spreads
+  onto the dirt there while the player tries to aim at it
+- **THEN** the result is `err out_of_reach <pos> is behind stone <pos>`
+
+#### Scenario: Nothing to dig
+- **WHEN** an agent runs `mine <pos of air in reach>`
+- **THEN** the result is `err no_block <pos> is air`
+
+#### Scenario: The block changes during the walk
+- **WHEN** an agent runs `mine short_grass`, and the only one is replaced while
+  the player walks to it
+- **THEN** the result is `err no_block short_grass`, and the player stops
+
 ### Requirement: A key alone is pressed
 `key <key> [Nt]` without `down`, `up` or `press` SHALL press the key, the same
 as `key press <key> [Nt]`. The words `up` and `down` alone name the arrow

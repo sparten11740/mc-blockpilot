@@ -92,7 +92,9 @@ those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<ca
 - `attack [e<id>|type] [x<n>]`: hits entities.
 - `mine [pos|block|#tag] [x<n>]`: breaks blocks by position or type. A block or tag may carry states:
   `mine oak_log[axis=x] x2`. `err unbreakable <block>` comes at once for a block the player can't break; by type such
-  blocks are passed over. `err out_of_reach <pos> is behind <block> <pos>` names what is in the way.
+  blocks are passed over. `err out_of_reach <pos> is behind <block> <pos>` names what is in the way. Only what the
+  player was digging counts as mined. If something else changes the block first, `mine` at a position or the crosshair
+  digs what is there now, or gives `err no_block <pos> is air`, and `mine` by type goes on to the next block.
 - `place <item> <pos>`: aims at the face of the neighbouring block's shape, so also on a carpet or against a fence
   post. `err no_item` says to give the item first; a taken cell names the cell above when that one is free; when the
   crosshair hits something else or another face, `err out_of_reach` names it and nothing is placed.

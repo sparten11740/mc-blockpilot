@@ -273,6 +273,20 @@ def check_live_particles(game_dir):
     return None if live.get("flame", 0) > 0 else f"live particles: {live}"
 
 
+def check_mine_moves_on(game_dir):
+    """Sand lands on the only target while the player walks to it, too far off to reach in time."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server setblock 0 -60 14 minecraft:short_grass; "
+                              "server setblock 0 -59 14 minecraft:sand; ?mine short_grass; wait 5t; status; wait 5t; "
+                              "status; server fill 0 -60 14 0 -59 14 minecraft:air")
+    if "err no_block short_grass" not in output:
+        return f"counted a block that changed by itself: {output.strip()[:300]}"
+    positions = [float(north_south) for north_south in re.findall(r"^ok pos \S+,(\S+)", output, re.MULTILINE)]
+    # A player who has stopped still slides a little; one still walking covers a block in these 5 ticks.
+    if len(positions) != 2 or abs(positions[1] - positions[0]) > 0.2:
+        return f"didn't stop walking: {positions}"
+    return None
+
+
 def check_video_upright(game_dir, world):
     """A recorded video is upright too; its frames come from another readback than `pixels` reads."""
     ffmpeg = shutil.which("ffmpeg")
@@ -369,10 +383,16 @@ def main():
           r"^ok none"], True),
         ("craft at a table", "craft furnace", [r"craft 1 furnace"]),
         ("mine", "select iron_sword; mine ~2,0,0; block ~2,0,0", [r"mine 1/1 crafting_table", r"ok air"]),
-        # Not dirt behind it: grass can spread onto dirt during mine's wait, and mine takes a changed block as mined.
         ("mine names what is in the way", "server as=player setblock ~ ~ ~2 minecraft:stone; "
                                           "server as=player setblock ~ ~ ~3 minecraft:cobblestone; ?mine ~0,0,3; "
                                           "server as=player fill ~ ~ ~2 ~ ~ ~3 minecraft:air",
+         [r"err out_of_reach ~0,0,3 is behind stone ~0,0,2"], True),
+        ("mine finds nothing in an empty cell", "?mine ~0,0,3", [r"err no_block ~0,0,3 is air"], True),
+        # Regression: mine took a block something else changed as mined. Sand lands on the grass while it tries to aim.
+        ("mine doesn't count a block that changed by itself",
+         "server as=player setblock ~ ~ ~2 minecraft:stone; server as=player setblock ~ ~ ~3 minecraft:short_grass; "
+         "server as=player setblock ~ ~1 ~3 minecraft:sand; ?mine ~0,0,3; wait 15t; "
+         "server as=player fill ~ ~ ~2 ~ ~1 ~3 minecraft:air",
          [r"err out_of_reach ~0,0,3 is behind stone ~0,0,2"], True),
         # Regression: mine aimed at the middle of the carpet's cell, passed over it and hit the ground behind.
         ("mine a thin block", "server as=player setblock ~ ~ ~2 minecraft:white_carpet; mine ~0,0,2; block ~0,0,2",
@@ -480,6 +500,7 @@ def main():
     checks = [
         ("perception is passive", lambda: check_perception_is_passive(args.game_dir)),
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
+        ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
         ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),
