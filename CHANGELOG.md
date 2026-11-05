@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.0 (2026-11-05)
+
+The first stable release, and it adds Minecraft 26.2 and 26.3. Blockpilot now comes for NeoForge and Fabric on
+Minecraft 1.21.1, 26.1.2, 26.2 and 26.3, and as a Java agent for plain Minecraft 26.1.2, 26.2 and 26.3, one jar per
+version. `blockpilot-api` stays at 2.0.0.
+
+- **Mining:** `mine` counts a block as mined only if the player dug it. A target that changed by itself, such as dirt
+  that grass spread onto, or an empty cell, used to count as mined. Now `mine` at a position digs what is there or
+  gives `err no_block`, and `mine` by type goes on to the next block.
+- **Capture on 26.1.2:** screenshots, pixel probes and the last frames of a recording wait for the GPU's copy, where
+  some graphics drivers used to hand them an older frame, and recordings no longer show uneven motion.
+- **Keys:** key names are the running game's, so 26.3 has no `f25` and adds names such as `ac_home`.
+
 ## 1.0.0-alpha.0 (2026-11-01)
 
 The first release. Blockpilot lets AI agents and scripts observe and control Minecraft through a fast, token-efficient
