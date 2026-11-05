@@ -9,6 +9,7 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -135,7 +136,7 @@ final class SessionCommands {
                 throw new CommandException("join_failed", "no save folder " + name + "; see worlds");
             }
             ServerCommands.freezeOnStart(args.hasOption("tick") ? name : null);
-            minecraft().createWorldOpenFlows().openWorld(name, () -> minecraft().setScreen(new TitleScreen()));
+            minecraft().createWorldOpenFlows().openWorld(name, () -> ClientScreens.open(new TitleScreen()));
         } else {
             String address = name;
             ServerList list = new ServerList(minecraft());
@@ -160,12 +161,12 @@ final class SessionCommands {
         @Override
         public Result tick() throws CommandException {
             Minecraft minecraft = minecraft();
-            if (minecraft.screen instanceof DisconnectedScreen disconnected) {
+            if (ClientScreens.current() instanceof DisconnectedScreen disconnected) {
                 ServerCommands.freezeOnStart(null);
                 throw new CommandException("join_failed", describe(disconnected));
             }
             if (minecraft.player != null && minecraft.level != null
-                && (minecraft.screen == null || !Screens.type(minecraft.screen).equals("loading"))) {
+                && (ClientScreens.current() == null || !Screens.type(ClientScreens.current()).equals("loading"))) {
                 ServerCommands.freezeOnStart(null);
                 return Result.ok(new Fields().put("joined", name, "joined " + name));
             }
@@ -232,7 +233,7 @@ final class SessionCommands {
             minecraft.disconnect();
         }
         //?}
-        minecraft.setScreen(new TitleScreen());
+        ClientScreens.open(new TitleScreen());
     }
 
     private Action leave() throws CommandException {
@@ -286,7 +287,7 @@ final class SessionCommands {
         return () -> {
             var current = minecraft().player;
             if (current != null && !current.isDeadOrDying()) {
-                minecraft().setScreen(null);
+                ClientScreens.open(null);
                 return Result.ok();
             }
             return null;

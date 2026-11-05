@@ -1,6 +1,7 @@
 package dev.blockpilot.game.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.blockpilot.game.common.ClientScreens;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 //? if >=26.3 {
@@ -98,7 +99,7 @@ public final class Injection {
 
     public static void mouseButton(int button, boolean down) {
         run(() -> {
-            if (down && minecraft().screen == null) {
+            if (down && ClientScreens.current() == null) {
                 mouse().blockpilot$markGrabbed();
             }
             int action = down ? InputConstants.PRESS : InputConstants.RELEASE;
@@ -109,7 +110,7 @@ public final class Injection {
     /** Moves the cursor to an absolute window position in screen pixels; in-world this turns the camera. */
     public static void mouseMoveTo(double x, double y) {
         run(() -> {
-            if (minecraft().screen == null) {
+            if (ClientScreens.current() == null) {
                 mouse().blockpilot$markGrabbed();
             }
             mouse().blockpilot$move(window(), x, y);

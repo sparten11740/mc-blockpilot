@@ -8,6 +8,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -163,8 +164,8 @@ final class TestWorlds {
             public Result tick() throws CommandException {
                 var player = minecraft.player;
                 var server = minecraft.getSingleplayerServer();
-                if (player == null || server == null || minecraft.screen != null
-                    && Screens.type(minecraft.screen).equals("loading")) {
+                if (player == null || server == null || ClientScreens.current() != null
+                    && Screens.type(ClientScreens.current()).equals("loading")) {
                     return null;
                 }
                 if (!rulesSent) {

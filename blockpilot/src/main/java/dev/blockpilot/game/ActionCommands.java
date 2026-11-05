@@ -13,6 +13,7 @@ import dev.blockpilot.api.Form;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.input.AimedClick;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.path.Navigator;
@@ -211,13 +212,13 @@ final class ActionCommands {
      */
     static void closeScreen() {
         Minecraft minecraft = minecraft();
-        if (minecraft.screen == null || minecraft.player == null) {
+        if (ClientScreens.current() == null || minecraft.player == null) {
             return;
         }
         if (minecraft.player.containerMenu != minecraft.player.inventoryMenu) {
             minecraft.player.closeContainer();
         } else {
-            minecraft.setScreen(null);
+            ClientScreens.open(null);
         }
     }
 

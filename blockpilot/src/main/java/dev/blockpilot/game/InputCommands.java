@@ -11,6 +11,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Point;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.input.Injection;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.input.KeyNames;
@@ -87,13 +88,13 @@ final class InputCommands {
         }).group("input").help("lets go of every held key, button and movement").example("release"));
         registry.register(CommandSpec.action("close", (context, args) -> {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.screen == null) {
+            if (ClientScreens.current() == null) {
                 throw new CommandException("no_screen");
             }
             if (minecraft.player != null && minecraft.player.containerMenu != minecraft.player.inventoryMenu) {
                 minecraft.player.closeContainer();
             } else {
-                minecraft.setScreen(null);
+                ClientScreens.open(null);
             }
             return () -> Result.ok();
         }).group("gui").help("closes the open screen or container").example("close"));
@@ -111,7 +112,7 @@ final class InputCommands {
     private static double[] guiPoint(Args args, String name) throws CommandException {
         requireScreen();
         if (args.type(name) == ArgType.WIDGET) {
-            return Screens.widgetCentre(minecraft().screen, args.index(name, 0));
+            return Screens.widgetCentre(ClientScreens.current(), args.index(name, 0));
         }
         Point point = args.point(name);
         return new double[] {point.x(), point.y()};
@@ -179,7 +180,7 @@ final class InputCommands {
 
     /** Relative movement spread over ticks; in-world raw pixels, on screens GUI units. */
     private static Action move(double dx, double dy, int ticks) {
-        double scale = minecraft().screen != null ? guiScale() : 1;
+        double scale = ClientScreens.current() != null ? guiScale() : 1;
         int[] step = {0};
         return ActionCommands.named("mouse", () -> {
             var mouse = minecraft().mouseHandler;
@@ -209,7 +210,7 @@ final class InputCommands {
                 return progress >= 1;
             });
         }
-        if (minecraft().screen != null) {
+        if (ClientScreens.current() != null) {
             throw new CommandException("syntax", "on a screen, drag <button> <x1,y1|w<i>> <x2,y2|w<i>> [ticks]");
         }
         double dx = args.number("dx", 0);
@@ -269,7 +270,7 @@ final class InputCommands {
     }
 
     private static void requireScreen() throws CommandException {
-        if (minecraft().screen == null) {
+        if (ClientScreens.current() == null) {
             throw new CommandException("no_screen");
         }
     }
