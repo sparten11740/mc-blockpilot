@@ -36,6 +36,8 @@ METADATA = {"fabric": "fabric.mod.json", "neoforge": "META-INF/neoforge.mods.tom
 START_SECONDS = 600
 STOP_SECONDS = 120
 TERM_SECONDS = 10
+# A smoke test takes a minute or two; a hung client would otherwise cost three minutes for each of its many steps.
+SMOKE_SECONDS = 600
 STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 
 
@@ -43,7 +45,7 @@ class Result:
     def __init__(self, target):
         self.target = target
         self.problems = []
-        self.passed = 0
+        self.held = []
         self.skipped = []
 
     def check(self, name, problem):
@@ -51,11 +53,11 @@ class Result:
         if problem:
             self.problems.append((name, problem))
         else:
-            self.passed += 1
+            self.held.append(name)
 
     def summary(self):
-        total = self.passed + len(self.problems)
-        return f"{self.passed}/{total}" + (f", {len(self.skipped)} skipped" if self.skipped else "")
+        total = len(self.held) + len(self.problems)
+        return f"{len(self.held)}/{total}" + (f", {len(self.skipped)} skipped" if self.skipped else "")
 
 
 def configured_targets():
@@ -156,13 +158,18 @@ def wait_for_client(gradle, game_dir, log):
 
 
 def run_smoke_test(game_dir, directory, as_json, result):
-    """Runs the smoke test and takes its assertions into the result."""
+    """Runs the smoke test and takes its assertions into the result; returns whether it finished."""
     mode = "json" if as_json else "text"
-    command = [sys.executable, os.path.join(ROOT, "tools", "smoke_test.py"), "--game-dir", game_dir]
+    command = [sys.executable, "-u", os.path.join(ROOT, "tools", "smoke_test.py"), "--game-dir", game_dir]
     command += ["--json"] if as_json else ["--shapes", os.path.join(directory, "shapes.txt")]
     log = os.path.join(directory, f"smoke-{mode}.log")
+    returncode = None
     with open(log, "w", encoding="utf-8") as output:
-        done = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, text=True, check=False)
+        try:
+            returncode = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, text=True, check=False,
+                                        timeout=SMOKE_SECONDS).returncode
+        except subprocess.TimeoutExpired:
+            pass
     with open(log, encoding="utf-8") as source:
         text = source.read()
     for name in re.findall(r"^pass (.+)$", text, re.MULTILINE):
@@ -170,10 +177,13 @@ def run_smoke_test(game_dir, directory, as_json, result):
     failures = re.findall(r"^FAIL ([^:\n]+): ?(.*)$", text, re.MULTILINE)
     for name, problem in failures:
         result.check(f"{mode}: {name}", problem or f"see {log}")
-    result.skipped += [f"{mode}: {name}: {reason}" for name, reason in re.findall(r"^skip ([^:\n]+): (.*)$", text,
-                                                                                 re.MULTILINE)]
-    if done.returncode != 0 and not failures:
-        result.check(f"{mode}: smoke test", f"exit {done.returncode}; see {log}")
+    result.skipped += [(f"{mode}: {name}", reason) for name, reason in re.findall(r"^skip ([^:\n]+): (.*)$", text,
+                                                                                  re.MULTILINE)]
+    if returncode is None:
+        result.check(f"{mode}: smoke test", f"it didn't finish within {SMOKE_SECONDS} s; see {log}")
+    elif returncode != 0 and not failures:
+        result.check(f"{mode}: smoke test", f"exit {returncode}; see {log}")
+    return returncode is not None
 
 
 def quit_client(gradle, game_dir):
@@ -292,8 +302,7 @@ def test_target(target, result):
             answered = problem is None
             # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
             result.check("client reaches a screen", problem)
-            if answered:
-                run_smoke_test(game_dir, directory, False, result)
+            if answered and run_smoke_test(game_dir, directory, False, result):
                 run_smoke_test(game_dir, directory, True, result)
         finally:
             # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
@@ -328,6 +337,15 @@ def compare_shapes(results):
             result.check(f"JSON shapes match {other}", different[0][:400] if different else None)
 
 
+def compare_skips(results):
+    """Fails a target that skipped what another ran: a machine's lack would stop both, so this target has broken it."""
+    for result in results:
+        for name, reason in result.skipped:
+            ran_on = [other.target for other in results if name in other.held]
+            if ran_on:
+                result.check(f"{name} runs here too", f"it ran on {ran_on[0]}, but here: {reason}")
+
+
 def report(results):
     width = max(len(result.target) for result in results)
     print(f"\n{'target':{width}}  result  assertions")
@@ -336,8 +354,8 @@ def report(results):
     for result in results:
         for name, problem in result.problems:
             print(f"FAIL {result.target}: {name}: {problem}")
-        for skipped in result.skipped:
-            print(f"skip {result.target}: {skipped}")
+        for name, reason in result.skipped:
+            print(f"skip {result.target}: {name}: {reason}")
 
 
 def interrupted(signal_number, frame):
@@ -386,6 +404,7 @@ def main():
             report(results)
         return 130
     compare_shapes(results)
+    compare_skips(results)
     report(results)
     return 1 if any(result.problems for result in results) else 0
 
