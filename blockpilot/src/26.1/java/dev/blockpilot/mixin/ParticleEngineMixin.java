@@ -1,6 +1,6 @@
 package dev.blockpilot.mixin;
 
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.ParticleSources;
 import dev.blockpilot.game.perf.ParticleTag;

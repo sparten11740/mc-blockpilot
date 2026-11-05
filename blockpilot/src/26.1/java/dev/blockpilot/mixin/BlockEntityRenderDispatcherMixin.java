@@ -3,7 +3,7 @@ package dev.blockpilot.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.perf.Perf;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;

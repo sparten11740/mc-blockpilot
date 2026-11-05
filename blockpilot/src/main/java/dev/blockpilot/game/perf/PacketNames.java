@@ -1,6 +1,6 @@
 package dev.blockpilot.game.perf;
 
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;

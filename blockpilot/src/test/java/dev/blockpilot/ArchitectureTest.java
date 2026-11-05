@@ -14,7 +14,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/** The api and protocol layers must stay free of Minecraft so they work on every target and outside the game. */
+/**
+ * What each layer may depend on. The api and protocol layers stay free of Minecraft so they work on every target and
+ * outside the game; the rest keeps what varies between versions and loaders behind one class each.
+ */
 class ArchitectureTest {
     private static Path sources() {
         return Sources.project().resolve("src/main/java/dev/blockpilot");
@@ -107,6 +110,16 @@ class ArchitectureTest {
         Pattern condition = Pattern.compile("//\\?.*\\b(neoforge|fabric|vanilla)\\b");
         assertEquals(List.of(), lines(file -> !file.startsWith("java/dev/blockpilot/platform"),
             line -> condition.matcher(line).find()));
+    }
+
+    /** game's commands use its subpackages, and those game.common, so each can be read without what's above it. */
+    @Test
+    void gamePackagesDependOneWay() throws IOException {
+        Pattern commandClass = Pattern.compile("import (static )?dev\\.blockpilot\\.game\\.[A-Z]");
+        assertEquals(List.of(), lines(file -> file.startsWith("java/dev/blockpilot/game") && file.getNameCount() > 5,
+            line -> commandClass.matcher(line).find()));
+        assertEquals(List.of(), lines(file -> file.startsWith("java/dev/blockpilot/game/common"),
+            line -> line.contains("import dev.blockpilot.game.") && !line.contains("dev.blockpilot.game.common.")));
     }
 
     /** The lines the test picks, from the files it picks by their path in their tree, in the trees of the jars. */

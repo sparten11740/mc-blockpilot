@@ -2,8 +2,8 @@ package dev.blockpilot.game.observe;
 
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
-import dev.blockpilot.game.GameClock;
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.GameClock;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.mixin.AbstractSoundInstanceAccessor;
 import java.util.HashMap;
 import java.util.Iterator;

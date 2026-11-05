@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.common;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.pipeline.RenderTarget;

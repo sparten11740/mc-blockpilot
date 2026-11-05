@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.common;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;

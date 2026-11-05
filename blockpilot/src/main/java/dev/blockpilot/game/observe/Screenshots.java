@@ -1,6 +1,7 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.observe;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.observe.ContactSheet;
 import dev.blockpilot.game.observe.FrameRect;
 import dev.blockpilot.platform.ClientPlatform;

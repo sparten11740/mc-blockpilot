@@ -11,7 +11,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
-import dev.blockpilot.game.FrameCapture;
+import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;

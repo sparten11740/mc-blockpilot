@@ -2,7 +2,7 @@ package dev.blockpilot.game.observe;
 
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
-import dev.blockpilot.game.Rel;
+import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.platform.ClientPlatform;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;

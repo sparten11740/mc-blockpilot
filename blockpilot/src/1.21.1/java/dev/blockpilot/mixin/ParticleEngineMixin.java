@@ -3,7 +3,7 @@ package dev.blockpilot.mixin;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.observe.Observations;
 import dev.blockpilot.game.perf.ParticleSources;
 import dev.blockpilot.game.perf.ParticleTag;

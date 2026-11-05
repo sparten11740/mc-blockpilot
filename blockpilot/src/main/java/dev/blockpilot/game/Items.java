@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.game.common.Ids;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.component.DataComponents;

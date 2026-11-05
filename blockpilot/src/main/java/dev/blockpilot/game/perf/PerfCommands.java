@@ -17,7 +17,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;

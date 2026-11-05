@@ -1,6 +1,6 @@
 package dev.blockpilot.mixin;
 
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.perf.Perf;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Final;

@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import dev.blockpilot.api.CommandException;
+import dev.blockpilot.game.common.Ids;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
