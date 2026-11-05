@@ -143,11 +143,21 @@ control off. MCP over HTTP, the raw line protocol and the launcher's options: [d
 | | `sable:plot` | A world position, aboard a sub-level |
 | | `sable:tp` | Put the player aboard, next to a block |
 
+## See it build
+
+A lighthouse built block by block through Blockpilot, in Minecraft 26.3 with Fabric. Blockpilot also recorded the
+video, since it can capture the screen and the game's sound. Next to the game are the commands Blockpilot was sent and
+what it answered.
+
+https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
+
 ## More
 
 - [Adding your own commands](docs/extending.md) from another mod
 - [Building and releasing](docs/building.md)
 - [Changelog](CHANGELOG.md)
+
+##
 
 ## License
 
