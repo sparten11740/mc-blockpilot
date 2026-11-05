@@ -92,6 +92,11 @@ names, which are the running game's and are documented in `docs/commands.md`.
 - **THEN** `screen` reports the cursor where the agent put it on both, though
   26.3 rereads the OS pointer on every new screen
 
+#### Scenario: A background window leaves the pointer alone
+- **WHEN** an agent opens or closes a screen in a window without focus, on a
+  26.2 and on a 26.3 jar
+- **THEN** the player's real pointer stays where it is on both
+
 #### Scenario: Key names are the running game's
 - **WHEN** an agent runs `key press f25` on a 26.3 jar, which has no such key
 - **THEN** the result is `err syntax` with the closest key names, as for any
