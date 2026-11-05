@@ -171,8 +171,8 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
 - **Mouse movement:** `onMove` gained relative `xrel` and `yrel`, which is what
   it uses while the mouse is grabbed. `blockpilot$move` computes them from the
   shadowed `xpos` and `ypos`, or the camera wouldn't turn.
-- **Cursor:** `Gui.setScreen` now rereads the OS pointer, which would forget
-  where an agent put the cursor, so a click that opened a screen left it
+- **Cursor:** a new screen or a resize now rereads the OS pointer, which would
+  forget where an agent put the cursor, so a click that opened a screen left it
   elsewhere than on 26.2. While the agent moved the mouse last, the reread is
   skipped; a real move ends that.
 - **Pointer:** `InputConstants` warps the pointer as the mouse is grabbed or let
@@ -189,7 +189,9 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
 - **Take-over:** real events now arrive through `minecraft.execute`, on the same
   client thread, and `Injection.active()` still tells them from injected ones.
   SDL's relative mode keeps a grabbed mouse inside the window, so at an edge its
-  place stops changing, and the take-over reads its relative movement there.
+  place stops changing. While the mouse is grabbed the take-over reads its
+  relative movement, as the game does, which is what an interrupt's `dx` and
+  `dy` then report, as a grabbed mouse has no cursor to measure.
 
 *Alternative:* a per-version class hiding all input constants. Rejected: only
 26.3 differs, and in a few lines each.

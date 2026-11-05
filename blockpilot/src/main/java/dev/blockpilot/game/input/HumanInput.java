@@ -55,11 +55,6 @@ public final class HumanInput {
         }
     }
 
-    /** Whether a place, in the units of the window's size, is on the window's edge. */
-    public static boolean atEdge(double x, double y, int width, int height) {
-        return x <= 0 || y <= 0 || x >= width - 1 || y >= height - 1;
-    }
-
     static Fields keyInput(String name) {
         return new Fields().put("input", "key").put("key", name);
     }
