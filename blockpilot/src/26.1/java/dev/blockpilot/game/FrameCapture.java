@@ -4,6 +4,7 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 //? if >=26.2 {
 /*import com.mojang.blaze3d.buffers.GpuBufferSlice;
 *///?}
+import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -75,7 +76,7 @@ public final class FrameCapture {
      */
     public static void awaitCopies() {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-        try (var fence = encoder.createFence()) {
+        try (GpuFence fence = encoder.createFence()) {
             //? if >=26.2 {
             /*// A fence stands for the whole submit, which can't be waited for until it has ended.
             encoder.submit();
@@ -83,9 +84,14 @@ public final class FrameCapture {
             // Only NeoForge's fence flushes, and without it the commands may never reach the GPU. 26.1 is OpenGL only.
             GL11C.glFlush();
             //?}
-            if (!fence.awaitCompletion(COPY_WAIT_NANOS)) {
-                throw new IllegalStateException("the GPU didn't finish copying a frame within 5 s");
-            }
+            await(fence);
+        }
+    }
+
+    /** Waits for a fence on a copy, which has to have reached the GPU, as one from an earlier frame has. */
+    public static void await(GpuFence fence) {
+        if (!fence.awaitCompletion(COPY_WAIT_NANOS)) {
+            throw new IllegalStateException("the GPU didn't finish copying a frame within 5 s");
         }
     }
 

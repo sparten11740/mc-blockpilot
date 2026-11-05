@@ -4,10 +4,9 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 //? if >=26.2 {
 /*import com.mojang.blaze3d.buffers.GpuBufferSlice;
 *///?}
+import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-//? if <26.2 {
 import com.mojang.blaze3d.systems.CommandEncoder;
-//?}
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -55,6 +54,8 @@ final class FrameReadback implements AutoCloseable {
     /** Bumped per copy, so a callback of a copy that was read early can't mark the slot's next copy done. */
     private final int[] generations = new int[SLOTS];
     private final boolean[] copied = new boolean[SLOTS];
+    /** Each slot's copy, which lets a wait for the oldest stop there rather than draining the whole GPU queue. */
+    private final GpuFence[] fences = new GpuFence[SLOTS];
     private final List<Level> halves = new ArrayList<>();
     private int sourceWidth;
     private int sourceHeight;
@@ -82,7 +83,7 @@ final class FrameReadback implements AutoCloseable {
         }
         if (pending == SLOTS && !deliverOldest(sink, false)) {
             waits++;
-            FrameCapture.awaitCopies();
+            FrameCapture.await(fences[Math.floorMod(next - pending, SLOTS)]);
             deliverOldest(sink, true);
         }
         while (pending > 0 && deliverOldest(sink, false)) {
@@ -99,11 +100,14 @@ final class FrameReadback implements AutoCloseable {
         int generation = ++generations[slot];
         copied[slot] = false;
         stamps[slot] = nanos;
-        device.createCommandEncoder().copyTextureToBuffer(target.texture(), buffers[slot], 0L, () -> {
+        CommandEncoder encoder = device.createCommandEncoder();
+        encoder.copyTextureToBuffer(target.texture(), buffers[slot], 0L, () -> {
             if (generations[slot] == generation) {
                 copied[slot] = true;
             }
         }, 0);
+        closeFence(slot);
+        fences[slot] = encoder.createFence();
         next = (next + 1) % SLOTS;
         pending++;
     }
@@ -127,8 +131,16 @@ final class FrameReadback implements AutoCloseable {
     public void close() {
         halves.forEach(Level::close);
         target.close();
-        for (GpuBuffer buffer : buffers) {
-            buffer.close();
+        for (int slot = 0; slot < SLOTS; slot++) {
+            closeFence(slot);
+            buffers[slot].close();
+        }
+    }
+
+    private void closeFence(int slot) {
+        if (fences[slot] != null) {
+            fences[slot].close();
+            fences[slot] = null;
         }
     }
 

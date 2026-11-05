@@ -64,6 +64,7 @@ stonecutter parameters {
     rename("26.2", "@Inject(method = \"destroy\",", "@Inject(method = \"exitWorldAndClose\",")
     // 26.3 replaces GLFW with SDL, and moves the GPU classes to their own library.
     rename("26.3", "InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
+    rename("26.3", "com.mojang.blaze3d.buffers.GpuFence;", "com.mojang.renderpearl.api.commands.GpuFence;")
     rename("26.3", "com.mojang.blaze3d.buffers.", "com.mojang.renderpearl.api.buffers.")
     rename("26.3", "com/mojang/blaze3d/buffers/", "com/mojang/renderpearl/api/buffers/")
     rename("26.3", "com.mojang.blaze3d.textures.", "com.mojang.renderpearl.api.textures.")
