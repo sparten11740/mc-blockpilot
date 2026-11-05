@@ -1,7 +1,9 @@
 package dev.blockpilot.game.input;
 
 import net.minecraft.client.Minecraft;
-//? if <26.3 {
+//? if >=26.3 {
+/*import org.lwjgl.sdl.SDLVideo;
+*///?} else {
 import org.lwjgl.glfw.GLFW;
 //?}
 
@@ -23,7 +25,8 @@ public final class Focus {
     /** Whether the OS really has the game window focused (not the agent's pretend focus). */
     public static boolean reallyFocused() {
         //? if >=26.3 {
-        /*return Minecraft.getInstance().getWindow().isFocused();
+        /*long flags = SDLVideo.SDL_GetWindowFlags(Minecraft.getInstance().getWindow().getWindow());
+        return (flags & SDLVideo.SDL_WINDOW_INPUT_FOCUS) != 0;
         *///?} else {
         long window = Minecraft.getInstance().getWindow().getWindow();
         return GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
