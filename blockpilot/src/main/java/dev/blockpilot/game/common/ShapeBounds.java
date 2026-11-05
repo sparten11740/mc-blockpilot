@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.common;
 
 import java.util.List;
 

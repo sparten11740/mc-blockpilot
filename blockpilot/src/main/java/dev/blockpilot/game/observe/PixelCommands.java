@@ -10,7 +10,7 @@ import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
-import dev.blockpilot.game.FrameCapture;
+import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.LinkedHashMap;
 import java.util.Map;

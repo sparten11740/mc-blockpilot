@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.sable;
 
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;

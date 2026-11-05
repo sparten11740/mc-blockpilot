@@ -11,6 +11,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.protocol.CommandRegistry;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.InventoryMenu;

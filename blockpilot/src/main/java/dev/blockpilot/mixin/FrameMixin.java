@@ -1,7 +1,7 @@
 package dev.blockpilot.mixin;
 
-import dev.blockpilot.game.Screenshots;
 import dev.blockpilot.game.load.Load;
+import dev.blockpilot.game.observe.Screenshots;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.game.record.Recorder;
 import net.minecraft.client.Minecraft;

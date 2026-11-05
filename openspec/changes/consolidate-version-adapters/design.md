@@ -156,9 +156,10 @@ adds a row, saying `test_targets.py` now fails without it.
 
 The order becomes `game` commands, then subpackages, then a new `game/common`
 that imports no other `game` package. `Ids`, `Sides`, `Shapes`, `BlockScan`,
-`BlockMatcher`, `GameClock` and `FrameCapture` go to `game/common`. `Rel` moves
-to `game/sable` and `Screenshots` to `game/observe`, because that's what they
-depend on.
+`BlockMatcher`, `GameClock` and `FrameCapture` go to `game/common`, with
+`BlockFrame`, `BlockToken` and `ShapeBounds`, which they use, and the new
+`ClientScreens`, `Gpu` and `TimedStop`. `Rel` moves to `game/sable` and
+`Screenshots` to `game/observe`, because that's what they depend on.
 
 `Json` and `McpTools` move from `cli` to a new JDK-only `dev.blockpilot.wire`,
 so `protocol` stops importing `cli`. `game` may still use `cli.Launcher`, since

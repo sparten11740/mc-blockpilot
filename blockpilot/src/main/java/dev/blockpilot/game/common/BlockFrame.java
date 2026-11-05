@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.common;
 
 /**
  * Points inside a block in the block's own frame: the frame its model is drawn in facing north (x west to east, y up,

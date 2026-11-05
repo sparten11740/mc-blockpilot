@@ -1,7 +1,7 @@
 package dev.blockpilot.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.perf.Perf;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;

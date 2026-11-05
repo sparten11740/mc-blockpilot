@@ -1,6 +1,6 @@
 package dev.blockpilot.game.perf;
 
-import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import java.util.HashMap;

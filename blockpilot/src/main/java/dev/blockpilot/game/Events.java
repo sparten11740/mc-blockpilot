@@ -4,6 +4,7 @@ import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.protocol.Engine;
 import java.util.HashMap;

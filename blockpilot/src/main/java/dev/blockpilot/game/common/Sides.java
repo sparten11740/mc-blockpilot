@@ -1,4 +1,4 @@
-package dev.blockpilot.game;
+package dev.blockpilot.game.common;
 
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandException;
@@ -86,7 +86,7 @@ public final class Sides {
     }
 
     /** Waits for a task submitted to the server thread, up to the usual limit. */
-    static <T> T await(CompletableFuture<T> task) throws CommandException {
+    public static <T> T await(CompletableFuture<T> task) throws CommandException {
         try {
             return task.get(SERVER_READ_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -128,7 +128,7 @@ public final class Sides {
     }
 
     /** Whether the player may use cheats (command level 2), which reads on the integrated server need. */
-    static boolean cheats(LocalPlayer player) {
+    public static boolean cheats(LocalPlayer player) {
         //? if >=26.1 {
         /*return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
         *///?} else {

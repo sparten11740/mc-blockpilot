@@ -1,8 +1,8 @@
 package dev.blockpilot.game.sable;
 
 import dev.blockpilot.api.Action;
-import dev.blockpilot.api.Args;
 import dev.blockpilot.api.ArgType;
+import dev.blockpilot.api.Args;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
@@ -11,12 +11,11 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
-import dev.blockpilot.game.BlockMatcher;
-import dev.blockpilot.game.BlockScan;
-import dev.blockpilot.game.Ids;
-import dev.blockpilot.game.Rel;
-import dev.blockpilot.game.Shapes;
-import dev.blockpilot.game.Sides;
+import dev.blockpilot.game.common.BlockMatcher;
+import dev.blockpilot.game.common.BlockScan;
+import dev.blockpilot.game.common.Ids;
+import dev.blockpilot.game.common.Shapes;
+import dev.blockpilot.game.common.Sides;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

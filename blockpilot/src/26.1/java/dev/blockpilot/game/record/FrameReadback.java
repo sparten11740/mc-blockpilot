@@ -8,7 +8,7 @@ import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import dev.blockpilot.game.FrameCapture;
+import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.common.Gpu;
 import java.util.ArrayList;
 import java.util.List;

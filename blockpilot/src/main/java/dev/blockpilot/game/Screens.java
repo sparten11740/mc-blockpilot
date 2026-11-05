@@ -5,6 +5,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
 //? if >=26.1 {
 /*import dev.blockpilot.mixin.AbstractWidgetAccessor;
