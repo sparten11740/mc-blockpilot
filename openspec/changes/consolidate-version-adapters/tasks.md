@@ -3,7 +3,7 @@
 ## 1. Stack and baseline
 
 - [x] 1.1 Rebase this branch onto `main`, which holds `add-minecraft-26-2-and-26-3`, and verify `git merge-base --is-ancestor` passes and `./gradlew build --continue` is green on all 11 nodes
-- [ ] 1.2 Record the D11 baseline for all 11 targets outside the repo (jar class list, manifest, metadata, full `help` output, JSON shapes) and verify each target has all of them
+- [x] 1.2 Record the D11 baseline for all 11 targets outside the repo (jar class list, manifest, metadata, full `help` output, JSON shapes) and verify each target has all of them
 
 ## 2. Rename rules
 
@@ -45,18 +45,18 @@
 
 ## 10. Oversized classes
 
-- [ ] 10.1 Split `ActionCommands` per D9 and verify the full `help` output, including command order, matches the baseline, and the D11 four-target run passes
-- [ ] 10.2 Move `Perf`'s state and logic to `PerfCapture` without changing its static API or locks; verify `PerfTest` and the `perf` assertions pass on the D11 four targets, and that `Perf` has no static capture state left besides `active` and the capture counter
-- [ ] 10.3 Share the `Timed` base class between `PerfCommands` and `RecordCommands`; verify `perf` and `record` with a duration pass, and cancelling either still leaves it running
+- [x] 10.1 Split `ActionCommands` per D9 and verify the full `help` output, including command order, matches the baseline, and the D11 four-target run passes
+- [x] 10.2 Move `Perf`'s state and logic to `PerfCapture` without changing its static API or locks; verify `PerfTest` and the `perf` assertions pass on the D11 four targets, and that `Perf` has no static capture state left besides `active`, the capture counter and the reference to the running capture
+- [x] 10.3 Share the `Timed` base class between `PerfCommands` and `RecordCommands`; verify `perf` and `record` with a duration pass, and cancelling either still leaves it running
 
 ## 11. Package layering
 
-- [ ] 11.1 Create `game/common`, move the D10 classes (and `Rel` and `Screenshots` to their new homes), and add the test for the dependency order across all source trees; verify it fails on a deliberate back-import and all 11 nodes build
-- [ ] 11.2 Move `Json` and `McpTools` to `dev.blockpilot.wire`, add a JDK-only test for it and forbid `protocol` importing `cli`; verify the launcher serves MCP over stdio from a built jar on a bare JVM with no game running
+- [x] 11.1 Create `game/common`, move the D10 classes (and `Rel` and `Screenshots` to their new homes), and add the test for the dependency order across all source trees; verify it fails on a deliberate back-import and all 11 nodes build
+- [x] 11.2 Move `Json` and `McpTools` to `dev.blockpilot.wire`, add a JDK-only test for it and forbid `protocol` importing `cli`; verify the launcher serves MCP over stdio from a built jar on a bare JVM with no game running
 
 ## 12. Integration
 
-- [ ] 12.1 From a clean build, run the full `python3 tools/test_targets.py`, then compare `help` and JSON shapes with the baseline and class lists with the moves in this change; verify exit 0, no skips, and no differences beyond those moves
+- [x] 12.1 From a clean build, run the full `python3 tools/test_targets.py`, then compare `help` and JSON shapes with the baseline and class lists with the moves in this change; verify exit 0, no skips, and no differences beyond those moves
 - [ ] 12.2 By hand, for Jan, on a 1.21.1 and a 26.3 dev client with an agent driving: real keys, clicks and mouse movement take control back, and F8 toggles agent control; verify each by its `err interrupted` reply and the on-screen status line
 
 ## Workflow follow-up
