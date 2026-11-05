@@ -35,6 +35,8 @@ LOADERS = ("fabric", "neoforge", "vanilla")
 METADATA = {"fabric": "fabric.mod.json", "neoforge": "META-INF/neoforge.mods.toml"}
 START_SECONDS = 600
 STOP_SECONDS = 120
+TERM_SECONDS = 10
+STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 
 
 class Result:
@@ -145,12 +147,12 @@ def wait_for_client(gradle, game_dir, log):
     deadline = time.monotonic() + START_SECONDS
     while time.monotonic() < deadline:
         if gradle.poll() is not None:
-            return "the client stopped before opening its endpoint: " \
+            return "the client stopped before showing a screen: " \
                    + last_lines(log, r"Mixin|Exception|Error|FAILED|What went wrong")
         if os.path.exists(endpoint) and has_a_screen_up(game_dir):
             return None
         time.sleep(3)
-    return f"no answer within {START_SECONDS} s: " + last_lines(log, r"Mixin|Exception|Error|FAILED")
+    return f"no screen within {START_SECONDS} s: " + last_lines(log, r"Mixin|Exception|Error|FAILED")
 
 
 def run_smoke_test(game_dir, directory, as_json, result):
@@ -174,28 +176,61 @@ def run_smoke_test(game_dir, directory, as_json, result):
         result.check(f"{mode}: smoke test", f"exit {done.returncode}; see {log}")
 
 
+def quit_client(gradle, game_dir):
+    """Asks a client to close; returns why it didn't, or None."""
+    try:
+        code, output = smoke_test.run(game_dir, "quit", timeout=60)
+    except (OSError, subprocess.SubprocessError) as error:
+        return f"quit failed: {error}"
+    if code != 0:
+        return f"quit failed: {output.strip()[:200]}"
+    try:
+        status = gradle.wait(timeout=STOP_SECONDS)
+    except subprocess.TimeoutExpired:
+        return f"it didn't close within {STOP_SECONDS} s of quit"
+    return None if status == 0 else f"the build running it ended with {status}"
+
+
+def force_stop(gradle, game_dir):
+    """Stops a client through the build running it, then its process if its endpoint still names it. Nothing interrupts
+    this, as that would leave the game running; it takes a minute at most."""
+    handlers = [(number, signal.signal(number, signal.SIG_IGN)) for number in STOP_SIGNALS]
+    try:
+        gradle.send_signal(signal.SIGINT)
+        try:
+            gradle.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            gradle.kill()
+        # Read only now: closing removes the file, and the process's id could then be another program's.
+        pid = game_pid(game_dir)
+        if pid and alive(pid):
+            os.kill(pid, signal.SIGTERM)
+            deadline = time.monotonic() + TERM_SECONDS
+            while alive(pid) and time.monotonic() < deadline:
+                time.sleep(0.5)
+            if alive(pid):
+                os.kill(pid, signal.SIGKILL)
+    finally:
+        for number, handler in handlers:
+            signal.signal(number, handler)
+
+
 def stop_client(gradle, game_dir, answered):
-    """Closes a client that answered with `quit`. One that didn't, or doesn't close, is stopped: the build it runs
-    under, then its process if its endpoint names it. Returns why a client that answered didn't close, or None."""
-    pid = game_pid(game_dir)
+    """Closes a client that answered with `quit`, and stops one that didn't, or doesn't close. An interrupt meanwhile
+    goes straight to stopping it, then on up. Returns why a client that answered didn't close, or None."""
+    problem = None
+    interrupted = False
     if answered:
         try:
-            smoke_test.run(game_dir, "quit", timeout=60)
-            gradle.wait(timeout=STOP_SECONDS)
-            return None
-        except (OSError, subprocess.SubprocessError):
-            pass
-    gradle.send_signal(signal.SIGINT)
-    try:
-        gradle.wait(timeout=30)
-    except subprocess.TimeoutExpired:
-        gradle.kill()
-    if pid:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
-    return f"it didn't close within {STOP_SECONDS} s of quit" if answered else None
+            problem = quit_client(gradle, game_dir)
+            if not problem:
+                return None
+        except KeyboardInterrupt:
+            interrupted = True
+    force_stop(gradle, game_dir)
+    if interrupted:
+        raise KeyboardInterrupt
+    return problem
 
 
 def game_pid(game_dir):
@@ -246,22 +281,24 @@ def test_target(target, result):
     # A client started while the display sleeps fails with "Failed to locate a primary monitor".
     awake = subprocess.Popen(["caffeinate", "-u", "-t", "300"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) \
         if sys.platform == "darwin" else None
-    log = os.path.join(directory, "client.log")
-    with open(log, "w", encoding="utf-8") as output:
-        gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
-                                  stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-    answered = False
     try:
-        problem = wait_for_client(gradle, game_dir, log)
-        answered = problem is None
-        # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
-        result.check("client reaches a screen", problem)
-        if answered:
-            run_smoke_test(game_dir, directory, False, result)
-            run_smoke_test(game_dir, directory, True, result)
+        log = os.path.join(directory, "client.log")
+        with open(log, "w", encoding="utf-8") as output:
+            gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
+                                      stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        answered = False
+        try:
+            problem = wait_for_client(gradle, game_dir, log)
+            answered = problem is None
+            # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
+            result.check("client reaches a screen", problem)
+            if answered:
+                run_smoke_test(game_dir, directory, False, result)
+                run_smoke_test(game_dir, directory, True, result)
+        finally:
+            # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
+            stopped = stop_client(gradle, game_dir, answered)
     finally:
-        # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
-        stopped = stop_client(gradle, game_dir, answered)
         if awake:
             awake.terminate()
     if answered:
@@ -303,6 +340,15 @@ def report(results):
             print(f"skip {result.target}: {skipped}")
 
 
+def interrupted(signal_number, frame):
+    """Ends the run on Ctrl-C, a stop request or a closed terminal, which stops the client it started."""
+    try:
+        print("interrupted; closing the client under way", flush=True)
+    except OSError:
+        pass
+    raise KeyboardInterrupt
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--targets", help="comma-separated targets; all of them when left out")
@@ -320,8 +366,8 @@ def main():
         parser.error("this can't stop a client on Windows yet; run tools/smoke_test.py against one there")
     if shutil.which("java") is None:
         parser.error("java isn't on the PATH; the vanilla agent's checks need it")
-    # A stop request ends the run as an interrupt does, which stops the client it started.
-    signal.signal(signal.SIGTERM, signal.default_int_handler)
+    for number in STOP_SIGNALS:
+        signal.signal(number, interrupted)
     results = []
     try:
         for target in chosen:
@@ -335,7 +381,7 @@ def main():
             results.append(result)
             print(f"  {'FAIL' if result.problems else 'pass'} {result.summary()}", flush=True)
     except KeyboardInterrupt:
-        print("interrupted; the target under way is left out", flush=True)
+        print("the target under way is left out", flush=True)
         if results:
             report(results)
         return 130
