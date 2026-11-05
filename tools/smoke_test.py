@@ -48,6 +48,9 @@ LEVEL = "server as=player tp @s 0.5 -60 0.5 0 0; wait 5t"
 MAY_BE_UNSUPPORTED = {"record", "record with sound"}
 # Leaves that place empty; the stone is there so that the fill always changes something, which it must not to fail.
 CLEAR = "server setblock 6 -57 6 minecraft:stone; server fill -3 -60 -3 6 -57 6 minecraft:air"
+# A chest beside the player, open, with 16 saplings in its first slot.
+CHEST = f"{CLEAR}; {AIMED}; server as=player setblock ~3 ~ ~ minecraft:chest; " \
+        "server item replace block ~3 ~ ~ container.0 with minecraft:oak_sapling 16; open ~3,0,0"
 
 
 class Skipped(Exception):
@@ -200,9 +203,7 @@ def check_cursor_stays_across_screens(game_dir):
 
 def check_mouse_on_slots(game_dir):
     """Right and shift clicks at a slot's place on screen, through the mouse, unlike `click s<i>`."""
-    _, output = run(game_dir, f"{CLEAR}; {AIMED}; server as=player setblock ~3 ~ ~ minecraft:chest; "
-                              "server item replace block ~3 ~ ~ container.0 with minecraft:oak_sapling 16; "
-                              "open ~3,0,0; screen full")
+    _, output = run(game_dir, f"{CHEST}; screen full")
     size = re.search(r"\bsize (\d+)x(\d+)", output)
     if not size:
         return f"no chest screen: {output.strip()}"
@@ -256,7 +257,8 @@ def check_hud_hides(game_dir):
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; pixels hidden=0.35,0.9,0.65,1; "
                               "option hud on; wait 3t; pixels shown=0.35,0.9,0.65,1; option reset")
     hidden, shown = means(output, "hidden"), means(output, "shown")
-    return None if max(abs(a - b) for a, b in zip(hidden, shown)) > 3 else f"without {hidden}, with {shown}"
+    difference = max(abs(without - with_hud) for without, with_hud in zip(hidden, shown))
+    return None if difference > 3 else f"without {hidden}, with {shown}"
 
 
 def check_live_particles(game_dir):
@@ -377,7 +379,8 @@ def main():
         ("raw input", "key press key.inventory; wait 3t; screen; close; mouse move 40 0 4t",
          [r"creative_inventory|inventory"]),
         ("mouse left breaks the block aimed at",
-         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:stone; wait 3t; mouse click left; wait 5t; "
+         f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:stone; "
+         "server item replace entity @p hotbar.7 with minecraft:air; select 7; wait 3t; mouse click left; wait 5t; "
          "block ~0,0,2", [r"^ok air$"]),
         ("mouse right places the held block",
          f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:stone; "
@@ -387,10 +390,8 @@ def main():
          f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:gold_block; "
          "server item replace entity @p hotbar.8 with minecraft:air; select 8; wait 3t; mouse click middle; wait 5t; "
          "inv full", [r"\*8:gold_block"]),
-        ("right click in a screen takes half a stack",
-         f"{CLEAR}; {AIMED}; server as=player setblock ~3 ~ ~ minecraft:chest; "
-         "server item replace block ~3 ~ ~ container.0 with minecraft:oak_sapling 16; open ~3,0,0; click s0 right; "
-         "wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count; close", [r"^ok 8$"]),
+        ("click s<i> right takes half a stack",
+         f"{CHEST}; click s0 right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count; close", [r"^ok 8$"]),
         ("typing and select-all", f"key t; wait 3t; key {SELECT_ALL}; key backspace; type hello; wait 2t; screen full; "
                                   f"key {SELECT_ALL}; wait 2t; type x; wait 2t; screen full; key {SELECT_ALL}; "
                                   "key backspace; close", [r'value="hello"', r'value="x"']),
@@ -477,6 +478,8 @@ def main():
         if problem:
             failures += 1
             print(f"FAIL {name}: {problem}")
+            # So that one failure, which may leave a screen open, doesn't fail the checks after it too.
+            run(args.game_dir, "?close")
         else:
             print(f"pass {name}")
     code, output = run(args.game_dir, "status; inv", as_json=True)
