@@ -14,9 +14,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-//? if >=26.3 {
-/*import com.mojang.renderpearl.api.GpuFormat;
-*///?} else if >=26.2 {
+//? if >=26.2 {
 /*import com.mojang.blaze3d.GpuFormat;
 *///?} else {
 import com.mojang.blaze3d.textures.TextureFormat;
@@ -181,13 +179,11 @@ final class FrameReadback implements AutoCloseable {
         //? if >=26.2 {
         /*try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
             Optional.empty())) {
+            RenderSystem.bindDefaultUniforms(pass);
         *///?} else {
         try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
             OptionalInt.empty())) {
         //?}
-            //? if >=26.2 {
-            /*RenderSystem.bindDefaultUniforms(pass);
-            *///?}
             pass.setPipeline(RenderPipelines.TRACY_BLIT);
             pass.bindTexture("InSampler", from, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
             pass.draw(0, 3);

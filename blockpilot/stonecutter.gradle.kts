@@ -68,6 +68,7 @@ stonecutter parameters {
     rename("26.3", "com.mojang.blaze3d.buffers.", "com.mojang.renderpearl.api.buffers.")
     rename("26.3", "com/mojang/blaze3d/buffers/", "com/mojang/renderpearl/api/buffers/")
     rename("26.3", "com.mojang.blaze3d.textures.", "com.mojang.renderpearl.api.textures.")
+    rename("26.3", "com.mojang.blaze3d.GpuFormat;", "com.mojang.renderpearl.api.GpuFormat;")
     rename("26.3", "com.mojang.blaze3d.systems.CommandEncoder;", "com.mojang.renderpearl.api.commands.CommandEncoder;")
     rename("26.3", "com.mojang.blaze3d.systems.RenderPass;", "com.mojang.renderpearl.api.commands.RenderPass;")
     rename("26.3", "com.mojang.blaze3d.systems.GpuDevice;", "com.mojang.renderpearl.api.device.GpuDevice;")
