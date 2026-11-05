@@ -300,7 +300,8 @@ def check_video_upright(game_dir, world):
 
 
 def write_shapes(game_dir, path):
-    """Writes one line per query; returns how many replies could not be read."""
+    """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
+    returns how many couldn't."""
     lines = []
     unreadable = 0
     # `look`'s rows have the shape of what is near, which would otherwise be whatever earlier steps happened to drop.
@@ -314,10 +315,14 @@ def write_shapes(game_dir, path):
         except (ValueError, IndexError, KeyError):
             unreadable += 1
             lines.append(f"{script} => unreadable: {output.strip()}")
+    if unreadable:
+        print(f"FAIL json shapes: {unreadable} of {len(lines)} unreadable, the first: "
+              + next(line for line in lines if " => unreadable: " in line)[:300])
+        return unreadable
     with open(path, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines) + "\n")
-    print(f"{'FAIL' if unreadable else 'pass'} json shapes: {len(lines)} written to {path}, {unreadable} unreadable")
-    return unreadable
+    print(f"pass json shapes: {len(lines)} written to {path}")
+    return 0
 
 
 def main():
