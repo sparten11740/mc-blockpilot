@@ -39,6 +39,7 @@ SHAPE_SCRIPTS = ["status", "inv", "look 4", "find grass_block 4 2", "block ~0,-1
                  "blocks ~0,-1,0 ~1,-1,1", "worlds", "snapshot list", "tick query", "log mark",
                  "server time query day", "sample status every 1t x2", "wait status until ok", "help status",
                  "messages limit=1", "particles", "nbt e999999"]
+SHAPE_OF_AN_ERROR = "nbt e999999"
 # The game's select-all shortcut: Command on macOS, Control elsewhere.
 SELECT_ALL = "left_win+a" if sys.platform == "darwin" else "left_control+a"
 # Facing south from a block's centre at a known place: a block at ~0,0,2 is under the crosshair at pitch 40.
@@ -306,14 +307,23 @@ def write_shapes(game_dir, path):
     returns how many couldn't."""
     lines = []
     unreadable = 0
-    # `look`'s rows have the shape of what is near: entities and notable blocks, which earlier steps leave or don't.
-    run(game_dir, f"{CLEAR}; {LEVEL}; server as=player setblock ~2 ~ ~2 minecraft:chest; "
-                  "server as=player summon minecraft:item ~-2 ~ ~ "
-                  "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 5t")
+    # Replies have the shape of what is near and aimed at, which earlier steps leave or don't. A chest under the
+    # crosshair, an item and a living entity bring out all their fields. There may be nothing to kill, hence the ?.
+    run(game_dir, "?server kill @e[type=!minecraft:player]")
+    code, output = run(game_dir, f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:chest; "
+                                 "server as=player summon minecraft:armor_stand ~2 ~ ~; "
+                                 "server as=player summon minecraft:item ~-2 ~ ~ "
+                                 "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 5t")
+    if code != 0:
+        print(f"FAIL json shapes: the scene for them failed: {output.strip()[:300]}")
+        return 1
     for script in SHAPE_SCRIPTS:
         _, output = run(game_dir, script, as_json=True)
         try:
             reply = json.loads(output.splitlines()[0])
+            # A client that lost its world still answers, but what it says has nothing to compare.
+            if script != SHAPE_OF_AN_ERROR and not all(result["ok"] for result in reply["results"]):
+                raise ValueError("a query failed")
             lines.append(f"{script} => " + " | ".join(shape(result) for result in reply["results"]))
         except (ValueError, IndexError, KeyError):
             unreadable += 1
