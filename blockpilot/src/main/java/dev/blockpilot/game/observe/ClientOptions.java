@@ -289,7 +289,7 @@ public final class ClientOptions {
         }
     }
 
-    /** The F1 switch, a plain field rather than an {@link OptionInstance}: {@code on} shows the GUI. */
+    /** The F1 switch, which isn't an {@link OptionInstance}: {@code on} shows the GUI. */
     private static final class Hud implements Setting {
         @Override
         public String name() {

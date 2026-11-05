@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-import net.minecraft.client.Minecraft;
 
 /**
  * One recording: frames read back on the client thread, written to ffmpeg's input by a thread of its own, encoded into
