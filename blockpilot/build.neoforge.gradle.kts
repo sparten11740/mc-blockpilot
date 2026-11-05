@@ -13,7 +13,6 @@ fun treeProp(name: String) = parent!!.property(name).toString()
 fun repoProp(name: String) = rootProject.property(name).toString()
 
 val modId = treeProp("mod_id")
-val minecraft = prop("minecraft_version")
 val treeDir = parent!!.projectDir
 // Sable publishes its companion API for some Minecraft versions only; a node without one (or built with an empty
 // -Psable_companion_version=) leaves the Sable integration out, and the game then runs as without Sable.
@@ -23,21 +22,11 @@ val mixinConfigs = listOf("$modId.mixins.json", "$modId-neoforge.mixins.json").f
     listOf("main", prop("version_sources")).any { treeDir.resolve("src/$it/resources/$config").exists() }
 }
 
-version = "${treeProp("mod_version")}+$minecraft-neoforge"
-group = treeProp("mod_group_id")
+apply(from = treeDir.resolve("common.gradle.kts"))
 
-base {
-    archivesName = modId
-}
-
-// Every jar lands in the root build/libs, with the license and notice, named so they can't clash with another jar's.
+// Every jar lands in the root build/libs.
 tasks.jar {
     destinationDirectory = rootProject.layout.buildDirectory.dir("libs")
-    from(rootProject.files("LICENSE", "NOTICE")) { rename { "${it}_$modId" } }
-}
-
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(prop("java_version").toInt())
 }
 
 sourceSets.main {
@@ -63,19 +52,6 @@ dependencies {
     if (withSable) {
         compileOnly("dev.ryanhcode.sable-companion:sable-companion-common-${prop("minecraft_version")}:"
             + prop("sable_companion_version")) { isTransitive = false }
-    }
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    // The protocol layer's tests run without the game; these are the versions Minecraft 1.21.1 ships.
-    testImplementation("com.google.code.gson:gson:2.10.1")
-    testImplementation("io.netty:netty-handler:4.1.97.Final")
-    testImplementation("org.slf4j:slf4j-api:2.0.9")
-    testImplementation("org.apache.logging.log4j:log4j-core:2.22.1")
-    testImplementation("org.joml:joml:1.10.5")
-    // The grammar file test parses docs/grammar.ebnf with the Railroad Diagram Generator's W3C EBNF parser.
-    testImplementation("de.bottlecaps.rr:rr-lib:2.6") {
-        exclude(group = "org.apache.xmlgraphics")
     }
 }
 
@@ -136,32 +112,4 @@ tasks.processResources {
     exclude("$modId-fabric.mixins.json", "$modId.accesswidener")
 }
 
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
-}
-
-tasks.test {
-    useJUnitPlatform()
-    // The grammar tests read the specs, the active changes and the grammar file, so editing them reruns the tests.
-    inputs.dir(rootProject.file("openspec")).withPropertyName("openspec")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
-    inputs.files(rootProject.file("docs/grammar.ebnf"), rootProject.file("docs/grammar.xhtml"))
-        .withPropertyName("grammarFile").withPathSensitivity(PathSensitivity.RELATIVE)
-    // Other tests read every source tree and the rename rules, not only what this node builds.
-    inputs.dir(treeDir.resolve("src")).withPropertyName("sourceTrees").withPathSensitivity(PathSensitivity.RELATIVE)
-    inputs.file(treeDir.resolve("stonecutter.gradle.kts")).withPropertyName("renameRules")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
-}
-
 apply(from = treeDir.resolve("coverage.gradle.kts"))
-
-// mavenLocal() coordinates for other mods' dev environments: dev.blockpilot:blockpilot-neoforge:<version>+<minecraft>.
-publishing {
-    publications {
-        register<MavenPublication>("mod") {
-            artifactId = "$modId-neoforge"
-            version = "${treeProp("mod_version")}+$minecraft"
-            from(components["java"])
-        }
-    }
-}
