@@ -29,6 +29,11 @@ public final class Sources {
         }
     }
 
+    /** The trees that go into the jars. */
+    public static List<Path> codeTrees() throws IOException {
+        return trees().stream().filter(tree -> !tree.endsWith("test")).toList();
+    }
+
     public static List<Path> javaFiles(Path tree) throws IOException {
         try (Stream<Path> files = Files.walk(tree)) {
             return files.filter(path -> path.toString().endsWith(".java")).sorted().toList();

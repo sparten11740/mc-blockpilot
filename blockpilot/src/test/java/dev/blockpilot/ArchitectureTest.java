@@ -71,10 +71,7 @@ class ArchitectureTest {
     void noFileIsTheSameInTwoTrees() throws IOException {
         Map<Path, Path> seen = new HashMap<>();
         List<String> same = new ArrayList<>();
-        for (Path tree : Sources.trees()) {
-            if (tree.endsWith("test")) {
-                continue;
-            }
+        for (Path tree : Sources.codeTrees()) {
             try (Stream<Path> files = Files.walk(tree)) {
                 for (Path file : files.filter(Files::isRegularFile).toList()) {
                     Path other = seen.putIfAbsent(tree.relativize(file), file);
@@ -85,5 +82,24 @@ class ArchitectureTest {
             }
         }
         assertEquals(List.of(), same);
+    }
+
+    /** The window system changed in 26.3. Mixins have to name it, as their signatures must match their targets. */
+    @Test
+    void onlyWindowSystemAndMixinsImportTheWindowSystem() throws IOException {
+        List<String> found = new ArrayList<>();
+        for (Path tree : Sources.codeTrees()) {
+            for (Path file : Sources.javaFiles(tree)) {
+                if (file.getFileName().toString().equals("WindowSystem.java") || file.getParent().endsWith("mixin")) {
+                    continue;
+                }
+                for (String line : Files.readAllLines(file)) {
+                    if (line.contains("import org.lwjgl.glfw") || line.contains("import org.lwjgl.sdl")) {
+                        found.add(file.getFileName() + ": " + line.strip());
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), found);
     }
 }
