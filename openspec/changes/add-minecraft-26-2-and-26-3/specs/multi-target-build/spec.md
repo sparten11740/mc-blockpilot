@@ -80,7 +80,7 @@ documented capability gaps that the target reports through `help`.
 
 #### Scenario: Same input names whatever the game numbers them
 - **WHEN** an agent runs `mouse click left`, `mouse click right`,
-  `mouse click middle` or `key left_shift+e` on a 26.2 and on a 26.3 jar, in
+  `mouse click middle` or `key left_shift+left` on a 26.2 and on a 26.3 jar, in
   equivalent game states
 - **THEN** the same button or keys act on both, though 26.3 numbers them
   differently
