@@ -43,12 +43,7 @@ stonecutter parameters {
     rename("26.1", "ClickType", "ContainerInput")
     rename("26.1", "client.gui.GuiGraphics;", "client.gui.GuiGraphicsExtractor;")
     rename("26.1", "GuiGraphics graphics", "GuiGraphicsExtractor graphics")
-    // 26.2 keeps the screen on Gui, and the frame's state on GameRenderer and LevelExtractor.
-    rename("26.2", "minecraft.screen", "minecraft.gui.screen()")
-    rename("26.2", "minecraft().screen", "minecraft().gui.screen()")
-    rename("26.2", "minecraft.setScreen(", "minecraft.gui.setScreen(")
-    rename("26.2", "minecraft().setScreen(", "minecraft().gui.setScreen(")
-    rename("26.2", ".getOverlay()", ".gui.overlay()")
+    // 26.2 keeps the frame's state on GameRenderer and LevelExtractor.
     rename("26.2", "gameRenderer.getMainCamera()", "gameRenderer.mainCamera()")
     rename("26.2", ".getMainRenderTarget()", ".gameRenderer.mainRenderTarget()")
     rename("26.2", "renderer.getSectionRenderDispatcher()", "renderer.sectionRenderDispatcher()")

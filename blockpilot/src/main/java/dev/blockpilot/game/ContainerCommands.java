@@ -8,6 +8,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.path.Navigator;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
@@ -100,7 +101,7 @@ final class ContainerCommands {
                     step = 2;
                     return null;
                 }
-                if (minecraft().screen instanceof AbstractContainerScreen<?> screen && screen.getMenu() != player()
+                if (ClientScreens.current() instanceof AbstractContainerScreen<?> screen && screen.getMenu() != player()
                     .inventoryMenu) {
                     return Result.ok(new Fields().bare("screen", Screens.type(screen)));
                 }
@@ -130,7 +131,7 @@ final class ContainerCommands {
 
     private static AbstractContainerMenu openMenu() throws CommandException {
         LocalPlayer player = player();
-        if (!(minecraft().screen instanceof AbstractContainerScreen<?>) || player.containerMenu == player.inventoryMenu) {
+        if (!(ClientScreens.current() instanceof AbstractContainerScreen<?>) || player.containerMenu == player.inventoryMenu) {
             throw new CommandException("no_screen", "open a container first");
         }
         return player.containerMenu;
@@ -225,7 +226,7 @@ final class ContainerCommands {
             throw new CommandException("no_recipe", args.word("item"));
         }
         int wanted = args.count("count", recipes.get(0).resultCount());
-        boolean tableOpen = minecraft().screen instanceof CraftingScreen;
+        boolean tableOpen = ClientScreens.current() instanceof CraftingScreen;
         // Several recipes can make one item (sticks from planks or bamboo): prefer one the inventory can make, and
         // one that fits the 2x2 grid unless a table is open.
         List<CraftingCandidate> craftable = recipes.stream().filter(ContainerCommands::haveIngredients).toList();
@@ -240,7 +241,7 @@ final class ContainerCommands {
                 throw new CommandException("need_table", "no crafting table within " + TABLE_RANGE + " blocks");
             }
             opening = openAt(context.sessionId(), table);
-        } else if (!tableOpen && minecraft().screen != null) {
+        } else if (!tableOpen && ClientScreens.current() != null) {
             minecraft().player.closeContainer();
         }
         return new Crafting(opening, recipe, item, wanted);

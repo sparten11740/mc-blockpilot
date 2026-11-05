@@ -11,6 +11,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.EntityUpdates;
 import dev.blockpilot.game.sable.SableSupport;
@@ -148,7 +149,7 @@ final class PerceptionCommands {
         Minecraft minecraft = minecraft();
         LocalPlayer player = minecraft.player;
         if (player == null || minecraft.level == null) {
-            String screen = minecraft.screen == null ? "none" : Screens.type(minecraft.screen);
+            String screen = ClientScreens.current() == null ? "none" : Screens.type(ClientScreens.current());
             return Result.ok(new Fields().bare("state", "menu").bare("screen", screen));
         }
         Fields fields = new Fields()
@@ -207,8 +208,8 @@ final class PerceptionCommands {
         flag(fields, player.isSleeping(), "sleeping");
         flag(fields, player.isShiftKeyDown(), "sneaking");
         flag(fields, player.isDeadOrDying(), "dead");
-        if (minecraft.screen != null) {
-            fields.put("screen", Screens.type(minecraft.screen), "screen:" + Screens.type(minecraft.screen));
+        if (ClientScreens.current() != null) {
+            fields.put("screen", Screens.type(ClientScreens.current()), "screen:" + Screens.type(ClientScreens.current()));
         }
         CameraControl.Angles camera = CameraControl.rendered();
         if (camera != null && (Math.abs(Mth.wrapDegrees(camera.yaw() - player.getYRot())) > 0.5

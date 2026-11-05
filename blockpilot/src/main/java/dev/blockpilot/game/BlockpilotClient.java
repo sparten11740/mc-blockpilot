@@ -11,6 +11,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.cli.Launcher;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
@@ -365,7 +366,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         minecraft.execute(() -> {
             try {
                 if (TestWorlds.exists(world)) {
-                    minecraft.createWorldOpenFlows().openWorld(world, () -> minecraft.setScreen(new TitleScreen()));
+                    minecraft.createWorldOpenFlows().openWorld(world, () -> ClientScreens.open(new TitleScreen()));
                 } else if (preset != null) {
                     TestWorlds.create(world, preset);
                 } else {
@@ -428,7 +429,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public boolean ready() {
-        return Minecraft.getInstance().getOverlay() == null;
+        return ClientScreens.overlay() == null;
     }
 
     @Override

@@ -10,6 +10,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -146,7 +147,7 @@ final class Snapshots {
         return () -> {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null || minecraft.level == null
-                || minecraft.screen != null && Screens.type(minecraft.screen).equals("loading")) {
+                || ClientScreens.current() != null && Screens.type(ClientScreens.current()).equals("loading")) {
                 return null;
             }
             double seconds = (System.nanoTime() - started) / 1e9;

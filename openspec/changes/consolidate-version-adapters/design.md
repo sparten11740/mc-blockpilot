@@ -78,7 +78,8 @@ when switching versions.
 
 `current()`, `open(Screen)` and `overlay()` hold the condition once, replacing
 about 34 uses in 11 files and removing 5 rules. It follows `HudVisibility`:
-small, single-purpose and named for what callers want.
+small, single-purpose and named for what callers want. It lives in `game/common`
+(D10), as `game/input` calls it too.
 
 *Alternative:* add these to `Screens`. Rejected: that class describes a screen's
 contents for replies and is private to `game`.

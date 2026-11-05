@@ -4,6 +4,7 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
 //? if >=26.1 {
 /*import dev.blockpilot.mixin.AbstractWidgetAccessor;
@@ -111,7 +112,7 @@ final class Screens {
 
     static Result describe() {
         Minecraft minecraft = Minecraft.getInstance();
-        Screen screen = minecraft.screen;
+        Screen screen = ClientScreens.current();
         if (screen == null) {
             return Result.ok(new Fields().put("screen", "none", "none")).withRows(List.of());
         }

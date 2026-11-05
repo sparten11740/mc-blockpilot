@@ -3,6 +3,7 @@ package dev.blockpilot.game;
 import dev.blockpilot.api.EntityRef;
 import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.protocol.Engine;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ final class Events {
     void tick() {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        String screen = minecraft.screen == null ? null : Screens.type(minecraft.screen);
+        String screen = ClientScreens.current() == null ? null : Screens.type(ClientScreens.current());
         if (lastScreen != null && screen == null) {
             engine.broadcast(Event.of("screen_closed", new Fields().bare("screen", lastScreen)));
         }
