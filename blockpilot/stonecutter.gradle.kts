@@ -21,7 +21,6 @@ stonecutter parameters {
     rename("1.21.2", ".getHolderOrThrow(", ".getOrThrow(")
     rename("1.21.2", ".getMinBuildHeight()", ".getMinY()")
     rename("1.21.2", ".getMinSection()", ".getMinSectionY()")
-    rename("1.21.2", ".getNormal()", ".getUnitVec3i()")
     // The new top is the highest block's y, the old one the height above it.
     rename("1.21.2", ".getMaxBuildHeight() - 1", ".getMaxY()")
     // With the type's context: shared code has its own isIdentifier, which a bare rule would rename back.

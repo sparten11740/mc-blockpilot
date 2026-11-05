@@ -1,12 +1,10 @@
 package dev.blockpilot;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -15,12 +13,7 @@ import org.junit.jupiter.api.Test;
 /** The api and protocol layers must stay free of Minecraft so they work on every target and outside the game. */
 class ArchitectureTest {
     private static Path sources() {
-        Path directory = Paths.get("").toAbsolutePath();
-        while (directory != null && !Files.isDirectory(directory.resolve("src/main/java/dev/blockpilot/api"))) {
-            directory = directory.getParent();
-        }
-        assertTrue(directory != null, "could not find the source tree above " + Paths.get("").toAbsolutePath());
-        return directory.resolve("src/main/java/dev/blockpilot");
+        return Sources.project().resolve("src/main/java/dev/blockpilot");
     }
 
     private static List<String> violations(String layer, List<String> forbidden) throws IOException {

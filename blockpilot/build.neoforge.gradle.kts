@@ -147,6 +147,10 @@ tasks.test {
         .withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.files(rootProject.file("docs/grammar.ebnf"), rootProject.file("docs/grammar.xhtml"))
         .withPropertyName("grammarFile").withPathSensitivity(PathSensitivity.RELATIVE)
+    // Other tests read every source tree and the rename rules, not only what this node builds.
+    inputs.dir(treeDir.resolve("src")).withPropertyName("sourceTrees").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(treeDir.resolve("stonecutter.gradle.kts")).withPropertyName("renameRules")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))
