@@ -409,10 +409,10 @@ def main():
          "server item replace entity @p hotbar.0 with minecraft:stone; "
          "server item replace entity @p hotbar.1 with minecraft:dirt; select 0; wait 2t; status; scroll -1; wait 3t; "
          "status", [r"hand:stone", r"hand:dirt"]),
-        # Without Shift held, the left arrow only moves the cursor, and backspace then takes the second l.
+        # Shift and the left arrow select the o, which the x replaces: hellxo without Shift, hellox without the arrow.
         ("a chord presses its last key with the others held",
-         "key t; wait 3t; type hello; wait 2t; key left_shift+left; wait 2t; key backspace; wait 2t; screen full; "
-         f"key {SELECT_ALL}; key backspace; close", [r'value="hell"']),
+         "key t; wait 3t; type hello; wait 2t; key left_shift+left; wait 2t; type x; wait 2t; screen full; "
+         f"key {SELECT_ALL}; key backspace; close", [r'value="hellx"']),
         ("the agent control toggle is F8", "?key press f8", [r"^err syntax the agent control toggle"], True),
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
         ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
