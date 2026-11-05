@@ -1,6 +1,8 @@
 package dev.blockpilot.game.input;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,5 +13,15 @@ class HumanInputTest {
         assertEquals("input=key key=left_shift", HumanInput.keyInput("left_shift").text());
         assertEquals("input=button button=right", HumanInput.buttonInput(KeyNames.buttonNumber("right")).text());
         assertEquals("input=move dx=31 dy=-5", HumanInput.moveInput(30.6, -4.6).text());
+    }
+
+    @Test
+    void theWindowsEdgeIsItsOutermostPixels() {
+        assertTrue(HumanInput.atEdge(0, 300, 800, 600));
+        assertTrue(HumanInput.atEdge(400, 0, 800, 600));
+        assertTrue(HumanInput.atEdge(799, 300, 800, 600));
+        assertTrue(HumanInput.atEdge(400, 599, 800, 600));
+        assertFalse(HumanInput.atEdge(400, 300, 800, 600));
+        assertFalse(HumanInput.atEdge(1, 1, 800, 600));
     }
 }

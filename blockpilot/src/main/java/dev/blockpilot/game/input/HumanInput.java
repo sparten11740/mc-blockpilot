@@ -42,14 +42,22 @@ public final class HumanInput {
     }
 
     public static void mouseMove(long window, double x, double y) {
-        double dx = x - lastX;
-        double dy = y - lastY;
-        boolean moved = !Double.isNaN(lastX) && (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD);
+        mouseMoveBy(window, x, y, x - lastX, y - lastY);
+    }
+
+    /** A mouse now at {@code x,y} that moved by {@code dx,dy}, which its place alone may not show. */
+    public static void mouseMoveBy(long window, double x, double y, double dx, double dy) {
         lastX = x;
         lastY = y;
-        if (moved && Focus.reallyFocused()) {
+        // Before the first move the place to measure from is NaN, which compares as no move.
+        if ((Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) && Focus.reallyFocused()) {
             listener.accept(moveInput(dx, dy));
         }
+    }
+
+    /** Whether a place, in the units of the window's size, is on the window's edge. */
+    public static boolean atEdge(double x, double y, int width, int height) {
+        return x <= 0 || y <= 0 || x >= width - 1 || y >= height - 1;
     }
 
     static Fields keyInput(String name) {
