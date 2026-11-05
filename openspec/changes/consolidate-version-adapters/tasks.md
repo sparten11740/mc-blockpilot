@@ -63,7 +63,7 @@
 
 - [x] 13.1 Make `RenameRulesTest` skip on an active node other than the checked-in one, as switching rewrites `src/main`; verify the build of all 26.1 nodes passes with `26.1-fabric` active, switching back leaves `src/` unchanged, and on the checked-in node the test still fails on a deliberately unused rule
 - [ ] 13.2 Close the frame's image when reading its buffer fails, as `FrameCapture.read` now creates it before mapping; verify the frame and pixel assertions pass on the 26.x targets of 13.7
-- [ ] 13.3 Make the dependency-order and window-system rules catch `import static`; verify each fails on a deliberate static import and passes without it
+- [x] 13.3 Make the dependency-order and window-system rules catch `import static`; verify each fails on a deliberate static import and passes without it
 - [x] 13.4 Make `noFileIsTheSameInTwoTrees` compare every copy of a file; verify it fails on a file two trees share when an earlier tree holds another version of it, and passes on the real trees
 - [ ] 13.5 Use `FrameCapture.mainTarget()` in the 1.21.1 `FrameReadback`; verify `record` passes on `1.21.1-fabric` in 13.7
 - [ ] 13.6 Count the release's targets by their `gradle.properties`, as `test_targets.py` does; verify the count prints 11 and the workflow parses as YAML
