@@ -454,6 +454,7 @@ def main():
          [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off"]),
         ("record with sound", f"record 1s {world}-sound width=256 fps=10",
          [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on"]),
+        ("settle", "settle", [r"settled="]),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
                  "particles; log mark", [r"actionbar t\d+ smoke", r"mark=\d+"]),
