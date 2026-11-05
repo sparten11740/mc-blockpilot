@@ -1,5 +1,5 @@
-// Builds the vanilla node of the Stonecutter tree (versions/26.1-vanilla): a Java agent for the plain client, with no
-// mod loader; see stonecutter.gradle.kts. Minecraft comes from ModDevGradle's vanilla mode.
+// Builds one vanilla node of the Stonecutter tree (versions/<minecraft>-vanilla): a Java agent for the plain client,
+// with no mod loader; see stonecutter.gradle.kts. Minecraft comes from ModDevGradle's vanilla mode.
 plugins {
     `java-library`
     id("net.neoforged.moddev")
