@@ -200,6 +200,19 @@ def game_pid(game_dir):
         return None
 
 
+def alive(pid):
+    if os.name == "nt":
+        listed = subprocess.run(["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, check=False)
+        return str(pid) in listed.stdout
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def test_target(target, result):
     minecraft = properties(os.path.join(node_dir(target), "gradle.properties"))["minecraft_version"]
     loader = target.rsplit("-", 1)[1]
@@ -220,6 +233,10 @@ def test_target(target, result):
 
     game_dir = os.path.join(node_dir(target), "run")
     endpoint = os.path.join(game_dir, "blockpilot", "endpoint.json")
+    running = game_pid(game_dir)
+    if running and alive(running):
+        result.check("no client is running there already", f"process {running} has {endpoint}; close it first")
+        return
     if os.path.exists(endpoint):
         os.remove(endpoint)
     if sys.platform == "darwin":
