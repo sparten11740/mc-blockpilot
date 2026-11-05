@@ -369,8 +369,9 @@ def main():
           r"^ok none"], True),
         ("craft at a table", "craft furnace", [r"craft 1 furnace"]),
         ("mine", "select iron_sword; mine ~2,0,0; block ~2,0,0", [r"mine 1/1 crafting_table", r"ok air"]),
+        # Not dirt behind it: grass can spread onto dirt during mine's wait, and mine takes a changed block as mined.
         ("mine names what is in the way", "server as=player setblock ~ ~ ~2 minecraft:stone; "
-                                          "server as=player setblock ~ ~ ~3 minecraft:dirt; ?mine ~0,0,3; "
+                                          "server as=player setblock ~ ~ ~3 minecraft:cobblestone; ?mine ~0,0,3; "
                                           "server as=player fill ~ ~ ~2 ~ ~ ~3 minecraft:air",
          [r"err out_of_reach ~0,0,3 is behind stone ~0,0,2"], True),
         # Regression: mine aimed at the middle of the carpet's cell, passed over it and hit the ground behind.
