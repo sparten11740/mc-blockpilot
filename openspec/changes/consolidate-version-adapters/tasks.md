@@ -18,21 +18,21 @@
 
 ## 4. Screens adapter
 
-- [ ] 4.1 Add `ClientScreens`, move every screen and overlay use to it and delete its 5 rules; verify no `minecraft.screen`, `setScreen(` or `getOverlay()` remains outside it, and the D11 four-target run passes
+- [x] 4.1 Add `ClientScreens`, move every screen and overlay use to it and delete its 5 rules; verify no `minecraft.screen`, `setScreen(` or `getOverlay()` remains outside it, and the D11 four-target run passes
 
 ## 5. Window system adapter
 
-- [ ] 5.1 Add `WindowSystem` and move focus, the key's other code, button numbers, modifiers and the keyboard key type into it; verify `KeyNamesTest` still passes without the game's libraries, and the input assertions pass on the D11 four targets
-- [ ] 5.2 Add the test allowing GLFW and SDL imports only in `WindowSystem` and mixins; verify it fails on a deliberate stray import and passes without it
+- [x] 5.1 Add `WindowSystem` and move focus, the key's other code, button numbers, modifiers and the keyboard key type into it; verify `KeyNamesTest` still passes without the game's libraries, and the input assertions pass on the D11 four targets
+- [x] 5.2 Add the test allowing GLFW and SDL imports only in `WindowSystem` and mixins; verify it fails on a deliberate stray import and passes without it
 
 ## 6. GPU adapter
 
-- [ ] 6.1 Add `Gpu` in `src/26.1`, move mapping, the blit, the render target, pixel size and the fence calls into it and delete the rules it replaces; verify the frame, pixel and video assertions pass on `26.1-neoforge`, `26.2-neoforge`, `26.3-fabric` and `26.3-vanilla`
+- [x] 6.1 Add `Gpu` in `src/26.1`, move mapping, the blit, the render target, pixel size and the fence calls into it and delete the rules it replaces; verify the frame, pixel and video assertions pass on `26.1-neoforge`, `26.2-neoforge`, `26.3-fabric` and `26.3-vanilla`
 
 ## 7. Loader seam
 
-- [ ] 7.1 Add the render-stage hooks and `cameraRoll` to `ClientPlatform`, and add tests forbidding `game` imports in loader packages and loader conditions outside `platform`; verify both tests fail on a deliberate violation, and `perf` still reports render stages on NeoForge
-- [ ] 7.2 Move `minecraftVersion` into `ClientPlatform`, default `isModLoaded`, share category registration, and move `FabricServices` and `NeoForgeServices` out of the entry points; verify all 11 nodes build and the D11 four-target run passes
+- [x] 7.1 Add the render-stage hooks and `cameraRoll` to `ClientPlatform`, and add tests forbidding `game` imports in loader packages and loader conditions outside `platform`; verify both tests fail on a deliberate violation, and `perf` still reports render stages on NeoForge
+- [x] 7.2 Move `minecraftVersion` into `ClientPlatform`, default `isModLoaded`, share category registration, and move `FabricServices` and `NeoForgeServices` out of the entry points; verify all 11 nodes build and the D11 four-target run passes
 
 ## 8. Target source of truth
 
@@ -41,7 +41,7 @@
 
 ## 9. Build scripts
 
-- [ ] 9.1 Add `common.gradle.kts` and move what the three scripts share into it; verify every target's class list, manifest and metadata match the baseline, and `publishToMavenLocal` still produces the same coordinates
+- [x] 9.1 Add `common.gradle.kts` and move what the three scripts share into it; verify every target's class list, manifest and metadata match the baseline, and `publishToMavenLocal` still produces the same coordinates
 
 ## 10. Oversized classes
 
