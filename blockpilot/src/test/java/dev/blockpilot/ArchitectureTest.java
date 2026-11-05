@@ -45,22 +45,27 @@ class ArchitectureTest {
     }
 
     @Test
-    void protocolUsesNoMinecraft() throws IOException {
+    void protocolUsesNeitherMinecraftNorTheClient() throws IOException {
         assertEquals(List.of(), violations("protocol", List.of("net.minecraft", "net.neoforged", "net.fabricmc",
-            "dev.blockpilot.game", "dev.blockpilot.platform")));
+            "dev.blockpilot.game", "dev.blockpilot.platform", "dev.blockpilot.cli")));
     }
 
     /** The client runs on a bare JVM next to the jar, where neither the game's libraries nor the loader exist. */
     @Test
-    void cliUsesOnlyTheJdk() throws IOException {
+    void cliAndWireUseOnlyTheJdk() throws IOException {
+        assertEquals(List.of(), jdkOnly("cli", "java.", "dev.blockpilot.cli.", "dev.blockpilot.wire."));
+        assertEquals(List.of(), jdkOnly("wire", "java.", "dev.blockpilot.wire."));
+    }
+
+    private static List<String> jdkOnly(String layer, String... allowed) throws IOException {
         List<String> found = new ArrayList<>();
-        try (Stream<Path> files = Files.walk(sources().resolve("cli"))) {
+        try (Stream<Path> files = Files.walk(sources().resolve(layer))) {
             for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
                 for (String line : Files.readAllLines(file)) {
                     String trimmed = line.strip();
                     String imported = trimmed.replaceFirst("^import (static )?", "");
-                    boolean foreignImport = !imported.equals(trimmed) && !imported.startsWith("java.")
-                        && !imported.startsWith("dev.blockpilot.cli.");
+                    boolean foreignImport = !imported.equals(trimmed)
+                        && Stream.of(allowed).noneMatch(imported::startsWith);
                     if (foreignImport || trimmed.matches(".*\\b(net\\.minecraft|net\\.neoforged|net\\.fabricmc"
                         + "|com\\.google|io\\.netty|org\\.slf4j|dev\\.blockpilot\\.(api|protocol|game|platform))\\b.*")) {
                         found.add(file.getFileName() + ": " + trimmed);
@@ -68,7 +73,7 @@ class ArchitectureTest {
                 }
             }
         }
-        assertEquals(List.of(), found);
+        return found;
     }
 
     /** A file copied between trees is a fix that lands in only one of them; what they share belongs in src/main. */

@@ -1,5 +1,7 @@
 package dev.blockpilot.cli;
 
+import dev.blockpilot.wire.Json;
+import dev.blockpilot.wire.McpTools;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;

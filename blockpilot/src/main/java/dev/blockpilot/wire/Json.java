@@ -1,4 +1,4 @@
-package dev.blockpilot.cli;
+package dev.blockpilot.wire;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

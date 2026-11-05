@@ -1,5 +1,6 @@
 package dev.blockpilot.cli;
 
+import dev.blockpilot.wire.Json;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;

@@ -1,5 +1,6 @@
 package dev.blockpilot.cli;
 
+import dev.blockpilot.wire.Json;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.ConnectException;
