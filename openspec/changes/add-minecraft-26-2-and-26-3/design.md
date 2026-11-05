@@ -99,7 +99,7 @@ needs no condition.
 ### D4. HUD messages and hooks
 
 - **Messages:** action-bar, title and subtitle moved to `Hud` with the same
-  signatures, so `GuiMixin` retargets by condition.
+  signatures, so `GuiMixin` retargets by rename rules.
 - **Vanilla HUD hook:** `Gui.extractRenderState` no longer takes the graphics;
   `Hud.extractRenderState(GuiGraphicsExtractor, DeltaTracker)` does, so the hook
   moves there.

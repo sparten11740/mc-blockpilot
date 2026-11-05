@@ -61,7 +61,6 @@ stonecutter parameters {
     rename("26.2", "client.gui.Gui;", "client.gui.Hud;")
     rename("26.2", "@Mixin(Gui.class)", "@Mixin(Hud.class)")
     rename("26.2", "RenderSection\$RebuildTask", "RenderSection\$CompileTask")
-    rename("26.2", "private <T> void blockpilot\$setting(", "private static <T> void blockpilot\$setting(")
     rename("26.2", "@Inject(method = \"destroy\",", "@Inject(method = \"exitWorldAndClose\",")
     // 26.3 replaces GLFW with SDL, and moves the GPU classes to their own library.
     rename("26.3", "InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
