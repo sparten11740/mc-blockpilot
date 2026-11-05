@@ -152,10 +152,13 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
 - **Keys:** a key's value is now an SDL scancode, and it reaches the game
   through the same `InputConstants.Key` lookups, so names keep working.
 - **Key events:** `KeyEvent` is `(scancode, keycode, modifiers)`, and text-field
-  shortcuts compare the keycode (`shortcutKey() == 97` for select-all). Injected
-  keys get it from `SDL_GetKeyFromScancode` with `key_event` on, as real events
-  do, or those shortcuts would silently stop working: without it, a non-Latin
-  layout gives its own letter. That path needs such a layout, and hasn't run.
+  shortcuts compare the keycode (`shortcutKey() == 97` for select-all). An
+  injected letter gets the keycode of its place on a US keyboard, so an agent's
+  `left_control+a` selects all on any layout, as it does up to 26.2, where the
+  game compares the key itself. From a layout's table, AZERTY would give `q`
+  there, and a non-Latin one its own letter. Other keys get theirs from
+  `SDL_GetKeyFromScancode` with `key_event` on, as real events do. Only a Latin
+  QWERTY layout has run here.
 - **Modifiers:** the bits come from `InputConstants.MOD_*`. Left and right super
   are `KEY_LGUI` and `KEY_RGUI`.
 - **Mouse buttons:** left, middle and right are now 1, 2 and 3, not 0, 2 and 1.
