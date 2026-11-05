@@ -44,12 +44,26 @@ SELECT_ALL = "left_win+a" if sys.platform == "darwin" else "left_control+a"
 # Facing south from a block's centre at a known place: a block at ~0,0,2 is under the crosshair at pitch 40.
 AIMED = "server as=player tp @s 0.5 -60 0.5 0 40; wait 3t"
 LEVEL = "server as=player tp @s 0.5 -60 0.5 0 0; wait 5t"
+# Steps a game may not be able to run: recording needs ffmpeg, and sound the game's audio capture.
+MAY_BE_UNSUPPORTED = {"record", "record with sound"}
 # Leaves that place empty; the stone is there so that the fill always changes something, which it must not to fail.
 CLEAR = "server setblock 6 -57 6 minecraft:stone; server fill -3 -60 -3 6 -57 6 minecraft:air"
 
 
 class Skipped(Exception):
     """A check that can't run here, with why."""
+
+
+def unsupported_reason(output, as_json):
+    """Why the game can't do what a reply was about, if that's what it answered, or None."""
+    if not as_json:
+        match = re.search(r"^err unsupported (.+)$", output, re.MULTILINE)
+        return match.group(1) if match else None
+    try:
+        results = json.loads(output.splitlines()[0]).get("results", [])
+    except (ValueError, IndexError):
+        return None
+    return next((result.get("arg") for result in results if result.get("err") == "unsupported"), None)
 
 
 def launcher(game_dir):
@@ -261,6 +275,10 @@ def check_video_upright(game_dir, world):
         raise Skipped("ffmpeg isn't installed")
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; "
                               f"record 1s {world}-upright width=256 fps=10 audio=off; option reset")
+    reason = unsupported_reason(output, False)
+    if reason:
+        run(game_dir, "option reset")
+        raise Skipped(reason)
     video = re.search(r"^ok (.+\.mp4) ", output, re.MULTILINE)
     if not video:
         return f"no video: {output.strip()}"
@@ -386,11 +404,10 @@ def main():
         ("fly", "fly on; wait 5t; fly off", [r"ok flying", r"ok not flying"]),
         ("screenshot", "screenshot 256", [r"^ok .+\.png t\d+$"]),
         ("screenshot burst", "screenshot burst=2 every=5t 256", [r"frames=2"]),
-        # Needs ffmpeg; without it the answer is err unsupported, which passes too.
-        ("record", f"?record 1s {world} width=256 fps=10 audio=off",
-         [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off|^err unsupported"], True),
-        ("record with sound", f"?record 1s {world}-sound width=256 fps=10",
-         [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on|^err unsupported"], True),
+        ("record", f"record 1s {world} width=256 fps=10 audio=off",
+         [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off"]),
+        ("record with sound", f"record 1s {world}-sound width=256 fps=10",
+         [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on"]),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
                  "particles; log mark", [r"actionbar t\d+ smoke", r"mark=\d+"]),
@@ -414,6 +431,11 @@ def main():
     skipped = 0
     for name, script, expectations, *expected_error in steps:
         code, output = run(args.game_dir, script, as_json=args.json)
+        reason = unsupported_reason(output, args.json) if name in MAY_BE_UNSUPPORTED else None
+        if reason:
+            skipped += 1
+            print(f"skip {name}: {reason}")
+            continue
         if args.json:
             problem = json_problem(script, output, expected_error)
         else:
