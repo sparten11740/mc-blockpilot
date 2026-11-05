@@ -21,6 +21,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 *///?} else {
 import com.mojang.blaze3d.textures.TextureFormat;
 //?}
+import dev.blockpilot.game.FrameCapture;
 import java.util.ArrayList;
 import java.util.List;
 //? if >=26.2 {
@@ -83,6 +84,7 @@ final class FrameReadback implements AutoCloseable {
         }
         if (pending == SLOTS && !deliverOldest(sink, false)) {
             waits++;
+            FrameCapture.awaitCopies();
             deliverOldest(sink, true);
         }
         while (pending > 0 && deliverOldest(sink, false)) {
@@ -110,6 +112,9 @@ final class FrameReadback implements AutoCloseable {
 
     /** Hands over every copy still under way, waiting for the GPU. */
     void flush(FrameSink sink) {
+        if (pending > 0) {
+            FrameCapture.awaitCopies();
+        }
         while (pending > 0) {
             deliverOldest(sink, true);
         }
@@ -129,10 +134,10 @@ final class FrameReadback implements AutoCloseable {
         }
     }
 
-    /** Mapping a buffer whose copy isn't done waits for it. */
-    private boolean deliverOldest(FrameSink sink, boolean wait) {
+    /** Hands over the oldest copy if its callback has come, or the caller has waited for the GPU. */
+    private boolean deliverOldest(FrameSink sink, boolean waited) {
         int slot = Math.floorMod(next - pending, SLOTS);
-        if (!copied[slot] && !wait) {
+        if (!copied[slot] && !waited) {
             return false;
         }
         //? if >=26.2 {

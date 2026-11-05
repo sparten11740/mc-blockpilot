@@ -17,17 +17,22 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ARGB;
+//? if <26.2 {
+import org.lwjgl.opengl.GL11C;
+//?}
 import org.lwjgl.stb.STBImage;
 
 /** Reading the rendered frame and its pixels, which differs between Minecraft versions. Client thread only. */
 public final class FrameCapture {
+    private static final long COPY_WAIT_NANOS = 5_000_000_000L;
+
     private FrameCapture() {
     }
 
     /**
      * The last rendered frame, read from the game's framebuffer. The game's own screenshot hands the image to a
-     * callback once the GPU signals the copy done, a frame or more later; mapping the copy's buffer at once waits for
-     * the copy instead, as reading the framebuffer did before. The caller closes the image.
+     * callback once the GPU signals the copy done, a frame or more later; this waits for the copy instead, as reading
+     * the framebuffer did before. The caller closes the image.
      */
     public static NativeImage read() {
         RenderTarget target = Minecraft.getInstance().getMainRenderTarget();
@@ -44,6 +49,7 @@ public final class FrameCapture {
             CommandEncoder encoder = device.createCommandEncoder();
             encoder.copyTextureToBuffer(texture, buffer, 0L, () -> {
             }, 0);
+            awaitCopies();
             //? if >=26.2 {
             /*try (GpuBufferSlice.MappedView view = buffer.map(true, false)) {
             *///?} else {
@@ -58,6 +64,27 @@ public final class FrameCapture {
                     }
                 }
                 return image;
+            }
+        }
+    }
+
+    /**
+     * Waits until the GPU has done the copies asked for so far. Mapping a buffer doesn't wait: an OpenGL buffer mapped
+     * for good (with GL_ARB_buffer_storage) and a Vulkan one only hand over their memory, whatever the copy's state.
+     * Only OpenGL without that extension synchronises. Between frames only, as it may end the GPU's work so far.
+     */
+    public static void awaitCopies() {
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+        try (var fence = encoder.createFence()) {
+            //? if >=26.2 {
+            /*// A fence stands for the whole submit, which can't be waited for until it has ended.
+            encoder.submit();
+            *///?} else {
+            // Only NeoForge's fence flushes, and without it the commands may never reach the GPU. 26.1 is OpenGL only.
+            GL11C.glFlush();
+            //?}
+            if (!fence.awaitCompletion(COPY_WAIT_NANOS)) {
+                throw new IllegalStateException("the GPU didn't finish copying a frame within 5 s");
             }
         }
     }
