@@ -1,5 +1,6 @@
 package dev.blockpilot.game;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import net.minecraft.client.Minecraft;
@@ -12,7 +13,11 @@ public final class FrameCapture {
 
     /** The last rendered frame, read from the game's framebuffer. The caller closes it. */
     public static NativeImage read() {
-        return Screenshot.takeScreenshot(Minecraft.getInstance().getMainRenderTarget());
+        return Screenshot.takeScreenshot(mainTarget());
+    }
+
+    public static RenderTarget mainTarget() {
+        return Minecraft.getInstance().getMainRenderTarget();
     }
 
     public static byte[] png(NativeImage image) throws IOException {

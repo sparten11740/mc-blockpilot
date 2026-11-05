@@ -97,11 +97,12 @@ Native calls stay inside method bodies and constants stay compile-time, so
 
 ### D5. `Gpu` for the 26.x capture path
 
-In `src/26.1`, `Gpu` holds mapping a buffer, the blit, the render target, pixel
-size and the fence calls, using `var` where the types differ. `FrameCapture` and
-`FrameReadback` keep what they're for: reading a frame and pacing a recording.
-Rules for moved packages stay, because Java has no other way to switch imports.
-`src/1.21.1` is unaffected, since it has no such API.
+In `src/26.1`, `Gpu` holds mapping a buffer, creating a texture, the blit, pixel
+size and the waits on fences. `FrameCapture` and `FrameReadback` keep what
+they're for: reading a frame and pacing a recording. The main render target goes
+in `FrameCapture`, which both trees have, because `RecordCommands` in `src/main`
+needs it too. Rules for moved packages stay, because Java has no other way to
+switch imports. `src/1.21.1` is unaffected, since it has no such API.
 
 ### D6. Close the loader seam
 

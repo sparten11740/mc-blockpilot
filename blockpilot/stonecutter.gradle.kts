@@ -45,10 +45,7 @@ stonecutter parameters {
     rename("26.1", "GuiGraphics graphics", "GuiGraphicsExtractor graphics")
     // 26.2 keeps the frame's state on GameRenderer and LevelExtractor.
     rename("26.2", "gameRenderer.getMainCamera()", "gameRenderer.mainCamera()")
-    rename("26.2", ".getMainRenderTarget()", ".gameRenderer.mainRenderTarget()")
     rename("26.2", "renderer.getSectionRenderDispatcher()", "renderer.sectionRenderDispatcher()")
-    rename("26.2", ".pixelSize()", ".blockSize()")
-    rename("26.2", "TextureFormat.RGBA8", "GpuFormat.RGBA8_UNORM")
     // The HUD's messages and drawing moved from Gui to the new Hud, and the mixins with them.
     rename("26.2", "client.gui.Gui;", "client.gui.Hud;")
     rename("26.2", "@Mixin(Gui.class)", "@Mixin(Hud.class)")
