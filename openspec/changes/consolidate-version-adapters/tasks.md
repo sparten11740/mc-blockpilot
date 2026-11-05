@@ -8,13 +8,13 @@
 ## 2. Rename rules
 
 - [x] 2.1 Delete the unused `.getNormal()` rule and add `RenameRulesTest` (every rule has a use; no rule's new text in `src/main` or `src/1.21.1`); verify it fails on a deliberately unused rule and passes after removing that rule
-- [ ] 2.2 Turn `pass.draw`, `pass.setPipeline`, `pass.bindTexture`, `renderer.countRenderedSections` and `@Inject(method = "destroy",` into conditions; verify all 11 nodes build and the D11 four-target run passes, including `record` and `settle`
+- [x] 2.2 Turn `pass.draw`, `pass.setPipeline`, `pass.bindTexture`, `renderer.countRenderedSections` and `@Inject(method = "destroy",` into conditions; verify all 11 nodes build and the D11 four-target run passes, including `record` and `settle`
 
 ## 3. Shared mixins
 
-- [ ] 3.1 Move the 23 byte-identical mixins to `src/main` and add a test that fails on a byte-identical file in two trees; verify the class lists match the baseline, switching the active node to `26.3-fabric` and back leaves `src/` unchanged, and the D11 four-target run passes
-- [ ] 3.2 Fold in each of the 7 near-identical mixins that fits D1's two-block limit, and list the ones that stay and why in `design.md`; verify the D11 four-target run passes
-- [ ] 3.3 Update the source-tree description in `docs/building.md`, and verify every file and tree it names exists
+- [x] 3.1 Move the 23 byte-identical mixins to `src/main` and add a test that fails on a byte-identical file in two trees; verify the class lists match the baseline, switching the active node to `26.3-fabric` and back leaves `src/` unchanged, and the D11 four-target run passes
+- [x] 3.2 Fold in each of the 7 near-identical mixins that fits D1's two-block limit, and list the ones that stay and why in `design.md`; verify the D11 four-target run passes
+- [x] 3.3 Update the source-tree description in `docs/building.md`, and verify every file and tree it names exists
 
 ## 4. Screens adapter
 
