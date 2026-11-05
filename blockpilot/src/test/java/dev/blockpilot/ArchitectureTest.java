@@ -3,12 +3,14 @@ package dev.blockpilot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -79,14 +81,14 @@ class ArchitectureTest {
     /** A file copied between trees is a fix that lands in only one of them; what they share belongs in src/main. */
     @Test
     void noFileIsTheSameInTwoTrees() throws IOException {
-        Map<Path, Path> seen = new HashMap<>();
+        Set<Map.Entry<Path, ByteBuffer>> seen = new HashSet<>();
         List<String> same = new ArrayList<>();
         for (Path tree : Sources.codeTrees()) {
             try (Stream<Path> files = Files.walk(tree)) {
                 for (Path file : files.filter(Files::isRegularFile).toList()) {
-                    Path other = seen.putIfAbsent(tree.relativize(file), file);
-                    if (other != null && Files.mismatch(other, file) == -1) {
-                        same.add(tree.relativize(file).toString());
+                    Path path = tree.relativize(file);
+                    if (!seen.add(Map.entry(path, ByteBuffer.wrap(Files.readAllBytes(file))))) {
+                        same.add(path.toString());
                     }
                 }
             }
