@@ -52,15 +52,12 @@ stonecutter parameters {
     rename("26.2", "gameRenderer.getMainCamera()", "gameRenderer.mainCamera()")
     rename("26.2", ".getMainRenderTarget()", ".gameRenderer.mainRenderTarget()")
     rename("26.2", "renderer.getSectionRenderDispatcher()", "renderer.sectionRenderDispatcher()")
-    rename("26.2", "renderer.countRenderedSections()", "Minecraft.getInstance().levelExtractor.countRenderedSections()")
     rename("26.2", ".pixelSize()", ".blockSize()")
     rename("26.2", "TextureFormat.RGBA8", "GpuFormat.RGBA8_UNORM")
-    rename("26.2", "pass.draw(0, 3)", "pass.draw(3, 1, 0, 0)")
     // The HUD's messages and drawing moved from Gui to the new Hud, and the mixins with them.
     rename("26.2", "client.gui.Gui;", "client.gui.Hud;")
     rename("26.2", "@Mixin(Gui.class)", "@Mixin(Hud.class)")
     rename("26.2", "RenderSection\$RebuildTask", "RenderSection\$CompileTask")
-    rename("26.2", "@Inject(method = \"destroy\",", "@Inject(method = \"exitWorldAndClose\",")
     // 26.3 replaces GLFW with SDL, and moves the GPU classes to their own library.
     rename("26.3", "InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
     rename("26.3", "com.mojang.blaze3d.buffers.GpuFence;", "com.mojang.renderpearl.api.commands.GpuFence;")
@@ -71,7 +68,4 @@ stonecutter parameters {
     rename("26.3", "com.mojang.blaze3d.systems.CommandEncoder;", "com.mojang.renderpearl.api.commands.CommandEncoder;")
     rename("26.3", "com.mojang.blaze3d.systems.RenderPass;", "com.mojang.renderpearl.api.commands.RenderPass;")
     rename("26.3", "com.mojang.blaze3d.systems.GpuDevice;", "com.mojang.renderpearl.api.device.GpuDevice;")
-    rename("26.3", "pass.bindTexture(", "pass.setUniform(")
-    rename("26.3", "pass.setPipeline(RenderPipelines.TRACY_BLIT)",
-        "pass.setPipeline(RenderSystem.getCompiledPipeline(RenderPipelines.TRACY_BLIT))")
 }

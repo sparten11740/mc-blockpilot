@@ -45,7 +45,11 @@ final class Settle implements Action, Engine.SelfTimed {
         if (Minecraft.getInstance().level == null || dispatcher == null) {
             return Result.ok(answer.get());
         }
+        //? if >=26.2 {
+        /*int rendered = Minecraft.getInstance().levelExtractor.countRenderedSections();
+        *///?} else {
         int rendered = renderer.countRenderedSections();
+        //?}
         int missing = missingChunks(Minecraft.getInstance());
         boolean idle = ticks >= 2 && missing == 0 && dispatcher.isQueueEmpty() && rendered == lastRendered;
         lastRendered = rendered;
