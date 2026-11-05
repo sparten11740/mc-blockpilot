@@ -1,10 +1,10 @@
 package dev.blockpilot.game.record;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import dev.blockpilot.game.common.FrameCapture;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL21;
@@ -70,7 +70,7 @@ final class FrameReadback implements AutoCloseable {
 
     /** Copies the frame just finished, stamped {@code nanos}, and hands the copies already done to the sink. */
     void capture(long nanos, FrameSink sink) {
-        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget main = FrameCapture.mainTarget();
         if (main.frameBufferId < 0) {
             return;
         }
