@@ -188,8 +188,9 @@ to 11 the full run at `f846641`, as each run covered what its groups changed.
 - [Moving `Perf`'s state changes threading] → Keep its existing locks and
   `synchronized` methods as they are, and rely on `PerfTest` and the smoke
   test's `perf` checks.
-- [Real-input paths have no automated test] → `WindowSystem` touches them, so a
-  hand check remains for Jan on 1.21.1 and 26.3 (task 12.2).
+- [Real-input paths have no automated test] → `WindowSystem` touches them, so
+  Jan checked them by hand on 26.3 (task 12.2). Real clicks on 26.3 and all real
+  input on 1.21.1 weren't seen.
 - [`main` moves again] → Rebase before continuing.
 - [A large diff to review] → Small commits, a group per decision, each
   revertible.

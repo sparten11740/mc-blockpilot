@@ -57,7 +57,7 @@
 ## 12. Integration
 
 - [x] 12.1 From a clean build, run the full `python3 tools/test_targets.py`, then compare `help` and JSON shapes with the baseline and class lists with the moves in this change; verify exit 0, no skips, and no differences beyond those moves
-- [ ] 12.2 By hand, for Jan, on a 1.21.1 and a 26.3 dev client with an agent driving: real keys, clicks and mouse movement take control back, and F8 toggles agent control; verify each by its `err interrupted` reply and the on-screen status line
+- [x] 12.2 By hand with Jan, on a 26.3 Fabric dev client with an agent driving (Jan chose to test one target, so 1.21.1 wasn't tested by hand): a real key and mouse movement take control back, and F8 turns agent control off and on; verified by `err interrupted input=key` and `input=move` and by `err disabled` then an accepted action. A real click wasn't seen, as the mouse moved first, and the status line rests on Jan's report that it worked
 
 ## Workflow follow-up
 
