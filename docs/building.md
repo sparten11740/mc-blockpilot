@@ -15,26 +15,29 @@ loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilo
 that loader's jar; the rest reaches the loader through `ClientPlatform`. A `-vanilla` node builds a Java agent for the
 plain client instead of a loader's jar: its `dev.blockpilot.platform.vanilla` (the agent, its Mixin service and the
 mixins that stand in for a loader's events) lives in `src/vanilla/`, written against 26.x directly. `dev.blockpilot.api`
-and `dev.blockpilot.protocol` are free of Minecraft classes (enforced by a test); `dev.blockpilot.game` holds the
-commands. The sources are checked in for `1.21.1-neoforge`. Code that differs between builds is marked with Stonecutter
-comments such as `//? if neoforge {` or `//? if >=26.1 {`, and plain renames (`ResourceLocation` to `Identifier`, …) are
-rules in `blockpilot/stonecutter.gradle.kts`. What differs most between versions lives in `src/1.21.1/` and `src/26.1/`:
-mixins too different for a condition or two, and a few classes with the same name and methods in each
-(`CraftingRecipes`, `FrameCapture`). Mixins that work on every version are in `src/main/`, and each tree's
-`blockpilot.mixins.json` lists both kinds. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through
-Stonecutter too, so the same comments and rules work in them, but they aren't on every node, so switching the active
-node leaves them as checked in, for their oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in
-an IDE too: build it by its Gradle path, with another node active.
+and `dev.blockpilot.protocol` are free of Minecraft classes (enforced by a test); `dev.blockpilot.cli`, the launcher's
+client, and `dev.blockpilot.wire`, what it shares with the game, need only the JDK. `dev.blockpilot.game` holds the
+commands, which use its subpackages, which use `game.common` (enforced by a test too). The sources are checked in for
+`1.21.1-neoforge`. Code that differs between builds is marked with Stonecutter comments such as `//? if neoforge {` or
+`//? if >=26.1 {`, and plain renames (`ResourceLocation` to `Identifier`, …) are rules in
+`blockpilot/stonecutter.gradle.kts`. What differs most between versions lives in `src/1.21.1/` and `src/26.1/`: mixins
+too different for a condition or two, and a few classes with the same name and methods in each (`CraftingRecipes`,
+`FrameCapture`). Mixins that work on every version are in `src/main/`, and each tree's `blockpilot.mixins.json` lists
+both kinds. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through Stonecutter too, so the same
+comments and rules work in them, but they aren't on every node, so switching the active node leaves them as checked in,
+for their oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in an IDE too: build it by its
+Gradle path, with another node active.
 
 To add a target: add it with `target(...)` in `settings.gradle.kts`, create
 `blockpilot/versions/<minecraft>-{neoforge,fabric,vanilla}/gradle.properties`, with `version_sources` naming the tree it
-builds from, and add rename rules and `//? if` blocks for what changed, as was done for 26.2 and 26.3. Copy a tree only
-when a range of versions has diverged too far for that, as 26.1 did from 1.21.1. A rename rule's new text must not
-already appear in the shared sources: switching versions applies the rules backwards, which would rename that text too.
-`RenameRulesTest` checks this, and that every rule has a use.
-Set `sable_companion_version` only for versions Sable publishes its companion API for. In
-`.github/workflows/release.yml`, add a row for each loader jar to upload, or that jar never reaches CurseForge;
-`tools/test_targets.py` refuses to start without it.
+builds from, and add rename rules and `//? if` blocks for what changed, as was done for 26.2 and 26.3. A difference goes
+in the class that already holds its kind where there is one: `ClientScreens` for the open screen, `WindowSystem` for
+GLFW or SDL, `Gpu` for the GPU API. Copy a tree only when a range of versions has diverged too far for that, as 26.1 did
+from 1.21.1. A rename rule's new text must not already appear in the shared sources: switching versions applies the
+rules backwards, which would rename that text too. `RenameRulesTest` checks this, and that every rule has a use. Set
+`sable_companion_version` only for versions Sable publishes its companion API for. In `.github/workflows/release.yml`,
+add a row for each loader jar to upload, or that jar never reaches CurseForge; `tools/test_targets.py` refuses to start
+without it.
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 
