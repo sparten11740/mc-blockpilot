@@ -7,7 +7,7 @@
 
 ## 2. Rename rules
 
-- [ ] 2.1 Delete the unused `.getNormal()` rule and add `RenameRulesTest` (every rule has a use; no rule's new text in `src/main` or `src/1.21.1`); verify it fails on a deliberately unused rule and passes after removing that rule
+- [x] 2.1 Delete the unused `.getNormal()` rule and add `RenameRulesTest` (every rule has a use; no rule's new text in `src/main` or `src/1.21.1`); verify it fails on a deliberately unused rule and passes after removing that rule
 - [ ] 2.2 Turn `pass.draw`, `pass.setPipeline`, `pass.bindTexture`, `renderer.countRenderedSections` and `@Inject(method = "destroy",` into conditions; verify all 11 nodes build and the D11 four-target run passes, including `record` and `settle`
 
 ## 3. Shared mixins
