@@ -1,16 +1,12 @@
 package dev.blockpilot.game;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
-//? if >=26.2 {
-/*import com.mojang.blaze3d.buffers.GpuBufferSlice;
-*///?}
-import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
+import dev.blockpilot.game.common.Gpu;
 import dev.blockpilot.mixin.NativeImageInvoker;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,15 +14,10 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ARGB;
-//? if <26.2 {
-import org.lwjgl.opengl.GL11C;
-//?}
 import org.lwjgl.stb.STBImage;
 
 /** Reading the rendered frame and its pixels, which differs between Minecraft versions. Client thread only. */
 public final class FrameCapture {
-    private static final long COPY_WAIT_NANOS = 5_000_000_000L;
-
     private FrameCapture() {
     }
 
@@ -36,63 +27,40 @@ public final class FrameCapture {
      * the framebuffer did before. The caller closes the image.
      */
     public static NativeImage read() {
-        RenderTarget target = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget target = mainTarget();
         GpuTexture texture = target.getColorTexture();
         if (texture == null) {
             throw new IllegalStateException("the framebuffer has no colour texture yet");
         }
         int width = target.width;
         int height = target.height;
-        int pixelSize = texture.getFormat().pixelSize();
+        int pixelSize = Gpu.pixelSize(texture);
         GpuDevice device = RenderSystem.getDevice();
         try (GpuBuffer buffer = device.createBuffer(() -> "Blockpilot frame",
             GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_MAP_READ, (long) width * height * pixelSize)) {
-            CommandEncoder encoder = device.createCommandEncoder();
-            encoder.copyTextureToBuffer(texture, buffer, 0L, () -> {
+            device.createCommandEncoder().copyTextureToBuffer(texture, buffer, 0L, () -> {
             }, 0);
-            awaitCopies();
-            //? if >=26.2 {
-            /*try (GpuBufferSlice.MappedView view = buffer.map(true, false)) {
-            *///?} else {
-            try (GpuBuffer.MappedView view = encoder.mapBuffer(buffer, true, false)) {
-            //?}
-                NativeImage image = new NativeImage(width, height, false);
+            Gpu.awaitCopies();
+            NativeImage image = new NativeImage(width, height, false);
+            Gpu.read(buffer, pixels -> {
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
                         // The framebuffer's rows run bottom up.
-                        int abgr = view.data().getInt((x + y * width) * pixelSize);
+                        int abgr = pixels.getInt((x + y * width) * pixelSize);
                         image.setPixelABGR(x, height - y - 1, abgr | 0xFF000000);
                     }
                 }
-                return image;
-            }
+            });
+            return image;
         }
     }
 
-    /**
-     * Waits until the GPU has done the copies asked for so far. Mapping a buffer doesn't wait: an OpenGL buffer mapped
-     * for good (with GL_ARB_buffer_storage) and a Vulkan one only hand over their memory, whatever the copy's state.
-     * Only OpenGL without that extension synchronises. Between frames only, as it may end the GPU's work so far.
-     */
-    public static void awaitCopies() {
-        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-        try (GpuFence fence = encoder.createFence()) {
-            //? if >=26.2 {
-            /*// A fence stands for the whole submit, which can't be waited for until it has ended.
-            encoder.submit();
-            *///?} else {
-            // Only NeoForge's fence flushes, and without it the commands may never reach the GPU. 26.1 is OpenGL only.
-            GL11C.glFlush();
-            //?}
-            await(fence);
-        }
-    }
-
-    /** Waits for a fence on a copy, which has to have reached the GPU, as one from an earlier frame has. */
-    public static void await(GpuFence fence) {
-        if (!fence.awaitCompletion(COPY_WAIT_NANOS)) {
-            throw new IllegalStateException("the GPU didn't finish copying a frame within 5 s");
-        }
+    public static RenderTarget mainTarget() {
+        //? if >=26.2 {
+        /*return Minecraft.getInstance().gameRenderer.mainRenderTarget();
+        *///?} else {
+        return Minecraft.getInstance().getMainRenderTarget();
+        //?}
     }
 
     public static byte[] png(NativeImage image) throws IOException {

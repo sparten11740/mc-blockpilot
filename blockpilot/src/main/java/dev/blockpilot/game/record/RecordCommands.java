@@ -11,6 +11,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.game.FrameCapture;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Engine;
@@ -21,7 +22,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Supplier;
-import net.minecraft.client.Minecraft;
 
 /** {@code record start|stop|status} and {@code record <duration>}: videos of the game under blockpilot/recordings/. */
 public final class RecordCommands {
@@ -121,7 +121,7 @@ public final class RecordCommands {
             throw new CommandException("syntax", "recording names use letters, digits, _ . - (max 64), not "
                 + "starting with .");
         }
-        RenderTarget frame = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget frame = FrameCapture.mainTarget();
         int asked = args.intOption("width", Math.min(frame.width, DEFAULT_MAX_WIDTH));
         if (asked < MIN_WIDTH) {
             throw new CommandException("syntax", "width is at least " + MIN_WIDTH);

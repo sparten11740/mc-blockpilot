@@ -1,33 +1,17 @@
 package dev.blockpilot.game.record;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
-//? if >=26.2 {
-/*import com.mojang.blaze3d.buffers.GpuBufferSlice;
-*///?}
 import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuDevice;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-//? if >=26.2 {
-/*import com.mojang.blaze3d.GpuFormat;
-*///?} else {
-import com.mojang.blaze3d.textures.TextureFormat;
-//?}
 import dev.blockpilot.game.FrameCapture;
+import dev.blockpilot.game.common.Gpu;
 import java.util.ArrayList;
 import java.util.List;
-//? if >=26.2 {
-/*import java.util.Optional;
-*///?} else {
-import java.util.OptionalInt;
-//?}
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
 
 /**
  * Finished frames read back from the GPU at the recording's size, as the game's own Tracy capture does: drawn scaled
@@ -67,7 +51,7 @@ final class FrameReadback implements AutoCloseable {
         this.width = width;
         this.height = height;
         GpuDevice device = RenderSystem.getDevice();
-        target = level(device, width, height, GpuTexture.USAGE_RENDER_ATTACHMENT | GpuTexture.USAGE_COPY_SRC);
+        target = level(width, height, GpuTexture.USAGE_RENDER_ATTACHMENT | GpuTexture.USAGE_COPY_SRC);
         for (int slot = 0; slot < SLOTS; slot++) {
             buffers[slot] = device.createBuffer(() -> "Blockpilot recording",
                 GpuBuffer.USAGE_COPY_DST | GpuBuffer.USAGE_MAP_READ, (long) width * height * 4);
@@ -76,31 +60,30 @@ final class FrameReadback implements AutoCloseable {
 
     /** Copies the frame just finished, stamped {@code nanos}, and hands the copies already done to the sink. */
     void capture(long nanos, FrameSink sink) {
-        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget main = FrameCapture.mainTarget();
         GpuTextureView source = main.getColorTextureView();
         if (source == null) {
             return;
         }
         if (pending == SLOTS && !deliverOldest(sink, false)) {
             waits++;
-            FrameCapture.await(fences[Math.floorMod(next - pending, SLOTS)]);
+            Gpu.await(fences[Math.floorMod(next - pending, SLOTS)]);
             deliverOldest(sink, true);
         }
         while (pending > 0 && deliverOldest(sink, false)) {
             // Hands over every copy the GPU has finished.
         }
         halve(main.width, main.height);
-        GpuDevice device = RenderSystem.getDevice();
         for (Level half : halves) {
-            blit(device, source, half.view());
+            Gpu.blit(source, half.view());
             source = half.view();
         }
-        blit(device, source, target.view());
+        Gpu.blit(source, target.view());
         int slot = next;
         int generation = ++generations[slot];
         copied[slot] = false;
         stamps[slot] = nanos;
-        CommandEncoder encoder = device.createCommandEncoder();
+        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         encoder.copyTextureToBuffer(target.texture(), buffers[slot], 0L, () -> {
             if (generations[slot] == generation) {
                 copied[slot] = true;
@@ -115,7 +98,7 @@ final class FrameReadback implements AutoCloseable {
     /** Hands over every copy still under way, waiting for the GPU. */
     void flush(FrameSink sink) {
         if (pending > 0) {
-            FrameCapture.awaitCopies();
+            Gpu.awaitCopies();
         }
         while (pending > 0) {
             deliverOldest(sink, true);
@@ -150,14 +133,7 @@ final class FrameReadback implements AutoCloseable {
         if (!copied[slot] && !waited) {
             return false;
         }
-        //? if >=26.2 {
-        /*try (GpuBufferSlice.MappedView view = buffers[slot].map(true, false)) {
-        *///?} else {
-        CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-        try (GpuBuffer.MappedView view = encoder.mapBuffer(buffers[slot], true, false)) {
-        //?}
-            sink.frame(stamps[slot], view.data());
-        }
+        Gpu.read(buffers[slot], pixels -> sink.frame(stamps[slot], pixels));
         generations[slot]++;
         pending--;
         return true;
@@ -171,43 +147,17 @@ final class FrameReadback implements AutoCloseable {
         sourceHeight = frameHeight;
         halves.forEach(Level::close);
         halves.clear();
-        GpuDevice device = RenderSystem.getDevice();
         int halfWidth = frameWidth;
         int halfHeight = frameHeight;
         while (halfWidth > 2 * width) {
             halfWidth /= 2;
             halfHeight = Math.max(1, halfHeight / 2);
-            halves.add(level(device, halfWidth, halfHeight, RENDERED));
+            halves.add(level(halfWidth, halfHeight, RENDERED));
         }
     }
 
-    private static Level level(GpuDevice device, int width, int height, int usage) {
-        GpuTexture texture = device.createTexture("Blockpilot recording", usage, TextureFormat.RGBA8, width, height,
-            1, 1);
-        return new Level(texture, device.createTextureView(texture));
-    }
-
-    private static void blit(GpuDevice device, GpuTextureView from, GpuTextureView to) {
-        //? if >=26.2 {
-        /*try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
-            Optional.empty())) {
-            RenderSystem.bindDefaultUniforms(pass);
-        *///?} else {
-        try (RenderPass pass = device.createCommandEncoder().createRenderPass(() -> "Blockpilot recording", to,
-            OptionalInt.empty())) {
-        //?}
-            //? if >=26.3 {
-            /*pass.setPipeline(RenderSystem.getCompiledPipeline(RenderPipelines.TRACY_BLIT));
-            pass.setUniform("InSampler", from, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-            *///?} else {
-            pass.setPipeline(RenderPipelines.TRACY_BLIT);
-            pass.bindTexture("InSampler", from, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-            //?}
-            //? if >=26.2 {
-            /*pass.draw(3, 1, 0, 0);
-            *///?} else {
-            pass.draw(0, 3);
-            //?}
-        }
+    private static Level level(int width, int height, int usage) {
+        GpuTexture texture = Gpu.texture("Blockpilot recording", usage, width, height);
+        return new Level(texture, RenderSystem.getDevice().createTextureView(texture));
     }
 }
