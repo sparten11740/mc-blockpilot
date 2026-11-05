@@ -5,7 +5,7 @@
 ```
 
 Gradle runs on JDK 25 and fetches the JDK each build needs. Every jar lands in `build/libs/`, tagged with the Minecraft
-version and loader, e.g. `blockpilot-1.0.0-alpha.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0-alpha.0+26.1.2-fabric.jar`.
+version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0+26.1.2-fabric.jar`.
 `./gradlew :blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a dev client; a
 `-vanilla` node starts the plain client with the freshly built agent jar.
 
