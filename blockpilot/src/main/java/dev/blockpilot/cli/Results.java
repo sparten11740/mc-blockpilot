@@ -1,5 +1,6 @@
 package dev.blockpilot.cli;
 
+import dev.blockpilot.wire.Json;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

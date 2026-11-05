@@ -1,4 +1,4 @@
-package dev.blockpilot.cli;
+package dev.blockpilot.wire;
 
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -3,6 +3,8 @@ package dev.blockpilot.cli;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.blockpilot.wire.Json;
+import dev.blockpilot.wire.McpTools;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
