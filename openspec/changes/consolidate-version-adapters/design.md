@@ -178,6 +178,9 @@ lists may differ only by this change's moves and new classes.
 *Alternative:* a full run per group. Rejected: at about 25 minutes each, the
 four targets catch nearly the same failures.
 
+The groups shared runs in the end: 4 to 7 passed one run of six targets, and 9
+to 11 the full run at `f846641`, as each run covered what its groups changed.
+
 ## Risks / Trade-offs
 
 - [A mixin goes wrong only at load] → Class names and configs don't change, and
