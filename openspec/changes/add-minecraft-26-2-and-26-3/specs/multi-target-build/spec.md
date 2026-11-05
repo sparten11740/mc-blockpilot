@@ -180,3 +180,9 @@ can't run on a target SHALL be reported as skipped with the reason, not passed.
 #### Scenario: Recording needs ffmpeg
 - **WHEN** ffmpeg isn't installed and the script reaches the video assertion
 - **THEN** that assertion is reported as skipped, naming ffmpeg
+
+#### Scenario: One target skips what another ran
+- **WHEN** an assertion is skipped on one target and ran on another in the same
+  run, as when a port breaks audio capture and the game answers
+  `err unsupported`
+- **THEN** the target that skipped it fails, naming the assertion and the reason
