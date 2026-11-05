@@ -3,6 +3,7 @@ package dev.blockpilot.game.observe;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.game.Rel;
+import dev.blockpilot.platform.ClientPlatform;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
@@ -93,12 +94,7 @@ public final class CameraControl {
     /** Called once per frame after the level rendered, when the camera holds its final angles and position. */
     public static void recordRendered() {
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        //? if neoforge {
-        float roll = camera.getRoll();
-        //?} else {
-        /*float roll = 0;
-        *///?}
-        rendered = new Angles(camera.getYRot(), camera.getXRot(), roll);
+        rendered = new Angles(camera.getYRot(), camera.getXRot(), ClientPlatform.cameraRoll(camera));
         renderedFrom = placement == null ? null : camera.getPosition();
     }
 }

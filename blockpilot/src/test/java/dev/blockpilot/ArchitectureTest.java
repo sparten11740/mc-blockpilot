@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -87,19 +89,37 @@ class ArchitectureTest {
     /** The window system changed in 26.3. Mixins have to name it, as their signatures must match their targets. */
     @Test
     void onlyWindowSystemAndMixinsImportTheWindowSystem() throws IOException {
+        assertEquals(List.of(), lines(
+            file -> !file.endsWith("WindowSystem.java") && !file.getParent().endsWith("mixin"),
+            line -> line.contains("import org.lwjgl.glfw") || line.contains("import org.lwjgl.sdl")));
+    }
+
+    /** What a loader's code needs from the mod goes through the platform's hooks. */
+    @Test
+    void loaderPackagesImportNoGameCode() throws IOException {
+        for (String loader : List.of("platform/fabric", "platform/neoforge")) {
+            assertEquals(List.of(), violations(loader, List.of("dev.blockpilot.game")));
+        }
+    }
+
+    @Test
+    void loaderConditionsStayInThePlatform() throws IOException {
+        Pattern condition = Pattern.compile("//\\?.*\\b(neoforge|fabric|vanilla)\\b");
+        assertEquals(List.of(), lines(file -> !file.startsWith("java/dev/blockpilot/platform"),
+            line -> condition.matcher(line).find()));
+    }
+
+    /** The lines the test picks, from the files it picks by their path in their tree, in the trees of the jars. */
+    private static List<String> lines(Predicate<Path> files, Predicate<String> picked) throws IOException {
         List<String> found = new ArrayList<>();
         for (Path tree : Sources.codeTrees()) {
             for (Path file : Sources.javaFiles(tree)) {
-                if (file.getFileName().toString().equals("WindowSystem.java") || file.getParent().endsWith("mixin")) {
-                    continue;
-                }
-                for (String line : Files.readAllLines(file)) {
-                    if (line.contains("import org.lwjgl.glfw") || line.contains("import org.lwjgl.sdl")) {
-                        found.add(file.getFileName() + ": " + line.strip());
-                    }
+                if (files.test(tree.relativize(file))) {
+                    Files.readAllLines(file).stream().filter(picked)
+                        .forEach(line -> found.add(file.getFileName() + ": " + line.strip()));
                 }
             }
         }
-        assertEquals(List.of(), found);
+        return found;
     }
 }

@@ -273,6 +273,15 @@ def check_live_particles(game_dir):
     return None if live.get("flame", 0) > 0 else f"live particles: {live}"
 
 
+def check_render_stages(game_dir):
+    """A capture times the render stages on NeoForge, the only loader with events for them."""
+    with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as source:
+        loader = json.load(source)["loader"]
+    _, output = run(game_dir, "perf start stages; wait 5t; perf stop", as_json=True)
+    stages = json.loads(output.splitlines()[0])["results"][-1]["summary"]["client"]["render_stages"]
+    return None if bool(stages) == (loader == "neoforge") else f"on {loader}: {stages}"
+
+
 def check_mine_moves_on(game_dir):
     """Sand lands on the only target while the player walks to it, too far off to reach in time."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server setblock 0 -60 14 minecraft:short_grass; "
@@ -511,6 +520,7 @@ def main():
         ("pixels finds a world position", lambda: check_world_position_in_frame(args.game_dir)),
         ("hud off hides the hud", lambda: check_hud_hides(args.game_dir)),
         ("perf counts live particles", lambda: check_live_particles(args.game_dir)),
+        ("perf times the render stages", lambda: check_render_stages(args.game_dir)),
         ("videos are upright", lambda: check_video_upright(args.game_dir, world)),
     ]
     for name, check in checks:
