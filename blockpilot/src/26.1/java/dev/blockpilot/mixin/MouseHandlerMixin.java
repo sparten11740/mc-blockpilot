@@ -2,6 +2,9 @@ package dev.blockpilot.mixin;
 
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.Injection;
+//? if >=26.3 {
+/*import net.minecraft.client.Minecraft;
+*///?}
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.input.MouseButtonInfo;
 import org.spongepowered.asm.mixin.Mixin;
@@ -90,6 +93,14 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     private void blockpilot$onMove(long window, double x, double y, CallbackInfo info) {
     //?}
         if (!Injection.active()) {
+            //? if >=26.3 {
+            /*var gameWindow = Minecraft.getInstance().getWindow();
+            // SDL's relative mode keeps a grabbed mouse inside the window, so at an edge its place stops changing.
+            if (mouseGrabbed && HumanInput.atEdge(x, y, gameWindow.getScreenWidth(), gameWindow.getScreenHeight())) {
+                HumanInput.mouseMoveBy(window, x, y, xRelative, yRelative);
+                return;
+            }
+            *///?}
             HumanInput.mouseMove(window, x, y);
         }
     }

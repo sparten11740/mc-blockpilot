@@ -163,6 +163,8 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
   code point, so `type` is unchanged.
 - **Take-over:** real events now arrive through `minecraft.execute`, on the same
   client thread, and `Injection.active()` still tells them from injected ones.
+  SDL's relative mode keeps a grabbed mouse inside the window, so at an edge its
+  place stops changing, and the take-over reads its relative movement there.
 
 *Alternative:* a per-version class hiding all input constants. Rejected: only
 26.3 differs, and in a few lines each.
