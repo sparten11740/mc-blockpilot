@@ -31,8 +31,8 @@ builds from, and add rename rules and `//? if` blocks for what changed, as was d
 when a range of versions has diverged too far for that, as 26.1 did from 1.21.1. A rename rule's new text must not
 already appear in the shared sources: switching versions applies the rules backwards, which would rename that text too.
 Set `sable_companion_version` only for versions Sable publishes its companion API for. In
-`.github/workflows/release.yml`, update the number of jars it expects, or the next tag's release fails, and add a row
-for each loader jar to upload, or that jar never reaches CurseForge.
+`.github/workflows/release.yml`, add a row for each loader jar to upload, or that jar never reaches CurseForge;
+`tools/test_targets.py` refuses to start without it.
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 
@@ -69,7 +69,7 @@ Set `mod_version` in `blockpilot/gradle.properties`, add a `## <version> (<date>
 and push a tag `v<version>`. The `release` workflow checks that the tag matches `mod_version`, builds and tests every
 target, and uploads the eight loader jars to CurseForge with
 [mod-publish-actions](https://github.com/sparten11740/mod-publish-actions); CurseForge has no loader for the vanilla
-agent. Once the uploads have gone through, it creates the GitHub release with the eleven jars and the API jar. A version
+agent. Once the uploads have gone through, it creates the GitHub release with the mod jars and the API jar. A version
 ending in `-alpha…` or `-beta…` goes out as that release type, anything else as a release. The upload jobs run in the
 `release` environment, which holds the secret `CURSEFORGE_TOKEN` and the variable `CURSEFORGE_PROJECT_ID`. When an
 upload fails, fix its cause and use Re-run failed jobs on the run: the uploads that went through stay done, and the
