@@ -99,9 +99,10 @@ class ArchitectureTest {
     /** The window system changed in 26.3. Mixins have to name it, as their signatures must match their targets. */
     @Test
     void onlyWindowSystemAndMixinsImportTheWindowSystem() throws IOException {
+        Pattern windowSystem = Pattern.compile("import (static )?org\\.lwjgl\\.(glfw|sdl)");
         assertEquals(List.of(), lines(
             file -> !file.endsWith("WindowSystem.java") && !file.getParent().endsWith("mixin"),
-            line -> line.contains("import org.lwjgl.glfw") || line.contains("import org.lwjgl.sdl")));
+            windowSystem.asPredicate()));
     }
 
     /** What a loader's code needs from the mod goes through the platform's hooks. */
@@ -123,10 +124,11 @@ class ArchitectureTest {
     @Test
     void gamePackagesDependOneWay() throws IOException {
         Pattern commandClass = Pattern.compile("import (static )?dev\\.blockpilot\\.game\\.[A-Z]");
+        Pattern aboveCommon = Pattern.compile("import (static )?dev\\.blockpilot\\.game\\.(?!common\\.)");
         assertEquals(List.of(), lines(file -> file.startsWith("java/dev/blockpilot/game") && file.getNameCount() > 5,
             line -> commandClass.matcher(line).find()));
         assertEquals(List.of(), lines(file -> file.startsWith("java/dev/blockpilot/game/common"),
-            line -> line.contains("import dev.blockpilot.game.") && !line.contains("dev.blockpilot.game.common.")));
+            aboveCommon.asPredicate()));
     }
 
     /** The lines the test picks, from the files it picks by their path in their tree, in the trees of the jars. */
