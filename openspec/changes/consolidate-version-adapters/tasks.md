@@ -36,7 +36,7 @@
 
 ## 8. Target source of truth
 
-- [ ] 8.1 Make `test_targets.py` fail at the start when `settings.gradle.kts`, `versions/` and the `release.yml` rows disagree; verify it fails on a wrapped `target(` line, a missing folder and a missing row, and passes on the real files
+- [x] 8.1 Make `test_targets.py` fail at the start when `settings.gradle.kts`, `versions/` and the `release.yml` rows disagree; verify it fails on a wrapped `target(` line, a missing folder and a missing row, and passes on the real files
 - [ ] 8.2 Derive the release job's jar count from `versions/`. In "To add a target" in `docs/building.md`, drop the step that updates it and say that `test_targets.py` fails on a missing `release.yml` row; verify the job's count command prints 11 when run locally, and that the workflow parses as YAML
 
 ## 9. Build scripts

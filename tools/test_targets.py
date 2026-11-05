@@ -3,6 +3,8 @@
 
     python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--list]
 
+It refuses to start if blockpilot/versions or the release workflow's rows disagree with settings.gradle.kts.
+
 One target at a time, from those in settings.gradle.kts: builds it with its unit tests, checks its jar, starts its dev
 client, runs tools/smoke_test.py in text and JSON mode, closes the client and checks it shut down. JSON shapes must
 match those saved from the other targets of its loader; the vanilla targets count as Fabric, whose replies they share.
@@ -72,6 +74,34 @@ def configured_targets():
 def properties(path):
     with open(path, encoding="utf-8") as source:
         return dict(line.strip().split("=", 1) for line in source if "=" in line and not line.startswith("#"))
+
+
+def release_rows():
+    """The (minecraft, loader) pairs the release uploads to CurseForge."""
+    with open(os.path.join(ROOT, ".github", "workflows", "release.yml"), encoding="utf-8") as source:
+        return set(re.findall(r"^\s*- \{ minecraft: '?([^,']+)'?, loader: (\w+),", source.read(), re.MULTILINE))
+
+
+def target_list_problems(targets):
+    """Where versions/ and the release's rows disagree with settings.gradle.kts, whose targets are what this tests."""
+    versions = os.path.join(ROOT, "blockpilot", "versions")
+    # A removed target's folder can stay behind holding only its ignored run and build output.
+    folders = {name for name in os.listdir(versions)
+               if os.path.exists(os.path.join(versions, name, "gradle.properties"))}
+    problems = [f"{name} is in blockpilot/versions but not read from settings.gradle.kts; is its target( line wrapped?"
+                for name in sorted(folders - set(targets))]
+    problems += [f"{name} is in settings.gradle.kts but has no folder in blockpilot/versions"
+                 for name in sorted(set(targets) - folders)]
+    if problems:
+        return problems
+    expected = {(properties(os.path.join(node_dir(target), "gradle.properties"))["minecraft_version"],
+                 target.rsplit("-", 1)[1])
+                for target in targets if not target.endswith("-vanilla")}
+    rows = release_rows()
+    problems += [f"release.yml has no row for {minecraft} {loader}" for minecraft, loader in sorted(expected - rows)]
+    problems += [f"release.yml has a row for {minecraft} {loader}, which isn't a target"
+                 for minecraft, loader in sorted(rows - expected)]
+    return problems
 
 
 def node_dir(target):
@@ -373,6 +403,9 @@ def main():
     parser.add_argument("--list", action="store_true", help="print the targets and exit")
     args = parser.parse_args()
     configured = configured_targets()
+    problems = target_list_problems(configured)
+    if problems:
+        parser.error("the lists of targets disagree:\n  " + "\n  ".join(problems))
     if args.list:
         print("\n".join(configured))
         return 0
