@@ -136,8 +136,7 @@ it, which waits for the copy. What changes:
 
 `org.lwjgl.glfw` is gone, so shared input code changes. Constants that exist on
 every version (`InputConstants.PRESS`, `RELEASE`, `KEY_F8`) replace the GLFW
-ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits
-and `Window.isFocused()`.
+ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
 - **Keys:** a key's value is now an SDL scancode, and it reaches the game
   through the same `InputConstants.Key` lookups, so names keep working.
 - **Key events:** `KeyEvent` is `(scancode, keycode, modifiers)`, and text-field
@@ -157,9 +156,9 @@ and `Window.isFocused()`.
   shadowed `xpos` and `ypos`, or the camera wouldn't turn.
 - **Polling:** `InputConstants.isKeyDown(int)` drops the window, so the handler
   signature changes by condition.
-- **Focus:** `Focus.reallyFocused` uses `Window.isFocused()` on 26.3. The pause
-  mixin only overrides the result at its call site, so this stays the real
-  state.
+- **Focus:** `Focus.reallyFocused` asks SDL for the window's input focus on
+  26.3. `Window.isFocused()` starts true and only changes on SDL's focus events,
+  so a window that never had focus would read as focused.
 - **Typing:** `charTyped` remains, and the game's own `textInput` calls it per
   code point, so `type` is unchanged.
 - **Take-over:** real events now arrive through `minecraft.execute`, on the same
