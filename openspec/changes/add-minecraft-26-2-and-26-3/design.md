@@ -172,6 +172,10 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
   where an agent put the cursor, so a click that opened a screen left it
   elsewhere than on 26.2. While the agent moved the mouse last, the reread is
   skipped; a real move ends that.
+- **Pointer:** `InputConstants` warps the pointer as the mouse is grabbed or let
+  go. GLFW ignored that for a window without focus, but SDL moves the real
+  pointer anyway, so an agent's `key escape` in a background window would move
+  the player's. The warp is skipped unless the window really has focus.
 - **Polling:** `InputConstants.isKeyDown(int)` drops the window, so the handler
   signature changes by condition.
 - **Focus:** `Focus.reallyFocused` asks SDL for the window's input focus on
