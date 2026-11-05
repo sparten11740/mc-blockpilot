@@ -13,7 +13,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GraphicsPreset.class)
 public abstract class GraphicsPresetMixin {
     @Inject(method = "set", at = @At("HEAD"))
+    //? if >=26.2 {
+    /*private static <T> void blockpilot$setting(OptionsSubScreen screen, OptionInstance<T> option, T value,
+    *///?} else {
     private <T> void blockpilot$setting(OptionsSubScreen screen, OptionInstance<T> option, T value,
+    //?}
         CallbackInfo info) {
         ClientOptions.beforeSideEffect(option);
     }
