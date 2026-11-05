@@ -4,7 +4,11 @@ import dev.blockpilot.game.perf.PacketNames;
 import dev.blockpilot.game.perf.Perf;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.Connection;
+//? if >=26.1 {
+/*import io.netty.channel.ChannelFutureListener;
+*///?} else {
 import net.minecraft.network.PacketSendListener;
+//?}
 import net.minecraft.network.protocol.BundlePacket;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
@@ -37,9 +41,15 @@ public abstract class ConnectionMixin {
         }
     }
 
+    //? if >=26.1 {
+    /*@Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",
+        at = @At("HEAD"))
+    private void blockpilot$sent(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo info) {
+    *///?} else {
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;Z)V",
         at = @At("HEAD"))
     private void blockpilot$sent(Packet<?> packet, PacketSendListener listener, boolean flush, CallbackInfo info) {
+    //?}
         if (Perf.active && getReceiving() == PacketFlow.CLIENTBOUND) {
             Perf.packet(false, PacketNames.of(packet));
         }

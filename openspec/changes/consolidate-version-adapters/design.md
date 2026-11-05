@@ -43,8 +43,11 @@ rules reach them.
 
 The 7 near-identical ones move too if the merged file needs at most two
 condition blocks; otherwise they stay. Past that limit, a merged file is harder
-to read than two plain ones. Mixins that really differ also stay, so the trees
-shrink to about 10 and 17 files. A test fails on any new byte-identical pair.
+to read than two plain ones. `ConnectionMixin`, `SoundEngineMixin` and
+`ParticleEngineAccessor` fit. `LibraryMixin`, `CameraMixin`,
+`ClientPacketListenerMixin` and `MinecraftMixin` need three or more, so they
+stay. Mixins that really differ also stay, so the trees shrink to 12 and 19
+files. A test fails on any new byte-identical pair.
 
 Unlike those trees, `src/main` is rewritten when the active node switches, so
 the moved files must come back unchanged from a switch and back.
