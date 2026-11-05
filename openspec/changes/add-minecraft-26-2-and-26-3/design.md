@@ -34,7 +34,8 @@ have no effect in them.
 **Non-Goals:**
 - Sable on these versions: no node pins `sable_companion_version`.
 - Guaranteeing the Vulkan backend. Both versions default to OpenGL, and D6 uses
-  only the backend-neutral API, so it is tried once and not a gate.
+  only the backend-neutral API, so it is tried once and not a gate. Tried
+  through MoltenVK on an M1 Max: the smoke test passes in full on 26.2 and 26.3.
 - Exposing anything new from these versions, such as the graphics backend as an
   `option`, or a command for the new key names.
 - A release, a `mod_version` bump, or the changelog entry that goes with one.
@@ -133,10 +134,13 @@ the copy, then map it. What changes:
   replaces `TextureFormat`, `blockSize` replaces `pixelSize`, and render passes
   take new arguments.
 - **26.3:** the same code with `com.mojang.blaze3d.buffers` and `.textures`
-  moved to `com.mojang.renderpearl.api`, done as rename rules.
+  moved to `com.mojang.renderpearl.api`, and `GpuFormat` with them, and
+  `CommandEncoder`, `RenderPass` and `GpuDevice` moved from `systems` to its
+  `commands` and `device`. `bindTexture` is now `setUniform`, and `setPipeline`
+  takes a compiled pipeline. All of it is done as rename rules.
 - **Uniforms:** from 26.2 the blit binds the default uniforms, as the game's own
-  capture does. Its pipeline declares `Globals`, and NeoForge crashes on the
-  first recorded frame without them.
+  capture does. Its pipeline declares `Globals`, and NeoForge's dev client,
+  whose validation is on, crashes on the first recorded frame without them.
 - **Row order:** rows stay flipped. The game's own `Screenshot` flips them the
   same way on both versions, with no branch on the backend.
 
@@ -158,7 +162,9 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
   `KeyNames.BUTTONS` keeps its order, which `help` and the grammar show, and a
   separate mapping turns names into the game's numbers, with an inline condition
   and a matching one in `KeyNamesTest`. Without it, `mouse click left` would
-  press nothing and `mouse click right` would click as left.
+  press nothing and `mouse click right` would click as left. `buttonName` maps
+  the other way, so an interrupt names a real click's button: unchanged, a real
+  left click would say `right`.
 - **Mouse movement:** `onMove` gained relative `xrel` and `yrel`, which is what
   it uses while the mouse is grabbed. `blockpilot$move` computes them from the
   shadowed `xpos` and `ypos`, or the camera wouldn't turn.
@@ -202,7 +208,8 @@ already public on 26.2 and 26.3, and widening a public class does nothing.
   an unrelated step.
 - **Everything else that can be asserted:** the script in D10, on every target,
   so the 1.21.1 and 26.1 regression run is the same run as the port's.
-- **By hand:** what D10 lists as out of a script's reach.
+- **By hand:** what D10 lists as out of a script's reach. Whether the CurseForge
+  app offers these versions waits for the first release, as its uploads do.
 - **Clients:** dev clients are closed with `quit`. One that never answered, or
   doesn't close, is stopped through the build that runs it, and by process id if
   its endpoint names one. Only Blockpilot's own dev client is ever stopped.
@@ -213,7 +220,8 @@ already public on 26.2 and 26.3, and widening a public class does nothing.
 A new `tools/test_targets.py` runs it on each target: it starts the dev client,
 waits for the endpoint, runs the smoke test in text and JSON mode, quits the
 client and moves on. It finishes with a per-target table, compares JSON shapes
-across targets of a loader, and exits non-zero on any failure.
+across targets of a loader, where the vanilla targets count as Fabric, whose
+replies they share, and exits non-zero on any failure.
 
 - **Target list:** read from `settings.gradle.kts`, so a new node is tested
   without editing the script. `--targets` narrows it.

@@ -5,6 +5,7 @@
 - [x] 1.1 Send `src/<version_sources>/` through Stonecutter in `build.fabric`, `build.neoforge` and `build.vanilla`, and `src/vanilla/` in `build.vanilla`, disabling the extra sets' compile and merge tasks (D1); verify `./gradlew build` passes on the five existing nodes with unchanged jar contents, and that "Set active project to 26.1-fabric" and to `26.2-vanilla`, and back, leaves `src/26.1/` and `src/vanilla/` unmodified in Git.
 - [x] 1.2 Declare the 26.2 and 26.3 nodes in `settings.gradle.kts` with `versions/<node>/gradle.properties` as pinned in D2; verify `./gradlew projects` lists eleven nodes and each new node reaches `compileJava` with dependencies resolved.
 - [x] 1.3 Update "To add a target" and the layout notes in `docs/building.md` (`src/26.1/` serves 26.1 and later and goes through Stonecutter; no copy of `src/<version>/` unless a range truly diverges); verify the steps match what 1.2 did.
+- [x] 1.4 Write the node's Minecraft version to the jar's manifest and have `BlockpilotAgent` read it instead of its constant (D8); verify the script's manifest and wrong-version checks pass on all three `-vanilla` jars.
 
 ## 2. A test script for every target
 
@@ -18,22 +19,22 @@
 ## 3. 26.2: shared code
 
 - [x] 3.1 Add rename rules from 26.2 for the moved screen, overlay, camera, framebuffer and section reads (D3); verify every error of those kinds is gone from `26.2-fabric:compileJava` and the 1.21.1 and 26.1 nodes still compile.
-- [x] 3.2 Add the HUD visibility class and move all 15 `options.hideGui` uses to it (D3); verify all nodes compile and the script's `hud` assertions pass on 1.21.1 and 26.1.
-- [x] 3.3 Read particles through a `ParticleGroup` accessor on every 26.x version (D3); verify all nodes compile and the script's `perf` assertions pass on 26.1.
+- [x] 3.2 Add the HUD visibility class and move all 15 `options.hideGui` uses to it (D3); verify the nodes that compiled before still do, and the script's `hud` assertions pass on 1.21.1 and 26.1.
+- [x] 3.3 Read particles through a `ParticleGroup` accessor on every 26.x version (D3); verify the nodes that compiled before still do, and the script's `perf` assertions pass on 26.1.
 
 ## 4. 26.2: rendering and mixins
 
 - [x] 4.1 Port `FrameCapture` and `FrameReadback` to the 26.2 GPU API with inline conditions (D6); verify `26.2-fabric:compileJava` has no errors left.
-- [x] 4.2 Retarget `GuiMixin` to `Hud` and `RebuildTaskMixin` to `CompileTask`, and make the `GraphicsPresetMixin` handler static by condition (D4, D5); verify all 26.x nodes compile.
+- [x] 4.2 Retarget `GuiMixin` to `Hud` and `RebuildTaskMixin` to `CompileTask`, and make the `GraphicsPresetMixin` handler static by condition (D4, D5); verify the 26.1 and 26.2 nodes compile.
 - [x] 4.3 Move the vanilla HUD hook to `Hud` and the shutdown hook to `exitWorldAndClose` (D4); verify `26.2-vanilla` compiles and its client closes cleanly, putting back an option an agent changed.
 - [x] 4.4 Run `tools/test_targets.py --targets` on `26.2-neoforge`, `26.2-fabric` and `26.2-vanilla`, fixing any injection point that stops the game (D9); verify every assertion passes and the shapes match the saved ones of the same loader.
 
 ## 5. 26.3: input without GLFW
 
-- [x] 5.1 Replace GLFW constants that have an `InputConstants` equivalent on every version (`PRESS`, `RELEASE`, `KEY_F8`) and rename `Type.KEYSYM` from 26.3 (D7); verify all nodes compile and the script's F8 and input assertions pass on 1.21.1 and 26.1.
+- [x] 5.1 Replace GLFW constants that have an `InputConstants` equivalent on every version (`PRESS`, `RELEASE`, `KEY_F8`) and rename `Type.KEYSYM` from 26.3 (D7); verify the nodes up to 26.2 compile, and the script's F8 and input assertions pass on 1.21.1 and 26.1.
 - [x] 5.2 Add 26.3 conditions to `Injection` for the modifier table and SDL keycodes, and to `Focus` for `Window.isFocused()` (D7); verify `26.3-fabric:compileJava` reports no GLFW errors.
 - [x] 5.3 Map mouse button names to the game's numbers by version, keeping `KeyNames.BUTTONS`' order, with `KeyNamesTest` following (D7); verify unit tests and `GrammarConformanceTest` pass on all compiling nodes and the script's mouse assertions pass on 1.21.1 and 26.1.
-- [x] 5.4 Update `MouseHandlerMixin` for the five-argument `onMove` with computed relative movement, and `InputConstantsMixin` for `isKeyDown(int)` (D7); verify all 26.x nodes compile.
+- [x] 5.4 Update `MouseHandlerMixin` for the five-argument `onMove` with computed relative movement, and `InputConstantsMixin` for `isKeyDown(int)` (D7); verify the 26.1 and 26.2 nodes compile, and those mixins' errors are gone from `26.3-fabric:compileJava`.
 
 ## 6. 26.3: the rest of the port
 
@@ -44,8 +45,7 @@
 
 ## 7. Vanilla agent on each version
 
-- [x] 7.1 Write the node's Minecraft version to the jar's manifest and have `BlockpilotAgent` read it instead of its constant (D8); verify the script's manifest and wrong-version checks pass on all three `-vanilla` jars.
-- [x] 7.2 Cover the 26.2 and 26.3 agents in `docs/connecting.md`; verify the jar names and steps match what the build produces.
+- [x] 7.1 Cover the 26.2 and 26.3 agents in `docs/connecting.md`; verify the jar names and steps match what the build produces.
 
 ## 8. Release and docs
 
@@ -62,7 +62,11 @@
 
 - [ ] 10.1 By hand on a 26.2 client: add a 26.2 installation in the Minecraft Launcher, append `-javaagent:<path to the jar>` to its JVM arguments and start it; verify `<game dir>/blockpilot/endpoint.json` appears and `status` answers in a world.
 - [ ] 10.2 By hand on a 26.3 client: the same as 10.1 with a 26.3 installation and the 26.3 jar; verify the same, and that `docs/connecting.md` matches the steps.
-- [ ] 10.3 By hand on a 26.3 dev client with an agent driving it: move the real mouse and press a real key, then press the real F8; verify real input takes control back and F8 turns agent control off and on, as on 26.1.
+- [ ] 10.3 By hand on a 26.3 dev client with an agent driving it: move the real mouse, click a real button and press a real key, then press the real F8; verify real input takes control back, a click's interrupt names its button, and F8 turns agent control off and on, as on 26.1.
+- [ ] 10.4 By hand on the same client, with a grabbed mouse: turn until the pointer is pinned at the window's edge, start an agent's action and keep moving the real mouse towards that edge; verify it takes control back.
+- [ ] 10.5 By hand on Windows or Linux with OpenGL 4.4 or newer, on a 26.x client: run `pixels` right after a block changes on screen, then `screenshot` and a short `record`; verify `pixels` sees the change and the images and the video's last frames are the current ones. This Mac's OpenGL has no `GL_ARB_buffer_storage`, so that path has never run.
+- [ ] 10.6 By hand on a 26.3 client with a non-Latin keyboard layout (Russian, say): `type hello`, then the select-all chord and `type x` in the chat box; verify the text is replaced. This Mac's layout wasn't changed to try it.
+- [ ] 10.7 By hand on any target: look at a screenshot and a recorded video; verify they look right beyond the orientation and colours the script checks.
 
 ## Workflow follow-up
 

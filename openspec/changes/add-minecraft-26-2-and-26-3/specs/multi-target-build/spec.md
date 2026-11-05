@@ -59,7 +59,8 @@ copy of the shared source tree.
 ### Requirement: Identical agent-facing behavior across targets
 For the same game situation, every target SHALL accept the same commands and
 produce the same reply format. Version-specific differences show up only as
-documented capability gaps that the target reports through `help`.
+documented capability gaps that the target reports through `help`, or in key
+names, which are the running game's and are documented in `docs/commands.md`.
 
 #### Scenario: Same reply on both loaders
 - **WHEN** the same `status` command is sent to the 1.21.1 NeoForge and 1.21.1
@@ -134,13 +135,25 @@ assertion.
 - **THEN** that target is reported as failed with the reason, only that client
   is stopped, and the next target runs
 
+#### Scenario: A client is lost during its assertions
+- **WHEN** a target's client stops or stops answering while the script runs its
+  assertions
+- **THEN** the assertions it can't answer fail by name, that client is stopped
+  if it is still there, and the next target runs
+
+#### Scenario: A client is already running
+- **WHEN** a target's dev client is already running in its run folder
+- **THEN** that target is reported as failed, naming the process, and that
+  client and its endpoint are left alone
+
 #### Scenario: Chosen targets only
 - **WHEN** a developer names `26.2-neoforge` and `26.3-neoforge`
 - **THEN** only those two clients start, and the result covers only them
 
 #### Scenario: Reply fields differ between targets
 - **WHEN** a query's JSON reply has different fields on two tested targets of
-  the same loader
+  the same loader, where the vanilla targets count as Fabric, whose replies they
+  share
 - **THEN** the script reports the query and both targets, and exits non-zero
 
 ### Requirement: The script asserts effects, not only replies

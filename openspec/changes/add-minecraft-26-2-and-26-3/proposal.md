@@ -45,7 +45,8 @@ None.
 ### Modified Capabilities
 - `multi-target-build`: the targets now include the 26.2 and 26.3 ones; agents
   use the same key and button names on every target; the vanilla jar's manifest
-  names its game version.
+  names its game version; one script tests every target, including what input
+  and capture do in the game.
 - `vanilla-agent`: an agent for each of 26.1.2, 26.2 and 26.3, each running only
   on its own version.
 - `extension-api`: the one API jar works with the 26.2 and 26.3 jars too.
