@@ -229,9 +229,9 @@ def check_camera_turns(game_dir):
 
 
 def check_cursor_moves(game_dir):
-    """`mouse move` moves the cursor in a screen."""
+    """`mouse move` moves the cursor in a screen by the GUI units asked for; `screen` cuts off any fraction."""
     _, output = run(game_dir, "key escape; wait 5t; cursor 10,10; wait 2t; mouse move 30 20 3t; wait 2t; screen; close")
-    return None if re.search(r"\bcursor (?!10,10\b)\d+,\d+", output) else f"the cursor stayed: {output.strip()}"
+    return None if re.search(r"\bcursor (39|40),(29|30)\b", output) else f"not at 40,30: {output.strip()}"
 
 
 def check_frame_upright(game_dir):
