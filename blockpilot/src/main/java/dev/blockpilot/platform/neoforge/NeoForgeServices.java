@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.CreativeModeTab;
@@ -96,5 +97,10 @@ final class NeoForgeServices implements ClientPlatform.Services {
     @Override
     public List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
         return screen.getCurrentPage().getVisibleTabs();
+    }
+
+    @Override
+    public float cameraRoll(Camera camera) {
+        return camera.getRoll();
     }
 }

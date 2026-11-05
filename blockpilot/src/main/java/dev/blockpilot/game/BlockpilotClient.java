@@ -324,6 +324,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public void onRenderStageStart() {
+        Perf.stageStart();
+    }
+
+    @Override
+    public void onRenderStageEnd(String stage) {
+        Perf.stageEnd(stage);
+    }
+
+    @Override
     public void onServerStopping(MinecraftServer server) {
         endLoad("the server stopped");
         SessionCommands.onServerStopping(server);

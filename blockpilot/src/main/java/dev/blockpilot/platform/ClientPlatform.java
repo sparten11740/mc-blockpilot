@@ -13,6 +13,7 @@ import java.util.Objects;
 *///?}
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.SharedConstants;
+import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -54,6 +55,11 @@ public final class ClientPlatform {
 
         /** The tabs the creative inventory shows on its current page, in the page's order. */
         List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen);
+
+        /** How far the camera is rolled, in degrees, which only NeoForge's events can do. */
+        default float cameraRoll(Camera camera) {
+            return 0;
+        }
     }
 
     /** Callbacks the loader's entry point forwards its events to. */
@@ -92,6 +98,14 @@ public final class ClientPlatform {
 
         /** A newly generated chunk became full, after its {@link #onServerChunkLoaded}; on the server thread. */
         default void onServerChunkGenerated() {
+        }
+
+        /** Before a stage's handlers, on a loader that has render stages. */
+        default void onRenderStageStart() {
+        }
+
+        /** After the handlers of the stage so named. */
+        default void onRenderStageEnd(String stage) {
         }
     }
 
@@ -180,6 +194,10 @@ public final class ClientPlatform {
 
     public static List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
         return services().creativeTabsOnPage(screen);
+    }
+
+    public static float cameraRoll(Camera camera) {
+        return services().cameraRoll(camera);
     }
 
     // Categories are registered objects from 26.1. A loader that leaves that to the mod calls this for each mapping.

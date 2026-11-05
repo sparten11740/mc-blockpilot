@@ -1,7 +1,6 @@
 package dev.blockpilot.platform.neoforge;
 
 import dev.blockpilot.Blockpilot;
-import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
 //? if >=26.1 {
 /*import java.util.List;
@@ -51,13 +50,16 @@ public final class NeoForgeClientEntrypoint {
             RenderLevelStageEvent.AfterTranslucentBlocks.class, RenderLevelStageEvent.AfterTranslucentParticles.class,
             RenderLevelStageEvent.AfterWeather.class, RenderLevelStageEvent.AfterLevel.class).forEach(stage -> {
                 String name = stage.getSimpleName().replaceAll("(?<=[a-z])(?=[A-Z])", "_").toLowerCase(Locale.ROOT);
-                NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, stage, event -> Perf.stageStart());
-                NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, stage, event -> Perf.stageEnd(name));
+                NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, stage,
+                    event -> ClientPlatform.hooks().onRenderStageStart());
+                NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, stage,
+                    event -> ClientPlatform.hooks().onRenderStageEnd(name));
             });
         *///?} else {
-        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLevelStageEvent.class, event -> Perf.stageStart());
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLevelStageEvent.class,
+            event -> ClientPlatform.hooks().onRenderStageStart());
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, RenderLevelStageEvent.class,
-            event -> Perf.stageEnd(event.getStage().toString().replace("minecraft:", "")));
+            event -> ClientPlatform.hooks().onRenderStageEnd(event.getStage().toString().replace("minecraft:", "")));
         //?}
         NeoForge.EVENT_BUS.addListener(RenderGuiEvent.Post.class,
             event -> ClientPlatform.hooks().onHudRender(event.getGuiGraphics()));
