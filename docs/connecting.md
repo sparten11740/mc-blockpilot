@@ -19,8 +19,8 @@ runs as a Java agent instead:
 
 In the CurseForge app, create a vanilla instance of that version and add the same argument to its Java arguments. It
 starts the game in the instance's folder, so a path relative to that works too and avoids spaces in the instance's name:
-with the jar in the instance's `mods` folder, `-javaagent:mods/<jar>`. On 26.2 and 26.3 this depends on the app offering
-those versions, which hasn't been checked yet.
+with the jar in the instance's `mods` folder, `-javaagent:mods/<jar>`. On 26.2 and 26.3 this hasn't been tried yet, and
+depends on the app offering those versions.
 
 On any other version the agent logs the one it supports, and the game starts without it. Use it on plain
 Minecraft only, not in an installation with a mod loader. There are no mod configs, so `config` answers
@@ -91,6 +91,7 @@ The window can stay in the background: while an agent is connected, and for a mi
 (the CLI opens one per call), the game does not pause and keeps handling input. Real keyboard or mouse input to the
 focused window cancels running agent actions with `err interrupted`, which names the input (`input=key key=w`,
 `input=button button=left`, `input=scroll`, or `input=move dx=<px> dy=<px>`); F8 toggles agent control off and on. A
-line in the top-left corner shows when an agent is active and what it is doing.
+line in the top-left corner shows when an agent is active and what it is doing. Moving the real pointer over a window
+in the background doesn't cancel anything, but it can move the game's cursor, so a click that follows lands there.
 
 [Back to the README](../README.md)
