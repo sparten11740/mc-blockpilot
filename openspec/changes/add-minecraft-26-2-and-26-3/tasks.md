@@ -14,7 +14,7 @@
 - [x] 2.3 Add `tools/test_targets.py` as in D10: targets from `settings.gradle.kts`, `--targets`, start and wait for the client, smoke test in text and JSON mode, quit, shape comparison per loader, a per-target table, non-zero exit naming target and assertion; verify a passing run exits 0, a planted failure exits non-zero naming both, and a client that can't start is reported and the next target still runs.
 - [x] 2.4 Add the jar checks and the wrong-version agent check of D10 to `tools/test_targets.py`; verify they pass on the five existing targets and fail on a jar with a wrong name or a missing manifest attribute.
 - [x] 2.5 Document running the script in `docs/building.md`, including `--targets`, how long it takes, leaving the game windows alone, and what it can't assert; verify the documented commands run as written.
-- [x] 2.6 Run `tools/test_targets.py --targets` on the five existing targets before any port work, and save the per-loader shapes; verify every assertion passes, so failures from here on come from the port.
+- [x] 2.6 Run the current `tools/test_targets.py --targets` on the five existing targets on the tree before any port work (`bbf7de1`), and save the per-loader shapes; verify every assertion passes, so failures on the same targets come from the port, and that the shapes match those of the final run.
 
 ## 3. 26.2: shared code
 
