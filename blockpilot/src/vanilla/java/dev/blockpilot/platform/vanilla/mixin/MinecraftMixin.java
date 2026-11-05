@@ -28,7 +28,11 @@ public abstract class MinecraftMixin {
         ClientPlatform.hooks().onClientTickEnd();
     }
 
+    //? if >=26.2 {
+    /*@Inject(method = "exitWorldAndClose", at = @At("HEAD"))
+    *///?} else {
     @Inject(method = "destroy", at = @At("HEAD"))
+    //?}
     private void blockpilot$stopping(CallbackInfo info) {
         ClientPlatform.hooks().onClientStopping();
     }
