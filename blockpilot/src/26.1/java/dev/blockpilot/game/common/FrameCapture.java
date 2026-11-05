@@ -6,10 +6,10 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
-import dev.blockpilot.game.common.Gpu;
 import dev.blockpilot.mixin.NativeImageInvoker;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import net.minecraft.client.Minecraft;
@@ -42,16 +42,25 @@ public final class FrameCapture {
             }, 0);
             Gpu.awaitCopies();
             NativeImage image = new NativeImage(width, height, false);
-            Gpu.read(buffer, pixels -> {
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        // The framebuffer's rows run bottom up.
-                        int abgr = pixels.getInt((x + y * width) * pixelSize);
-                        image.setPixelABGR(x, height - y - 1, abgr | 0xFF000000);
-                    }
-                }
-            });
+            try {
+                Gpu.read(buffer, pixels -> copyUpright(pixels, image, pixelSize));
+            } catch (RuntimeException failure) {
+                image.close();
+                throw failure;
+            }
             return image;
+        }
+    }
+
+    /** The framebuffer's rows run bottom up. */
+    private static void copyUpright(ByteBuffer pixels, NativeImage image, int pixelSize) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int abgr = pixels.getInt((x + y * width) * pixelSize);
+                image.setPixelABGR(x, height - y - 1, abgr | 0xFF000000);
+            }
         }
     }
 
