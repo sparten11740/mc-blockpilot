@@ -198,6 +198,8 @@ def check_cursor_stays_across_screens(game_dir):
     _, output = run(game_dir, f"cursor {advancements_button(game_dir)}; wait 2t; screen; mouse click left; wait 5t; "
                               "screen; close")
     cursors = re.findall(r"\bcursor (\d+,\d+)", output)
+    if not re.search(r"^ok advancements", output, re.MULTILINE):
+        return f"the click opened no screen: {output.strip()}"
     return None if len(cursors) == 2 and cursors[0] == cursors[1] else f"the cursor went {cursors}: {output.strip()}"
 
 
@@ -347,8 +349,8 @@ def main():
         # Regression: place aimed at the top of the carpet's cell, in the air above it: "cannot see the face".
         # The wait lets the place reach the server first: with the carpet gone, it would land in the carpet's cell.
         ("place on a thin block", "server as=player setblock ~0 ~ ~2 minecraft:white_carpet; "
-                                  "place cobblestone ~0,1,2; block ~0,1,2; wait 5t; "
-                                  "server as=player fill ~0 ~ ~2 ~0 ~1 ~2 minecraft:air", [r"ok cobblestone"]),
+                                  "place cobblestone ~0,1,2; wait 5t; block ~0,1,2 side=server; "
+                                  "server as=player fill ~0 ~ ~2 ~0 ~1 ~2 minecraft:air", [r"^ok cobblestone$"]),
         # Regression: the crosshair met the stone's near face, and the click put the block there, on the wrong side.
         ("place against a face out of sight", "server as=player setblock ~2 ~2 ~ minecraft:stone; wait 5t; "
                                               "?place cobblestone ~3,2,0; find cobblestone 6; "
@@ -460,6 +462,8 @@ def main():
         if problem:
             failures += 1
             print(f"FAIL {name}: {problem}\n    " + output.strip().replace("\n", "\n    "))
+            # A step's first error ends its script, before any close of its own, and would fail the steps after it too.
+            run(args.game_dir, "?close")
         else:
             print(f"pass {name}")
     checks = [
