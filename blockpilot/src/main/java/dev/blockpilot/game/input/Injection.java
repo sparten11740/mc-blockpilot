@@ -29,12 +29,12 @@ public final class Injection {
 
     /** Implemented by the keyboard handler mixin. */
     public interface Keyboard {
-        void blockpilot$keyPress(long window, int key, int scanCode, int action, int modifiers);
+        void blockpilot$keyPress(long window, int key, int otherKeyCode, int action, int modifiers);
 
         void blockpilot$charTyped(long window, int codePoint, int modifiers);
     }
 
-    /** A modifier key's left and right key codes, and the bit real events carry while either is down. */
+    /** A modifier's left and right keys, as the game numbers them, and the bit real events carry while one is down. */
     private record Modifier(int left, int right, int bit) {
     }
 

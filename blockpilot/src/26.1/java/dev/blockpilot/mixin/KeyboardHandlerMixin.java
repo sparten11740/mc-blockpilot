@@ -23,8 +23,8 @@ public abstract class KeyboardHandlerMixin implements Injection.Keyboard {
     }
 
     @Override
-    public void blockpilot$keyPress(long window, int key, int scanCode, int action, int modifiers) {
-        keyPress(window, action, new KeyEvent(key, scanCode, modifiers));
+    public void blockpilot$keyPress(long window, int key, int otherKeyCode, int action, int modifiers) {
+        keyPress(window, action, new KeyEvent(key, otherKeyCode, modifiers));
     }
 
     @Override
