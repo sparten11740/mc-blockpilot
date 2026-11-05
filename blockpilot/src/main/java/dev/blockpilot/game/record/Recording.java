@@ -160,7 +160,12 @@ final class Recording {
             startNanos = now;
         }
         hideHud();
-        readback.capture(now - startNanos, this::enqueue);
+        try {
+            readback.capture(now - startNanos, this::enqueue);
+        } catch (RuntimeException e) {
+            // This runs in the game's frame loop, where it would crash the game; a stuck GPU should only end the take.
+            failure = "reading a frame back failed: " + e.getMessage();
+        }
     }
 
     /** Ends the recording at this moment and finishes the file in the background; client thread. */
@@ -171,7 +176,12 @@ final class Recording {
         stopping = true;
         long endNanos = startNanos < 0 ? 0 : System.nanoTime() - startNanos;
         restoreHud();
-        readback.flush(this::enqueue);
+        try {
+            readback.flush(this::enqueue);
+        } catch (RuntimeException e) {
+            // What was read back still makes a video, and the rest of stopping must run to finish the file.
+            Blockpilot.LOGGER.warn("Recording {}: the last frames were lost: {}", name, e.getMessage());
+        }
         readback.close();
         Blockpilot.LOGGER.info("Recording {}: {} frames read back at {}x{}, {} of them waited for", name, readBack,
             width, height, readback.waits());

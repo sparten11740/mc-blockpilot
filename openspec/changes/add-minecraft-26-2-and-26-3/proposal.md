@@ -49,6 +49,8 @@ None.
   and capture do in the game.
 - `vanilla-agent`: an agent for each of 26.1.2, 26.2 and 26.3, each running only
   on its own version.
+- `video-recording`: a GPU that doesn't finish reading a frame back ends a
+  recording rather than the game.
 - `extension-api`: the one API jar works with the 26.2 and 26.3 jars too.
 
 ## Impact
