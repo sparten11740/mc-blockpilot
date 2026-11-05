@@ -2,19 +2,19 @@
 
 ## 1. Build: preprocessed sources and the new nodes
 
-- [x] 1.1 Send `src/<version_sources>/` through Stonecutter in `build.fabric`, `build.neoforge` and `build.vanilla`, and `src/vanilla/` in `build.vanilla`, disabling the extra sets' compile and merge tasks (D1); verify `./gradlew build` passes on the five existing nodes with unchanged jar contents, and that "Set active project to 26.1-fabric" and to `26.2-vanilla`, and back, leaves `src/26.1/` and `src/vanilla/` unmodified in Git.
-- [x] 1.2 Declare the 26.2 and 26.3 nodes in `settings.gradle.kts` with `versions/<node>/gradle.properties` as pinned in D2; verify `./gradlew projects` lists eleven nodes and each new node reaches `compileJava` with dependencies resolved.
+- [x] 1.1 Send `src/<version_sources>/` through Stonecutter in `build.fabric`, `build.neoforge` and `build.vanilla`, and `src/vanilla/` in `build.vanilla`, disabling the extra sets' compile and merge tasks (D1); verify `./gradlew build` passes on the five existing nodes with unchanged jar contents, and that "Set active project to 26.1-fabric" and back leaves `src/26.1/` unmodified in Git.
+- [x] 1.2 Declare the 26.2 and 26.3 nodes in `settings.gradle.kts` with `versions/<node>/gradle.properties` as pinned in D2; verify `./gradlew projects` lists eleven nodes each new node reaches `compileJava` with dependencies resolved, and "Set active project to 26.2-vanilla" and back leaves `src/26.1/` and `src/vanilla/` unmodified in Git.
 - [x] 1.3 Update "To add a target" and the layout notes in `docs/building.md` (`src/26.1/` serves 26.1 and later and goes through Stonecutter; no copy of `src/<version>/` unless a range truly diverges); verify the steps match what 1.2 did.
-- [x] 1.4 Write the node's Minecraft version to the jar's manifest and have `BlockpilotAgent` read it instead of its constant (D8); verify the script's manifest and wrong-version checks pass on all three `-vanilla` jars.
+- [x] 1.4 Write the node's Minecraft version to the jar's manifest and have `BlockpilotAgent` read it instead of its constant (D8); verify the `26.1-vanilla` jar's manifest names 26.1.2 and the agent refuses another version under `java -version` (D10); 2.4 takes both into the script, and 4.4 and 6.4 cover the other jars.
 
 ## 2. A test script for every target
 
 - [x] 2.1 Add the input assertions of D10 to `tools/smoke_test.py` (mouse buttons in a world and a screen, camera and cursor, typing and select-all, shift-click, a key the game polls, F8 refused, scroll); verify they pass on a running 26.1 and 1.21.1 client, and that each fails once when what it checks is deliberately broken.
 - [x] 2.2 Add the capture and observation assertions of D10 (`pixels` upright, a coloured block by `@<pos>`, an ffmpeg-decoded video frame, `perf` rebuilds and block-entity times and particles, `hud`, graphics options by version), with a missing ffmpeg reported as skipped; verify they pass on a 26.1 and a 1.21.1 client, and each fails once when deliberately broken.
-- [x] 2.3 Add `tools/test_targets.py` as in D10: targets from `settings.gradle.kts`, `--targets`, start and wait for the client, smoke test in text and JSON mode, quit, shape comparison per loader, a per-target table, non-zero exit naming target and assertion; verify a passing run exits 0, a planted failure exits non-zero naming both, and a client that can't start is reported and the next target still runs.
+- [x] 2.3 Add `tools/test_targets.py` as in D10: targets from `settings.gradle.kts`, `--targets`, start and wait for the client, smoke test in text and JSON mode, quit, shape comparison per loader, a per-target table, non-zero exit naming target and assertion; verify a passing run exits 0, a planted failure exits non-zero naming both, a client that can't start, one lost during its assertions and one already running are each reported by name with the next target still running, and an interrupt, even twice, leaves no game running.
 - [x] 2.4 Add the jar checks and the wrong-version agent check of D10 to `tools/test_targets.py`; verify they pass on the five existing targets and fail on a jar with a wrong name or a missing manifest attribute.
-- [x] 2.5 Document running the script in `docs/building.md`, including `--targets`, how long it takes, leaving the game windows alone, and what it can't assert; verify the documented commands run as written.
-- [x] 2.6 Run the current `tools/test_targets.py --targets` on the five existing targets on the tree before any port work (`bbf7de1`), and save the per-loader shapes; verify every assertion passes, so failures on the same targets come from the port, and that the shapes match those of the final run.
+- [x] 2.5 Document running the script in `docs/building.md`, including `--targets`, how long it takes, leaving the game windows alone, and what it can't assert; verify `--list` and `--targets` on a target that builds run as written; 9.1 confirms the rest and the length.
+- [x] 2.6 Run `tools/test_targets.py --targets` on the five existing targets on the tree before any port work (`bbf7de1`), and save the per-loader shapes; verify every assertion passes, so failures on the same targets come from the port.
 
 ## 3. 26.2: shared code
 
@@ -32,9 +32,9 @@
 ## 5. 26.3: input without GLFW
 
 - [x] 5.1 Replace GLFW constants that have an `InputConstants` equivalent on every version (`PRESS`, `RELEASE`, `KEY_F8`) and rename `Type.KEYSYM` from 26.3 (D7); verify the nodes up to 26.2 compile, and the script's F8 and input assertions pass on 1.21.1 and 26.1.
-- [x] 5.2 Add 26.3 conditions to `Injection` for the modifier table and SDL keycodes, and to `Focus` for `Window.isFocused()` (D7); verify `26.3-fabric:compileJava` reports no GLFW errors.
+- [x] 5.2 Add 26.3 conditions to `Injection` for the modifier table and SDL keycodes, and to `Focus` for SDL's window flags (D7); verify `26.3-fabric:compileJava` reports no GLFW errors.
 - [x] 5.3 Map mouse button names to the game's numbers by version, keeping `KeyNames.BUTTONS`' order, with `KeyNamesTest` following (D7); verify unit tests and `GrammarConformanceTest` pass on all compiling nodes and the script's mouse assertions pass on 1.21.1 and 26.1.
-- [x] 5.4 Update `MouseHandlerMixin` for the five-argument `onMove` with computed relative movement, and `InputConstantsMixin` for `isKeyDown(int)` (D7); verify the 26.1 and 26.2 nodes compile, and those mixins' errors are gone from `26.3-fabric:compileJava`.
+- [x] 5.4 Update `MouseHandlerMixin` for the five-argument `onMove` with computed relative movement, and `InputConstantsMixin` for `isKeyDown(int)` (D7); verify the 26.1 and 26.2 nodes compile; the mixins apply on 26.3 at 6.4 (D9).
 
 ## 6. 26.3: the rest of the port
 
@@ -54,7 +54,7 @@
 
 ## 9. Integration checks
 
-- [x] 9.1 Run `./gradlew build` from a clean tree and then `tools/test_targets.py` on all eleven targets; verify exactly eleven mod jars land in `build/libs/`, all unit tests pass on every node, and the script exits 0.
+- [x] 9.1 Run `./gradlew build` from a clean tree and then `tools/test_targets.py` on all eleven targets; verify exactly eleven mod jars land in `build/libs/`, all unit tests pass on every node, and the script exits 0, then run that script on the tree of 2.6 on the same five targets; verify every assertion passes and the shapes equal this run's.
 - [x] 9.2 Confirm the one API jar still serves every target (`extension-api`); verify `RegistryTest` passes on all nodes, and the API jar's classes reference no Minecraft or loader type.
 - [x] 9.3 Try `screenshot` and `record` once on the Vulkan backend on 26.3, where the machine supports it (a non-goal, not a gate); report the result with the change.
 
@@ -62,13 +62,15 @@
 
 - [ ] 10.1 By hand on a 26.2 client: add a 26.2 installation in the Minecraft Launcher, append `-javaagent:<path to the jar>` to its JVM arguments and start it; verify `<game dir>/blockpilot/endpoint.json` appears and `status` answers in a world.
 - [ ] 10.2 By hand on a 26.3 client: the same as 10.1 with a 26.3 installation and the 26.3 jar; verify the same, and that `docs/connecting.md` matches the steps.
-- [ ] 10.3 By hand on a 26.3 dev client with an agent driving it: move the real mouse, click a real button and press a real key, then press the real F8; verify real input takes control back, a click's interrupt names its button, and F8 turns agent control off and on, as on 26.1.
-- [ ] 10.4 By hand on the same client, with a grabbed mouse: turn until the pointer is pinned at the window's edge, start an agent's action and keep moving the real mouse towards that edge; verify it takes control back.
-- [ ] 10.5 By hand on Windows or Linux with OpenGL 4.4 or newer, on a 26.x client: run `pixels` right after a block changes on screen, then `screenshot` and a short `record`; verify `pixels` sees the change and the images and the video's last frames are the current ones. This Mac's OpenGL has no `GL_ARB_buffer_storage`, so that path has never run.
-- [ ] 10.6 By hand on a 26.3 client with a non-Latin keyboard layout (Russian, say): `type hello`, then the select-all chord and `type x` in the chat box; verify the text is replaced. This Mac's layout wasn't changed to try it.
-- [ ] 10.7 By hand on any target: look at a screenshot and a recorded video; verify they look right beyond the orientation and colours the script checks.
+- [ ] 10.3 By hand on a 26.3 dev client, each during its own agent `wait 400t`: move the real mouse, click left, then right, then middle, scroll, and press W; verify each ends the wait with `err interrupted` naming its input, and left says `left`. Then press the real F8; verify it turns agent control off and on, as on 26.1. Then, on a screen, have an agent run `cursor 40,40`, move the real mouse, and open another screen with a real click; verify `screen` reports the cursor where the real pointer is.
+- [ ] 10.4 By hand on a 26.3 dev client, in a world: in a terminal run `sleep 20; <launcher> "wait 400t"`, then in the game move the mouse one way by more than the window's width, stop, and once the wait has begun keep moving briskly that way; verify it ends with `err interrupted input=move`.
+- [ ] 10.5 By hand on Windows or Linux with OpenGL 4.4 or newer, on a 26.1 and on a 26.2 or 26.3 client: run `tools/smoke_test.py --game-dir <run dir>` and look at a recorded video's last frames; verify it passes and they are the current ones. This Mac's OpenGL has no `GL_ARB_buffer_storage`, so that path has never run.
+- [ ] 10.6 By hand on a 26.3 client with an AZERTY and with a non-Latin keyboard layout: in the chat box have an agent run `type hello`, the select-all chord and `type x`; verify the text is replaced. This Mac's layout wasn't changed to try it.
+- [ ] 10.7 By hand on a 26.2 and a 26.3 client: look at a screenshot and a recorded video; verify they look right beyond the orientation and colours the script checks.
+- [ ] 10.8 By hand on a 26.3 client with another app in front, never clicking the game: during an agent's `wait 400t`, move the real mouse over its window; verify the wait ends `ok`. Then have the agent run `key escape` and `close`; verify the real pointer stays where it is, then click into the game; verify the mouse turns the camera.
+- [ ] 10.9 By hand in the CurseForge app on 26.2 and on 26.3, if it offers them: create a vanilla instance, put the jar in its `mods` folder and add `-javaagent:mods/<jar>` to its Java arguments; verify `endpoint.json` appears and `status` answers in a world, then take the caveat out of `docs/connecting.md` and `README.md`.
 
 ## Workflow follow-up
 
-- Archive the change after the project's review requirements are satisfied, and verify `multi-target-build`, `vanilla-agent` and `extension-api` carry the deltas.
-- A release is separate: bump `mod_version`, add the `CHANGELOG.md` section, and watch the CurseForge rows for 26.2 and 26.3 on the first tag. Whether the CurseForge app offers these versions is checked then too.
+- Archive the change after the project's review requirements are satisfied, and verify `multi-target-build`, `vanilla-agent`, `extension-api` and `video-recording` carry the deltas.
+- A release is separate: bump `mod_version`, add the `CHANGELOG.md` section, and watch the CurseForge rows for 26.2 and 26.3 on the first tag.

@@ -146,6 +146,12 @@ assertion.
 - **THEN** the assertions it can't answer fail by name, that client is stopped
   if it is still there, and the next target runs
 
+#### Scenario: A run is interrupted
+- **WHEN** the script gets Ctrl-C, a stop request or a closed terminal, even
+  twice
+- **THEN** the client under way is stopped, the finished targets are reported,
+  and it exits non-zero
+
 #### Scenario: A client is already running
 - **WHEN** a target's dev client is already running in its run folder
 - **THEN** that target is reported as failed, naming the process, and that
@@ -156,9 +162,9 @@ assertion.
 - **THEN** only those two clients start, and the result covers only them
 
 #### Scenario: Reply fields differ between targets
-- **WHEN** a query's JSON reply has different fields on two tested targets of
-  the same loader, where the vanilla targets count as Fabric, whose replies they
-  share
+- **WHEN** a query's JSON reply has different fields on two targets of the same
+  loader, tested in this run or saved from an earlier one, where the vanilla
+  targets count as Fabric, whose replies they share
 - **THEN** the script reports the query and both targets, and exits non-zero
 
 ### Requirement: The script asserts effects, not only replies

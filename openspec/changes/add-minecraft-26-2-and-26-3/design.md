@@ -57,8 +57,10 @@ nodes still build and pass their tests, and 26.2 shows the same 65 errors.
 - **Merge task off:** "Set active project" writes a node's sources back to
   `src/`, and 1.21.1 nodes don't have this tree, so switching to a 26.x node and
   back left `src/26.1/` modified in Git. Disabling `stonecutterMerge<set>` for
-  that set keeps the checkout clean; the spike showed the switch and a compile
-  of the active node both still work.
+  that set keeps the checkout clean. The cost: a 26.2 or 26.3 node doesn't
+  compile as the active node, as this tree stays in its 26.1 form while
+  `src/main` switches. Those nodes build by their Gradle path, as the script and
+  CI do, with another node active.
 - **Checked-in state:** the tree stays in its 26.1 form, the code for later
   versions commented out by its conditions.
 - *Alternative:* a copy per version. Rejected: three copies of 47 files, of
@@ -116,7 +118,8 @@ needs no condition.
 - **`GameRendererMixin` on 26.3:** `renderLevel` takes no arguments, and the
   `getBuffer` target's return type moved package. The handler is unaffected.
 - **Injection points:** the targets above were checked by name and signature
-  only. Whether each call still sits inside its method shows at load (D9).
+  only. Whether each call still sits inside its method shows when its class
+  loads (D9).
 
 ### D6. Frame capture and video readback on the new GPU API
 
@@ -220,8 +223,8 @@ already public on 26.2 and 26.3, and widening a public class does nothing.
   an unrelated step.
 - **Everything else that can be asserted:** the script in D10, on every target,
   so the 1.21.1 and 26.1 regression run is the same run as the port's.
-- **By hand:** what D10 lists as out of a script's reach. Whether the CurseForge
-  app offers these versions waits for the first release, as its uploads do.
+- **By hand:** what D10 lists as out of a script's reach, in section 10 of the
+  tasks.
 - **Clients:** dev clients are closed with `quit`. One that never answered, or
   doesn't close, is stopped through the build that runs it, and by process id if
   its endpoint names one. Only Blockpilot's own dev client is ever stopped.
@@ -233,7 +236,9 @@ A new `tools/test_targets.py` runs it on each target: it starts the dev client,
 waits for the endpoint, runs the smoke test in text and JSON mode, quits the
 client and moves on. It finishes with a per-target table, compares JSON shapes
 across targets of a loader, where the vanilla targets count as Fabric, whose
-replies they share, and exits non-zero on any failure.
+replies they share, and exits non-zero on any failure. Those include targets
+saved from an earlier run, so `--targets` can compare with them. An interrupt
+stops the client under way, and the run ends with the finished targets' table.
 
 - **Target list:** read from `settings.gradle.kts`, so a new node is tested
   without editing the script. `--targets` narrows it.
@@ -278,7 +283,10 @@ replies they share, and exits non-zero on any failure.
     - The Minecraft Launcher and CurseForge app install paths: they are GUI apps
       behind a Microsoft login.
     - Whether a video or screenshot looks right beyond orientation and colour.
-    - Windows and Linux, until someone runs the script there.
+    - Capture on OpenGL 4.4 or newer, which a Mac's OpenGL 4.1 can't reach.
+- **Platforms:** the script runs on macOS and Linux, and refuses Windows, as it
+  can't stop a client there. Beyond that capture check, Windows and Linux are
+  left to what players report, until someone runs the script on Linux.
 
 *Alternative:* a separate assertion suite beside the smoke test. Rejected: the
 two would drift, and most steps would be copies.
@@ -302,13 +310,15 @@ GPU and window, which makes timing-sensitive assertions flaky.
   nodes in parallel. Accepted as the cost of the targets.
 - [CurseForge may not list 26.2 or 26.3 as game versions yet, which only shows
   at upload] → The workflow runs on a tag, so this surfaces at the next release,
-  and `fail-fast: false` keeps one bad row from stopping the others. It can't be
-  tested beforehand.
+  and `fail-fast: false` keeps one bad row from stopping the others. The GitHub
+  release waits for every upload, though, so until CurseForge lists the version
+  or a new tag drops the row, there is no release. It can't be tested
+  beforehand.
 - [SDL input is tested only on the development Mac] → The key tables and event
   flow are the game's own and shared across platforms. Windows and Linux are
-  covered by what players report, as on other targets.
+  covered by what players report, as D10 says.
 - [The vanilla agent bundles Mixin for a Java 25 game that keeps changing] → The
-  load check runs on both `-vanilla` nodes.
+  world run covers all three `-vanilla` nodes.
 - [Each new 26.x adds conditions to one tree] → Accepted; a condition older than
   the oldest supported 26.x can be dropped when that target goes.
 

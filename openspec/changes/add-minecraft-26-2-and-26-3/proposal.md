@@ -72,3 +72,5 @@ None.
   `docs/dev-environment.md`, `docs/sable.md` and `docs/commands.md`.
 - **Existing jars:** the 1.21.1 and 26.1 jars keep their behavior, though the
   shared input code they compile from changes, so they are smoke-tested again.
+  26.1's capture changes too: it now waits for the GPU's copy, which is a fix on
+  machines with OpenGL 4.4 or newer.
