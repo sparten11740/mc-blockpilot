@@ -66,7 +66,7 @@
 - [x] 13.3 Make the dependency-order and window-system rules catch `import static`; verify each fails on a deliberate static import and passes without it
 - [x] 13.4 Make `noFileIsTheSameInTwoTrees` compare every copy of a file; verify it fails on a file two trees share when an earlier tree holds another version of it, and passes on the real trees
 - [ ] 13.5 Use `FrameCapture.mainTarget()` in the 1.21.1 `FrameReadback`; verify `record` passes on `1.21.1-fabric` in 13.7
-- [ ] 13.6 Count the release's targets by their `gradle.properties`, as `test_targets.py` does; verify the count prints 11 and the workflow parses as YAML
+- [x] 13.6 Count the release's targets by their `gradle.properties`, as `test_targets.py` does; verify the count prints 11 and the workflow parses as YAML
 - [ ] 13.7 From the last commit, verify `./gradlew build --continue` is green on all 11 nodes and the D11 four-target run passes
 
 ## Workflow follow-up
