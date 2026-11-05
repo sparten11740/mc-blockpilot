@@ -141,7 +141,7 @@ def version_steps(version):
     drop_all = "left_win" if sys.platform == "darwin" and version < (26, 1) else "left_control"
     polled_key = (f"server item replace entity @p hotbar.6 with minecraft:cobblestone 16; select 6; wait 2t; "
                   f"key press key.drop; wait 5t; status; key down {drop_all}; wait 2t; key press key.drop; wait 5t; "
-                  f"key up {drop_all}; status", [r"hand:cobblestone x15", r"!hand:cobblestone x14"])
+                  f"key up {drop_all}; status", [r"hand:cobblestone x15", r"!hand:cobblestone x15[\s\S]*\bhand:"])
     return [("graphics option sets and resets", *graphics), ("key names are the game's", *function_key),
             ("a held key is seen when the game polls for it", *polled_key)]
 
