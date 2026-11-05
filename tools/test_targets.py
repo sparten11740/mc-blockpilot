@@ -102,7 +102,7 @@ def check_jar(target, minecraft, loader, result):
             stray = [name for name in METADATA.values() if name in names]
             result.check("vanilla jar has no loader metadata", f"has {stray}" if stray else None)
         else:
-            metadata = jar.read(METADATA[loader]).decode()
+            metadata = jar.read(METADATA[loader]).decode() if METADATA[loader] in names else ""
             pinned = f'"minecraft": "{minecraft}"' if loader == "fabric" else f'versionRange="[{minecraft}]"'
             result.check("loader metadata pins the game version",
                          None if pinned in metadata else f"no {pinned} in {METADATA[loader]}")
@@ -192,8 +192,7 @@ def game_pid(game_dir):
         return None
 
 
-def test_target(target):
-    result = Result(target)
+def test_target(target, result):
     minecraft = properties(os.path.join(node_dir(target), "gradle.properties"))["minecraft_version"]
     loader = target.rsplit("-", 1)[1]
     directory = os.path.join(OUTPUT, target)
@@ -209,7 +208,7 @@ def test_target(target):
     if loader == "vanilla" and jar:
         check_agent_refuses_other_versions(jar, minecraft, result)
     if built.returncode != 0:
-        return result
+        return
 
     game_dir = os.path.join(node_dir(target), "run")
     endpoint = os.path.join(game_dir, "blockpilot", "endpoint.json")
@@ -236,7 +235,6 @@ def test_target(target):
     if not problem:
         # The shutdown hook removes the file, which nothing else does.
         result.check("the shutdown hook ran", f"{endpoint} is still there" if os.path.exists(endpoint) else None)
-    return result
 
 
 def compare_shapes(results):
@@ -291,8 +289,14 @@ def main():
     try:
         for target in chosen:
             print(f"testing {target}", flush=True)
-            results.append(test_target(target))
-            print(f"  {'FAIL' if results[-1].problems else 'pass'} {results[-1].summary()}", flush=True)
+            result = Result(target)
+            try:
+                test_target(target, result)
+            except Exception as error:
+                # A surprise in one target, such as a corrupt jar, mustn't lose the results of the others.
+                result.check("the test itself", repr(error)[:400])
+            results.append(result)
+            print(f"  {'FAIL' if result.problems else 'pass'} {result.summary()}", flush=True)
     except KeyboardInterrupt:
         print("interrupted; the target under way is left out", flush=True)
         if results:
