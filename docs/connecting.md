@@ -19,7 +19,8 @@ runs as a Java agent instead:
 
 In the CurseForge app, create a vanilla instance of that version and add the same argument to its Java arguments. It
 starts the game in the instance's folder, so a path relative to that works too and avoids spaces in the instance's name:
-with the jar in the instance's `mods` folder, `-javaagent:mods/<jar>`.
+with the jar in the instance's `mods` folder, `-javaagent:mods/<jar>`. On 26.2 and 26.3 this depends on the app offering
+those versions, which hasn't been checked yet.
 
 On any other version the agent logs the one it supports, and the game starts without it. Use it on plain
 Minecraft only, not in an installation with a mod loader. There are no mod configs, so `config` answers
