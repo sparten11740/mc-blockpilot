@@ -119,10 +119,10 @@ class PerfTest {
         double[] ticks = {10, 60, 180, 55, 50};
         long[] labels = {101, 102, 103, 104, 105};
         assertEquals("[{\"tick\":103,\"ms\":180.0},{\"tick\":102,\"ms\":60.0},{\"tick\":104,\"ms\":55.0}]",
-            Perf.spikes(ticks, labels, new int[5][4]).toString());
+            PerfCapture.spikes(ticks, labels, new int[5][4]).toString());
         double[] many = new double[30];
         java.util.Arrays.fill(many, 70);
-        assertEquals(Perf.MAX_SPIKES, Perf.spikes(many, new long[30], new int[30][4]).size());
+        assertEquals(PerfCapture.MAX_SPIKES, PerfCapture.spikes(many, new long[30], new int[30][4]).size());
     }
 
     @Test
@@ -185,7 +185,7 @@ class PerfTest {
         Perf.start("bound");
         Perf.serverTick(1_000_000, 1);
         Perf.Change stone = new Perf.Change("stone", null, null);
-        for (int x = 0; x < Perf.MAX_TRACKED_POSITIONS; x++) {
+        for (int x = 0; x < PerfCapture.MAX_TRACKED_POSITIONS; x++) {
             Perf.blockChanged(stone, new Perf.Spot("overworld", x, 0, 0));
         }
         Perf.blockChanged(stone, new Perf.Spot("overworld", -1, 0, 0));
@@ -193,11 +193,11 @@ class PerfTest {
         Perf.blockChanged(stone, new Perf.Spot("overworld", 7, 0, 0));
         JsonObject server = Perf.stop(new JsonObject(), Map.of()).getAsJsonObject("server");
         JsonArray positions = server.getAsJsonArray("block_change_positions");
-        assertEquals(Perf.MAX_BLOCK_CHANGE_POSITIONS, positions.size());
+        assertEquals(PerfCapture.MAX_BLOCK_CHANGE_POSITIONS, positions.size());
         assertEquals("[7,0,0]", positions.get(0).getAsJsonObject().get("pos").toString());
         assertEquals(2, positions.get(0).getAsJsonObject().get("count").getAsInt());
         assertEquals(2, server.get("block_change_positions_untracked").getAsInt());
-        assertEquals(Perf.MAX_TRACKED_POSITIONS + 3,
+        assertEquals(PerfCapture.MAX_TRACKED_POSITIONS + 3,
             server.getAsJsonArray("block_changes").get(0).getAsJsonObject().get("count").getAsInt());
     }
 
