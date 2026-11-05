@@ -182,7 +182,7 @@ final class InputCommands {
     private static Action move(double dx, double dy, int ticks) {
         double scale = ClientScreens.current() != null ? guiScale() : 1;
         int[] step = {0};
-        return ActionCommands.named("mouse", () -> {
+        return PlayerActions.named("mouse", () -> {
             var mouse = minecraft().mouseHandler;
             Injection.mouseMoveTo(mouse.xpos() + dx * scale / ticks, mouse.ypos() + dy * scale / ticks);
             return ++step[0] >= ticks ? Result.ok() : null;

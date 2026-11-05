@@ -236,7 +236,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         presence.update(engine.sessionCount(), engine.activity(), now);
         boolean agentInControl = enabled && presence.present(now);
         Focus.setKeepActive(agentInControl || Recorder.active());
-        ActionCommands.holdFlight(agentInControl);
+        MovementCommands.holdFlight(agentInControl);
         InputState.reassert();
         events.tick();
         SableSupport.tick(Minecraft.getInstance());
