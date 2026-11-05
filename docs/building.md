@@ -19,11 +19,12 @@ and `dev.blockpilot.protocol` are free of Minecraft classes (enforced by a test)
 commands. The sources are checked in for `1.21.1-neoforge`. Code that differs between builds is marked with Stonecutter
 comments such as `//? if neoforge {` or `//? if >=26.1 {`, and plain renames (`ResourceLocation` to `Identifier`, …) are
 rules in `blockpilot/stonecutter.gradle.kts`. What differs most between versions lives in `src/1.21.1/` and `src/26.1/`:
-the mixins, and a few classes with the same name and methods in each (`CraftingRecipes`, `FrameCapture`). `src/26.1/`
-serves 26.1 and later. These trees and `src/vanilla/` go through Stonecutter too, so the same comments and rules work in
-them, but they aren't on every node, so switching the active node leaves them as checked in, for their oldest version.
-So a 26.2 or 26.3 node doesn't compile as the active node, in an IDE too: build it by its Gradle path, with another node
-active.
+mixins too different for a condition or two, and a few classes with the same name and methods in each
+(`CraftingRecipes`, `FrameCapture`). Mixins that work on every version are in `src/main/`, and each tree's
+`blockpilot.mixins.json` lists both kinds. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through
+Stonecutter too, so the same comments and rules work in them, but they aren't on every node, so switching the active
+node leaves them as checked in, for their oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in
+an IDE too: build it by its Gradle path, with another node active.
 
 To add a target: add it with `target(...)` in `settings.gradle.kts`, create
 `blockpilot/versions/<minecraft>-{neoforge,fabric,vanilla}/gradle.properties`, with `version_sources` naming the tree it
