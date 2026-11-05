@@ -88,7 +88,7 @@ final class ContainerCommands {
                     return null;
                 }
                 if (step == 0) {
-                    ActionCommands.lookAt(center);
+                    PlayerActions.lookAt(center);
                     step = 1;
                     return null;
                 }
@@ -97,7 +97,7 @@ final class ContainerCommands {
                     if (!(hit instanceof BlockHitResult blockHit) || !blockHit.getBlockPos().equals(pos)) {
                         throw new CommandException("out_of_reach", Rel.of(pos) + " is not visible");
                     }
-                    ActionCommands.click(minecraft().options.keyUse);
+                    PlayerActions.click(minecraft().options.keyUse);
                     step = 2;
                     return null;
                 }
@@ -358,7 +358,7 @@ final class ContainerCommands {
         /** Closes the crafting table this craft opened, so later world actions aren't stuck behind its screen. */
         private void closeOpened() {
             if (opening != null && opened) {
-                ActionCommands.closeScreen();
+                PlayerActions.closeScreen();
             }
         }
 
