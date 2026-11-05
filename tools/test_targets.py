@@ -80,10 +80,15 @@ def last_lines(path, pattern, count=6):
     return " | ".join(line[:200] for line in matching[-count:]) or f"see {path}"
 
 
-def check_jar(target, minecraft, loader, result):
+def jar_path(minecraft, loader):
+    mod_version = properties(os.path.join(ROOT, "blockpilot", "gradle.properties"))["mod_version"]
+    return os.path.join(ROOT, "build", "libs", f"blockpilot-{mod_version}+{minecraft}-{loader}.jar")
+
+
+def check_jar(minecraft, loader, result):
     """The jar's name, what it holds and what it declares; none of this needs the game."""
     mod_version = properties(os.path.join(ROOT, "blockpilot", "gradle.properties"))["mod_version"]
-    path = os.path.join(ROOT, "build", "libs", f"blockpilot-{mod_version}+{minecraft}-{loader}.jar")
+    path = jar_path(minecraft, loader)
     if not os.path.exists(path):
         result.check("jar name", f"no {os.path.basename(path)} in build/libs")
         return None
@@ -219,13 +224,17 @@ def test_target(target, result):
     directory = os.path.join(OUTPUT, target)
     os.makedirs(directory, exist_ok=True)
 
+    # What an earlier build or run left would pass for this one's.
+    for leftover in [jar_path(minecraft, loader), os.path.join(directory, "shapes.txt")]:
+        if os.path.exists(leftover):
+            os.remove(leftover)
     log = os.path.join(directory, "build.log")
     with open(log, "w", encoding="utf-8") as output:
         built = subprocess.run([GRADLE, "--console=plain", f":blockpilot:{target}:build"], cwd=ROOT, stdout=output,
                                stderr=subprocess.STDOUT, check=False)
     result.check("build and unit tests",
                  None if built.returncode == 0 else last_lines(log, r"error:|FAILED|What went wrong", 8))
-    jar = check_jar(target, minecraft, loader, result) if built.returncode == 0 else None
+    jar = check_jar(minecraft, loader, result) if built.returncode == 0 else None
     if loader == "vanilla" and jar:
         check_agent_refuses_other_versions(jar, minecraft, result)
     if built.returncode != 0:
@@ -239,9 +248,9 @@ def test_target(target, result):
         return
     if os.path.exists(endpoint):
         os.remove(endpoint)
-    if sys.platform == "darwin":
-        # A client started while the display sleeps fails with "Failed to locate a primary monitor".
-        subprocess.Popen(["caffeinate", "-u", "-t", "300"])
+    # A client started while the display sleeps fails with "Failed to locate a primary monitor".
+    awake = subprocess.Popen(["caffeinate", "-u", "-t", "300"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) \
+        if sys.platform == "darwin" else None
     log = os.path.join(directory, "client.log")
     with open(log, "w", encoding="utf-8") as output:
         gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
@@ -258,6 +267,8 @@ def test_target(target, result):
     finally:
         # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
         stopped = stop_client(gradle, game_dir, answered)
+        if awake:
+            awake.terminate()
     if answered:
         result.check("client closes on quit", stopped)
         # The shutdown hook removes the file, which nothing else does.
@@ -280,6 +291,8 @@ def compare_shapes(results):
             with open(path, encoding="utf-8") as source:
                 theirs = source.read().splitlines()
             different = [f"{there} on {other}, here {here}" for here, there in zip(lines, theirs) if here != there]
+            if len(lines) != len(theirs):
+                different.append(f"{len(theirs)} queries on {other}, here {len(lines)}")
             result.check(f"JSON shapes match {other}", different[0][:400] if different else None)
 
 
