@@ -129,7 +129,10 @@ the copy, then map it. What changes:
   Vulkan through MoltenVK showed the old frame on 26.3, and passes with the wait
   on 26.2 and 26.3. So they wait on a fence: from 26.2 that takes ending the
   submit first, between frames, as the game's own frame loop does. On 26.1 it
-  takes a flush, which only NeoForge's fence does itself.
+  takes a flush, which only NeoForge's fence does itself. A recording whose
+  slots are all full waits on a fence per slot, for the oldest copy only, not
+  the whole GPU queue; from 26.2 the game's own pacing means it doesn't get
+  there.
 - **26.2:** `buffer.map(true, false)` replaces `encoder.mapBuffer`; `GpuFormat`
   replaces `TextureFormat`, `blockSize` replaces `pixelSize`, and render passes
   take new arguments.
