@@ -154,6 +154,10 @@ ones everywhere. The rest are conditions, because 1.21.1 lacks the `MOD_*` bits.
 - **Mouse movement:** `onMove` gained relative `xrel` and `yrel`, which is what
   it uses while the mouse is grabbed. `blockpilot$move` computes them from the
   shadowed `xpos` and `ypos`, or the camera wouldn't turn.
+- **Cursor:** `Gui.setScreen` now rereads the OS pointer, which would forget
+  where an agent put the cursor, so a click that opened a screen left it
+  elsewhere than on 26.2. While the agent moved the mouse last, the reread is
+  skipped; a real move ends that.
 - **Polling:** `InputConstants.isKeyDown(int)` drops the window, so the handler
   signature changes by condition.
 - **Focus:** `Focus.reallyFocused` asks SDL for the window's input focus on
@@ -214,7 +218,8 @@ across targets of a loader, and exits non-zero on any failure.
       act on a stack, at the slot's place on screen. `click s<i>` wouldn't do:
       it drives the container directly, past the mouse and its modifiers.
     - `mouse move` changes `status`'s yaw in a world and moves the cursor in a
-      screen.
+      screen, by the distance asked. A click that opens another screen leaves
+      the cursor where it was.
     - `type` fills the chat box, then select-all and typing replaces it. The
       chord is `left_win+a` on macOS and `left_control+a` elsewhere, as the
       game's own `EDIT_SHORTCUT_KEY_MODIFIER` requires.

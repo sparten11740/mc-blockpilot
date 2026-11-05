@@ -159,15 +159,29 @@ def upright(sky, ground):
     return sky[2] > sky[0] and ground[2] < ground[0]
 
 
-def check_buttons_in_screen(game_dir):
-    """Left click on a pause menu button, through the cursor as a player's mouse does."""
+def advancements_button(game_dir):
+    """Opens the pause menu and returns its button for the advancements, a screen of their own on every version."""
     _, output = run(game_dir, "key escape; wait 5t; screen full")
     widget = re.search(r"\bw(\d+):button \"Advancements\"", output)
     if not widget:
-        return f"no Advancements button: {output.strip()}"
-    _, output = run(game_dir, f"cursor w{widget.group(1)}; wait 2t; mouse click left; wait 5t; screen; close")
+        raise AssertionError(f"no Advancements button: {output.strip()}")
+    return f"w{widget.group(1)}"
+
+
+def check_buttons_in_screen(game_dir):
+    """Left click on a pause menu button, through the cursor as a player's mouse does."""
+    _, output = run(game_dir, f"cursor {advancements_button(game_dir)}; wait 2t; mouse click left; wait 5t; screen; "
+                              "close")
     changed = re.search(r"^ok advancements", output, re.MULTILINE)
     return None if changed else f"the screen didn't change: {output.strip()}"
+
+
+def check_cursor_stays_across_screens(game_dir):
+    """A click that opens another screen leaves the cursor where the agent put it, which 26.3 would forget."""
+    _, output = run(game_dir, f"cursor {advancements_button(game_dir)}; wait 2t; screen; mouse click left; wait 5t; "
+                              "screen; close")
+    cursors = re.findall(r"\bcursor (\d+,\d+)", output)
+    return None if len(cursors) == 2 and cursors[0] == cursors[1] else f"the cursor went {cursors}: {output.strip()}"
 
 
 def check_mouse_on_slots(game_dir):
@@ -417,6 +431,7 @@ def main():
         ("perception is passive", lambda: check_perception_is_passive(args.game_dir)),
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
+        ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),
         ("mouse move turns the camera", lambda: check_camera_turns(args.game_dir)),
         ("mouse move moves the cursor in a screen", lambda: check_cursor_moves(args.game_dir)),

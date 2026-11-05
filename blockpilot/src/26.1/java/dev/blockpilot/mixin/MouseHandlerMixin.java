@@ -9,6 +9,9 @@ import net.minecraft.client.MouseHandler;
 import net.minecraft.client.input.MouseButtonInfo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+//? if >=26.3 {
+/*import org.spongepowered.asm.mixin.Unique;
+*///?}
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -33,6 +36,9 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     @Shadow
     private double ypos;
 
+    @Unique
+    private boolean blockpilot$agentMovedLast;
+
     @Shadow
     private void onMove(long window, double x, double y, double xRelative, double yRelative) {
     }
@@ -54,7 +60,8 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     @Override
     public void blockpilot$move(long window, double x, double y) {
         //? if >=26.3 {
-        /*// A grabbed mouse turns the camera by the relative movement, which the window system reports with the place.
+        /*blockpilot$agentMovedLast = true;
+        // A grabbed mouse turns the camera by the relative movement, which the window system reports with the place.
         onMove(window, x, y, x - xpos, y - ypos);
         *///?} else {
         onMove(window, x, y);
@@ -71,6 +78,16 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
         mouseGrabbed = true;
     }
 
+    //? if >=26.3 {
+    /*// Every new screen rereads the OS pointer, which would forget where an agent put the cursor; 26.2 keeps it.
+    @Inject(method = "resyncMousePosition", at = @At("HEAD"), cancellable = true)
+    private void blockpilot$keepAgentsCursor(CallbackInfo info) {
+        if (blockpilot$agentMovedLast) {
+            info.cancel();
+        }
+    }
+
+    *///?}
     @Inject(method = "onButton", at = @At("HEAD"))
     private void blockpilot$onPress(long window, MouseButtonInfo button, int action, CallbackInfo info) {
         if (!Injection.active()) {
@@ -94,7 +111,8 @@ public abstract class MouseHandlerMixin implements Injection.Mouse {
     //?}
         if (!Injection.active()) {
             //? if >=26.3 {
-            /*var gameWindow = Minecraft.getInstance().getWindow();
+            /*blockpilot$agentMovedLast = false;
+            var gameWindow = Minecraft.getInstance().getWindow();
             // SDL's relative mode keeps a grabbed mouse inside the window, so at an edge its place stops changing.
             if (mouseGrabbed && HumanInput.atEdge(x, y, gameWindow.getScreenWidth(), gameWindow.getScreenHeight())) {
                 HumanInput.mouseMoveBy(window, x, y, xRelative, yRelative);

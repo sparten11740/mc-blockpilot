@@ -85,6 +85,12 @@ documented capability gaps that the target reports through `help`.
 - **THEN** the same button or keys act on both, though 26.3 numbers them
   differently
 
+#### Scenario: The cursor stays through a screen change
+- **WHEN** an agent puts the cursor on a button and clicks it, on a 26.2 and on
+  a 26.3 jar, and the click opens another screen
+- **THEN** `screen` reports the cursor where the agent put it on both, though
+  26.3 rereads the OS pointer on every new screen
+
 #### Scenario: Key names are the running game's
 - **WHEN** an agent runs `key press f25` on a 26.3 jar, which has no such key
 - **THEN** the result is `err syntax` with the closest key names, as for any
