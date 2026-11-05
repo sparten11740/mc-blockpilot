@@ -142,8 +142,9 @@ and `Window.isFocused()`.
   through the same `InputConstants.Key` lookups, so names keep working.
 - **Key events:** `KeyEvent` is `(scancode, keycode, modifiers)`, and text-field
   shortcuts compare the keycode (`shortcutKey() == 97` for select-all). Injected
-  keys get it from `SDL_GetKeyFromScancode`, or those shortcuts would silently
-  stop working.
+  keys get it from `SDL_GetKeyFromScancode` with `key_event` on, as real events
+  do, or those shortcuts would silently stop working: without it, a non-Latin
+  layout gives its own letter. That path needs such a layout, and hasn't run.
 - **Modifiers:** the bits come from `InputConstants.MOD_*`. Left and right super
   are `KEY_LGUI` and `KEY_RGUI`.
 - **Mouse buttons:** left, middle and right are now 1, 2 and 3, not 0, 2 and 1.
