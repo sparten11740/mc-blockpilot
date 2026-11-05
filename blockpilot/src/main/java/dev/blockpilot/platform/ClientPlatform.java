@@ -2,10 +2,17 @@ package dev.blockpilot.platform;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+//? if >=26.1 {
+/*import java.util.HashSet;
+*///?}
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+//? if >=26.1 {
+/*import java.util.Set;
+*///?}
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -26,10 +33,6 @@ public final class ClientPlatform {
 
         /** This mod's version as the loader read it from the jar's metadata. */
         String modVersion();
-
-        String minecraftVersion();
-
-        boolean isModLoaded(String modId);
 
         /** Null when no mod with that id is loaded. */
         String versionOf(String modId);
@@ -93,6 +96,9 @@ public final class ClientPlatform {
     }
 
     private static Services services;
+    //? if >=26.1 {
+    /*private static final Set<KeyMapping.Category> CATEGORIES = new HashSet<>();
+    *///?}
     /** {@link #modOf} per class name, "" for none; a class doesn't change mods. */
     private static final Map<String, String> MODS_OF = new ConcurrentHashMap<>();
     private static Hooks hooks = new Hooks() {
@@ -129,11 +135,11 @@ public final class ClientPlatform {
     }
 
     public static String minecraftVersion() {
-        return services().minecraftVersion();
+        return SharedConstants.getCurrentVersion().getName();
     }
 
     public static boolean isModLoaded(String modId) {
-        return services().isModLoaded(modId);
+        return versionOf(modId) != null;
     }
 
     public static String versionOf(String modId) {
@@ -175,4 +181,13 @@ public final class ClientPlatform {
     public static List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
         return services().creativeTabsOnPage(screen);
     }
+
+    // Categories are registered objects from 26.1. A loader that leaves that to the mod calls this for each mapping.
+    //? if >=26.1 {
+    /*public static void registerCategoryOf(KeyMapping mapping) {
+        if (CATEGORIES.add(mapping.getCategory())) {
+            KeyMapping.Category.register(mapping.getCategory().id());
+        }
+    }
+    *///?}
 }

@@ -110,9 +110,9 @@ switch imports. `src/1.21.1` is unaffected, since it has no such API.
   `platform.neoforge` stops importing `game.perf`.
 - `Services` gains `cameraRoll(Camera)`, defaulting to 0, replacing the only
   loader condition in game code.
-- `minecraftVersion()` moves into `ClientPlatform`, `isModLoaded` becomes a
-  default built on `versionOf`, and Fabric and vanilla share category
-  registration.
+- `minecraftVersion()` moves into `ClientPlatform`, `isModLoaded` is built on
+  `versionOf`, and Fabric and vanilla share category registration, as
+  `ClientPlatform.registerCategoryOf`.
 - `FabricServices` and `NeoForgeServices` leave the entry points, which keep
   only the event wiring.
 

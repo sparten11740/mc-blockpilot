@@ -3,25 +3,16 @@ package dev.blockpilot.platform.neoforge;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.platform.ClientPlatform;
-import dev.blockpilot.platform.ModConfigs;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 //? if >=26.1 {
-/*import java.util.Locale;
-*///?}
-import net.minecraft.SharedConstants;
+/*import java.util.List;
+import java.util.Locale;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
-import net.minecraft.world.item.CreativeModeTab;
+*///?}
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLLoadCompleteEvent;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -34,107 +25,20 @@ import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforgespi.language.IModFileInfo;
 
 /** The mod on NeoForge: installs the platform and forwards NeoForge's events to the platform hooks. */
 @Mod(value = Blockpilot.MOD_ID, dist = Dist.CLIENT)
 public final class NeoForgeClientEntrypoint {
-    private final List<KeyMapping> keyMappings = new ArrayList<>();
-    private final ModConfigs configs = new NeoForgeModConfigs();
-
     public NeoForgeClientEntrypoint(IEventBus modEventBus) {
-        ClientPlatform.install(new ClientPlatform.Services() {
-            @Override
-            public String loaderName() {
-                return "neoforge";
-            }
-
-            @Override
-            public String modVersion() {
-                return ModList.get().getModContainerById(Blockpilot.MOD_ID)
-                    .map(container -> container.getModInfo().getVersion().toString())
-                    .orElse("unknown");
-            }
-
-            @Override
-            public String minecraftVersion() {
-                return SharedConstants.getCurrentVersion().getName();
-            }
-
-            @Override
-            public boolean isModLoaded(String modId) {
-                return ModList.get().isLoaded(modId);
-            }
-
-            @Override
-            public String versionOf(String modId) {
-                return ModList.get().getModContainerById(modId)
-                    .map(container -> container.getModInfo().getVersion().toString())
-                    .orElse(null);
-            }
-
-            @Override
-            public Path configDir() {
-                return FMLPaths.CONFIGDIR.get();
-            }
-
-            @Override
-            public Path gameDir() {
-                return FMLPaths.GAMEDIR.get();
-            }
-
-            @Override
-            public List<Path> modPaths() {
-                IModFileInfo file = ModList.get().getModFileById(Blockpilot.MOD_ID);
-                if (file == null) {
-                    return List.of();
-                }
-                //? if >=26.1 {
-                /*return List.copyOf(file.getFile().getContents().getContentRoots());
-                *///?} else {
-                // This FML names only the primary path: the jar, or in a dev run the classes folder.
-                return List.of(file.getFile().getFilePath());
-                //?}
-            }
-
-            @Override
-            public String modOf(String className) {
-                String file = className.replace('.', '/') + ".class";
-                for (IModFileInfo info : ModList.get().getModFiles()) {
-                    //? if >=26.1 {
-                    /*boolean holds = info.getFile().getContents().containsFile(file);
-                    *///?} else {
-                    boolean holds = Files.exists(info.getFile().findResource(file.split("/")));
-                    //?}
-                    if (holds && !info.getMods().isEmpty()) {
-                        return info.getMods().get(0).getModId();
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public void registerKeyMapping(KeyMapping mapping) {
-                keyMappings.add(mapping);
-            }
-
-            @Override
-            public ModConfigs modConfigs() {
-                return configs;
-            }
-
-            @Override
-            public List<CreativeModeTab> creativeTabsOnPage(CreativeModeInventoryScreen screen) {
-                return screen.getCurrentPage().getVisibleTabs();
-            }
-        });
+        NeoForgeServices services = new NeoForgeServices();
+        ClientPlatform.install(services);
         Blockpilot.init();
 
         modEventBus.addListener(RegisterKeyMappingsEvent.class, event -> {
             //? if >=26.1 {
-            /*keyMappings.stream().map(KeyMapping::getCategory).distinct().forEach(event::registerCategory);
+            /*services.keyMappings().stream().map(KeyMapping::getCategory).distinct().forEach(event::registerCategory);
             *///?}
-            keyMappings.forEach(event::register);
+            services.keyMappings().forEach(event::register);
         });
         modEventBus.addListener(FMLLoadCompleteEvent.class, event -> ClientPlatform.hooks().onLoadComplete());
 

@@ -8,13 +8,10 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
-import net.minecraft.SharedConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -29,7 +26,6 @@ import net.minecraft.world.item.CreativeModeTabs;
  */
 public final class VanillaPlatform implements ClientPlatform.Services {
     private static final List<KeyMapping> KEY_MAPPINGS = new ArrayList<>();
-    private static final Set<KeyMapping.Category> CATEGORIES = new HashSet<>();
 
     private final Path jar;
     private final String version;
@@ -83,22 +79,12 @@ public final class VanillaPlatform implements ClientPlatform.Services {
         return version;
     }
 
-    @Override
-    public String minecraftVersion() {
-        return SharedConstants.getCurrentVersion().name();
-    }
-
-    @Override
-    public boolean isModLoaded(String modId) {
-        return versionOf(modId) != null;
-    }
-
     /** Only this mod and the game: there is nothing to load others. */
     @Override
     public String versionOf(String modId) {
         return switch (modId) {
             case Blockpilot.MOD_ID -> modVersion();
-            case "minecraft" -> minecraftVersion();
+            case "minecraft" -> ClientPlatform.minecraftVersion();
             default -> null;
         };
     }
@@ -129,10 +115,7 @@ public final class VanillaPlatform implements ClientPlatform.Services {
 
     @Override
     public void registerKeyMapping(KeyMapping mapping) {
-        // Categories are registered objects, which a loader would register for the mod.
-        if (CATEGORIES.add(mapping.getCategory())) {
-            KeyMapping.Category.register(mapping.getCategory().id());
-        }
+        ClientPlatform.registerCategoryOf(mapping);
         KEY_MAPPINGS.add(mapping);
     }
 
