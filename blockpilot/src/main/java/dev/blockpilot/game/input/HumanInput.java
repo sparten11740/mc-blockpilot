@@ -24,7 +24,7 @@ public final class HumanInput {
 
     public static void key(long window, int key, int action) {
         if (action == InputConstants.PRESS && Focus.reallyFocused()) {
-            listener.accept(keyInput(KeyNames.agentName(InputConstants.Type.KEYSYM.getOrCreate(key).getName())));
+            listener.accept(keyInput(KeyNames.agentName(WindowSystem.keyName(key))));
         }
     }
 

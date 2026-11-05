@@ -53,8 +53,7 @@ stonecutter parameters {
     rename("26.2", "client.gui.Gui;", "client.gui.Hud;")
     rename("26.2", "@Mixin(Gui.class)", "@Mixin(Hud.class)")
     rename("26.2", "RenderSection\$RebuildTask", "RenderSection\$CompileTask")
-    // 26.3 replaces GLFW with SDL, and moves the GPU classes to their own library.
-    rename("26.3", "InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
+    // 26.3 moves the GPU classes to their own library.
     rename("26.3", "com.mojang.blaze3d.buffers.GpuFence;", "com.mojang.renderpearl.api.commands.GpuFence;")
     rename("26.3", "com.mojang.blaze3d.buffers.", "com.mojang.renderpearl.api.buffers.")
     rename("26.3", "com/mojang/blaze3d/buffers/", "com/mojang/renderpearl/api/buffers/")
