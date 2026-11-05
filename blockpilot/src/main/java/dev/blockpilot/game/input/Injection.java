@@ -2,13 +2,7 @@ package dev.blockpilot.game.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.blockpilot.game.common.ClientScreens;
-import java.util.List;
 import net.minecraft.client.Minecraft;
-//? if >=26.3 {
-/*import org.lwjgl.sdl.SDLKeyboard;
-*///?} else {
-import org.lwjgl.glfw.GLFW;
-//?}
 
 /**
  * Sends input to the game the way the window system would: through vanilla's mouse and keyboard handlers, so the game
@@ -35,23 +29,6 @@ public final class Injection {
         void blockpilot$charTyped(long window, int codePoint, int modifiers);
     }
 
-    /** A modifier's left and right keys, as the game numbers them, and the bit real events carry while one is down. */
-    private record Modifier(int left, int right, int bit) {
-    }
-
-    //? if >=26.3 {
-    /*private static final List<Modifier> MODIFIERS = List.of(
-        new Modifier(InputConstants.KEY_LSHIFT, InputConstants.KEY_RSHIFT, InputConstants.MOD_SHIFT),
-        new Modifier(InputConstants.KEY_LCONTROL, InputConstants.KEY_RCONTROL, InputConstants.MOD_CONTROL),
-        new Modifier(InputConstants.KEY_LALT, InputConstants.KEY_RALT, InputConstants.MOD_ALT),
-        new Modifier(InputConstants.KEY_LGUI, InputConstants.KEY_RGUI, InputConstants.MOD_SUPER));
-    *///?} else {
-    private static final List<Modifier> MODIFIERS = List.of(
-        new Modifier(GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT, GLFW.GLFW_MOD_SHIFT),
-        new Modifier(GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL, GLFW.GLFW_MOD_CONTROL),
-        new Modifier(GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT, GLFW.GLFW_MOD_ALT),
-        new Modifier(GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER, GLFW.GLFW_MOD_SUPER));
-    //?}
 
     private static int depth;
 
@@ -85,7 +62,7 @@ public final class Injection {
      */
     private static int modifiers() {
         int bits = 0;
-        for (Modifier modifier : MODIFIERS) {
+        for (WindowSystem.Modifier modifier : WindowSystem.MODIFIERS) {
             if (InputState.isRawKeyHeld(modifier.left()) || InputState.isRawKeyHeld(modifier.right())) {
                 bits |= modifier.bit();
             }
@@ -126,25 +103,8 @@ public final class Injection {
     }
 
     public static void key(int key, boolean down) {
-        run(() -> keyboard().blockpilot$keyPress(window(), key, otherKeyCode(key),
+        run(() -> keyboard().blockpilot$keyPress(window(), key, WindowSystem.otherKeyCode(key),
             down ? InputConstants.PRESS : InputConstants.RELEASE, modifiers()));
-    }
-
-    /**
-     * What a real event carries beside the key: up to 26.2 the key is a key code and this its scan code; from 26.3 the
-     * key is a scan code and this its key code, which the game's text shortcuts read. An agent's {@code a} is a place
-     * on the keyboard on every version, so it stays 97 whatever the layout, or select-all would fail on AZERTY, whose
-     * key there gives {@code q}. Other keys get what SDL makes for an event, with {@code key_event}.
-     */
-    private static int otherKeyCode(int key) {
-        //? if >=26.3 {
-        /*if (key >= InputConstants.KEY_A && key <= InputConstants.KEY_Z) {
-            return 'a' + key - InputConstants.KEY_A;
-        }
-        return SDLKeyboard.SDL_GetKeyFromScancode(key, (short) 0, true);
-        *///?} else {
-        return GLFW.glfwGetKeyScancode(key);
-        //?}
     }
 
     public static void typeCharacter(int codePoint) {

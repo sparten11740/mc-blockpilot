@@ -12,11 +12,6 @@ import java.util.List;
 public final class KeyNames {
     /** Mouse buttons as agents name them. */
     public static final List<String> BUTTONS = List.of("left", "right", "middle");
-    //? if >=26.3 {
-    /*private static final List<Integer> BUTTON_NUMBERS = List.of(1, 3, 2);
-    *///?} else {
-    private static final List<Integer> BUTTON_NUMBERS = List.of(0, 1, 2);
-    //?}
     private static final String KEYBOARD = "key.keyboard.";
 
     private KeyNames() {
@@ -44,20 +39,16 @@ public final class KeyNames {
 
     /** The number the game's mouse handling gives one of {@link #BUTTONS}. */
     public static int buttonNumber(String name) {
-        return BUTTON_NUMBERS.get(BUTTONS.indexOf(name));
+        return WindowSystem.BUTTON_NUMBERS.get(BUTTONS.indexOf(name));
     }
 
     /** A mouse button by the game's number for it, as agents name it; past the third as its key is named (4, …). */
     public static String buttonName(int number) {
-        int known = BUTTON_NUMBERS.indexOf(number);
+        int known = WindowSystem.BUTTON_NUMBERS.indexOf(number);
         if (known >= 0) {
             return BUTTONS.get(known);
         }
-        //? if >=26.3 {
-        /*return String.valueOf(number);
-        *///?} else {
-        return String.valueOf(number + 1);
-        //?}
+        return String.valueOf(number + WindowSystem.BUTTON_NAME_OFFSET);
     }
 
     /** The names closest to the wanted one by edit distance, nearest first, ties in alphabetical order. */
