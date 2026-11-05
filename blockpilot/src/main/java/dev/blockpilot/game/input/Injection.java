@@ -130,12 +130,13 @@ public final class Injection {
     }
 
     /**
-     * What a real event carries beside the key, which the game's text shortcuts read: up to 26.2 the key is a key
-     * code and this its scan code; from 26.3 the key is a scan code and this its key code.
+     * What a real event carries beside the key: up to 26.2 the key is a key code and this its scan code; from 26.3 the
+     * key is a scan code and this its key code, which the game's text shortcuts read. SDL makes it for an event with
+     * {@code key_event}, which gives Latin letters on any layout; without it, a Russian layout's {@code a} isn't 97.
      */
     private static int otherKeyCode(int key) {
         //? if >=26.3 {
-        /*return SDLKeyboard.SDL_GetKeyFromScancode(key, (short) 0, false);
+        /*return SDLKeyboard.SDL_GetKeyFromScancode(key, (short) 0, true);
         *///?} else {
         return GLFW.glfwGetKeyScancode(key);
         //?}
