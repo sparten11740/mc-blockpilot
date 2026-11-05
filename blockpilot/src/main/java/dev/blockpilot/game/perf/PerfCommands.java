@@ -18,6 +18,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.Ids;
+import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.ChunkMapAccessor;
@@ -68,7 +69,6 @@ public final class PerfCommands {
     private static final Gson GSON = new GsonBuilder().create();
     private static final Gson PRETTY = new GsonBuilder().setPrettyPrinting().create();
     private static final int COUNT_WAIT_TICKS = 100;
-    private static final long NANOS_PER_TICK = 50_000_000L;
     /** The share of the whole profile a section needs for its own row in the text reply, in percent. */
     private static final double SECTION_ROW_MIN = 5;
 
@@ -149,25 +149,15 @@ public final class PerfCommands {
 
     /**
      * {@code perf <duration>}: waits that long on the wall clock, then stops the capture as {@code perf stop} does.
-     * Cancelled before then, it leaves the capture running, so nothing measured is lost.
      */
-    private static final class Timed implements Action {
-        private final long endNanos;
-        private Stop stop;
-
+    private static final class Timed extends TimedStop {
         Timed(Duration duration) {
-            endNanos = System.nanoTime() + duration.ticks() * NANOS_PER_TICK;
+            super(duration);
         }
 
         @Override
-        public Result tick() throws CommandException {
-            if (stop == null) {
-                if (System.nanoTime() < endNanos) {
-                    return null;
-                }
-                stop = new Stop();
-            }
-            return stop.tick();
+        protected Action stop() {
+            return new Stop();
         }
 
         @Override

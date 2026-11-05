@@ -282,6 +282,26 @@ def check_render_stages(game_dir):
     return None if bool(stages) == (loader == "neoforge") else f"on {loader}: {stages}"
 
 
+def check_stop_leaves_timed_running(game_dir, world):
+    """Stop ends the wait of a timed perf or record, and what it timed goes on until stopped for itself."""
+    for start, status, finish, name in (("perf 60s cancelled", "perf status", "perf stop", "cancelled"),
+                                        (f"record 60s {world}-cancelled width=256 fps=10 audio=off", "record status",
+                                         "record stop", f"{world}-cancelled")):
+        waiting = subprocess.Popen(launcher(game_dir) + ["--game-dir", game_dir, "--timeout", "90", start],
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        time.sleep(2)
+        run(game_dir, "stop")
+        answer, _ = waiting.communicate(timeout=30)
+        reason = unsupported_reason(answer, False)
+        if reason:
+            raise Skipped(reason)
+        _, output = run(game_dir, status)
+        run(game_dir, finish)
+        if name not in output:
+            return f"after {start} and stop, {status} answers {output.strip()}"
+    return None
+
+
 def check_mine_moves_on(game_dir):
     """Sand lands on the only target while the player walks to it, too far off to reach in time."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server setblock 0 -60 14 minecraft:short_grass; "
@@ -474,6 +494,7 @@ def main():
         ("wait until", "wait block ~0,-1,0 until id==grass_block timeout=2s", [r"ok \d"]),
         ("sample", "sample status every 2t x3", [r"samples=3"]),
         ("perf", "perf start smoke; wait 1s; perf stop", [r"smoke \d", r"mspt="]),
+        ("perf for a duration", "perf 1s timed", [r"timed \d", r"mspt="]),
         ("perf times renderers and counts rebuilds",
          f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~3 minecraft:chest; "
          "server as=player summon minecraft:cow ~2 ~ ~4; perf start effects; wait 5t; "
@@ -521,6 +542,7 @@ def main():
         ("hud off hides the hud", lambda: check_hud_hides(args.game_dir)),
         ("perf counts live particles", lambda: check_live_particles(args.game_dir)),
         ("perf times the render stages", lambda: check_render_stages(args.game_dir)),
+        ("stop leaves what was timed running", lambda: check_stop_leaves_timed_running(args.game_dir, world)),
         ("videos are upright", lambda: check_video_upright(args.game_dir, world)),
     ]
     for name, check in checks:

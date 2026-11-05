@@ -12,6 +12,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.FrameCapture;
+import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Engine;
@@ -29,7 +30,6 @@ public final class RecordCommands {
     private static final int MIN_WIDTH = 16;
     private static final int DEFAULT_FPS = 60;
     private static final int MAX_FPS = 120;
-    private static final long NANOS_PER_TICK = 50_000_000L;
 
     private final Supplier<String> ffmpeg;
 
@@ -215,28 +215,19 @@ public final class RecordCommands {
 
     /**
      * {@code record <duration>}: waits that long on the wall clock, then stops the recording as {@code record stop}
-     * does. Cancelled before then, it leaves the recording running.
+     * does.
      */
-    private static final class Timed implements Action, Engine.SelfTimed {
-        private final long endNanos;
-        private Stop stop;
-
+    private static final class Timed extends TimedStop implements Engine.SelfTimed {
         Timed(Duration duration) {
-            endNanos = System.nanoTime() + duration.ticks() * NANOS_PER_TICK;
+            super(duration);
         }
 
         @Override
-        public Result tick() throws CommandException {
-            if (stop == null) {
-                if (System.nanoTime() < endNanos) {
-                    return null;
-                }
-                if (Recorder.recording() == null) {
-                    throw new CommandException("record_failed", Recorder.takeFailure());
-                }
-                stop = new Stop(Recorder.recording());
+        protected Action stop() throws CommandException {
+            if (Recorder.recording() == null) {
+                throw new CommandException("record_failed", Recorder.takeFailure());
             }
-            return stop.tick();
+            return new Stop(Recorder.recording());
         }
 
         @Override
