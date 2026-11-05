@@ -9,9 +9,10 @@ stonecutter parameters {
     // `//? if fabric`, `//? if neoforge` and `//? if vanilla` in the sources, from the loader half of the node's name.
     constants.match(current.project.substringAfterLast('-'), "fabric", "neoforge", "vanilla")
 
-    // Plain renames, swapped in for the versions that have them; the sources keep the names of the version they are
-    // checked in for (vcsVersion in settings.gradle.kts). Switching the active version swaps them back, so each new
-    // text must not appear in code both versions share. Changes beyond a rename go in `//? if` blocks instead. Each
+    // Plain renames, swapped in for the versions that have them; src/main keeps the names of the version it is checked
+    // in for (vcsVersion in settings.gradle.kts), src/1.21.1, src/26.1 and src/vanilla those of the oldest version they
+    // serve. Rules run over all of them and switching the active version swaps them back, so each new text must not
+    // appear in code the versions share, or in src/1.21.1. Changes beyond a rename go in `//? if` blocks instead. Each
     // rule names the earliest release known to have the new name; only those from 26.1 on have been built against.
     fun rename(since: String, from: String, to: String) =
         replacements.string(current.parsed >= since) { replace(from, to) }
