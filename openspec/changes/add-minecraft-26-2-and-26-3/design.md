@@ -196,13 +196,16 @@ already public on 26.2 and 26.3, and widening a public class does nothing.
 ### D9. Checking the port
 
 - **Compile and unit tests:** all eleven nodes, in `./gradlew build`.
-- **Load:** each new client starts with every mixin applied. `defaultRequire: 1`
-  makes a missing injection point stop the game, so this is the check for D5.
+- **Load:** Mixin applies as a target class loads, and `defaultRequire: 1` makes
+  a missing injection point stop the game then. Reaching a screen shows only the
+  mixins loaded by then, so D5's check is the world run, whose failures may name
+  an unrelated step.
 - **Everything else that can be asserted:** the script in D10, on every target,
   so the 1.21.1 and 26.1 regression run is the same run as the port's.
 - **By hand:** what D10 lists as out of a script's reach.
-- **Clients:** dev clients are closed with `quit`. Only one that never opened
-  its endpoint is stopped by process id, and only Blockpilot's own dev client.
+- **Clients:** dev clients are closed with `quit`. One that never answered, or
+  doesn't close, is stopped through the build that runs it, and by process id if
+  its endpoint names one. Only Blockpilot's own dev client is ever stopped.
 
 ### D10. One script for every target
 
