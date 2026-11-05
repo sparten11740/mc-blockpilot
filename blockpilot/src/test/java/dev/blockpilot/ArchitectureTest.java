@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -62,5 +64,26 @@ class ArchitectureTest {
             }
         }
         assertEquals(List.of(), found);
+    }
+
+    /** A file copied between trees is a fix that lands in only one of them; what they share belongs in src/main. */
+    @Test
+    void noFileIsTheSameInTwoTrees() throws IOException {
+        Map<Path, Path> seen = new HashMap<>();
+        List<String> same = new ArrayList<>();
+        for (Path tree : Sources.trees()) {
+            if (tree.endsWith("test")) {
+                continue;
+            }
+            try (Stream<Path> files = Files.walk(tree)) {
+                for (Path file : files.filter(Files::isRegularFile).toList()) {
+                    Path other = seen.putIfAbsent(tree.relativize(file), file);
+                    if (other != null && Files.mismatch(other, file) == -1) {
+                        same.add(tree.relativize(file).toString());
+                    }
+                }
+            }
+        }
+        assertEquals(List.of(), same);
     }
 }
