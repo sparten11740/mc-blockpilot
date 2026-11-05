@@ -125,18 +125,24 @@ def check_agent_refuses_other_versions(jar, minecraft, result):
                  else f"no {wanted!r}: {(done.stdout + done.stderr).strip()[:300]}")
 
 
+def has_a_screen_up(game_dir):
+    try:
+        code, output = smoke_test.run(game_dir, "screen", timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return code == 0 and bool(re.match(r"ok (?!none)\S+", output)) and not output.startswith("ok loading")
+
+
 def wait_for_client(gradle, game_dir, log):
     """Waits until the client answers with a screen up; returns why it didn't, or None."""
-    launcher = os.path.join(game_dir, "blockpilot", "endpoint.json")
+    endpoint = os.path.join(game_dir, "blockpilot", "endpoint.json")
     deadline = time.monotonic() + START_SECONDS
     while time.monotonic() < deadline:
         if gradle.poll() is not None:
             return "the client stopped before opening its endpoint: " \
                    + last_lines(log, r"Mixin|Exception|Error|FAILED|What went wrong")
-        if os.path.exists(launcher):
-            code, output = smoke_test.run(game_dir, "screen", timeout=10)
-            if code == 0 and re.match(r"ok (?!none)\S+", output) and not output.startswith("ok loading"):
-                return None
+        if os.path.exists(endpoint) and has_a_screen_up(game_dir):
+            return None
         time.sleep(3)
     return f"no answer within {START_SECONDS} s: " + last_lines(log, r"Mixin|Exception|Error|FAILED")
 
@@ -162,16 +168,18 @@ def run_smoke_test(game_dir, directory, as_json, result):
         result.check(f"{mode}: smoke test", f"exit {done.returncode}; see {log}")
 
 
-def stop_client(gradle, game_dir):
-    """Closes the client with `quit`; only if that fails, stops it: the build it runs under, then its process."""
+def stop_client(gradle, game_dir, answered):
+    """Closes a client that answered with `quit`. One that didn't, or doesn't close, is stopped: the build it runs
+    under, then its process if its endpoint names it. Returns why a client that answered didn't close, or None."""
     pid = game_pid(game_dir)
-    if os.path.exists(os.path.join(game_dir, "blockpilot", "endpoint.json")):
-        smoke_test.run(game_dir, "quit", timeout=60)
-    try:
-        gradle.wait(timeout=STOP_SECONDS)
-        return None
-    except subprocess.TimeoutExpired:
-        gradle.send_signal(signal.SIGINT)
+    if answered:
+        try:
+            smoke_test.run(game_dir, "quit", timeout=60)
+            gradle.wait(timeout=STOP_SECONDS)
+            return None
+        except (OSError, subprocess.SubprocessError):
+            pass
+    gradle.send_signal(signal.SIGINT)
     try:
         gradle.wait(timeout=30)
     except subprocess.TimeoutExpired:
@@ -181,7 +189,7 @@ def stop_client(gradle, game_dir):
             os.kill(pid, signal.SIGTERM)
         except OSError:
             pass
-    return f"it didn't close within {STOP_SECONDS} s of quit"
+    return f"it didn't close within {STOP_SECONDS} s of quit" if answered else None
 
 
 def game_pid(game_dir):
@@ -221,18 +229,20 @@ def test_target(target, result):
     with open(log, "w", encoding="utf-8") as output:
         gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
                                   stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-    problem = "interrupted"
+    answered = False
     try:
         problem = wait_for_client(gradle, game_dir, log)
-        result.check("client starts with every mixin applied", problem)
-        if not problem:
+        answered = problem is None
+        # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
+        result.check("client reaches a screen", problem)
+        if answered:
             run_smoke_test(game_dir, directory, False, result)
             run_smoke_test(game_dir, directory, True, result)
     finally:
         # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
-        stopped = stop_client(gradle, game_dir)
-    result.check("client closes on quit", stopped)
-    if not problem:
+        stopped = stop_client(gradle, game_dir, answered)
+    if answered:
+        result.check("client closes on quit", stopped)
         # The shutdown hook removes the file, which nothing else does.
         result.check("the shutdown hook ran", f"{endpoint} is still there" if os.path.exists(endpoint) else None)
 
