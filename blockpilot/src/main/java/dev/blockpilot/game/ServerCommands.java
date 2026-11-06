@@ -19,6 +19,7 @@ import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
@@ -28,6 +29,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerTickRateManager;
@@ -71,10 +73,12 @@ final class ServerCommands {
                 + "~ and @p count from the player; options go before the command (server as=player settle=0t "
                 + "<command>); a command that fails, an execute if test that doesn't pass among them, answers err "
                 + "command_failed with its message and result, which ends the script unless the step starts with ? "
-                + "(?server execute if block ~ ~-1 ~ minecraft:stone); a ; inside the command, as in an NBT int "
-                + "array, is written \\; so it doesn't end the step (server data modify storage test:x ids "
-                + "set value [I\\;1,2])")
-            .field("result", "the command's return value").field("success", "true/false")
+                + "(?server execute if block ~ ~-1 ~ minecraft:stone); a command that reports no result, such as a "
+                + "function without return, answers ok success=true without result unless it sent a failure; a ; "
+                + "inside the command, as in an NBT int array, is written \\; so it doesn't end the step (server data "
+                + "modify storage test:x ids set value [I\\;1,2])")
+            .field("result", "the command's return value, left out when it reports none")
+            .field("success", "true/false")
             .example("server as=player setblock ~ ~-1 ~ minecraft:stone"));
         registry.register(CommandSpec.query("nbt", this::nbt).onServer().group("integrated")
             .arg("target", ArgType.POSITION, ArgType.ENTITY, ArgType.UUID)
@@ -114,9 +118,13 @@ final class ServerCommands {
 
     /** Collects what a command tells its source. */
     private static final class Capture implements CommandSource {
+        /** The colour CommandSourceStack.sendFailure gives every failure it sends, and success lines don't have. */
+        private static final TextColor FAILURE = TextColor.fromLegacyFormat(ChatFormatting.RED);
+
         final List<String> lines = new ArrayList<>();
         /** The last line that is not Brigadier's "...command<--[HERE]" pointer: the error message, on failure. */
         String error;
+        boolean failed;
 
         @Override
         public void sendSystemMessage(Component message) {
@@ -124,6 +132,7 @@ final class ServerCommands {
             if (!mentions(message, "command.context.here")) {
                 error = message.getString();
             }
+            failed |= FAILURE.equals(message.getStyle().getColor());
         }
 
         /** Whether the component or any part nested in it is the translation {@code key}. */
@@ -154,6 +163,7 @@ final class ServerCommands {
         MinecraftServer server = server();
         String command = args.text("command");
         Capture capture = new Capture();
+        boolean[] reported = {false};
         boolean[] success = {false};
         int[] value = {0};
         CommandSourceStack source;
@@ -178,6 +188,7 @@ final class ServerCommands {
             //?}
         }
         source = source.withCallback((ok, result) -> {
+            reported[0] = true;
             success[0] = ok;
             value[0] = result;
         });
@@ -186,8 +197,11 @@ final class ServerCommands {
         for (int index = 0; index < capture.lines.size(); index++) {
             rows.add(Row.of(String.valueOf(index), new Fields().bare("line", capture.lines.get(index))));
         }
-        Result result = success[0]
-            ? Result.ok(new Fields().put("result", value[0], "result=" + value[0]).put("success", true, "success=true"))
+        // The game reports no result for a command it couldn't parse, which sends a failure, and for a function that
+        // never reaches return, which ran.
+        Fields fields = reported[0] ? new Fields().put("result", value[0], "result=" + value[0]) : new Fields();
+        Result result = (reported[0] ? success[0] : !capture.failed)
+            ? Result.ok(fields.put("success", true, "success=true"))
             : Result.error("command_failed", capture.error == null ? command : capture.error)
                 .with(new Fields().put("result", value[0], "result=" + value[0]));
         Result answer = result.withRows(rows);

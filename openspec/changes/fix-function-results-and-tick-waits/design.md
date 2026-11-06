@@ -17,8 +17,7 @@
     calls it.
 - `CommandSourceStack.sendFailure` wraps each failure message in a red
   component before handing it to the source; success messages go through
-  unwrapped. This holds in 1.21.1's and 26.2's sources; the smoke check
-  confirms it on 26.3.
+  unwrapped. This holds in 1.21.1's and 26.2's sources and 26.3's bytecode.
 - `ScriptJob` ticks an action in the step that starts it, so an action with
   work to do each tick (`move`, `mouse move`) acts at once. `WaitTicks`
   counts that first tick as one of its N, so it ends N−1 ticks after the step

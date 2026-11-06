@@ -316,6 +316,35 @@ def check_mine_moves_on(game_dir):
     return None
 
 
+def check_functions(game_dir, world):
+    """A function without return answers ok and one with it its value; an unknown one, and a command that can't be
+    parsed, answer command_failed."""
+    pack = os.path.join(game_dir, "saves", world, "datapacks", "smoke")
+    functions = os.path.join(pack, "data", "smoke", "function")
+    os.makedirs(functions, exist_ok=True)
+    # 1.21.1's own format; 26.x reads a lone pack_format below its new scheme as an old pack and still loads it.
+    with open(os.path.join(pack, "pack.mcmeta"), "w", encoding="utf-8") as mcmeta:
+        json.dump({"pack": {"description": "Blockpilot smoke test", "pack_format": 48}}, mcmeta)
+    for name, body in (("place", "setblock 0 -60 2 minecraft:stone"), ("seven", "return 7")):
+        with open(os.path.join(functions, f"{name}.mcfunction"), "w", encoding="utf-8") as function:
+            function.write(body + "\n")
+    run(game_dir, "server reload")
+    # The server applies a reload over the ticks after it, so the functions turn up a little later.
+    deadline = time.time() + 30
+    while "result=7" not in run(game_dir, "?server function smoke:seven")[1]:
+        if time.time() > deadline:
+            return "the smoke data pack's functions didn't load"
+        time.sleep(0.5)
+    _, output = run(game_dir, f"{CLEAR}; server function smoke:place; block 0,-60,2 side=server; "
+                              "server function smoke:seven; ?server function smoke:missing; "
+                              "?server setblock 0 -60 0 minecraft:not_a_block; server setblock 0 -60 2 minecraft:air")
+    expected = [r"^ok success=true\n  Running function smoke:place$", r"^ok stone$", r"^ok result=7 success=true$",
+                r"^err command_failed .*smoke:missing",
+                r"^err command_failed Unknown block type 'minecraft:not_a_block'", r"^  .*<--\[HERE\]$"]
+    missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
+    return f"missing {missing}: {output.strip()[:600]}" if missing else None
+
+
 def check_video_upright(game_dir, world):
     """A recorded video is upright too; its frames come from another readback than `pixels` reads."""
     ffmpeg = shutil.which("ffmpeg")
@@ -394,7 +423,8 @@ def main():
         ("create a test world", f"create world {world} flat peaceful rule:doDaylightCycle=false",
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
-        ("help", "help; help goto; help errors", [r"movement:", r"goto <target>", r"no_item"]),
+        ("help", "help; help goto; help errors; help server",
+         [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -532,6 +562,7 @@ def main():
         ("perception is passive", lambda: check_perception_is_passive(args.game_dir)),
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
+        ("server function answers as the game sees it", lambda: check_functions(args.game_dir, world)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
         ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),
