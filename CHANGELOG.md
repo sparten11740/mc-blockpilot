@@ -24,6 +24,7 @@ integrations built against 2.0.0 keep working.
   servers alike.
 - **Entities by name:** every command that takes `e<id>` also takes `@<name>`, the entity with that tag or custom name,
   the nearest of several, so a script can summon a tagged actor and point the camera at it without reading its id.
+- **Slow motion:** `docs/recording.md` shows how to film it with `tick rate`, and what slows with the game.
 - **Recording marks:** `record mark <label>` notes the video time and frame a script reached; `record stop` lists the
   marks, and `<name>.marks.json` keeps them beside the video.
 - **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands

@@ -40,6 +40,19 @@ per mark. `record start` refuses a name whose marks file exists, so a marks file
 take that fails takes its marks file with it. A recording takes at most 1,000 marks, and a timed `record <duration>`
 holds the queue of actions until it ends, so its take has none.
 
+Slow motion comes from the game's tick rate: lower it for the take and record at a normal frame rate, and the game draws
+new frames between its ticks, so the motion stays smooth at a quarter of the speed. `tick rate` needs the integrated
+server.
+
+```sh
+"<game dir>/blockpilot/blockpilot" "tick rate 5; camera move ~8,3,8 look ~0,1,0 over 40t background; record 8s blast fps=60 audio=off; tick rate 20"
+```
+
+Everything that counts ticks slows with the game: entities, particles, a camera move (the 40 ticks above take 8 s) and
+`wait`. The length of a timed `record` and the times `record mark` gives go by the wall clock, so `record 8s` lasts 8 s
+and shows 2 s of the game. In practice sounds play at their normal speed, so record without them and add them in the
+edit.
+
 A project gallery takes images, not videos; an animated GIF cut from a recording shows there. GIFs grow fast, so keep it
 to a few seconds and a small size (with libwebp in ffmpeg, `showcase.webp` instead makes a smaller animated WebP):
 
