@@ -1239,6 +1239,7 @@
             <li><a href="#sable.plot-command" title="sable.plot-command">sable.plot-command</a></li>
             <li><a href="#sable.tp-command" title="sable.tp-command">sable.tp-command</a></li>
             <li><a href="#snapshot-command" title="snapshot-command">snapshot-command</a></li>
+            <li><a href="#sound-option" title="sound-option">sound-option</a></li>
          </ul>
       </p><br /><p style="font-size: 14px; font-weight:bold"><a name="position">position:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="481" height="69">
          <polygon points="9 17 1 13 1 21"></polygon>
@@ -1279,6 +1280,7 @@
             <li><a href="#sable.plot-command" title="sable.plot-command">sable.plot-command</a></li>
             <li><a href="#sable.tp-command" title="sable.tp-command">sable.tp-command</a></li>
             <li><a href="#sable.world-command" title="sable.world-command">sable.world-command</a></li>
+            <li><a href="#sound-command" title="sound-command">sound-command</a></li>
             <li><a href="#use-command" title="use-command">use-command</a></li>
          </ul>
       </p><br /><p style="font-size: 14px; font-weight:bold"><a name="point">point:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="259" height="37">
@@ -1537,6 +1539,7 @@
             <li><a href="#mouse-command" title="mouse-command">mouse-command</a></li>
             <li><a href="#move-command" title="move-command">move-command</a></li>
             <li><a href="#scroll-command" title="scroll-command">scroll-command</a></li>
+            <li><a href="#sound-option" title="sound-option">sound-option</a></li>
             <li><a href="#tick-command" title="tick-command">tick-command</a></li>
             <li><a href="#turn-command" title="turn-command">turn-command</a></li>
          </ul>
@@ -1664,6 +1667,7 @@
             <li><a href="#settle-option" title="settle-option">settle-option</a></li>
             <li><a href="#snapshot-option" title="snapshot-option">snapshot-option</a></li>
             <li><a href="#sneak-option" title="sneak-option">sneak-option</a></li>
+            <li><a href="#sound-option" title="sound-option">sound-option</a></li>
             <li><a href="#sounds-option" title="sounds-option">sounds-option</a></li>
             <li><a href="#sprint-option" title="sprint-option">sprint-option</a></li>
             <li><a href="#swap-option" title="swap-option">swap-option</a></li>
@@ -1738,6 +1742,7 @@
             <li><a href="#settle-option" title="settle-option">settle-option</a></li>
             <li><a href="#snapshot-option" title="snapshot-option">snapshot-option</a></li>
             <li><a href="#sneak-option" title="sneak-option">sneak-option</a></li>
+            <li><a href="#sound-option" title="sound-option">sound-option</a></li>
             <li><a href="#sprint-option" title="sprint-option">sprint-option</a></li>
             <li><a href="#swap-option" title="swap-option">swap-option</a></li>
             <li><a href="#take-option" title="take-option">take-option</a></li>
@@ -1782,6 +1787,7 @@
             <li><a href="#sable.find-command" title="sable.find-command">sable.find-command</a></li>
             <li><a href="#sable.tp-command" title="sable.tp-command">sable.tp-command</a></li>
             <li><a href="#select-command" title="select-command">select-command</a></li>
+            <li><a href="#sound-command" title="sound-command">sound-command</a></li>
             <li><a href="#sounds-option" title="sounds-option">sounds-option</a></li>
             <li><a href="#tag" title="tag">tag</a></li>
             <li><a href="#take-command" title="take-command">take-command</a></li>
@@ -4416,6 +4422,59 @@
                <div>         ::= 'since=' ( <a href="#integer" title="integer">integer</a> | <a href="#duration" title="duration">duration</a> )</div>
                <div>           | 'match=' ( <a href="#pattern" title="pattern">pattern</a> | <a href="#id" title="id">id</a> )</div>
                <div>           | 'limit=' <a href="#integer" title="integer">integer</a></div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="sound-command">sound-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="351" height="69">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="60" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="60" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">sound</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#id" xlink:title="id">
+            <rect x="111" y="3" width="30" height="32"></rect>
+            <rect x="109" y="1" width="30" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="119" y="21">id</text></a><rect x="181" y="35" width="32" height="32" rx="10"></rect>
+         <rect x="179" y="33" width="32" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="189" y="53">at</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="233" y="35" width="70" height="32"></rect>
+            <rect x="231" y="33" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="241" y="53">position</text></a><path class="line" d="m17 17 h2 m0 0 h10 m60 0 h10 m0 0 h10 m30 0 h10 m20 0 h10 m0 0 h132 m-162 0 h20 m142 0 h20 m-182 0 q10 0 10 10 m162 0 q0 -10 10 -10 m-172 10 v12 m162 0 v-12 m-162 12 q0 10 10 10 m142 0 q10 0 10 -10 m-152 10 h10 m32 0 h10 m0 0 h10 m70 0 h10 m23 -32 h-3"></path>
+         <polygon points="341 17 349 13 349 21"></polygon>
+         <polygon points="341 17 333 13 333 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#sound-command" title="sound-command">sound-command</a></div>
+               <div>         ::= 'sound' <a href="#id" title="id">id</a> ( 'at' <a href="#position" title="position">position</a> )?</div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="sound-option">sound-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="213">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="71" y="3" width="80" height="32" rx="10"></rect>
+         <rect x="69" y="1" width="80" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="79" y="21">volume=</text>
+         <rect x="71" y="47" width="64" height="32" rx="10"></rect>
+         <rect x="69" y="45" width="64" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="79" y="65">pitch=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#number" xlink:title="number">
+            <rect x="191" y="3" width="68" height="32"></rect>
+            <rect x="189" y="1" width="68" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="199" y="21">number</text></a><rect x="51" y="91" width="74" height="32" rx="10"></rect>
+         <rect x="49" y="89" width="74" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="109">source=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#word" xlink:title="word">
+            <rect x="145" y="91" width="50" height="32"></rect>
+            <rect x="143" y="89" width="50" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="153" y="109">word</text></a><rect x="51" y="135" width="82" height="32" rx="10"></rect>
+         <rect x="49" y="133" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="153">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="173" y="135" width="72" height="32"></rect>
+            <rect x="171" y="133" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="153">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="173" y="179" width="72" height="32"></rect>
+            <rect x="171" y="177" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="197">seconds</text></a><path class="line" d="m17 17 h2 m40 0 h10 m80 0 h10 m-120 0 h20 m100 0 h20 m-140 0 q10 0 10 10 m120 0 q0 -10 10 -10 m-130 10 v24 m120 0 v-24 m-120 24 q0 10 10 10 m100 0 q10 0 10 -10 m-110 10 h10 m64 0 h10 m0 0 h16 m20 -44 h10 m68 0 h10 m0 0 h6 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m74 0 h10 m0 0 h10 m50 0 h10 m0 0 h70 m-244 -10 v20 m254 0 v-20 m-254 20 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -176 h-3"></path>
+         <polygon points="303 17 311 13 311 21"></polygon>
+         <polygon points="303 17 295 13 295 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#sound-option" title="sound-option">sound-option</a></div>
+               <div>         ::= ( 'volume=' | 'pitch=' ) <a href="#number" title="number">number</a></div>
+               <div>           | 'source=' <a href="#word" title="word">word</a></div>
+               <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="messages-command">messages-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="145" height="37">
          <polygon points="9 17 1 13 1 21"></polygon>

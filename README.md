@@ -120,6 +120,7 @@ control off. MCP over HTTP, the raw line protocol and the launcher's options: [d
 | | `camera` | Render from a placed camera |
 | | `settle` | Wait until the chunks in view have loaded |
 | | `sounds` | The sounds that started or play now |
+| | `sound` | Play a sound on this client, at a position or as an interface sound |
 | | `messages` | Chat, action bar and title messages |
 | | `particles` | The particles spawned |
 | | `option` | Change video and sound options for a while |

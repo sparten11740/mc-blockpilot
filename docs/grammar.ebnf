@@ -253,6 +253,9 @@ settle-option ::= "timeout=" ( duration | seconds )
 sounds-command ::= "sounds" "playing"?
 sounds-option ::= "since=" ( integer | duration ) | "match=" ( pattern | id ) | "limit=" integer
 
+sound-command ::= "sound" id ( "at" position )?
+sound-option ::= "volume=" number | "pitch=" number | "source=" word | "timeout=" ( duration | seconds )
+
 messages-command ::= "messages"
 messages-option ::= "since=" ( integer | duration ) | "kind=" ( "chat" | "actionbar" | "title" | "subtitle" ) | "match=" option-value | "limit=" integer
 

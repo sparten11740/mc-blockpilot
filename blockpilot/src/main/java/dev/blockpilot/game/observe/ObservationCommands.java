@@ -27,6 +27,7 @@ import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,8 +36,11 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -49,6 +53,8 @@ public final class ObservationCommands {
     /** How far {@code camera at … clear} moves the camera at most, and in what steps, in blocks. */
     private static final double MAX_CLEAR = 8;
     private static final double CLEAR_STEP = 0.25;
+    private static final List<String> SOUND_SOURCES = Arrays.stream(SoundSource.values()).map(SoundSource::getName)
+        .toList();
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("screenshot", this::screenshot).group("observe")
@@ -113,7 +119,7 @@ public final class ObservationCommands {
                 + "time); a sound whose category or the master volume is 0 never plays, so the log has it and this "
                 + "doesn't. A match= without * is a sound event id (minecraft: when it names no namespace); one the "
                 + "client doesn't know fails, naming the closest. A position is relative to where the player stands "
-                + "now, not where it stood when the sound started")
+                + "now, not where it stood when the sound started. sound plays one on this client")
             .field("tick", "current tick, for the next since=").field("count", "matching sounds")
             .field("at_abs", "JSON: the absolute position the sound started at, or with playing where it is now")
             .field("from", "the tick of the oldest start the log keeps, when it dropped some from the window")
@@ -124,6 +130,24 @@ public final class ObservationCommands {
             .field("asked_pitch", "the pitch it was played with, where its resource scales it")
             .field("loop", "playing: the sound loops").field("played", "playing: seconds since it started")
             .example("sounds since=1200 match=*gear*"));
+        registry.register(CommandSpec.action("sound", this::sound).group("observe")
+            .form(form -> form.arg("id", ArgType.ID)
+                .optional(at -> at.keyword("at", "at").arg("pos", ArgType.POSITION)))
+            .option("volume", "how loud (default 1); above 1 carries the sound farther, as with playsound",
+                ArgType.NUMBER)
+            .option("pitch", "0.5 to 2 (default 1), the range the sound engine plays", ArgType.NUMBER)
+            .option("source", "the sound category whose volume applies, one of this version's, as option "
+                + "soundCategory_<name> names them (default master)", ArgType.WORD)
+            .help("plays a sound event on this client only, sending nothing to any server: with at, it starts there "
+                + "and fades with distance from the camera as rendered, so a placed camera (camera at) hears it from "
+                + "its own seat; without, it plays as an interface sound, the same everywhere. It goes through the "
+                + "sound engine like any other sound, so sounds, sounds playing and recordings have it, and the "
+                + "engine holds it while the singleplayer game is paused. An id the client doesn't know fails, naming "
+                + "the closest. sounds lists the sounds the client started")
+            .field("at", "the absolute position it plays at").field("ui", "set for an interface sound")
+            .field("tick", "the tick it started")
+            .field("muted", "set when its category or the master volume is 0, so it is neither heard nor recorded")
+            .example("sound minecraft:block.bell.use at ~0,0,3"));
         registry.register(CommandSpec.query("messages", this::messages).group("observe")
             .option("since", "first tick to include, or a duration back from now, e.g. 60t", ArgType.INT,
                 ArgType.DURATION)
@@ -399,6 +423,72 @@ public final class ObservationCommands {
             Observations.tick()))).with(joined(args)).withRows(rows, sounds.size() - shown.size());
     }
 
+    private Action sound(CommandContext context, Args args) throws CommandException {
+        String id = soundId(args.word("id"));
+        String unknown = unknownSound(id);
+        if (unknown != null) {
+            throw new CommandException("syntax", unknown);
+        }
+        float volume = (float) args.numberOption("volume", 1);
+        if (volume < 0) {
+            throw new CommandException("syntax", "volume= takes 0 or more, not " + Numbers.format(volume));
+        }
+        float pitch = (float) args.numberOption("pitch", 1);
+        if (pitch < 0.5f || pitch > 2) {
+            throw new CommandException("syntax", "pitch= takes 0.5 to 2, the range the sound engine plays, not "
+                + Numbers.format(pitch));
+        }
+        SoundSource source = soundSource(args.option("source"));
+        Vec3 at = null;
+        if (args.has("pos")) {
+            Level level = Minecraft.getInstance().level;
+            if (level == null) {
+                throw new CommandException("not_in_world", "sound at needs a world");
+            }
+            Position pos = context.resolve(args.position("pos"));
+            // A plot position plays where its sub-level shows that point now; the sound doesn't ride along.
+            at = rendered(level, new Vec3(pos.x(), pos.y(), pos.z())).at(1);
+        }
+        ResourceLocation location = Ids.parse(id);
+        Vec3 point = at;
+        SoundSource category = source;
+        return () -> {
+            SoundInstance sound = point == null
+                ? new SimpleSoundInstance(location, category, volume, pitch, SoundInstance.createUnseededRandom(),
+                    false, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true)
+                : new SimpleSoundInstance(location, category, volume, pitch, SoundInstance.createUnseededRandom(),
+                    false, 0, SoundInstance.Attenuation.LINEAR, point.x, point.y, point.z, false);
+            Minecraft.getInstance().getSoundManager().play(sound);
+            Fields fields = new Fields().bare("id", id).bare("category", category.getName());
+            if (point == null) {
+                fields.put("ui", true, "ui");
+            } else {
+                fields.put("at", Rel.absolute(point), "at " + Rel.absolute(point));
+            }
+            long tick = Observations.tick();
+            fields.put("volume", (double) volume, "vol" + Numbers.format(volume))
+                .put("pitch", (double) pitch, "pitch" + Numbers.format(pitch)).put("tick", tick, "t" + tick);
+            var options = Minecraft.getInstance().options;
+            if (options.getSoundSourceVolume(category) == 0 || options.getSoundSourceVolume(SoundSource.MASTER) == 0) {
+                fields.put("muted", true, "muted");
+            }
+            return Result.ok(fields);
+        };
+    }
+
+    /** The category a source= names; the categories differ between versions, so the grammar takes any word. */
+    private static SoundSource soundSource(String name) throws CommandException {
+        if (name == null) {
+            return SoundSource.MASTER;
+        }
+        for (SoundSource source : SoundSource.values()) {
+            if (source.getName().equals(name)) {
+                return source;
+            }
+        }
+        throw new CommandException("syntax", "source= takes " + String.join(" ", SOUND_SOURCES) + ", not " + name);
+    }
+
     private record Playing(SoundInstance sound, String id, Long started) {
     }
 
@@ -457,17 +547,30 @@ public final class ObservationCommands {
         if (match.contains("*")) {
             return glob(match);
         }
-        String id = match.contains(":") ? match : "minecraft:" + match;
+        String id = soundId(match);
+        String unknown = unknownSound(id);
+        if (unknown != null) {
+            throw new CommandException("syntax", unknown + "; or match=*" + id.substring(id.indexOf(':') + 1) + "*");
+        }
+        return glob(id);
+    }
+
+    /** The sound event a name stands for: minecraft: when it names no namespace. */
+    private static String soundId(String name) {
+        return name.contains(":") ? name : "minecraft:" + name;
+    }
+
+    /** Null when the client knows the sound event, else saying it doesn't, with the closest ids it knows. */
+    private static String unknownSound(String id) {
         Set<String> known = Minecraft.getInstance().getSoundManager().getAvailableSounds().stream()
             .map(Object::toString).collect(Collectors.toSet());
         if (known.contains(id)) {
-            return glob(id);
+            return null;
         }
         String path = id.substring(id.indexOf(':') + 1);
         List<String> containing = known.stream().filter(candidate -> candidate.contains(path)).toList();
-        throw new CommandException("syntax", "unknown sound " + id + "; closest: "
-            + String.join(" ", KeyNames.closest(id, containing.isEmpty() ? known : containing, 3)) + "; or match=*"
-            + path + "*");
+        return "unknown sound " + id + "; closest: "
+            + String.join(" ", KeyNames.closest(id, containing.isEmpty() ? known : containing, 3));
     }
 
     private static boolean matches(Pattern match, String id) {
