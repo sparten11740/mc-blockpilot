@@ -8,15 +8,16 @@ scripts, positions and predicates is in [command-language.md](command-language.m
 
 - `status`: one line with position, health, the crosshair target with the hit point `hit=u,v,w` in the block,
   velocity, vehicle, camera angles, a placed camera's position as `camera <x,y,z>` from the last frame, and more.
-- `look [r]`: the blocks and entities around the player.
+- `look [r]`: the blocks and entities around the player, or around a camera placed with `away`.
 - `entity e<id>|me [side=server]`: one entity's `e<id>`, position, yaw, pitch, velocity and age per tick; for a living
   entity its walk animation as `walk=<limb speed>` and `walk_pos=<swing position>`. `me` is the player. On the client
   it adds the updates it applied since its last tick, `net move1 data1`; `side=server` reads the integrated server's
   copy, so `sample entity e5 and entity e5 side=server every 1t x20` shows the client's drift.
-- `find <block|#tag|*pattern|entity> [r [limit]]`: the nearest matches in a cube, r up to 128, limit up to 1000, with
-  `count=` when it left some out. A block, tag or pattern may carry states as Minecraft writes them, `oak_log[axis=y]`,
-  and then matches only the blocks holding them. `~` is from the player's block as the find runs, and JSON's `at_abs`
-  gives each row absolute. Blocks aboard a sub-level: `sable:find`.
+- `find <block|#tag|*pattern|entity> [r [limit]]`: the nearest matches in a cube round the player, or round a camera
+  placed with `away`, r up to 128, limit up to 1000, with `count=` when it left some out. A block, tag or pattern may
+  carry states as Minecraft writes them, `oak_log[axis=y]`, and then matches only the blocks holding them. `~` is from
+  the player's block as the find runs, and JSON's `at_abs` gives each row absolute. Blocks aboard a sub-level:
+  `sable:find`.
 - `block <pos> [light]`: every state property with its value, defaults too; `light` adds the light the level stores for
   the cell as `sky=` and `block_light=`, each 0 to 15.
 - `blocks <from> <to> [grid]`: a region's blocks as run lengths; `grid` gives one palette symbol per cell instead.

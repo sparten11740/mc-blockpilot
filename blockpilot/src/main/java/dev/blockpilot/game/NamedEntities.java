@@ -45,8 +45,7 @@ final class NamedEntities {
                 }
             }
         }
-        Vec3 centre = AwayCamera.centre();
-        return nearest(found, centre != null ? centre : minecraft.player.position());
+        return nearest(found, AwayCamera.clientPresence());
     }
 
     private static List<Entity> matching(Iterable<Entity> entities, String name) {

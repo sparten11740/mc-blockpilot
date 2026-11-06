@@ -67,9 +67,18 @@ public final class AwayCamera {
     }
 
     /** Where the server now centres the client's chunks: the away camera's place, else null. */
-    public static Vec3 centre() {
+    static Vec3 centre() {
         Spot spot = owner == null ? null : SPOTS.get(owner);
         return spot == null ? null : spot.position();
+    }
+
+    /**
+     * Where the client measures its surroundings from, the counterpart of {@link #presence}: its away camera's place
+     * while one is placed, else where the player stands. Client thread, in a world.
+     */
+    public static Vec3 clientPresence() {
+        Vec3 centre = centre();
+        return centre != null ? centre : Minecraft.getInstance().player.position();
     }
 
     /** Each client tick: writes the camera's place for the server; a change of dimension ends it. */

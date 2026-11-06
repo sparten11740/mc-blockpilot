@@ -814,6 +814,28 @@ def check_camera_lens(game_dir):
     return "; ".join(problems) + f": {output.strip()[:900]}" if problems else None
 
 
+def check_surroundings_of_an_away_camera(game_dir):
+    """With a camera placed away, look and find search around it, and after a reset around the player again."""
+    _, setup = run(game_dir, f"{CLEAR}; {LEVEL}; ?server kill @e[type=minecraft:armor_stand]; "
+                             "camera at 1000,-58,0 look 1000,-60,5 away; settle timeout=60s; "
+                             "server summon minecraft:armor_stand 1003 -60 3; wait 5t; look 8")
+    _, found = run(game_dir, "find armor_stand 8")
+    _, grass = run(game_dir, "find grass_block 3 1", as_json=True)
+    # The armor stand goes while the camera is by it, as only loaded entities can be killed.
+    _, back = run(game_dir, "?server kill @e[type=minecraft:armor_stand]; camera reset; settle timeout=60s; look 8")
+    problems = []
+    if not re.search(r"^  armor_stand e\d+ ~1003\.5,0,3\.5\b", setup, re.MULTILINE):
+        problems.append(f"look by the camera didn't list the armor stand: {setup.strip()[-400:]}")
+    if not re.search(r"^ok\n  armor_stand e\d+ ", found, re.MULTILINE):
+        problems.append(f"find by the camera didn't list the armor stand first: {found.strip()[:300]}")
+    rows = json.loads(grass.splitlines()[0])["results"][0].get("rows", []) if grass.startswith("{") else []
+    if not rows or rows[0].get("at_abs") != [1000, -61, 0]:
+        problems.append(f"find grass_block didn't name the block under the camera: {grass.strip()[:300]}")
+    if re.search(r"^  armor_stand e\d+ ", back, re.MULTILINE):
+        problems.append("look after the reset still listed the armor stand")
+    return "; ".join(problems) or None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -1056,6 +1078,7 @@ def main():
         ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
         ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
+        ("look and find around a camera placed away", lambda: check_surroundings_of_an_away_camera(args.game_dir)),
     ]
     for name, check in checks:
         try:
