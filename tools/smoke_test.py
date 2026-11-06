@@ -836,6 +836,35 @@ def check_surroundings_of_an_away_camera(game_dir):
     return "; ".join(problems) or None
 
 
+def check_slow_motion(game_dir, world):
+    """At a quarter of the tick rate a take shows a quarter as much of the game, a camera move takes four times as
+    long on the wall clock, and a mark after a wait lands as far into the video as the wait took."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; tick rate 5; tick query; record 2s {world}-slow fps=20 audio=off; "
+                              "tick query; tick rate 20")
+    lines = output.splitlines()
+    take = next((index for index, line in enumerate(lines) if re.match(r"^ok \S+\.mp4 ", line)), None)
+    before = [line for line in lines[:take] if line.startswith("ok tick=")] if take is not None else []
+    after = [line for line in lines[take + 1:] if line.startswith("ok tick=")] if take is not None else []
+    ticks = [int(re.match(r"ok tick=(\d+)", line).group(1)) for line in before[-1:] + after[:1]]
+    video = re.search(r"^ok \S+\.mp4 \S+ \S+ 20fps frames=(\d+) repeated=(\d+)", output, re.MULTILINE)
+    started = time.monotonic()
+    _, moved = run(game_dir, "tick rate 5; camera at ~0,2,0; camera move ~4,2,0 over 20t; tick rate 20; camera reset")
+    took = time.monotonic() - started
+    _, marked = run(game_dir, f"tick rate 5; record start {world}-slowmark fps=20 audio=off; wait 20t; "
+                              "record mark after; record stop; tick rate 20")
+    mark = re.search(r"^ok mark after ([\d.]+)s ", marked, re.MULTILINE)
+    problems = []
+    if len(ticks) != 2 or not 5 <= ticks[1] - ticks[0] <= 20:
+        problems.append(f"the game advanced {ticks} over the take")
+    if not video or not 30 <= int(video.group(1)) <= 60 or int(video.group(2)) * 5 > int(video.group(1)):
+        problems.append(f"the take: {video.groups() if video else output.strip()[:300]}")
+    if not 3.5 <= took <= 8 or "ok camera 4," not in moved:
+        problems.append(f"a 20-tick move at tick rate 5 took {took:.1f}s: {moved.strip()[:300]}")
+    if not mark or not 3.5 <= float(mark.group(1)) <= 8:
+        problems.append(f"the mark after wait 20t: {marked.strip()[:300]}")
+    return "; ".join(problems) or None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -1078,7 +1107,9 @@ def main():
         ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
         ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
-        ("look and find around a camera placed away", lambda: check_surroundings_of_an_away_camera(args.game_dir)),
+        ("look and find around a camera placed away",
+         lambda: check_surroundings_of_an_away_camera(args.game_dir)),
+        ("slow motion by the tick rate", lambda: check_slow_motion(args.game_dir, world)),
     ]
     for name, check in checks:
         try:
