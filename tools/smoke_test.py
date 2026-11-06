@@ -394,6 +394,56 @@ def check_video_upright(game_dir, world):
     return None if upright(sky, ground) else f"sky {sky}, ground {ground}"
 
 
+def check_marks(game_dir, world):
+    """A change right after record mark shows in the video from the frame after the one the mark names, not before
+    it, and the marks file beside the video lists the mark as the reply gave it; a timed take leaves no marks file."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise Skipped("ffmpeg isn't installed")
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; "
+                              f"record start {world}-marks width=256 fps=20 audio=off; wait 10t; record mark hud; "
+                              "option hud on; wait 10t; record stop; option reset")
+    reason = unsupported_reason(output, False)
+    if reason:
+        run(game_dir, "option reset")
+        raise Skipped(reason)
+    mark = re.search(r"^ok mark hud ([\d.]+)s frame=(\d+)$", output, re.MULTILINE)
+    video = re.search(r"^ok (.+\.mp4) ", output, re.MULTILINE)
+    if not mark or not video:
+        return f"no mark or no video: {output.strip()[:600]}"
+    if not re.search(rf"^  hud {re.escape(mark.group(1))}s frame={mark.group(2)}$", output, re.MULTILINE):
+        return f"record stop doesn't list the mark as it answered: {output.strip()[:600]}"
+    seconds, frame = float(mark.group(1)), int(mark.group(2))
+    # The reply's path is absolute, or relative to the game's folder on the vanilla client.
+    path = os.path.join(game_dir, video.group(1))
+
+    def hotbar(index):
+        pixels = subprocess.run([ffmpeg, "-v", "error", "-i", path, "-vf", f"select=eq(n\\,{index})",
+                                 "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                                capture_output=True, check=True).stdout
+        row = 256 * 3
+        rows = len(pixels) // row
+        band = b"".join(pixels[line * row + int(256 * 0.35) * 3:line * row + int(256 * 0.65) * 3]
+                        for line in range(int(rows * 0.9), rows))
+        return tuple(sum(band[channel::3]) / (len(band) / 3) for channel in range(3))
+
+    before, after, later = hotbar(frame - 1), hotbar(frame + 1), hotbar(frame + 3)
+    shown = max(abs(hidden - visible) for hidden, visible in zip(before, later))
+    steady = max(abs(first - second) for first, second in zip(after, later))
+    if shown <= 3 or steady > shown / 2:
+        return f"hotbar means at frames {frame - 1}, {frame + 1}, {frame + 3}: {before}, {after}, {later}"
+    with open(path[:-len(".mp4")] + ".marks.json", encoding="utf-8") as source:
+        marks = json.load(source)
+    expected = {"video": os.path.basename(path), "marks": [{"label": "hud", "seconds": seconds, "frame": frame}]}
+    if marks != expected:
+        return f"marks file {marks}, not {expected}"
+    _, output = run(game_dir, f"record 1s {world}-unmarked width=256 fps=10 audio=off")
+    timed = re.search(r"^ok (.+)\.mp4 ", output, re.MULTILINE)
+    if not timed or os.path.exists(os.path.join(game_dir, timed.group(1) + ".marks.json")):
+        return f"a timed take left a marks file, or no video: {output.strip()[:300]}"
+    return None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -443,10 +493,10 @@ def main():
         ("create a test world", f"create world {world} flat peaceful rule:doDaylightCycle=false",
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
-        ("help", "help; help goto; help errors; help server; help wait; help sound",
+        ("help", "help; help goto; help errors; help server; help wait; help sound; help record",
          [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
           r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart",
-          r"plays a sound event on this client only"]),
+          r"plays a sound event on this client only", r"record mark <label>: notes the video time"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -535,6 +585,9 @@ def main():
          [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off"]),
         ("record with sound", f"record 1s {world}-sound width=256 fps=10",
          [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on"]),
+        ("record mark without a recording", "record mark x", [r"^err no_capture no recording is running"], True),
+        ("record mark before the first frame", f"record start {world}-first width=256 audio=off; record mark first; "
+                                               "record stop", [r"^ok mark first 0s frame=0$", r"^  first 0s frame=0$"]),
         ("settle", "settle", [r"settled="]),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
         ("sound at a placed camera", "camera at ~40,2,0; sound minecraft:block.bell.use at ~40,0,3; "
@@ -617,6 +670,7 @@ def main():
         ("perf times the render stages", lambda: check_render_stages(args.game_dir)),
         ("stop leaves what was timed running", lambda: check_stop_leaves_timed_running(args.game_dir, world)),
         ("videos are upright", lambda: check_video_upright(args.game_dir, world)),
+        ("a mark names the frame its change shows from", lambda: check_marks(args.game_dir, world)),
     ]
     for name, check in checks:
         try:

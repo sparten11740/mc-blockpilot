@@ -22,6 +22,16 @@ class FrameSlotsTest {
     }
 
     @Test
+    void theFirstSlotFromATimeStartsAtOrAfterIt() {
+        assertEquals(0, FrameSlots.firstSlotFrom(0, 20));
+        assertEquals(0, FrameSlots.firstSlotFrom(-5 * MILLIS, 20), "before the first frame is the first slot");
+        assertEquals(10, FrameSlots.firstSlotFrom(500 * MILLIS, 20), "slot 10 starts at 500 ms");
+        assertEquals(11, FrameSlots.firstSlotFrom(500 * MILLIS + 1, 20), "just after a slot's start is the next");
+        assertEquals(30, FrameSlots.firstSlotFrom(500 * MILLIS, 60));
+        assertEquals(31, FrameSlots.firstSlotFrom(501 * MILLIS, 60));
+    }
+
+    @Test
     void renderingSlowerThanTheFrameRateRepeatsFrames() {
         FrameSlots slots = new FrameSlots(60);
         long frames = 0;
