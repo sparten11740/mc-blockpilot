@@ -30,8 +30,7 @@ public final class Main {
         try {
             options = Options.parse(args);
         } catch (IllegalArgumentException e) {
-            err.print(Options.USAGE);
-            err.println("blockpilot: " + e.getMessage());
+            err.println("blockpilot: " + e.getMessage() + "; see --help");
             return 2;
         }
         if (options.help()) {
