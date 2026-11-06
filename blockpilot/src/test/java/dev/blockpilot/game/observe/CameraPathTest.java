@@ -88,4 +88,45 @@ class CameraPathTest {
         assertEquals(1, opposite.length(), 1e-9);
         assertEquals(new Vec(-1, 0, 0), CameraPath.turn(east, new Vec(-1, 0, 0), 1));
     }
+
+    private static void assertNear(Vec expected, Vec actual) {
+        assertTrue(expected.minus(actual).length() < 1e-9, expected + " but was " + actual);
+    }
+
+    @Test
+    void aPositiveAngleTurnsACameraToItsRightAsItFacesTheCentre() {
+        // From north of the centre, facing south, the camera's right is west.
+        assertNear(new Vec(-6, 2, 0), CameraPath.aroundVertical(new Vec(0, 2, -6), 90));
+        assertNear(new Vec(6, 2, 0), CameraPath.aroundVertical(new Vec(0, 2, -6), -90));
+        assertNear(new Vec(0, 2, 6), CameraPath.aroundVertical(new Vec(0, 2, -6), 180));
+        assertNear(new Vec(0, 0, 0), CameraPath.aroundVertical(new Vec(0, 0, 0), 37));
+    }
+
+    @Test
+    void anOffsetInAnEntitysFrameTurnsWithItsYaw() {
+        // Six behind and two above an entity facing west (yaw 90) is six to the east.
+        Vec world = CameraPath.aroundVertical(new Vec(0, 2, -6), -90);
+        assertNear(new Vec(6, 2, 0), world);
+        assertNear(new Vec(0, 2, -6), CameraPath.aroundVertical(world, 90));
+        // One to the left of an entity facing south (yaw 0) is one to the east.
+        assertNear(new Vec(1, 0, 0), CameraPath.aroundVertical(new Vec(1, 0, 0), 0));
+    }
+
+    @Test
+    void aHeadingFollowsWithALagAndOnlyWhenTheTimeMoves() {
+        CameraPath.Heading heading = new CameraPath.Heading(10);
+        assertEquals(0, heading.at(0, 0), 1e-12);
+        assertEquals(0, heading.at(0, 90), 1e-12);
+        assertEquals(90 * (1 - Math.exp(-1)), heading.at(10, 90), 1e-9);
+        assertEquals(90 * (1 - Math.exp(-1)), heading.at(10, 90), 1e-9);
+        assertEquals(90, heading.at(1000, 90), 1e-6);
+    }
+
+    @Test
+    void aHeadingTurnsTheShortWayRound() {
+        CameraPath.Heading heading = new CameraPath.Heading(10);
+        heading.at(0, 170);
+        // From 170 to -170 is 20 degrees on past south-west, not 340 back.
+        assertEquals(190, heading.at(1000, -170), 1e-6);
+    }
 }

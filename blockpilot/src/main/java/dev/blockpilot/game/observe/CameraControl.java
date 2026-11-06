@@ -89,6 +89,18 @@ public final class CameraControl {
         return new Placement(partialTick -> from, null, (partialTick, at) -> direction);
     }
 
+    /** The point, or once it is gone (a removed entity) where it last was, at first {@code initial}; never null. */
+    static Point held(Point point, Vec3 initial) {
+        Vec3[] last = {initial};
+        return partialTick -> {
+            Vec3 at = point.at(partialTick);
+            if (at != null) {
+                last[0] = at;
+            }
+            return last[0];
+        };
+    }
+
     /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
     static Point drawn(Level level, Vec3 point) {
         if (SableSupport.subLevels().at(level, BlockPos.containing(point)) == null) {

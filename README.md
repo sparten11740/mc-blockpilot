@@ -118,7 +118,7 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | | `nbt` | The data of a block entity or entity |
 | | `tick` | Freeze, step or change the game's tick rate |
 | observe | `screenshot` | Save frames, bursts and contact sheets |
-| | `camera` | Render from a placed camera, or glide it along a path |
+| | `camera` | Render from a placed camera, glide it along a path, follow an entity or orbit |
 | | `settle` | Wait until the chunks in view have loaded |
 | | `sounds` | The sounds that started or play now |
 | | `sound` | Play a sound on this client, at a position or as an interface sound |
