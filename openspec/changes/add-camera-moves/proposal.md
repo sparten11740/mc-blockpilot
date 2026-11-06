@@ -40,7 +40,8 @@ filming a build, a machine or a moving ship needs.
   a camera tracking a walking mob turns smoothly, for `camera at` too.
 - Forms gain repeated optional groups, such as `[via <pos>]…` with a limit.
   The extension API grows a way to declare and read them, a backward
-  compatible addition that makes it `blockpilot-api` 2.1.0.
+  compatible addition that makes it `blockpilot-api` 2.1.0, shipped in
+  Blockpilot 1.1.0, a minor release.
 
 ## Capabilities
 

@@ -259,4 +259,5 @@ placement keep the away record and adds a scenario for it.
 - [`linear` stops dead at the end of a single move] → `ease=out` or
   `inout`, which the help names.
 - [An extension API change, however small, has to be published] → It is
-  additive; the release that ships it bumps `api_version` and says so.
+  additive, so a minor release, Blockpilot 1.1.0, ships it with
+  `api_version` 2.1.0 and says so.
