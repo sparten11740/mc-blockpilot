@@ -2,9 +2,9 @@
 
 ## 1.1.0 (unreleased)
 
-For filming: a camera that glides, follows and circles, one that films far from the player, entities taken by name,
-sounds where the camera hears them, and marks for the edit. `blockpilot-api` becomes 2.1.0, an addition, so integrations
-built against 2.0.0 keep working.
+For filming: a camera that glides, follows, circles, zooms and tilts, one that films far from the player, entities taken
+by name, sounds where the camera hears them, and marks for the edit. `blockpilot-api` becomes 2.1.0, an addition, so
+integrations built against 2.0.0 keep working.
 
 - **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the camera
   to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed. It keeps
@@ -15,6 +15,8 @@ built against 2.0.0 keep working.
 - **Following and orbiting:** `camera follow <entity> [at <~dx,dy,dz>] [turning]` keeps the camera's framing on a
   moving entity, turning with it over its shoulder if asked, and `camera orbit <pos|entity> [by <degrees>] over
   <duration>` circles a point or a moving entity, timed like a move, with `ease=` and `background`.
+- **Camera lens:** `fov=` and `roll=` give a placed camera its own field of view, from 1 to 170 degrees, and tilt;
+  `camera at` and `follow` set them, `move` and `orbit` glide to them, so a zoom can tighten along a move.
 - **A camera away from the player:** `camera at … away` has the integrated server load, send and play the world
   around the camera, so a set a thousand blocks off can be filmed while the player stands still.
 - **Sounds:** `sound <id> [at <pos>]` plays a sound on this client alone, heard from the camera, in singleplayer and on

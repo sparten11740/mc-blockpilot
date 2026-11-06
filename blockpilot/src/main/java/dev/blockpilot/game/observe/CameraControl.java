@@ -6,12 +6,14 @@ import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandFailure;
+import java.util.function.Supplier;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
 
 /** A placed camera (an outside view for screenshots) and the camera's angles as last rendered. */
 public final class CameraControl {
@@ -27,13 +29,32 @@ public final class CameraControl {
         Vec3 direction(float partialTick, Vec3 from);
     }
 
+    /** A placed camera's own vertical field of view, null for the player's, and its roll, in degrees. */
+    public record Lens(Double fov, double roll) {
+        public static final Lens PLAYER = new Lens(null, 0);
+
+        /** This lens with the values given, null keeping its own. */
+        Lens with(Double newFov, Double newRoll) {
+            return new Lens(newFov != null ? newFov : fov, newRoll != null ? newRoll : roll);
+        }
+    }
+
     /**
      * Where the camera sits and what it looks at; either may move (an entity, a block aboard a sub-level). With a
-     * view, the camera looks the way it says instead, as during a move or after one that looked ahead.
+     * view, the camera looks the way it says instead, as during a move or after one that looked ahead. The lens gives
+     * the field of view and roll for the frame; placed without one, the camera keeps the lens it had.
      */
-    public record Placement(Point position, Point target, View view) {
+    public record Placement(Point position, Point target, View view, Supplier<Lens> lens) {
         public Placement(Point position, Point target) {
-            this(position, target, null);
+            this(position, target, null, null);
+        }
+
+        public Placement(Point position, Point target, View view) {
+            this(position, target, view, null);
+        }
+
+        Placement withLens(Supplier<Lens> value) {
+            return new Placement(position, target, view, value);
         }
 
         /** The view direction from a point: the view's, or toward the target; null when the target is gone. */
@@ -180,7 +201,7 @@ public final class CameraControl {
             hiddenGuiBefore = HudVisibility.hidden();
         }
         HudVisibility.setHidden(true);
-        placement = value;
+        placement = keepingLens(value);
         // Until the next frame records them, report the placed camera's own angles, not the previous view's.
         float[] angles = value.angles(1);
         rendered = new Angles(angles[0], angles[1], 0);
@@ -193,8 +214,48 @@ public final class CameraControl {
     static void hold(Placement value) {
         moving = null;
         if (placement != null) {
-            placement = value;
+            placement = keepingLens(value);
         }
+    }
+
+    /** The placement, with the lens in use now when it brings none. */
+    private static Placement keepingLens(Placement value) {
+        if (value.lens() != null) {
+            return value;
+        }
+        Lens now = lens();
+        return value.withLens(() -> now);
+    }
+
+    /** The lens for the frame being rendered: a placed camera's, else the player's. */
+    public static Lens lens() {
+        Placement current = placement;
+        return current == null ? Lens.PLAYER : current.lens().get();
+    }
+
+    /** A placed camera's own field of view for the world, or null for the player's. */
+    public static Double placedFov() {
+        return placement == null ? null : lens().fov();
+    }
+
+    /**
+     * Tilts a placed camera's rotation, just set from its yaw and pitch, about the way it looks by its lens's roll,
+     * so the view matrix, particles and frustum all see it.
+     */
+    public static void roll(Quaternionf rotation) {
+        double roll = placement == null ? 0 : lens().roll();
+        if (roll != 0) {
+            rotation.rotateZ((float) Math.toRadians(-roll));
+        }
+    }
+
+    /** The lens in use with the values given, null keeping its own, for a camera placed at once; null for none. */
+    static Supplier<Lens> lensWith(Double fov, Double roll) {
+        if (fov == null && roll == null) {
+            return null;
+        }
+        Lens set = lens().with(fov, roll);
+        return () -> set;
     }
 
     /** Back to the player's view, restoring the GUI setting. Client thread. */
@@ -231,7 +292,8 @@ public final class CameraControl {
     /** Called once per frame after the level rendered, when the camera holds its final angles and position. */
     public static void recordRendered() {
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        rendered = new Angles(camera.getYRot(), camera.getXRot(), ClientPlatform.cameraRoll(camera));
+        rendered = new Angles(camera.getYRot(), camera.getXRot(), ClientPlatform.cameraRoll(camera)
+            + (float) lens().roll());
         renderedFrom = placement == null ? null : camera.getPosition();
     }
 }

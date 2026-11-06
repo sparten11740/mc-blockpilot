@@ -20,8 +20,8 @@ final class CameraOrbit extends CameraMotion {
 
     /** {@code from}: where the camera is drawn as the orbit starts; {@code at}: the centre then. */
     CameraOrbit(CameraControl.Point centre, Vec3 from, Vec3 at, double degrees, int duration, CameraPath.Ease ease,
-        boolean background, Function<CameraControl.Placement, Action> answer) {
-        super(duration, ease, background, answer);
+        boolean background, Double fov, Double roll, Function<CameraControl.Placement, Action> answer) {
+        super(duration, ease, background, fov, roll, answer);
         this.centre = centre;
         offset = new Vec(from.x - at.x, from.y - at.y, from.z - at.z);
         this.degrees = degrees;
@@ -30,19 +30,19 @@ final class CameraOrbit extends CameraMotion {
     }
 
     @Override
-    CameraControl.Placement placement() {
+    CameraControl.Placement movingShape() {
         return new CameraControl.Placement(position, target);
     }
 
     @Override
-    CameraControl.Placement end() {
+    CameraControl.Placement endShape() {
         Vec3 last = around(centre.at(1), 1);
         Vec3 rest = last != null ? last : position.at(1);
         return new CameraControl.Placement(partialTick -> rest, target);
     }
 
     @Override
-    CameraControl.Placement stillNow() {
+    CameraControl.Placement stillShape() {
         Vec3 now = position.at(1);
         Vec3 direction = target.at(1).subtract(now);
         return new CameraControl.Placement(partialTick -> now, null, (partialTick, from) -> direction);

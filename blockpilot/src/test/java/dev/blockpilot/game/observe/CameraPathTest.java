@@ -129,4 +129,23 @@ class CameraPathTest {
         // From 170 to -170 is 20 degrees on past south-west, not 340 back.
         assertEquals(190, heading.at(1000, -170), 1e-6);
     }
+
+    @Test
+    void aLensGlidesInAStraightLineAndRollsTheShortWayRound() {
+        assertEquals(50, CameraPath.between(70, 30, 0.5), 1e-12);
+        assertEquals(70, CameraPath.between(70, 30, 0), 1e-12);
+        assertEquals(30, CameraPath.between(70, 30, 1), 1e-12);
+        assertEquals(180, CameraPath.angleBetween(170, -170, 0.5), 1e-12);
+        assertEquals(-10, CameraPath.angleBetween(10, -30, 0.5), 1e-12);
+    }
+
+    @Test
+    void aGlideFromThePlayersFieldOfViewStartsFromItsValueNow() {
+        CameraControl.Lens player = CameraControl.Lens.PLAYER;
+        assertEquals(new CameraControl.Lens(70.0, 0), CameraMotion.startLens(player, 30.0, 70));
+        assertEquals(player, CameraMotion.startLens(player, null, 70));
+        CameraControl.Lens zoomed = new CameraControl.Lens(30.0, 15);
+        assertEquals(zoomed, CameraMotion.startLens(zoomed, 50.0, 70));
+        assertEquals(new CameraControl.Lens(30.0, -20), zoomed.with(null, -20.0));
+    }
 }
