@@ -6,6 +6,11 @@
   "client": [
     "AbstractContainerScreenAccessor",
     "AbstractSoundInstanceAccessor",
+    "AwayChunkMapMixin",
+    "AwayPlayerListMixin",
+    "AwayPlaySoundCommandMixin",
+    "AwayServerLevelMixin",
+    "AwayTrackedEntityMixin",
     "BlockEntityRenderDispatcherMixin",
     "BoundTickingBlockEntityMixin",
     "CameraMixin",

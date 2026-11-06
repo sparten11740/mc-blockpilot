@@ -11,6 +11,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Waits until every chunk the server sends around the player has arrived and the section compile queue has stayed
@@ -72,15 +74,17 @@ final class Settle implements Action, Engine.SelfTimed {
     }
 
     /**
-     * The chunks within the view distance of the player's chunk that the client hasn't received. The server sends
-     * these and a ring beyond them, as it generates them, which in new terrain takes many seconds.
+     * The chunks within the view distance of the player's chunk, or of a camera away from it, that the client hasn't
+     * received. The server sends these and a ring beyond them, as it generates them, which in new terrain takes many
+     * seconds.
      */
     private static int missingChunks(Minecraft minecraft) {
         if (minecraft.player == null) {
             return 0;
         }
-        int centerX = SectionPos.blockToSectionCoord(minecraft.player.getBlockX());
-        int centerZ = SectionPos.blockToSectionCoord(minecraft.player.getBlockZ());
+        Vec3 away = AwayCamera.centre();
+        int centerX = SectionPos.blockToSectionCoord(away != null ? Mth.floor(away.x) : minecraft.player.getBlockX());
+        int centerZ = SectionPos.blockToSectionCoord(away != null ? Mth.floor(away.z) : minecraft.player.getBlockZ());
         int distance = minecraft.options.getEffectiveRenderDistance();
         int missing = 0;
         for (int x = centerX - distance; x <= centerX + distance; x++) {

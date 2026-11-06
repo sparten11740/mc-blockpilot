@@ -15,7 +15,8 @@ works with them:
   world position is left behind. As everywhere, `use` fails with `err obstructed <id> <position>` when something else is
   in the way; `use <pos> any` clicks it anyway, for multi-block panels whose mod takes a click on any of their blocks. A
   camera placed at, or looking at, a plot position rides along, and so do a `camera move`'s point, via points and look,
-  so a path bends with a moving ship. `goto` refuses plot positions; `sable:tp` is the way aboard, and after `err
+  so a path bends with a moving ship. A camera placed with `away` doesn't show sub-levels far from the player: Sable
+  sends them by where the player is. `goto` refuses plot positions; `sable:tp` is the way aboard, and after `err
   obstructed`, `sable:tp` to the same position moves the player to the nearest spot from which it is in sight, if there
   is one (else it answers `hidden`).
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else

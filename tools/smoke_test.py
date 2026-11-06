@@ -576,6 +576,32 @@ def check_camera_move_recording(game_dir, world):
     return None if still * 5 < len(differences) else f"{still} of {len(differences)} frames barely differ"
 
 
+def check_camera_away(game_dir):
+    """A camera away from the player has the server load, send and play the world around it, while the player waits;
+    a move keeps it away, and a reset brings the world back to the player."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at 1000,-58,0 look 1000,-60,5 away; settle timeout=60s; "
+                              "block 1000,-61,0; status; wait 1s; status; server give @p minecraft:stone; wait 5t; "
+                              "inv; "
+                              "server playsound minecraft:block.bell.use master @a 1000 -60 5; "
+                              "server summon minecraft:lightning_bolt 1000 -60 5; "
+                              "server particle minecraft:flame 1000 -59 5 0.2 0.2 0.2 0 50; wait 1s; "
+                              "sounds since=3s; particles since=3s; "
+                              "camera move 1400,-58,0 look 1400,-60,5 over 40t; settle timeout=60s; block 1400,-61,0; "
+                              "camera reset; settle timeout=60s; block ~0,-1,0; move forward 1; status; "
+                              "?server kill @e[type=minecraft:item]")
+    expected = [r"^ok camera 1000,-58,0 in:air", r"^ok settled=", r"^ok grass_block", r"\bstone x1\b",
+                r"block\.bell\.use master ~1000(\.\d+)?,-?\d+(\.\d+)?,5(\.\d+)? ", r"entity\.lightning_bolt\.thunder",
+                r"\bflame\b", r"^ok camera 1400,-58,0 in:air"]
+    missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
+    positions = re.findall(r"^ok pos (\S+) ", output, re.MULTILINE)
+    blocks = re.findall(r"^ok (grass_block)\b", output, re.MULTILINE)
+    # The player stands still while the camera is away, and walks again after the reset.
+    still = len(positions) == 3 and positions[0] == positions[1] != positions[2]
+    if missing or not still or len(blocks) != 3:
+        return f"missing {missing}, positions {positions}, grass {len(blocks)}: {output.strip()[:900]}"
+    return None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -810,6 +836,7 @@ def main():
         ("a camera move's easing", lambda: check_camera_easing(args.game_dir)),
         ("a curved camera move has no corner and an even speed", lambda: check_camera_curve(args.game_dir)),
         ("a camera move looking ahead faces its way", lambda: check_camera_looks_ahead(args.game_dir)),
+        ("a camera away loads and plays the world around it", lambda: check_camera_away(args.game_dir)),
         ("a recorded camera move is in a new place each frame",
          lambda: check_camera_move_recording(args.game_dir, world)),
     ]

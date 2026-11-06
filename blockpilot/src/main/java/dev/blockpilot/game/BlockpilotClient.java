@@ -19,6 +19,7 @@ import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
 import dev.blockpilot.game.load.Load;
 import dev.blockpilot.game.log.LogCapture;
+import dev.blockpilot.game.observe.AwayCamera;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.ClientOptions;
 import dev.blockpilot.game.observe.EntityUpdates;
@@ -243,6 +244,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         InputState.reassert();
         events.tick();
         SableSupport.tick(Minecraft.getInstance());
+        AwayCamera.tick();
         chatSinceTick.set(0);
         engine.tickClient();
         EntityUpdates.CLIENT.clear();
@@ -311,6 +313,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             Perf.serverTick(times[Math.floorMod(server.getTickCount() - 1, times.length)], lastServerGameTick);
         }
         lastServerGameTick = server.overworld().getGameTime();
+        AwayCamera.serverTick(server);
         if (engine != null) {
             engine.tickServer();
         }

@@ -55,6 +55,8 @@ public final class ObservationCommands {
     private static final double MAX_CLEAR = 8;
     private static final double CLEAR_STEP = 0.25;
     private static final int MAX_VIA = 32;
+    /** How long camera at … away waits for the client to get the camera's chunk before it answers. */
+    private static final int AWAY_CHUNK_TICKS = 200;
     private static final List<String> SOUND_SOURCES = Arrays.stream(SoundSource.values()).map(SoundSource::getName)
         .toList();
 
@@ -79,7 +81,7 @@ public final class ObservationCommands {
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
                 .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY))
-                .optionalKeyword("clear", "clear"))
+                .optionalKeyword("clear", "clear").optionalKeyword("away", "away"))
             .form(form -> form.keyword("op", "move").arg("pos", ArgType.POSITION)
                 .repeated(MAX_VIA, via -> via.keyword("through", "via").arg("via", ArgType.POSITION))
                 .optional(look -> look.keyword("look", "look")
@@ -105,7 +107,15 @@ public final class ObservationCommands {
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
                 + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
-                + "around the player, so a camera beyond the render distance shows sky. To take in an effect that "
+                + "around the player, so a camera beyond the render distance shows sky, unless placed with away: in "
+                + "singleplayer with commands allowed, camera at … away has the integrated server treat the camera as "
+                + "where the player is for the world it loads, ticks and sends (chunks, entities, sounds, particles, "
+                + "explosions, playsound), while the player stands still where it is and actions that move it make no "
+                + "progress; mobs still spawn and despawn by the player, so summon actors with "
+                + "{PersistenceRequired:1b}, and Sable still sends its sub-levels by where the player is, so a camera "
+                + "away doesn't show them; it answers once the client has the camera's chunk, after at most 10 s; "
+                + "a camera move keeps it away, and camera reset or off, a camera at without "
+                + "away, leaving the world, a dimension change or agent control off end it. To take in an effect that "
                 + "spans hundreds of blocks, widen the view with option fov 110 and clear it with option renderClouds "
                 + "off (option reset puts both back)")
             .field("block", "the block the camera sits in").field("inside", "set when that block is solid")
@@ -306,6 +316,15 @@ public final class ObservationCommands {
             CameraControl.reset();
             return () -> Result.ok();
         }
+        if (args.has("away")) {
+            // The server's gate, checked before anything changes.
+            if (Minecraft.getInstance().getSingleplayerServer() == null) {
+                throw new CommandException("no_server", "away moves the integrated server's world to the camera");
+            }
+            if (!Sides.cheats(Minecraft.getInstance().player)) {
+                throw new CommandException("no_cheats");
+            }
+        }
         Level level = Minecraft.getInstance().level;
         Position at = context.resolve(args.position("pos"));
         Vec3 asked = new Vec3(at.x(), at.y(), at.z());
@@ -322,7 +341,12 @@ public final class ObservationCommands {
         Vec3 clear = args.has("clear") ? clearPoint(level, asked, inFrameOf(level, asked, lookPoint)) : asked;
         Vec3 position = clear == null ? asked : clear;
         CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
-        return ActionSupport.afterFrames(2, () -> {
+        if (args.has("away")) {
+            AwayCamera.start();
+        } else {
+            AwayCamera.end();
+        }
+        Action answer = ActionSupport.afterFrames(2, () -> {
             Fields fields = cameraFields(level, position);
             if (clear == null) {
                 fields.put("uncleared", true, "uncleared");
@@ -331,6 +355,13 @@ public final class ObservationCommands {
             }
             return Result.ok(placedFields(fields, level, position, target));
         });
+        if (!args.has("away")) {
+            return answer;
+        }
+        // The server sends the chunks around a camera away from the player only now; answer once its own has come.
+        BlockPos cell = BlockPos.containing(position);
+        int[] waited = {0};
+        return () -> Sides.loaded(level, cell) || waited[0]++ >= AWAY_CHUNK_TICKS ? answer.tick() : null;
     }
 
     /** A look target: an entity where it is drawn, or a position, which rides along aboard a sub-level. */

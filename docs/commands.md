@@ -30,7 +30,7 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   answers its path with `t<tick>`, the tick it was captured on. Width is up to 1280 and the frame's or crop's own, with
   `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A frame rendered from a placed
   camera carries `camera <x,y,z>`.
-- `camera at <pos> [look <pos|e<id>>] [clear]` / `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over
+- `camera at <pos> [look <pos|e<id>>] [clear] [away]` / `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over
   <duration> [ease=]` / `camera reset|off`: renders from a placed camera. `unloaded` when the client hasn't loaded the
   camera's chunk. `clear` moves a camera that sits in a block with a collision shape toward the look point, a quarter
   block at a time and at most 8 blocks, to the first clear point, answering `cleared=<blocks>`, or `uncleared` when
@@ -40,10 +40,17 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   `look` it keeps looking at what it looked at, with a target it turns toward it, and `look ahead` faces the way it
   travels; `ease=` is `linear` (the default, which keeps a chain of moves at speed), `in`, `out` or `inout` (for a
   single move from rest). It counts client ticks, so it goes on through `tick freeze`, and `stop` or real input leave
-  the camera where the last frame drew it. For an effect spanning hundreds of blocks, `option fov 110` and `option
+  the camera where the last frame drew it. With `away`, in singleplayer with commands allowed, the integrated server
+  treats the camera as where the player is for the world it loads, ticks and sends: the chunks around it load and
+  arrive, the entities there are sent, and sounds, particles, explosions and `playsound` there are heard. The player
+  stands still meanwhile, and actions that move it make no progress; how near a player mobs spawn and despawn still goes
+  by the player, so summon actors with `{PersistenceRequired:1b}`, and Sable still sends its sub-levels by where the
+  player is, so the camera doesn't show them there. It answers once the client has the camera's chunk, after at most 10
+  s. A `camera move` keeps the camera away; `camera reset` or `off`, a `camera at` without `away`, leaving the world, a
+  dimension change and agent control off end it. For an effect spanning hundreds of blocks, `option fov 110` and `option
   renderClouds off` widen and clear the view.
-- `settle [timeout=]`: waits until the chunks around the player have arrived and those in view have compiled, e.g.
-  after `camera at`, a teleport or a render distance change.
+- `settle [timeout=]`: waits until the chunks around the player, or a camera placed with `away`, have arrived and those
+  in view have compiled, e.g. after `camera at`, a teleport or a render distance change.
 - `sounds [since=] [match=] [limit=]`: the sounds that started, the last 2000. `vol` and `pitch` are what plays, and
   `asked:<vol>/<pitch>` the values it was played with where its sounds.json entry scales them. A `match=` without `*`
   is a sound event id, `minecraft:` without a namespace, and an unknown one fails naming the closest. `~` is from where

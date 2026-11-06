@@ -2,12 +2,11 @@
 
 ### Requirement: A camera away from the player
 With `away`, `camera at` SHALL make the integrated server treat the camera as
-where the player is for the world it loads, ticks and sends, while that
-camera is placed: chunks within the view distance of the camera load and
-reach the client, those near it tick and may spawn mobs, entities within
-tracking range of it are sent, and sounds, particles and explosions within
-range of it play. How near a player mobs spawn and despawn SHALL still go by
-the player.
+where the player is for the world it loads, ticks and sends, while that camera
+is placed: chunks within the view distance of the camera load and reach the
+client, those near it tick and may spawn mobs, entities within tracking range of
+it are sent, and sounds, particles and explosions within range of it play. How
+near a player mobs spawn and despawn SHALL still go by the player.
 
 #### Scenario: A set far from the player
 - **WHEN** an agent standing at 0,-60,0 in a flat world runs
@@ -31,6 +30,17 @@ the player.
 - **WHEN** an agent runs `server particle minecraft:flame 1000 -59 5 0.2 0.2
   0.2 0 50` with that camera placed
 - **THEN** `particles` counts flame particles
+
+### Requirement: An away camera answers once its chunk has come
+`camera at … away` SHALL answer once the client has the camera's chunk, or
+after 10 seconds, and a camera move from a camera placed with `away` SHALL
+keep it away, so the server's world follows the camera along the move.
+
+#### Scenario: A move from the set
+- **WHEN** an agent runs `camera move 1400,-58,0 look 1400,-60,5 over 40t;
+  settle; block 1400,-61,0` with that camera placed
+- **THEN** the move's reply names `air` as its block, and `block` reads
+  `grass_block`: the server's world followed the camera along the move
 
 ### Requirement: The player waits while the camera is away
 While a camera placed with `away` is farther from the player than the view
