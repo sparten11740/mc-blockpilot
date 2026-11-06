@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.0 (unreleased)
+
+For filming: a camera that glides, one that films far from the player, sounds where the camera hears them, and marks
+for the edit. `blockpilot-api` becomes 2.1.0, an addition, so integrations built against 2.0.0 keep working.
+
+- **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the
+  camera to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed.
+  It keeps its target, turns to a new one or looks ahead, and `ease=in|out|inout` shapes its speed. `stop` leaves it
+  where the last frame drew it. `status` names a placed camera's position, and an entity look target is followed
+  where each frame draws it.
+- **A camera away from the player:** `camera at … away` has the integrated server load, send and play the world
+  around the camera, so a set a thousand blocks off can be filmed while the player stands still.
+- **Sounds:** `sound <id> [at <pos>]` plays a sound on this client alone, heard from the camera, in singleplayer and on
+  servers alike.
+- **Recording marks:** `record mark <label>` notes the video time and frame a script reached; `record stop` lists the
+  marks, and `<name>.marks.json` keeps them beside the video.
+- **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands
+  exactly one server tick apart and `settle=0t` runs them in one.
+- **Fixes:** `server function` of a function without `return` answers `ok`, not `err command_failed`. `wait <N>t`
+  waits N ticks, where it waited one fewer, so scripts that allowed for that run a tick longer per wait. On 26.x,
+  `screenshot` now names a placed camera's position.
+- **Extension API:** `Form.repeated(limit, group)` declares a part that may come several times, read back with
+  `Args.values` and `Args.positions`.
+
 ## 1.0.0 (2026-11-05)
 
 The first stable release, and it adds Minecraft 26.2 and 26.3. Blockpilot now comes for NeoForge and Fabric on
