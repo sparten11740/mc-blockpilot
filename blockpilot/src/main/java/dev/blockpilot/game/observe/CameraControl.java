@@ -112,8 +112,8 @@ public final class CameraControl {
     private static volatile Placement placement;
     /** Client ticks counted for camera moves, which advance by them whether or not an action ticks them. */
     private static volatile long ticks;
-    /** The camera move under way, in the foreground or the background; forgotten when the camera is placed anew. */
-    private static volatile CameraMove moving;
+    /** The timed motion under way, in the foreground or the background; forgotten when the camera is placed anew. */
+    private static volatile CameraMotion moving;
     private static volatile Angles rendered;
     private static volatile Vec3 renderedFrom;
     /** The player's own F1 (hide GUI) setting while a placed camera hides the GUI, else null. */
@@ -132,9 +132,9 @@ public final class CameraControl {
      */
     public static void tick() {
         ticks++;
-        CameraMove move = moving;
-        if (move != null && move.background() && move.finished()) {
-            place(move.end());
+        CameraMotion motion = moving;
+        if (motion != null && motion.background() && motion.finished()) {
+            place(motion.end());
         }
     }
 
@@ -142,22 +142,22 @@ public final class CameraControl {
         return ticks;
     }
 
-    /** The camera move under way, or null. */
-    public static CameraMove moving() {
+    /** The camera move or other timed motion under way, or null. */
+    public static CameraMotion moving() {
         return moving;
     }
 
-    /** Places a move, whose placement follows it frame by frame. Client thread. */
-    static void placeMove(CameraMove move) {
-        place(move.placement());
-        moving = move;
+    /** Places a timed motion, whose placement follows it frame by frame. Client thread. */
+    static void placeMove(CameraMotion motion) {
+        place(motion.placement());
+        moving = motion;
     }
 
-    /** stop and real input: a move under way stays where the last frame drew it, on any thread. */
+    /** stop and real input: a timed motion under way stays where the last frame drew it, on any thread. */
     public static void stopMove() {
-        CameraMove move = moving;
-        if (move != null) {
-            move.cancel();
+        CameraMotion motion = moving;
+        if (motion != null) {
+            motion.cancel();
         }
     }
 

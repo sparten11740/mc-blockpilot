@@ -1,22 +1,18 @@
 package dev.blockpilot.game.observe;
 
 import dev.blockpilot.api.Action;
-import dev.blockpilot.api.CommandException;
-import dev.blockpilot.api.Result;
 import dev.blockpilot.game.observe.CameraPath.Vec;
-import dev.blockpilot.protocol.Engine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * {@code camera move}: glides the camera along a path over client ticks. Its placement works out the move's progress
- * in every rendered frame and builds the path from where its points are drawn then, so the camera is in a new place
- * each frame and follows points aboard a moving sub-level. Progress counts {@link CameraControl}'s client ticks, so a
- * move in the background, which no action ticks, advances the same way and CameraControl places its end.
+ * {@code camera move}: glides the camera along a path. Its placement works out the move's progress in every rendered
+ * frame and builds the path from where its points are drawn then, so the camera is in a new place each frame and
+ * follows points aboard a moving sub-level.
  */
-final class CameraMove implements Action, Engine.SelfTimed {
+final class CameraMove extends CameraMotion {
     /** Where the move looks: on as before, toward a target, or the way it travels. */
     enum Look { KEEP, TARGET, AHEAD }
 
@@ -30,46 +26,25 @@ final class CameraMove implements Action, Engine.SelfTimed {
     private final CameraControl.Placement before;
     /** From the player's view, the way the player looked when the move began. */
     private final Vec3 startDirection;
-    private final int duration;
-    private final CameraPath.Ease ease;
-    private final boolean background;
-    /** The reply once the camera rests at the end, as {@code camera at} gives it. */
-    private final Function<CameraControl.Placement, Action> answer;
-    /** CameraControl's client tick count when the move began. */
-    private final long start;
-    private Action ending;
 
     /** {@code points}: the start, the via points and the end. */
     CameraMove(List<CameraControl.Point> points, Look look, CameraControl.Point target,
         CameraControl.Placement before, Vec3 startDirection, int duration, CameraPath.Ease ease, boolean background,
         Function<CameraControl.Placement, Action> answer) {
+        super(duration, ease, background, answer);
         this.points = List.copyOf(points);
         this.look = look;
         this.target = target;
         this.before = before;
         this.startDirection = startDirection;
-        this.duration = duration;
-        this.ease = ease;
-        this.background = background;
-        this.answer = answer;
-        start = CameraControl.ticks();
     }
 
-    boolean background() {
-        return background;
-    }
-
-    /** Whether its time is up: on the client tick its duration has passed. */
-    boolean finished() {
-        return CameraControl.ticks() - start >= duration;
-    }
-
-    /** Where the camera rests after the move, as {@code camera at} would place it. */
+    @Override
     CameraControl.Placement end() {
         return new CameraControl.Placement(points.get(points.size() - 1), finalTarget(), finalView());
     }
 
-    /** The placement that moves along the path, frame by frame. */
+    @Override
     CameraControl.Placement placement() {
         return new CameraControl.Placement(partialTick -> {
             Frame frame = frame(partialTick);
@@ -78,35 +53,11 @@ final class CameraMove implements Action, Engine.SelfTimed {
     }
 
     @Override
-    public Result tick() throws CommandException {
-        if (ending != null) {
-            return ending.tick();
-        }
-        if (!finished()) {
-            return null;
-        }
-        CameraControl.Placement end = end();
-        CameraControl.place(end);
-        ending = answer.apply(end);
-        return ending.tick();
-    }
-
-    /** Ended early by stop or real input: the camera stays where the last frame drew it. */
-    @Override
-    public void cancel() {
-        CameraControl.Placement fixed = CameraControl.fixedAtLastFrame();
-        if (fixed == null) {
-            Frame now = frame(1);
-            Vec3 at = toVec3(now.path.at(now.eased));
-            Vec3 direction = direction(1, at);
-            fixed = new CameraControl.Placement(partialTick -> at, null, (partialTick, from) -> direction);
-        }
-        CameraControl.hold(fixed);
-    }
-
-    @Override
-    public String label() {
-        return "camera";
+    CameraControl.Placement stillNow() {
+        Frame now = frame(1);
+        Vec3 at = toVec3(now.path.at(now.eased));
+        Vec3 direction = direction(1, at);
+        return new CameraControl.Placement(partialTick -> at, null, (partialTick, from) -> direction);
     }
 
     /** The path for a frame, from where its points are drawn at that partial tick, and how far along it to be. */
@@ -121,8 +72,8 @@ final class CameraMove implements Action, Engine.SelfTimed {
                 through.add(toVec(at));
             }
         }
-        double progress = Math.min(1, (CameraControl.ticks() - start + CameraControl.realPartialTick()) / duration);
-        return new Frame(new CameraPath(through), progress, ease.apply(progress));
+        double progress = progress();
+        return new Frame(new CameraPath(through), progress, eased(progress));
     }
 
     private Vec3 direction(float partialTick, Vec3 from) {
