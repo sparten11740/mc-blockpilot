@@ -542,6 +542,10 @@ def check_camera_curve(game_dir):
     points = [row[1] for row in camera_rows(output)]
     gaps = [math.dist(first, second) for first, second in zip(points, points[1:])]
     mean = sum(gaps) / len(gaps) if gaps else 0
+    # A last row from a late frame has no row after it to count with; a slow stretch anywhere else still fails.
+    if len(gaps) > 2 and gaps[-1] < 0.7 * mean:
+        gaps = gaps[:-1]
+        mean = sum(gaps) / len(gaps)
     gaps = merge_late_frames(gaps, mean)
     if not gaps or any(abs(gap - mean) > 0.15 * mean for gap in gaps):
         return f"gaps between rows {[round(gap, 2) for gap in gaps]}"
