@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
@@ -491,6 +492,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         }
         BlockPos base = player.blockPosition();
         return position.resolve(base.getX(), base.getY(), base.getZ());
+    }
+
+    @Override
+    public OptionalInt resolveEntity(String name) throws CommandException {
+        return NamedEntities.find(name);
     }
 
     @Override

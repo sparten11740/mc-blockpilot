@@ -58,7 +58,8 @@ control off. MCP over HTTP, the raw line protocol and the launcher's options: [d
 
 ## Commands
 
-`help <command>` in the game gives a command's full form. [docs/commands.md](docs/commands.md) is the reference, and
+`help <command>` in the game gives a command's full form. Commands take an entity as `e<id>` or by its tag or custom
+name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 [docs/command-language.md](docs/command-language.md) covers scripts, waits and assertions.
 
 | Group | Command | What it does |

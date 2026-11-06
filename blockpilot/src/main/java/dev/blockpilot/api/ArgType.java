@@ -7,7 +7,7 @@ public enum ArgType {
     POSITION("position", "a position x,y,z or ~dx,dy,dz", Lexicon::isPosition),
     /** A point on the open screen in GUI units. */
     POINT("point", "a screen point x,y", Lexicon::isPoint),
-    ENTITY("entity", "an entity e<id>", Lexicon::isEntity),
+    ENTITY("entity", "an entity e<id> or @<name>", token -> Lexicon.isEntity(token) || Lexicon.isEntityName(token)),
     WIDGET("widget", "a widget w<index>", Lexicon::isWidget),
     /** A slot of the open container screen. */
     MENU_SLOT("menu-slot", "a menu slot s<index>", Lexicon::isMenuSlot),

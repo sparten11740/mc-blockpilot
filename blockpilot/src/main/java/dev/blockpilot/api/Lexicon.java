@@ -48,6 +48,23 @@ public final class Lexicon {
         return isNumbered(token, 'e');
     }
 
+    /**
+     * {@code "@" entity-name}, {@code entity-name ::= [a-zA-Z] [a-zA-Z0-9_.-]+}: an entity by its name or tag, which
+     * the engine turns into its {@code e<id>} before a command runs. A letter first keeps it apart from a position
+     * after {@code @}, two characters or more from Minecraft's selectors such as {@code @p}.
+     */
+    public static boolean isEntityName(String token) {
+        if (token.length() < 3 || token.charAt(0) != '@' || !isAsciiLetter(token.charAt(1))) {
+            return false;
+        }
+        return token.chars().skip(2).allMatch(c -> isAsciiLetter(c) || c >= '0' && c <= '9' || c == '_' || c == '.'
+            || c == '-');
+    }
+
+    private static boolean isAsciiLetter(int c) {
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+    }
+
     /** {@code widget ::= "w" digits} */
     public static boolean isWidget(String token) {
         return isNumbered(token, 'w');

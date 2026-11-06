@@ -42,7 +42,7 @@ class SlotTest {
         assertEquals("down|up", keyword("down", "up").expectation());
         Slot target = new Slot("target", List.of(ArgType.POSITION, ArgType.ENTITY), List.of(), true);
         assertEquals("[target]", target.usage());
-        assertEquals("<target> (a position x,y,z or ~dx,dy,dz or an entity e<id>)", target.expectation());
+        assertEquals("<target> (a position x,y,z or ~dx,dy,dz or an entity e<id> or @<name>)", target.expectation());
         assertEquals("<s>", slot(ArgType.NUMBER).usage());
         Slot mixed = new Slot("a", List.of(ArgType.KEYWORD, ArgType.INT), List.of("head", "offhand"), false);
         assertEquals("<a> (head|offhand or a whole number)", mixed.expectation());

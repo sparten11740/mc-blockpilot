@@ -106,6 +106,10 @@ public final class Args {
 
     public EntityRef entity(String name) {
         String token = typed(name, ArgType.ENTITY);
+        if (token != null && Lexicon.isEntityName(token)) {
+            throw new IllegalStateException(token + " wasn't resolved; the engine resolves names before a command "
+                + "runs");
+        }
         return token == null ? null : EntityRef.parse(token);
     }
 

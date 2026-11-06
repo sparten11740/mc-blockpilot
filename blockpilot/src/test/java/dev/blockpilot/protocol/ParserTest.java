@@ -256,7 +256,7 @@ class ParserTest {
             Map.of());
         assertFalse(call("camera at 1,2,3").args().has("look"));
         assertEquals("reset", call("camera reset").args().word("op"));
-        assertEquals("col 22: missing <target> (a position x,y,z or ~dx,dy,dz or an entity e<id>); camera at <pos> "
+        assertEquals("col 22: missing <target> (a position x,y,z or ~dx,dy,dz or an entity e<id> or @<name>); camera at <pos> "
             + "[look <target>]", error("camera at 1,2,3 look"));
         assertErrorAt("camera at 1,2,3 lok e5", "lok", "look expected, got lok");
         assertArgs(call("nest x 5"), Map.of("x", value("x", ArgType.KEYWORD), "n", value("5", ArgType.INT)), Map.of());

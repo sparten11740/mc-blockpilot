@@ -96,7 +96,8 @@ final class Grammar {
         /* Slot types */
         position     ::= "~"? decimal "," decimal "," decimal
         point        ::= decimal "," decimal
-        entity       ::= "e" digits                                       /* [C] */
+        entity       ::= "e" digits | "@" entity-name                     /* [C] */
+        entity-name  ::= [a-zA-Z] [a-zA-Z0-9_.-]+
         widget       ::= "w" digits                                       /* [C] */
         menu-slot    ::= "s" digits                                       /* [C] */
         uuid         ::= hex8 "-" hex4 "-" hex4 "-" hex4 "-" hex8 hex4

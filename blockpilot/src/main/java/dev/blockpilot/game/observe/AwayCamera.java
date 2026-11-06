@@ -67,7 +67,7 @@ public final class AwayCamera {
     }
 
     /** Where the server now centres the client's chunks: the away camera's place, else null. */
-    static Vec3 centre() {
+    public static Vec3 centre() {
         Spot spot = owner == null ? null : SPOTS.get(owner);
         return spot == null ? null : spot.position();
     }

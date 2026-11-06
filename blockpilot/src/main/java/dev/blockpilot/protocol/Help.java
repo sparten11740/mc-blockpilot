@@ -109,7 +109,7 @@ public final class Help {
         }
         rows.add(Row.of("more", new Fields().bare("hint",
             "help <command|group|namespace:|errors|grammar>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes "
-                + "on past its err); positions x,y,z or ~dx,dy,dz; entities e<id>")));
+                + "on past its err); positions x,y,z or ~dx,dy,dz; entities e<id> or @<name>, a tag or custom name")));
         return Result.ok().withRows(rows);
     }
 

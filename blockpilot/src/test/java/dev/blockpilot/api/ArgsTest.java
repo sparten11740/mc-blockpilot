@@ -39,6 +39,13 @@ class ArgsTest {
     }
 
     @Test
+    void anUnresolvedEntityNameIsRefused() {
+        IllegalStateException refused = assertThrows(IllegalStateException.class,
+            () -> arguments("a", "@pip", ArgType.ENTITY).entity("a"));
+        assertTrue(refused.getMessage().contains("@pip wasn't resolved"), refused.getMessage());
+    }
+
+    @Test
     void accessorsConvertTheTypeTheSlotTook() {
         assertEquals(Position.relative(1, 0, -2), arguments("a", "~1,0,-2", ArgType.POSITION).position("a"));
         assertEquals(new Point(120, 40.5), arguments("a", "120,40.5", ArgType.POINT).point("a"));

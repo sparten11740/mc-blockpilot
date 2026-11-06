@@ -1,6 +1,7 @@
 package dev.blockpilot.protocol;
 
 import dev.blockpilot.api.Action;
+import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
@@ -270,12 +271,13 @@ final class ScriptJob implements CommandContext {
 
     private void runCall(Statement.Call call) throws CommandException {
         CommandSpec spec = call.entry().spec();
+        Args args = EntityNames.resolve(call.args(), engine.game());
         if (spec.kind() == CommandSpec.Kind.QUERY) {
-            Result result = spec.queryHandler().run(this, call.args());
+            Result result = spec.queryHandler().run(this, args);
             finish(spec.isDiffable() ? diff(call, result) : result);
         } else {
-            start(spec.actionHandler().start(this, call.args()), call.entry().qualifiedName(), call.entry(),
-                call.args().durationOption("timeout"));
+            start(spec.actionHandler().start(this, args), call.entry().qualifiedName(), call.entry(),
+                args.durationOption("timeout"));
         }
     }
 
@@ -290,7 +292,7 @@ final class ScriptJob implements CommandContext {
     /** A query's result; its own errors are results too, for predicates like {@code ok} to look at. */
     private Result query(Statement.Call query) {
         try {
-            return query.entry().spec().queryHandler().run(this, query.args());
+            return query.entry().spec().queryHandler().run(this, EntityNames.resolve(query.args(), engine.game()));
         } catch (CommandException e) {
             return e.toResult();
         }

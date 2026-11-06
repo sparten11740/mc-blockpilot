@@ -38,6 +38,23 @@ class LexiconTest {
     }
 
     @Test
+    void entityNames() {
+        assertTrue(Lexicon.isEntityName("@pip"));
+        assertTrue(Lexicon.isEntityName("@a.b-c_d"));
+        assertTrue(Lexicon.isEntityName("@Zz9"));
+        assertFalse(Lexicon.isEntityName("@p"), "a Minecraft selector");
+        assertFalse(Lexicon.isEntityName("@e[type=cow]"), "a selector with a filter");
+        assertFalse(Lexicon.isEntityName("@1x"), "a position after @ starts with a digit");
+        assertFalse(Lexicon.isEntityName("@~0,0,4"));
+        assertFalse(Lexicon.isEntityName("@"));
+        assertFalse(Lexicon.isEntityName("pip"));
+        assertFalse(Lexicon.isEntityName("@pi p"));
+        assertFalse(Lexicon.isEntity("@pip"), "an id reference stays e<id>");
+        assertTrue(ArgType.ENTITY.matches("@pip"));
+        assertTrue(ArgType.ENTITY.matches("e812"));
+    }
+
+    @Test
     void numberedReferences() {
         assertTrue(Lexicon.isEntity("e812"));
         assertTrue(Lexicon.isEntity("e007"));

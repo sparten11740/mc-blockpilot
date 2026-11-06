@@ -15,6 +15,8 @@ for the edit. `blockpilot-api` becomes 2.1.0, an addition, so integrations built
   around the camera, so a set a thousand blocks off can be filmed while the player stands still.
 - **Sounds:** `sound <id> [at <pos>]` plays a sound on this client alone, heard from the camera, in singleplayer and on
   servers alike.
+- **Entities by name:** every command that takes `e<id>` also takes `@<name>`, the entity with that tag or custom name,
+  the nearest of several, so a script can summon a tagged actor and point the camera at it without reading its id.
 - **Recording marks:** `record mark <label>` notes the video time and frame a script reached; `record stop` lists the
   marks, and `<name>.marks.json` keeps them beside the video.
 - **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands
@@ -23,7 +25,8 @@ for the edit. `blockpilot-api` becomes 2.1.0, an addition, so integrations built
   waits N ticks, where it waited one fewer, so scripts that allowed for that run a tick longer per wait. On 26.x,
   `screenshot` now names a placed camera's position.
 - **Extension API:** `Form.repeated(limit, group)` declares a part that may come several times, read back with
-  `Args.values` and `Args.positions`.
+  `Args.values` and `Args.positions`. An `ArgType.ENTITY` slot takes `@<name>` too, looked up before the handler
+  runs, so the handler still reads an id; `Lexicon.isEntityName` tells a name.
 
 ## 1.0.0 (2026-11-05)
 

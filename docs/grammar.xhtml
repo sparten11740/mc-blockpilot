@@ -1306,19 +1306,25 @@
             <li><a href="#drag-command" title="drag-command">drag-command</a></li>
             <li><a href="#scroll-command" title="scroll-command">scroll-command</a></li>
          </ul>
-      </p><br /><p style="font-size: 14px; font-weight:bold"><a name="entity">entity:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="161" height="37">
+      </p><br /><p style="font-size: 14px; font-weight:bold"><a name="entity">entity:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="247" height="81">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
-         <rect x="31" y="3" width="28" height="32" rx="10"></rect>
-         <rect x="29" y="1" width="28" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="39" y="21">e</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#digits" xlink:title="digits">
-            <rect x="79" y="3" width="54" height="32"></rect>
-            <rect x="77" y="1" width="54" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="87" y="21">digits</text></a><path class="line" d="m17 17 h2 m0 0 h10 m28 0 h10 m0 0 h10 m54 0 h10 m3 0 h-3"></path>
-         <polygon points="151 17 159 13 159 21"></polygon>
-         <polygon points="151 17 143 13 143 21"></polygon></svg><p>
+         <rect x="51" y="3" width="28" height="32" rx="10"></rect>
+         <rect x="49" y="1" width="28" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="21">e</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#digits" xlink:title="digits">
+            <rect x="99" y="3" width="54" height="32"></rect>
+            <rect x="97" y="1" width="54" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="107" y="21">digits</text></a><rect x="51" y="47" width="32" height="32" rx="10"></rect>
+         <rect x="49" y="45" width="32" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="65">@</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity-name" xlink:title="entity-name">
+            <rect x="103" y="47" width="96" height="32"></rect>
+            <rect x="101" y="45" width="96" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="111" y="65">entity-name</text></a><path class="line" d="m17 17 h2 m20 0 h10 m28 0 h10 m0 0 h10 m54 0 h10 m0 0 h46 m-188 0 h20 m168 0 h20 m-208 0 q10 0 10 10 m188 0 q0 -10 10 -10 m-198 10 v24 m188 0 v-24 m-188 24 q0 10 10 10 m168 0 q10 0 10 -10 m-178 10 h10 m32 0 h10 m0 0 h10 m96 0 h10 m23 -44 h-3"></path>
+         <polygon points="237 17 245 13 245 21"></polygon>
+         <polygon points="237 17 229 13 229 21"></polygon></svg><p>
          <div class="ebnf"><code>
-               <div><a href="#entity" title="entity">entity</a>   ::= 'e' <a href="#digits" title="digits">digits</a></div></code></div>
+               <div><a href="#entity" title="entity">entity</a>   ::= 'e' <a href="#digits" title="digits">digits</a></div>
+               <div>           | '@' <a href="#entity-name" title="entity-name">entity-name</a></div></code></div>
       </p>
       <p>referenced by:
          <ul>
@@ -1330,6 +1336,44 @@
             <li><a href="#goto-command" title="goto-command">goto-command</a></li>
             <li><a href="#nbt-command" title="nbt-command">nbt-command</a></li>
             <li><a href="#use-command" title="use-command">use-command</a></li>
+         </ul>
+      </p><br /><p style="font-size: 14px; font-weight:bold"><a name="entity-name">entity-name:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="323" height="273">
+         <polygon points="9 33 1 29 1 37"></polygon>
+         <polygon points="17 33 9 29 9 37"></polygon>
+         <polygon points="51 35 58 19 104 19 111 35 104 51 58 51"></polygon>
+         <polygon points="49 33 56 17 102 17 109 33 102 49 56 49" class="regexp"></polygon>
+         <text class="regexp" x="64" y="37">[a-z]</text>
+         <polygon points="51 79 58 63 106 63 113 79 106 95 58 95"></polygon>
+         <polygon points="49 77 56 61 104 61 111 77 104 93 56 93" class="regexp"></polygon>
+         <text class="regexp" x="64" y="81">[A-Z]</text>
+         <polygon points="193 35 200 19 246 19 253 35 246 51 200 51"></polygon>
+         <polygon points="191 33 198 17 244 17 251 33 244 49 198 49" class="regexp"></polygon>
+         <text class="regexp" x="206" y="37">[a-z]</text>
+         <polygon points="193 79 200 63 248 63 255 79 248 95 200 95"></polygon>
+         <polygon points="191 77 198 61 246 61 253 77 246 93 198 93" class="regexp"></polygon>
+         <text class="regexp" x="206" y="81">[A-Z]</text>
+         <polygon points="193 123 200 107 248 107 255 123 248 139 200 139"></polygon>
+         <polygon points="191 121 198 105 246 105 253 121 246 137 198 137" class="regexp"></polygon>
+         <text class="regexp" x="206" y="125">[0-9]</text>
+         <rect x="193" y="151" width="28" height="32" rx="10"></rect>
+         <rect x="191" y="149" width="28" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="201" y="169">_</text>
+         <rect x="193" y="195" width="24" height="32" rx="10"></rect>
+         <rect x="191" y="193" width="24" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="201" y="213">.</text>
+         <rect x="193" y="239" width="26" height="32" rx="10"></rect>
+         <rect x="191" y="237" width="26" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="201" y="257">-</text>
+         <path class="line" d="m17 33 h2 m20 0 h10 m60 0 h10 m0 0 h2 m-102 0 h20 m82 0 h20 m-122 0 q10 0 10 10 m102 0 q0 -10 10 -10 m-112 10 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m62 0 h10 m60 -44 h10 m60 0 h10 m0 0 h2 m-102 0 h20 m82 0 h20 m-122 0 q10 0 10 10 m102 0 q0 -10 10 -10 m-112 10 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m62 0 h10 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m62 0 h10 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m28 0 h10 m0 0 h34 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m24 0 h10 m0 0 h38 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m26 0 h10 m0 0 h36 m-122 -220 l20 0 m-1 0 q-9 0 -9 -10 l0 -12 q0 -10 10 -10 m122 32 l20 0 m-20 0 q10 0 10 -10 l0 -12 q0 -10 -10 -10 m-122 0 h10 m0 0 h112 m23 32 h-3"></path>
+         <polygon points="313 33 321 29 321 37"></polygon>
+         <polygon points="313 33 305 29 305 37"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#entity-name" title="entity-name">entity-name</a></div>
+               <div>         ::= [a-zA-Z] [a-zA-Z0-9_.#x2D]+</div></code></div>
+      </p>
+      <p>referenced by:
+         <ul>
+            <li><a href="#entity" title="entity">entity</a></li>
          </ul>
       </p><br /><p style="font-size: 14px; font-weight:bold"><a name="widget">widget:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="165" height="37">
          <polygon points="9 17 1 13 1 21"></polygon>
