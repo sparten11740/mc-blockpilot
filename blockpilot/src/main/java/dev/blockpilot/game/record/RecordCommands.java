@@ -11,6 +11,7 @@ import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.platform.ClientPlatform;
@@ -21,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -42,6 +44,7 @@ public final class RecordCommands {
         registry.register(CommandSpec.action("record", this::record).group("observe")
             .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
+            .form(form -> form.keyword("op", "mark").arg("label", ArgType.WORD))
             .form(form -> form.arg("for", ArgType.DURATION).optionalArg("name", ArgType.WORD))
             .option("width", "the video's width (default the frame's, up to 1920)", ArgType.INT)
             .option("fps", "frames per second, 1..120 (default 60)", ArgType.INT)
@@ -57,8 +60,16 @@ public final class RecordCommands {
                 + "plain stereo, and still plays through the speakers; starting and stopping with sound reopens the "
                 + "sound device, so one-shot sounds and music playing then end while loops carry on. record stop "
                 + "answers with the file, its seconds, size and fps, the frames, how many repeat, whether it has "
-                + "sound, and the encoder. record status: whether one runs. record <duration> [name]: records that "
-                + "long and answers as record stop does; stop cancels the wait and leaves the recording running. Needs "
+                + "sound, and the encoder. record status: whether one runs. record mark <label>: notes the video time "
+                + "the script reached it at (0 before the first frame, as record status counts it) and answers with "
+                + "it and frame=<k>, the first video frame from it, without costing the script a tick; a change the "
+                + "client makes right after it shows from frame k or k+1, a server command's change a tick or two "
+                + "later. record stop lists the marks as rows, and each mark rewrites <name>.marks.json beside the "
+                + "video ({\"video\", \"marks\": [{\"label\", \"seconds\", \"frame\"}]}), from which a script can "
+                + "write a video description's 0:00 chapters; record start refuses a name whose marks file exists, a "
+                + "failed take takes its marks file with it, and a recording takes at most 1000 marks. record "
+                + "<duration> [name]: records that long and answers as record stop does, so its take has no marks; "
+                + "stop cancels the wait and leaves the recording running. Needs "
                 + "ffmpeg, on the PATH, in the usual install folders, or set as \"ffmpeg\" in "
                 + "config/blockpilot/config.json")
             .field("recording", "the recording's name").field("file", "the saved video")
@@ -66,6 +77,7 @@ public final class RecordCommands {
             .field("height", "the video's height").field("fps", "frames per second")
             .field("frames", "the video's frames").field("repeated", "frames repeating the one before")
             .field("audio", "on or off").field("encoder", "the H.264 encoder ffmpeg used")
+            .field("mark", "record mark: the label").field("frame", "record mark: the first video frame from it")
             .example("record 10s showcase hud=off"));
     }
 
@@ -79,6 +91,9 @@ public final class RecordCommands {
                 Recording started = start(args);
                 Fields fields = new Fields().put("recording", started.name(), "recording " + started.name());
                 return () -> Result.ok(size(fields, started).put("audio", started.audio() ? "on" : "off"));
+            }
+            case "mark" -> {
+                return mark(args.word("label"));
             }
             case "status" -> {
                 if (Recorder.failure() != null) {
@@ -107,6 +122,25 @@ public final class RecordCommands {
                 return new Stop(Recorder.recording());
             }
         }
+    }
+
+    private static Action mark(String label) throws CommandException {
+        if (Recorder.failure() != null) {
+            throw new CommandException("record_failed", Recorder.failure());
+        }
+        Recording running = Recorder.recording();
+        if (running == null || running.stopping()) {
+            throw new CommandException("no_capture", "no recording is running");
+        }
+        if (running.marks() >= Recording.MAX_MARKS) {
+            throw new CommandException("too_large", "a recording takes at most " + Recording.MAX_MARKS + " marks");
+        }
+        return () -> Result.ok(markFields(new Fields().put("mark", label, "mark " + label), running.mark(label)));
+    }
+
+    private static Fields markFields(Fields fields, Recording.Mark mark) {
+        return fields.put("seconds", mark.seconds(), Numbers.format(mark.seconds()) + "s")
+            .put("frame", mark.frame(), "frame=" + mark.frame());
     }
 
     private Recording start(Args args) throws CommandException {
@@ -141,6 +175,10 @@ public final class RecordCommands {
         Path file = directory.resolve(name + ".mp4");
         if (Files.exists(file)) {
             throw new CommandException("exists", file + " exists; choose another name");
+        }
+        Path marks = Recording.marksFile(directory, name);
+        if (Files.exists(marks)) {
+            throw new CommandException("exists", marks + " exists, the marks of another take; choose another name");
         }
         Ffmpeg.Tool tool = Ffmpeg.find(ffmpeg.get());
         if (audio) {
@@ -201,7 +239,11 @@ public final class RecordCommands {
                     .hidden("height", summary.height()).put("fps", summary.fps(), summary.fps() + "fps")
                     .put("frames", summary.frames()).put("repeated", summary.repeats())
                     .put("audio", summary.audio() ? "on" : "off").put("encoder", summary.encoder());
-                return Result.ok(fields);
+                List<Row> rows = new ArrayList<>();
+                for (Recording.Mark mark : summary.marks()) {
+                    rows.add(Row.of(mark.label(), markFields(new Fields().bare("label", mark.label()), mark)));
+                }
+                return Result.ok(fields).withRows(rows);
             } catch (RuntimeException e) {
                 throw new CommandException("record_failed", Recorder.message(e));
             }

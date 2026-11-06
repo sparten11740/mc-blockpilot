@@ -1,6 +1,10 @@
 package dev.blockpilot.game.record;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import dev.blockpilot.Blockpilot;
+import dev.blockpilot.api.Numbers;
 import dev.blockpilot.game.observe.HudVisibility;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,7 +12,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -26,8 +32,14 @@ import java.util.concurrent.locks.LockSupport;
  */
 final class Recording {
     record Summary(Path file, double seconds, int width, int height, int fps, long frames, long repeats,
-        boolean audio, String encoder) {
+        boolean audio, String encoder, List<Mark> marks) {
     }
+
+    /** A moment the script marked: the video time, rounded as replies are, and the first video frame from it. */
+    record Mark(String label, double seconds, long frame) {
+    }
+
+    static final int MAX_MARKS = 1000;
 
     private record Frame(long nanos, ByteBuffer pixels, boolean end) {
     }
@@ -46,6 +58,7 @@ final class Recording {
     private final Path output;
     private final Path video;
     private final Path sound;
+    private final Path marksFile;
     private final int width;
     private final int height;
     private final int fps;
@@ -63,6 +76,9 @@ final class Recording {
     private final Thread errors;
     private final Thread writer;
     private final CompletableFuture<Summary> finished = new CompletableFuture<>();
+    /** Added to on the client thread; handed to the summary when the recording stops. */
+    private final List<Mark> marks = new ArrayList<>();
+    private List<Mark> marksAtStop = List.of();
     private volatile long startNanos = -1;
     private int readBack;
     private boolean stopping;
@@ -74,6 +90,7 @@ final class Recording {
         this.output = directory.resolve(name + ".mp4");
         this.video = directory.resolve("." + name + ".video.mkv");
         this.sound = directory.resolve("." + name + ".wav");
+        this.marksFile = marksFile(directory, name);
         this.width = width;
         this.height = height;
         this.fps = fps;
@@ -168,12 +185,56 @@ final class Recording {
         }
     }
 
+    static Path marksFile(Path directory, String name) {
+        return directory.resolve(name + ".marks.json");
+    }
+
+    int marks() {
+        return marks.size();
+    }
+
+    /**
+     * Notes the video time now, 0 before the first frame, and rewrites the marks file whole, so a game that closes
+     * or crashes mid-take leaves the marks so far; client thread.
+     */
+    Mark mark(String label) {
+        long nanos = startNanos < 0 ? 0 : System.nanoTime() - startNanos;
+        Mark mark = new Mark(label, Numbers.round(nanos / (double) NANOS), FrameSlots.firstSlotFrom(nanos, fps));
+        marks.add(mark);
+        writeMarks();
+        return mark;
+    }
+
+    /** Written beside the file and moved over it, so a reader never finds half of one; a failure waits for the next. */
+    private void writeMarks() {
+        JsonArray list = new JsonArray();
+        for (Mark mark : marks) {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("label", mark.label());
+            entry.addProperty("seconds", mark.seconds());
+            entry.addProperty("frame", mark.frame());
+            list.add(entry);
+        }
+        JsonObject root = new JsonObject();
+        root.addProperty("video", output.getFileName().toString());
+        root.add("marks", list);
+        Path temporary = marksFile.resolveSibling("." + marksFile.getFileName() + ".tmp");
+        try {
+            Files.writeString(temporary, new GsonBuilder().setPrettyPrinting().create().toJson(root) + "\n");
+            Files.move(temporary, marksFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            Blockpilot.LOGGER.warn("Recording {}: could not write {}, the next mark tries again: {}", name, marksFile,
+                e.getMessage());
+        }
+    }
+
     /** Ends the recording at this moment and finishes the file in the background; client thread. */
     void stop() {
         if (stopping) {
             return;
         }
         stopping = true;
+        marksAtStop = List.copyOf(marks);
         long endNanos = startNanos < 0 ? 0 : System.nanoTime() - startNanos;
         restoreHud();
         try {
@@ -217,6 +278,7 @@ final class Recording {
         deleteQuietly(video);
         deleteQuietly(sound);
         deleteQuietly(output);
+        deleteQuietly(marksFile);
         finished.completeExceptionally(new IOException(failure));
     }
 
@@ -308,12 +370,13 @@ final class Recording {
             deleteQuietly(video);
             deleteQuietly(sound);
             finished.complete(new Summary(output, slots.nanos() / (double) NANOS, width, height, fps, slots.slots(),
-                slots.repeats(), track != null, ffmpeg.encoder()));
+                slots.repeats(), track != null, ffmpeg.encoder(), marksAtStop));
         } catch (IOException e) {
             failure = e.getMessage();
             deleteQuietly(video);
             deleteQuietly(sound);
             deleteQuietly(output);
+            deleteQuietly(marksFile);
             finished.completeExceptionally(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

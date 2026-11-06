@@ -23,6 +23,23 @@ take a moment before the action. `audio=off` records without sound and leaves th
 gives up on a call after 300 s (`--timeout`), so for a longer take run `record start` and `record stop` as separate
 calls.
 
+`record mark <label>` notes the video time the script reached it at, so an edit knows where the script's steps land in
+the take. It answers `ok mark door 2.15s frame=129`: the time from the video's first frame (0 before it, the clock
+`record status` counts), and the first video frame from that time, and it costs the script no tick. A change the client
+makes right after the mark shows from that frame or the next; a server command's change shows a tick or two later, once
+the client has it, so to mark what the camera sees, mark after a `wait … until` that reads it. `record stop` lists the
+take's marks as rows, and each mark rewrites `<name>.marks.json` beside the video, so the marks so far survive a game
+that closes or crashes mid-take:
+
+```json
+{"video": "take.mp4", "marks": [{"label": "door", "seconds": 2.15, "frame": 129}]}
+```
+
+A script can turn the file into a video description's chapters, a `0:00` line and then one such as `0:02 The door opens`
+per mark. `record start` refuses a name whose marks file exists, so a marks file always describes its own video, and a
+take that fails takes its marks file with it. A recording takes at most 1,000 marks, and a timed `record <duration>`
+holds the queue of actions until it ends, so its take has none.
+
 A project gallery takes images, not videos; an animated GIF cut from a recording shows there. GIFs grow fast, so keep it
 to a few seconds and a small size (with libwebp in ffmpeg, `showcase.webp` instead makes a smaller animated WebP):
 
