@@ -106,15 +106,17 @@ Alternatives:
 
 ### D4: Constant speed from an arc-length table built each frame
 
-After evaluating the points (D1), each frame samples every span at 32 even
-steps of its parameter and adds up the chord lengths into a table from
-distance along the path to span and parameter. The eased progress times the
-total length gives a distance, found by binary search and linear
-interpolation between samples. So the camera covers equal lengths of path
-in equal times however unevenly the points are spaced, and easing shapes
-the speed along the whole path, not per span. With 33 spans at most that is
-about a thousand cubic evaluations a frame, well under a millisecond, and
-building it each frame keeps the curve on points that move.
+After evaluating the points (D1), each frame samples every span at 64 even steps
+of its parameter and adds up the chord lengths into a table from distance along
+the path to span and parameter. The eased progress times the total length gives
+a distance, found by binary search and linear interpolation between samples. So
+the camera covers equal lengths of path in equal times however unevenly the
+points are spaced, and easing shapes the speed along the whole path, not per
+span. 32 steps left one step of a path whose spans differ tenfold 2.8 % off the
+mean speed, as the speed along a long span's parameter changes within a step; 64
+keep it under 2 %. With 33 spans at most that is about two thousand cubic
+evaluations a frame, well under a millisecond, and building it each frame keeps
+the curve on points that move.
 
 Alternatives:
 - Build the curve once at the start in world coordinates: a via point

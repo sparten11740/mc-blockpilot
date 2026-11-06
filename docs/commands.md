@@ -7,7 +7,7 @@ scripts, positions and predicates is in [command-language.md](command-language.m
 ## perception
 
 - `status`: one line with position, health, the crosshair target with the hit point `hit=u,v,w` in the block,
-  velocity, vehicle, camera angles and more.
+  velocity, vehicle, camera angles, a placed camera's position as `camera <x,y,z>` from the last frame, and more.
 - `look [r]`: the blocks and entities around the player.
 - `entity e<id>|me [side=server]`: one entity's `e<id>`, position, yaw, pitch, velocity and age per tick; for a living
   entity its walk animation as `walk=<limb speed>` and `walk_pos=<swing position>`. `me` is the player. On the client
@@ -30,11 +30,18 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   answers its path with `t<tick>`, the tick it was captured on. Width is up to 1280 and the frame's or crop's own, with
   `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A frame rendered from a placed
   camera carries `camera <x,y,z>`.
-- `camera at <pos> [look <pos|e<id>>] [clear]` / `camera reset|off`: renders from a placed camera. `unloaded` when the
-  client hasn't loaded the camera's chunk. `clear` moves a camera that sits in a block with a collision shape toward
-  the look point, a quarter block at a time and at most 8 blocks, to the first clear point, answering
-  `cleared=<blocks>`, or `uncleared` when there is none. For an effect spanning hundreds of blocks, `option fov 110`
-  and `option renderClouds off` widen and clear the view.
+- `camera at <pos> [look <pos|e<id>>] [clear]` / `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over
+  <duration> [ease=]` / `camera reset|off`: renders from a placed camera. `unloaded` when the client hasn't loaded the
+  camera's chunk. `clear` moves a camera that sits in a block with a collision shape toward the look point, a quarter
+  block at a time and at most 8 blocks, to the first clear point, answering `cleared=<blocks>`, or `uncleared` when
+  there is none. An entity look target is read where each frame draws it. `camera move` glides the camera from where it
+  is drawn now, a placed camera or the player's eyes, to the point over the duration, placed anew in every frame, and
+  answers as `camera at` does at the end: through up to 32 via points on one smooth curve at a constant speed; without
+  `look` it keeps looking at what it looked at, with a target it turns toward it, and `look ahead` faces the way it
+  travels; `ease=` is `linear` (the default, which keeps a chain of moves at speed), `in`, `out` or `inout` (for a
+  single move from rest). It counts client ticks, so it goes on through `tick freeze`, and `stop` or real input leave
+  the camera where the last frame drew it. For an effect spanning hundreds of blocks, `option fov 110` and `option
+  renderClouds off` widen and clear the view.
 - `settle [timeout=]`: waits until the chunks around the player have arrived and those in view have compiled, e.g.
   after `camera at`, a teleport or a render distance change.
 - `sounds [since=] [match=] [limit=]`: the sounds that started, the last 2000. `vol` and `pitch` are what plays, and

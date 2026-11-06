@@ -1616,6 +1616,7 @@
          <ul>
             <li><a href="#attack-option" title="attack-option">attack-option</a></li>
             <li><a href="#bare-id" title="bare-id">bare-id</a></li>
+            <li><a href="#camera-command" title="camera-command">camera-command</a></li>
             <li><a href="#camera-option" title="camera-option">camera-option</a></li>
             <li><a href="#chat-option" title="chat-option">chat-option</a></li>
             <li><a href="#click-option" title="click-option">click-option</a></li>
@@ -4290,7 +4291,7 @@
                <div>           | 'crop=' <a href="#option-value" title="option-value">option-value</a></div>
                <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-command">camera-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="661" height="201">
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-command">camera-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="775" height="409">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
          <rect x="31" y="3" width="70" height="32" rx="10"></rect>
@@ -4312,36 +4313,76 @@
             <text class="nonterminal" x="399" y="97">entity</text></a><rect x="541" y="35" width="52" height="32" rx="10"></rect>
          <rect x="539" y="33" width="52" height="32" class="terminal" rx="10"></rect>
          <text class="terminal" x="549" y="53">clear</text>
-         <rect x="141" y="123" width="54" height="32" rx="10"></rect>
-         <rect x="139" y="121" width="54" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="141">reset</text>
-         <rect x="141" y="167" width="38" height="32" rx="10"></rect>
-         <rect x="139" y="165" width="38" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="185">off</text>
-         <path class="line" d="m17 17 h2 m0 0 h10 m70 0 h10 m20 0 h10 m32 0 h10 m0 0 h10 m70 0 h10 m20 0 h10 m0 0 h188 m-218 0 h20 m198 0 h20 m-238 0 q10 0 10 10 m218 0 q0 -10 10 -10 m-228 10 v12 m218 0 v-12 m-218 12 q0 10 10 10 m198 0 q10 0 10 -10 m-208 10 h10 m48 0 h10 m20 0 h10 m70 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m60 -76 h10 m0 0 h62 m-92 0 h20 m72 0 h20 m-112 0 q10 0 10 10 m92 0 q0 -10 10 -10 m-102 10 v12 m92 0 v-12 m-92 12 q0 10 10 10 m72 0 q10 0 10 -10 m-82 10 h10 m52 0 h10 m-492 -32 h20 m492 0 h20 m-532 0 q10 0 10 10 m512 0 q0 -10 10 -10 m-522 10 v100 m512 0 v-100 m-512 100 q0 10 10 10 m492 0 q10 0 10 -10 m-502 10 h10 m54 0 h10 m0 0 h418 m-502 -10 v20 m512 0 v-20 m-512 20 v24 m512 0 v-24 m-512 24 q0 10 10 10 m492 0 q10 0 10 -10 m-502 10 h10 m38 0 h10 m0 0 h434 m23 -164 h-3"></path>
-         <polygon points="651 17 659 13 659 21"></polygon>
-         <polygon points="651 17 643 13 643 21"></polygon></svg><p>
+         <rect x="141" y="167" width="56" height="32" rx="10"></rect>
+         <rect x="139" y="165" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="149" y="185">move</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="237" y="167" width="70" height="32"></rect>
+            <rect x="235" y="165" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="245" y="185">position</text></a><rect x="237" y="123" width="40" height="32" rx="10"></rect>
+         <rect x="235" y="121" width="40" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="245" y="141">via</text>
+         <rect x="367" y="199" width="48" height="32" rx="10"></rect>
+         <rect x="365" y="197" width="48" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="375" y="217">look</text>
+         <rect x="455" y="199" width="60" height="32" rx="10"></rect>
+         <rect x="453" y="197" width="60" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="463" y="217">ahead</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="455" y="243" width="70" height="32"></rect>
+            <rect x="453" y="241" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="463" y="261">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
+            <rect x="455" y="287" width="56" height="32"></rect>
+            <rect x="453" y="285" width="56" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="463" y="305">entity</text></a><rect x="585" y="167" width="50" height="32" rx="10"></rect>
+         <rect x="583" y="165" width="50" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="593" y="185">over</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="655" y="167" width="72" height="32"></rect>
+            <rect x="653" y="165" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="663" y="185">duration</text></a><rect x="141" y="331" width="54" height="32" rx="10"></rect>
+         <rect x="139" y="329" width="54" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="149" y="349">reset</text>
+         <rect x="141" y="375" width="38" height="32" rx="10"></rect>
+         <rect x="139" y="373" width="38" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="149" y="393">off</text>
+         <path class="line" d="m17 17 h2 m0 0 h10 m70 0 h10 m20 0 h10 m32 0 h10 m0 0 h10 m70 0 h10 m20 0 h10 m0 0 h188 m-218 0 h20 m198 0 h20 m-238 0 q10 0 10 10 m218 0 q0 -10 10 -10 m-228 10 v12 m218 0 v-12 m-218 12 q0 10 10 10 m198 0 q10 0 10 -10 m-208 10 h10 m48 0 h10 m20 0 h10 m70 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m60 -76 h10 m0 0 h62 m-92 0 h20 m72 0 h20 m-112 0 q10 0 10 10 m92 0 q0 -10 10 -10 m-102 10 v12 m92 0 v-12 m-92 12 q0 10 10 10 m72 0 q10 0 10 -10 m-82 10 h10 m52 0 h10 m20 -32 h114 m-626 0 h20 m606 0 h20 m-646 0 q10 0 10 10 m626 0 q0 -10 10 -10 m-636 10 v144 m626 0 v-144 m-626 144 q0 10 10 10 m606 0 q10 0 10 -10 m-616 10 h10 m56 0 h10 m20 0 h10 m70 0 h10 m-110 0 l20 0 m-1 0 q-9 0 -9 -10 l0 -24 q0 -10 10 -10 m90 44 l20 0 m-20 0 q10 0 10 -10 l0 -24 q0 -10 -10 -10 m-90 0 h10 m40 0 h10 m0 0 h30 m40 44 h10 m0 0 h188 m-218 0 h20 m198 0 h20 m-238 0 q10 0 10 10 m218 0 q0 -10 10 -10 m-228 10 v12 m218 0 v-12 m-218 12 q0 10 10 10 m198 0 q10 0 10 -10 m-208 10 h10 m48 0 h10 m20 0 h10 m60 0 h10 m0 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m70 0 h10 m-100 -10 v20 m110 0 v-20 m-110 20 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m40 -120 h10 m50 0 h10 m0 0 h10 m72 0 h10 m-616 -10 v20 m626 0 v-20 m-626 20 v144 m626 0 v-144 m-626 144 q0 10 10 10 m606 0 q10 0 10 -10 m-616 10 h10 m54 0 h10 m0 0 h532 m-616 -10 v20 m626 0 v-20 m-626 20 v24 m626 0 v-24 m-626 24 q0 10 10 10 m606 0 q10 0 10 -10 m-616 10 h10 m38 0 h10 m0 0 h548 m23 -372 h-3"></path>
+         <polygon points="765 17 773 13 773 21"></polygon>
+         <polygon points="765 17 757 13 757 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#camera-command" title="camera-command">camera-command</a></div>
-               <div>         ::= 'camera' ( 'at' <a href="#position" title="position">position</a> ( 'look' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) )? 'clear'? | 'reset' | 'off' )</div></code></div>
+               <div>         ::= 'camera' ( 'at' <a href="#position" title="position">position</a> ( 'look' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) )? 'clear'? | 'move' <a href="#position" title="position">position</a> ( 'via' <a href="#position" title="position">position</a> )* ( 'look' ( 'ahead' | <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) )? 'over' <a href="#duration" title="duration">duration</a> | 'reset' | 'off' )</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-option">camera-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="273" height="81">
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-option">camera-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="257">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
-         <rect x="31" y="3" width="82" height="32" rx="10"></rect>
-         <rect x="29" y="1" width="82" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="39" y="21">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
-            <rect x="153" y="3" width="72" height="32"></rect>
-            <rect x="151" y="1" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="161" y="21">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
-            <rect x="153" y="47" width="72" height="32"></rect>
-            <rect x="151" y="45" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="161" y="65">seconds</text></a><path class="line" d="m17 17 h2 m0 0 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m23 -44 h-3"></path>
-         <polygon points="263 17 271 13 271 21"></polygon>
-         <polygon points="263 17 255 13 255 21"></polygon></svg><p>
+         <rect x="51" y="3" width="62" height="32" rx="10"></rect>
+         <rect x="49" y="1" width="62" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="21">ease=</text>
+         <rect x="153" y="3" width="58" height="32" rx="10"></rect>
+         <rect x="151" y="1" width="58" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="161" y="21">linear</text>
+         <rect x="153" y="47" width="32" height="32" rx="10"></rect>
+         <rect x="151" y="45" width="32" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="161" y="65">in</text>
+         <rect x="153" y="91" width="42" height="32" rx="10"></rect>
+         <rect x="151" y="89" width="42" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="161" y="109">out</text>
+         <rect x="153" y="135" width="54" height="32" rx="10"></rect>
+         <rect x="151" y="133" width="54" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="161" y="153">inout</text>
+         <rect x="51" y="179" width="82" height="32" rx="10"></rect>
+         <rect x="49" y="177" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="197">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="173" y="179" width="72" height="32"></rect>
+            <rect x="171" y="177" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="197">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="173" y="223" width="72" height="32"></rect>
+            <rect x="171" y="221" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="241">seconds</text></a><path class="line" d="m17 17 h2 m20 0 h10 m62 0 h10 m20 0 h10 m58 0 h10 m-98 0 h20 m78 0 h20 m-118 0 q10 0 10 10 m98 0 q0 -10 10 -10 m-108 10 v24 m98 0 v-24 m-98 24 q0 10 10 10 m78 0 q10 0 10 -10 m-88 10 h10 m32 0 h10 m0 0 h26 m-88 -10 v20 m98 0 v-20 m-98 20 v24 m98 0 v-24 m-98 24 q0 10 10 10 m78 0 q10 0 10 -10 m-88 10 h10 m42 0 h10 m0 0 h16 m-88 -10 v20 m98 0 v-20 m-98 20 v24 m98 0 v-24 m-98 24 q0 10 10 10 m78 0 q10 0 10 -10 m-88 10 h10 m54 0 h10 m0 0 h4 m20 -132 h34 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v156 m254 0 v-156 m-254 156 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -220 h-3"></path>
+         <polygon points="303 17 311 13 311 21"></polygon>
+         <polygon points="303 17 295 13 295 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#camera-option" title="camera-option">camera-option</a></div>
-               <div>         ::= 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
+               <div>         ::= 'ease=' ( 'linear' | 'in' | 'out' | 'inout' )</div>
+               <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="settle-command">settle-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="117" height="37">
          <polygon points="9 17 1 13 1 21"></polygon>
