@@ -297,7 +297,8 @@ class EngineTest {
     void waitForTicks() {
         Session session = engine.openSession();
         CompletableFuture<Reply> wait = engine.submit(session, null, "wait 3t");
-        tick(2);
+        // The first tick starts the wait; three more pass before it ends.
+        tick(3);
         assertFalse(wait.isDone());
         tick(1);
         assertEquals("ok", text(wait));
@@ -490,8 +491,9 @@ class EngineTest {
         }
         Result result = wait.join().results().get(0);
         assertTrue(result.isOk());
-        assertEquals(10, result.rows().size());
+        assertEquals(11, result.rows().size());
         assertEquals(1L, result.rows().get(0).fields().get("tick"));
+        assertEquals(201L, result.rows().get(10).fields().get("tick"));
     }
 
     @Test

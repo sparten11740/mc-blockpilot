@@ -444,9 +444,10 @@ public final class Engine {
             remaining = ticks;
         }
 
+        /** The job also ticks an action in the step that starts it; for a wait that step is tick 0, not tick 1. */
         @Override
         public Result tick() {
-            return --remaining <= 0 ? Result.ok() : null;
+            return remaining-- <= 0 ? Result.ok() : null;
         }
 
         @Override
