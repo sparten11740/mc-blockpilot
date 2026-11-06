@@ -19,6 +19,14 @@
   script no tick. Scripts with actions share one queue, so a timed `record
   <duration>` holds it until it ends.
 - Replies already carry rows; `record stop` has none today.
+- A recording's files live in `<game dir>/blockpilot/recordings/`: the MP4,
+  and while it runs the hidden `.<name>.video.mkv` and `.<name>.wav`.
+  `record start` refuses a name whose MP4 exists; a failed take deletes all
+  three. Closing the game stops the take and waits for the MP4.
+- Besides the client thread, a recording has a writer thread, which pipes
+  frames to ffmpeg behind the frame queue and can wait up to 10 s for it, a
+  thread reading ffmpeg's output, and a finisher started at `stop()`. None
+  of them does small file writes as they come.
 
 ## Goals / Non-Goals
 
@@ -27,9 +35,10 @@
   calibration take.
 
 **Non-Goals:**
-- A file of marks beside the video, or chapters in the MP4. The reply gives
-  the agent what it needs to write either, and a sidecar would need its own
-  rules for names, overwriting and takes the game closed mid-way.
+- Chapters in the MP4. YouTube ignores embedded chapters and reads
+  `0:00`-style timestamps from the video's description, which a script can
+  make from the marks file. Desktop players would show chapters; they may
+  come later, muxed from the same marks.
 - Logging every step of every script during a take.
 - Marks during a timed `record <duration>`: it holds the action queue, so a
   mark from another call runs after it ends and fails with `err no_capture`.
@@ -87,6 +96,32 @@ Alternatives:
 - A top-level `mark` command: a mark only means something within a
   recording, and `record status` already lives there.
 
+### D5: The marks file is rewritten whole, on the client thread
+
+Each mark rewrites `<name>.marks.json` with every mark so far: written to a
+hidden `.<name>.marks.json.tmp` beside it, then moved over it atomically,
+so a reader or a crash finds the old file or the new one, never half of
+one. Writing at each mark, not at the end, keeps the marks when the game
+closes or crashes before `record stop`. The file is small, under 100 KB at
+the cap, and written in the step that makes the mark, on the client thread,
+so it is complete when `record mark` answers and when `record stop` does.
+`seconds` is rounded as in the reply and `frame` is exact, so the file and
+the replies agree.
+
+`record start` also refuses a name whose marks file exists: a marks file
+left from a deleted video would otherwise be taken for the new take's, or
+be overwritten. A failed take deletes its marks file with its other files.
+
+Alternatives:
+- Write the file once, at `record stop`: a take the game closes or crashes
+  loses its marks, which is when they are hardest to recover.
+- Append a line per mark (JSON Lines): no rewrite, but a crash can leave a
+  half line, and editors and scripts read one JSON object more easily.
+- Write it on a thread of its own: the writes would have to stay in order
+  and `record stop` would wait for the last one, for a write that takes
+  well under a millisecond. The writer thread is behind the frame queue,
+  which can hold a mark's write back by seconds.
+
 ## Risks / Trade-offs
 
 - [An agent expects the mark to line up with what a server command does] →
@@ -96,3 +131,10 @@ Alternatives:
 - [Marks in a long take with a mark per tick reach the cap] → 1,000 marks is
   50 s at one per tick; past it the error says so and the recording keeps
   going.
+- [The marks file can't be written, say on a full disk] → The mark is still
+  kept and answered, the failure is logged, and the next mark writes the
+  whole file again. A full disk fails the encoder soon after, which ends the
+  take and removes its files.
+- [Rewriting the file at a mark per tick near the cap] → Under 100 KB per
+  write, on the client thread; a take that marks every tick is the case the
+  cap bounds.
