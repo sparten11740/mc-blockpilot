@@ -18,7 +18,8 @@ integrations built against 2.0.0 keep working.
 - **Camera lens:** `fov=` and `roll=` give a placed camera its own field of view, from 1 to 170 degrees, and tilt;
   `camera at` and `follow` set them, `move` and `orbit` glide to them, so a zoom can tighten along a move.
 - **A camera away from the player:** `camera at … away` has the integrated server load, send and play the world
-  around the camera, so a set a thousand blocks off can be filmed while the player stands still.
+  around the camera, so a set a thousand blocks off can be filmed while the player stands still, and `look` and `find`
+  search around it.
 - **Sounds:** `sound <id> [at <pos>]` plays a sound on this client alone, heard from the camera, in singleplayer and on
   servers alike.
 - **Entities by name:** every command that takes `e<id>` also takes `@<name>`, the entity with that tag or custom name,

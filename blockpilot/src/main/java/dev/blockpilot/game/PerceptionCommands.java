@@ -17,6 +17,7 @@ import dev.blockpilot.game.common.BlockScan;
 import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.common.Sides;
+import dev.blockpilot.game.observe.AwayCamera;
 import dev.blockpilot.game.observe.CameraControl;
 import dev.blockpilot.game.observe.EntityUpdates;
 import dev.blockpilot.game.sable.Rel;
@@ -90,7 +91,8 @@ final class PerceptionCommands {
             .example("status"));
         registry.register(CommandSpec.query("look", this::look).needsWorld().diffable()
             .group("perception").optionalArg("radius", ArgType.INT)
-            .help("nearby entities and notable blocks (block entities, ores, …) within radius (default 16, max 64)")
+            .help("nearby entities and notable blocks (block entities, ores, …) within radius (default 16, max 64) of "
+                + "the player, or of a camera placed with away; positions stay relative to the player's block")
             .field("count", "rows").example("look 12"));
         registry.register(CommandSpec.query("entity", this::entity).needsWorld().group("perception")
             .form(form -> form.arg("ref", List.of("me"), ArgType.ENTITY))
@@ -115,10 +117,10 @@ final class PerceptionCommands {
                 Sides.NAMES)
             .help("nearest blocks (id, #tag or *pattern, each also with states as Minecraft writes them: "
                 + "oak_log[axis=y]), entities or dropped items, in loaded chunks within a cube reaching radius blocks "
-                + "each way from the player (default 32, max " + MAX_FIND_RADIUS + "), the nearest limit of them "
-                + "(default 5, max " + BlockScan.MAX_FIND_LIMIT + "); with Sable, blocks aboard a sub-level are in "
-                + "its plot, which sable:find searches. A ~ position is relative to the player's block as the find "
-                + "runs")
+                + "each way from the player, or a camera placed with away (default 32, max " + MAX_FIND_RADIUS
+                + "), the nearest limit of them (default 5, max " + BlockScan.MAX_FIND_LIMIT + "); with Sable, blocks "
+                + "aboard a sub-level are in its plot, which sable:find searches. A ~ position is relative to the "
+                + "player's block as the find runs")
             .field("count", "matches in all, when the limit left some out")
             .field("at_abs", "JSON: each row's position, absolute")
             .field("radius", "the radius searched, when the one asked for was over the max")
@@ -308,9 +310,12 @@ final class PerceptionCommands {
         List<Row> rows = new ArrayList<>();
         int more = 0;
 
-        List<Entity> entities = minecraft.level.getEntities(player, player.getBoundingBox().inflate(radius),
+        Vec3 here = AwayCamera.clientPresence();
+        BlockPos center = BlockPos.containing(here);
+        AABB box = player.getBoundingBox().move(here.subtract(player.position())).inflate(radius);
+        List<Entity> entities = minecraft.level.getEntities(player, box,
             entity -> entity.isAlive() && !entity.isSpectator());
-        entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(player)));
+        entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(here)));
         for (Entity entity : entities) {
             if (rows.size() >= cap) {
                 more++;
@@ -321,7 +326,6 @@ final class PerceptionCommands {
 
         Map<String, int[]> counts = new LinkedHashMap<>();
         Map<String, BlockPos> nearest = new LinkedHashMap<>();
-        BlockPos center = player.blockPosition();
         BlockScan.around(minecraft.level, center, radius, notable(), true, (pos, state) -> {
             String id = Ids.of(state);
             counts.computeIfAbsent(id, key -> new int[1])[0]++;
@@ -386,8 +390,8 @@ final class PerceptionCommands {
         int limit = Mth.clamp(args.integer("limit", 5), 1, BlockScan.MAX_FIND_LIMIT);
         var id = args.type("what") == ArgType.ID ? Ids.parse(what) : null;
         BlockMatcher matcher = id != null && !BuiltInRegistries.BLOCK.containsKey(id) ? null : BlockMatcher.parse(what);
-        BlockPos center = player.blockPosition();
-        Vec3 eyes = player.position();
+        Vec3 from = AwayCamera.clientPresence();
+        BlockPos center = BlockPos.containing(from);
         AABB box = new AABB(center).inflate(radius);
         Result found = Sides.read(args, (level, server) -> {
             var entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(id);
@@ -395,7 +399,7 @@ final class PerceptionCommands {
                 var type = entityType.get();
                 List<Entity> entities = level.getEntities((Entity) null, box,
                     entity -> entity.getType() == type && entity.isAlive() && entity.getId() != player.getId());
-                entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
+                entities.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(from)));
                 return nearest(entities, limit, entity -> entityRow(entity, server));
             }
             if (matcher == null) {
@@ -403,7 +407,7 @@ final class PerceptionCommands {
                     .orElseThrow(() -> new CommandException("syntax", "no block, item or entity type " + what));
                 List<Entity> drops = level.getEntities((Entity) null, box,
                     entity -> entity instanceof ItemEntity drop && drop.getItem().is(item));
-                drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(eyes)));
+                drops.sort(Comparator.comparingDouble(entity -> entity.distanceToSqr(from)));
                 return nearest(drops, limit, entity -> entityRow(entity, server));
             }
             List<BlockPos> blocks = new ArrayList<>();
