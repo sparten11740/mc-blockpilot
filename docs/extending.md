@@ -68,6 +68,10 @@ times; one more is `err syntax` naming the limit. Help shows it as `[via <via>]â
 `args.word("via")` and the other accessors read the first. Repeated groups are new in blockpilot-api 2.1.0; an
 integration built against 2.0.0 keeps working unchanged, and one that uses them needs Blockpilot 1.1.0 or later.
 
+A slot of type `ArgType.ENTITY` takes `e<id>` and, from Blockpilot 1.1.0, `@<name>`, an entity's tag or custom name. The
+engine looks the name up before the handler runs, so `args.entity(name)` always reads an id and a command needs no
+change to take names; an unknown name answers `err no_entity @<name>` without running it.
+
 Extensions can emit events too: `BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id, "uuid=" + id))`
 reaches every session as `! mymod:assembled uuid=â€¦`. `BlockpilotApi.VERSION`, the version of `blockpilot-api`, bumps its
 minor version for additions and its major version for breaking changes; declare the range of Blockpilot versions your

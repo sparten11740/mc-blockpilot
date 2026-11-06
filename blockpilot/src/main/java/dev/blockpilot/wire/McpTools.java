@@ -16,7 +16,7 @@ public final class McpTools {
     static final String RUN_DESCRIPTION = """
         Runs Blockpilot commands in the Minecraft client. Script: commands separated by ; (one result line each, \
         stops at the first err; ?cmd goes on past its own err). Positions x,y,z or ~dx,dy,dz (relative); \
-        entities e<id>; counts x<n>; durations 20t / 3s; options name=value.
+        entities e<id> or @<name> (a tag or custom name); counts x<n>; durations 20t / 3s; options name=value.
         Common: status; look [r]; find <block|#tag|entity> [r]; block <pos>; inv; screen; goto <pos|e<id>>; \
         mine <pos|block> [x<n>]; place <item> <pos>; use [pos|e<id>]; attack <e<id>>; select <item>; \
         craft <item> [x<n>]; chat <text>; cmd <command>; mouse down|up|click <button>; drag <button> <dx> <dy> [Nt]; \

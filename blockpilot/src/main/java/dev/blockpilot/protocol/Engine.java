@@ -389,7 +389,7 @@ public final class Engine {
 
         private Result run(Statement.Call query) {
             try {
-                return query.entry().spec().queryHandler().run(context, query.args());
+                return query.entry().spec().queryHandler().run(context, EntityNames.resolve(query.args(), game));
             } catch (CommandException e) {
                 return e.toResult();
             }
@@ -493,7 +493,8 @@ public final class Engine {
             if (elapsed % every == 0) {
                 String gate = serverClock ? null : game.gate(query);
                 try {
-                    last = gate != null ? Result.error(gate) : query.queryHandler().run(context, args);
+                    last = gate != null ? Result.error(gate)
+                        : query.queryHandler().run(context, EntityNames.resolve(args, game));
                 } catch (CommandException e) {
                     last = e.toResult();
                 }

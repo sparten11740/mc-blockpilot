@@ -648,6 +648,40 @@ def check_camera_away(game_dir):
     return None
 
 
+def check_entity_names(game_dir):
+    """@<name> takes the entity tagged or called so wherever e<id> is taken, on the client and on the server thread,
+    the nearest of several to where the server takes the player to be, and fails when no entity has the name."""
+    # A custom name is a text component: JSON inside an NBT string before 26.1, SNBT from then on.
+    daisy = "'\"Daisy\"'" if game_version(game_dir) < (26, 1) else '"Daisy"'
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; ?server kill @e[type=minecraft:cow]; "
+                              "server as=player summon minecraft:cow ~3 ~ ~4 {Tags:[\"star\"],NoAI:1b}; "
+                              "server as=player summon minecraft:cow ~3 ~ ~40 {Tags:[\"star\"],NoAI:1b}; "
+                              f"server as=player summon minecraft:cow ~2 ~ ~ {{CustomName:{daisy},NoAI:1b}}; wait 5t; "
+                              "entity @star; nbt @star path=Pos; entity @daisy; camera at ~0,2,-6 look @star; status; "
+                              "camera reset; face @daisy; camera at ~3,2,36 look ~3,0,40 away; entity @star; "
+                              "nbt @star path=Pos; camera reset; ?entity @nobody; server kill @e[type=minecraft:cow]")
+    cows = re.findall(r"^ok cow (e\d+) pos (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", output, re.MULTILINE)
+    served = re.findall(r"^ok \[(-?[\d.]+)d, ?(-?[\d.]+)d, ?(-?[\d.]+)d\]", output, re.MULTILINE)
+    camera = re.search(r"^ok camera (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", output, re.MULTILINE)
+    yaw = re.search(r"^ok pos .*\bcam:(-?[\d.]+)/", output, re.MULTILINE)
+    if len(cows) != 3 or len(served) != 2 or not camera or not yaw:
+        return f"no stars, daisy, camera or camera yaw: {output.strip()[:900]}"
+    near, far = (tuple(float(value) for value in cow[1:]) for cow in (cows[0], cows[2]))
+    toward = yaw_toward(tuple(float(value) for value in camera.groups()), near)
+    expected = [rf"^ok aim:cow {cows[1][0]}\b", r"^err no_entity @nobody$"]
+    missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
+    # From the player the star at ~3,0,4 is the nearer, from the camera away at ~3,2,36 the one at ~3,0,40; the client
+    # and the server thread pick the same.
+    places = [(near[0], near[2]), (float(served[0][0]), float(served[0][2])), (far[0], far[2]),
+              (float(served[1][0]), float(served[1][2]))]
+    wanted = [(3.5, 4.5), (3.5, 4.5), (3.5, 40.5), (3.5, 40.5)]
+    if missing or any(math.dist(place, want) > 0.5 for place, want in zip(places, wanted)) \
+            or turned(float(yaw.group(1)), toward) > 5:
+        return f"missing {missing}, stars at {places}, camera yaw {yaw.group(1)} for {toward:.1f}: " \
+               f"{output.strip()[:900]}"
+    return None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -886,6 +920,7 @@ def main():
         ("a camera move in the background", lambda: check_camera_move_background(args.game_dir)),
         ("a recorded camera move is in a new place each frame",
          lambda: check_camera_move_recording(args.game_dir, world)),
+        ("@<name> takes an entity by its tag or name", lambda: check_entity_names(args.game_dir)),
     ]
     for name, check in checks:
         try:

@@ -4,13 +4,17 @@ import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
  * A game for engine tests: client tasks run at once, server tasks wait in {@link #serverTasks} until the test runs
- * them, calls on the server run at once and are counted, positions resolve around 0,64,0, releases are counted.
+ * them, calls on the server run at once and are counted, positions resolve around 0,64,0, releases are counted,
+ * entity names resolve from {@link #entities}.
  */
 final class FakeGame implements GameBridge {
     final AtomicInteger releases = new AtomicInteger();
@@ -38,6 +42,10 @@ final class FakeGame implements GameBridge {
     long clientTicks;
     /** The server load the fake reports, in ms. */
     int serverLoad;
+    /** Entity ids by tag or name. */
+    final Map<String, Integer> entities = new HashMap<>();
+    /** Each name looked up, in order, marked {@code (server call)} when a call on the server looked it up. */
+    final List<String> lookups = new ArrayList<>();
 
     @Override
     public void runOnClient(Runnable task) {
@@ -93,6 +101,13 @@ final class FakeGame implements GameBridge {
     @Override
     public Position resolve(Position position) {
         return position.resolve(0, 64, 0);
+    }
+
+    @Override
+    public OptionalInt resolveEntity(String name) {
+        lookups.add(inServerCall ? name + " (server call)" : name);
+        Integer id = entities.get(name);
+        return id == null ? OptionalInt.empty() : OptionalInt.of(id);
     }
 
     @Override
