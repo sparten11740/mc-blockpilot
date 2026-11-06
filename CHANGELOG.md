@@ -5,11 +5,12 @@
 For filming: a camera that glides, one that films far from the player, sounds where the camera hears them, and marks
 for the edit. `blockpilot-api` becomes 2.1.0, an addition, so integrations built against 2.0.0 keep working.
 
-- **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the
-  camera to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed.
-  It keeps its target, turns to a new one or looks ahead, and `ease=in|out|inout` shapes its speed. `stop` leaves it
-  where the last frame drew it. `status` names a placed camera's position, and an entity look target is followed
-  where each frame draws it.
+- **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the camera
+  to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed. It keeps
+  its target, turns to a new one or looks ahead, and `ease=in|out|inout` shapes its speed. With `background` it glides
+  while the script goes on, so characters can move and sounds play during the shot, and `camera wait` waits for its end.
+  `stop` leaves it where the last frame drew it. `status` names a placed camera's position, and an entity look target is
+  followed where each frame draws it.
 - **A camera away from the player:** `camera at … away` has the integrated server load, send and play the world
   around the camera, so a set a thousand blocks off can be filmed while the player stands still.
 - **Sounds:** `sound <id> [at <pos>]` plays a sound on this client alone, heard from the camera, in singleplayer and on

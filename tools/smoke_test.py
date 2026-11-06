@@ -543,6 +543,26 @@ def check_camera_looks_ahead(game_dir):
     return None
 
 
+def check_camera_move_background(game_dir):
+    """A camera move in the background answers at once and lets server steps run while it moves, camera wait answers
+    at its end and at once with nothing moving, and stop from another call leaves it where it was drawn."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; camera move ~10,2,0 over 40t background; "
+                              "server settle=1t time query gametime; wait 20t; status; camera wait; camera wait")
+    along = [float(x) - BASE[0] for x in re.findall(r"^ok pos .*?\bcamera (-?[\d.]+),", output, re.MULTILINE)]
+    end = "{:g},{:g},{:g}".format(*at_base(10, 2, 0))
+    waits = re.findall(rf"^ok camera {end} ", output, re.MULTILINE)
+    if not re.search(r"^ok moving over=40t$", output, re.MULTILINE) or len(along) != 1 or not 4 <= along[0] <= 6.5 \
+            or len(waits) != 2:
+        return f"halfway {along}, {len(waits)} waits at the end: {output.strip()[:700]}"
+    run(game_dir, "camera at ~0,2,0; camera move ~10,2,0 over 40t background; wait 20t")
+    run(game_dir, "stop")
+    _, output = run(game_dir, "status; wait 20t; status; camera reset")
+    stopped = [float(x) - BASE[0] for x in re.findall(r"^ok pos .*?\bcamera (-?[\d.]+),", output, re.MULTILINE)]
+    if len(stopped) != 2 or stopped[0] != stopped[1] or not 3 <= stopped[0] <= 7:
+        return f"after stop the camera is at {stopped} blocks along"
+    return None
+
+
 def check_camera_move_recording(game_dir, world):
     """A move recorded at 60 fps is in a new place in nearly every frame, where camera at once a tick repeats them:
     consecutive frames' ground, with the clouds off, barely differs only where the camera stood still."""
@@ -837,6 +857,7 @@ def main():
         ("a curved camera move has no corner and an even speed", lambda: check_camera_curve(args.game_dir)),
         ("a camera move looking ahead faces its way", lambda: check_camera_looks_ahead(args.game_dir)),
         ("a camera away loads and plays the world around it", lambda: check_camera_away(args.game_dir)),
+        ("a camera move in the background", lambda: check_camera_move_background(args.game_dir)),
         ("a recorded camera move is in a new place each frame",
          lambda: check_camera_move_recording(args.game_dir, world)),
     ]

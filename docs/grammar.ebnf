@@ -244,7 +244,7 @@ tick-option ::= "timeout=" ( duration | seconds )
 screenshot-command ::= "screenshot" integer? "sheet"?
 screenshot-option ::= "burst=" integer | "every=" duration | "hud=" ( "on" | "off" ) | "crop=" option-value | "timeout=" ( duration | seconds )
 
-camera-command ::= "camera" ( "at" position ( "look" ( position | entity ) )? "clear"? "away"? | "move" position ( "via" position )* ( "look" ( "ahead" | position | entity ) )? "over" duration | ( "reset" | "off" ) )
+camera-command ::= "camera" ( "at" position ( "look" ( position | entity ) )? "clear"? "away"? | "move" position ( "via" position )* ( "look" ( "ahead" | position | entity ) )? "over" duration "background"? | ( "reset" | "off" | "wait" ) )
 camera-option ::= "ease=" ( "linear" | "in" | "out" | "inout" ) | "timeout=" ( duration | seconds )
 
 settle-command ::= "settle"

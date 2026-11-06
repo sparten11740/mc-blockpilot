@@ -24,6 +24,7 @@ import dev.blockpilot.mixin.SoundEngineAccessor;
 import dev.blockpilot.mixin.SoundManagerAccessor;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
+import dev.blockpilot.protocol.Engine;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -86,8 +87,9 @@ public final class ObservationCommands {
                 .repeated(MAX_VIA, via -> via.keyword("through", "via").arg("via", ArgType.POSITION))
                 .optional(look -> look.keyword("look", "look")
                     .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY))
-                .keyword("timing", "over").arg("duration", ArgType.DURATION))
-            .form(form -> form.keyword("op", "reset", "off"))
+                .keyword("timing", "over").arg("duration", ArgType.DURATION)
+                .optionalKeyword("background", "background"))
+            .form(form -> form.keyword("op", "reset", "off", "wait"))
             .option("ease", "camera move: how the speed changes along the path; linear (the default) keeps it, in "
                 + "starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
             .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
@@ -103,7 +105,11 @@ public final class ObservationCommands {
                 + "view, the way the player looked), with a point or an entity it turns toward it over the move, and "
                 + "look ahead looks the way it travels; ease=inout suits a single move from rest, linear (the default) "
                 + "keeps the speed across chained moves; it counts client ticks, so it goes on through tick freeze, "
-                + "and stop or real input end it where the last frame drew it; "
+                + "and stop or real input end it where the last frame drew it; with background it answers at once, "
+                + "ok moving over=<n>t, and the camera glides on its own while the script and the scripts after it go "
+                + "on (server steps, sound, other actions), until a camera at, camera move or camera reset replaces "
+                + "it; camera wait answers once a move in the background has ended, as camera at would there, and at "
+                + "once with nothing moving; "
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
                 + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
@@ -123,6 +129,8 @@ public final class ObservationCommands {
             .field("cleared", "clear: how far the camera moved, in blocks, when it had to")
             .field("uncleared", "clear: set when no clear point was in reach, so the camera stayed at the point")
             .field("looking", "the absolute point it looks at, with a look target")
+            .field("moving", "camera move … background: set, the move goes on beside the script")
+            .field("over", "camera move … background: the move's ticks")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
             .help("waits until the chunks within the view distance of the player have arrived from the server and "
@@ -312,6 +320,9 @@ public final class ObservationCommands {
         if (op.equals("move")) {
             return move(context, args);
         }
+        if (op.equals("wait")) {
+            return new WaitForMove();
+        }
         if (!op.equals("at")) {
             CameraControl.reset();
             return () -> Result.ok();
@@ -406,11 +417,41 @@ public final class ObservationCommands {
             look = ahead ? CameraMove.Look.AHEAD : CameraMove.Look.TARGET;
             target = ahead ? null : lookTarget(context, args, level);
         }
+        boolean background = args.has("background");
         CameraMove move = new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
-            duration, ease, placed -> ActionSupport.afterFrames(2, () ->
+            duration, ease, background, placed -> ActionSupport.afterFrames(2, () ->
                 Result.ok(placedFields(cameraFields(level, endPoint), level, endPoint, placed.target()))));
-        CameraControl.place(move.placement());
+        CameraControl.placeMove(move);
+        if (background) {
+            return () -> Result.ok(new Fields().put("moving", true, "moving").put("over", duration,
+                "over=" + duration + "t"));
+        }
         return move;
+    }
+
+    /** camera wait: answers once no camera move is under way, as camera at answers where the camera then rests. */
+    private static final class WaitForMove implements Action, Engine.SelfTimed {
+        private Action answer;
+
+        @Override
+        public Result tick() throws CommandException {
+            if (answer == null) {
+                if (CameraControl.moving() != null) {
+                    return null;
+                }
+                CameraControl.Placement placement = CameraControl.placement();
+                Level level = Minecraft.getInstance().level;
+                Vec3 at = placement == null || level == null ? null : placement.position().at(1);
+                answer = at == null ? () -> Result.ok() : ActionSupport.afterFrames(2, () ->
+                    Result.ok(placedFields(cameraFields(level, at), level, at, placement.target())));
+            }
+            return answer.tick();
+        }
+
+        @Override
+        public String label() {
+            return "camera";
+        }
     }
 
     private static Fields cameraFields(Level level, Vec3 position) {
