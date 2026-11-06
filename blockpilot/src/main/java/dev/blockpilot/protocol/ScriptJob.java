@@ -178,7 +178,7 @@ final class ScriptJob implements CommandContext {
                     finish(Result.error(gate));
                     continue;
                 }
-                gatedThrough = gateQueriesAfter(index);
+                gatedThrough = gateRunAfter(index);
             }
             if (placement.affinity() != affinity) {
                 if (stalled(affinity)) {
@@ -321,18 +321,27 @@ final class ScriptJob implements CommandContext {
     }
 
     /**
-     * Gates the queries that follow {@code from} up to the next other statement (or the first gate that fails), so a
-     * run of server-side queries is answered in one server tick instead of one per client tick. Queries change
-     * nothing, so their gates still hold when they run. Returns the last gated index.
+     * Gates the statements that follow {@code from} up to the first that needs the client again (or whose gate fails):
+     * queries, which change nothing, and everything placed on the server thread. A run of server steps then goes back
+     * to back, each starting in the server tick the one before it answered in, instead of one per client tick.
+     * Returns the last gated index.
      */
-    private int gateQueriesAfter(int from) {
+    private int gateRunAfter(int from) {
         int last = from;
-        while (last + 1 < lines.size() && lines.get(last + 1).statement() instanceof Statement.Call call
-            && call.entry().spec().kind() == CommandSpec.Kind.QUERY
-            && engine.game().gate(call.entry().spec()) == null) {
+        while (last + 1 < lines.size() && joinsRun(lines.get(last + 1).statement())) {
             last++;
         }
         return last;
+    }
+
+    private boolean joinsRun(Statement statement) {
+        if (statement == null) {
+            return false;
+        }
+        Placement placement = placement(statement);
+        boolean query = statement instanceof Statement.Call call
+            && call.entry().spec().kind() == CommandSpec.Kind.QUERY;
+        return (query || placement.affinity() == Affinity.SERVER) && gate(placement) == null;
     }
 
     private Result tickRunning() {
