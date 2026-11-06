@@ -59,7 +59,7 @@ the limit.
   is a sixth of its length
 - **THEN** successive rows' `camera` positions are about the same distance
   apart all along the path, a row read from a frame the game drew late
-  counting together with the row after it
+  counting together with the row after it, and left out when it is the last
 
 #### Scenario: Too many via points
 - **WHEN** an agent runs `camera move` with 33 `via` points
