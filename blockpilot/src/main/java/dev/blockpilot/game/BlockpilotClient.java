@@ -245,6 +245,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         events.tick();
         SableSupport.tick(Minecraft.getInstance());
         AwayCamera.tick();
+        CameraControl.tick();
         chatSinceTick.set(0);
         engine.tickClient();
         EntityUpdates.CLIENT.clear();
@@ -411,7 +412,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     private void onHumanInput(Fields input) {
-        if (engine != null && (engine.activity() != null || !InputState.isEmpty())) {
+        if (engine != null && (engine.activity() != null || !InputState.isEmpty() || CameraControl.moving() != null)) {
             engine.stopAll(Result.error("interrupted").with(input));
             Fields event = new Fields().bare("by", "player");
             input.list().forEach(field -> event.put(field.name(), field.value(), field.text()));
@@ -490,6 +491,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         }
         BlockPos base = player.blockPosition();
         return position.resolve(base.getX(), base.getY(), base.getZ());
+    }
+
+    @Override
+    public void stopBackground() {
+        CameraControl.stopMove();
     }
 
     @Override

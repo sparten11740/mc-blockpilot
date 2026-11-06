@@ -90,6 +90,10 @@ public final class CameraControl {
     }
 
     private static volatile Placement placement;
+    /** Client ticks counted for camera moves, which advance by them whether or not an action ticks them. */
+    private static volatile long ticks;
+    /** The camera move under way, in the foreground or the background; forgotten when the camera is placed anew. */
+    private static volatile CameraMove moving;
     private static volatile Angles rendered;
     private static volatile Vec3 renderedFrom;
     /** The player's own F1 (hide GUI) setting while a placed camera hides the GUI, else null. */
@@ -102,8 +106,44 @@ public final class CameraControl {
         return placement;
     }
 
+    /**
+     * Each client tick, before the scripts: counts it for camera moves, and places a move in the background at its
+     * end once its time is up, as camera at would.
+     */
+    public static void tick() {
+        ticks++;
+        CameraMove move = moving;
+        if (move != null && move.background() && move.finished()) {
+            place(move.end());
+        }
+    }
+
+    static long ticks() {
+        return ticks;
+    }
+
+    /** The camera move under way, or null. */
+    public static CameraMove moving() {
+        return moving;
+    }
+
+    /** Places a move, whose placement follows it frame by frame. Client thread. */
+    static void placeMove(CameraMove move) {
+        place(move.placement());
+        moving = move;
+    }
+
+    /** stop and real input: a move under way stays where the last frame drew it, on any thread. */
+    public static void stopMove() {
+        CameraMove move = moving;
+        if (move != null) {
+            move.cancel();
+        }
+    }
+
     /** Places the camera and hides the GUI and hand, as F1 does, so outside views are clean. Client thread. */
     public static void place(Placement value) {
+        moving = null;
         if (hiddenGuiBefore == null) {
             hiddenGuiBefore = HudVisibility.hidden();
         }
@@ -119,6 +159,7 @@ public final class CameraControl {
      * placement changes, as when {@code stop} ends a move from another session's thread.
      */
     static void hold(Placement value) {
+        moving = null;
         if (placement != null) {
             placement = value;
         }
@@ -127,6 +168,7 @@ public final class CameraControl {
     /** Back to the player's view, restoring the GUI setting. Client thread. */
     public static void reset() {
         AwayCamera.end();
+        moving = null;
         placement = null;
         rendered = null;
         if (hiddenGuiBefore != null) {

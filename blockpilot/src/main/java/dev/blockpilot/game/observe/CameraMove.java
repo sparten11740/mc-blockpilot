@@ -13,7 +13,8 @@ import net.minecraft.world.phys.Vec3;
 /**
  * {@code camera move}: glides the camera along a path over client ticks. Its placement works out the move's progress
  * in every rendered frame and builds the path from where its points are drawn then, so the camera is in a new place
- * each frame and follows points aboard a moving sub-level.
+ * each frame and follows points aboard a moving sub-level. Progress counts {@link CameraControl}'s client ticks, so a
+ * move in the background, which no action ticks, advances the same way and CameraControl places its end.
  */
 final class CameraMove implements Action, Engine.SelfTimed {
     /** Where the move looks: on as before, toward a target, or the way it travels. */
@@ -31,16 +32,16 @@ final class CameraMove implements Action, Engine.SelfTimed {
     private final Vec3 startDirection;
     private final int duration;
     private final CameraPath.Ease ease;
+    private final boolean background;
     /** The reply once the camera rests at the end, as {@code camera at} gives it. */
     private final Function<CameraControl.Placement, Action> answer;
-    /** Client ticks since the move began; read by the frames. */
-    private volatile int ticks;
-    private boolean started;
+    /** CameraControl's client tick count when the move began. */
+    private final long start;
     private Action ending;
 
     /** {@code points}: the start, the via points and the end. */
     CameraMove(List<CameraControl.Point> points, Look look, CameraControl.Point target,
-        CameraControl.Placement before, Vec3 startDirection, int duration, CameraPath.Ease ease,
+        CameraControl.Placement before, Vec3 startDirection, int duration, CameraPath.Ease ease, boolean background,
         Function<CameraControl.Placement, Action> answer) {
         this.points = List.copyOf(points);
         this.look = look;
@@ -49,7 +50,23 @@ final class CameraMove implements Action, Engine.SelfTimed {
         this.startDirection = startDirection;
         this.duration = duration;
         this.ease = ease;
+        this.background = background;
         this.answer = answer;
+        start = CameraControl.ticks();
+    }
+
+    boolean background() {
+        return background;
+    }
+
+    /** Whether its time is up: on the client tick its duration has passed. */
+    boolean finished() {
+        return CameraControl.ticks() - start >= duration;
+    }
+
+    /** Where the camera rests after the move, as {@code camera at} would place it. */
+    CameraControl.Placement end() {
+        return new CameraControl.Placement(points.get(points.size() - 1), finalTarget(), finalView());
     }
 
     /** The placement that moves along the path, frame by frame. */
@@ -65,15 +82,10 @@ final class CameraMove implements Action, Engine.SelfTimed {
         if (ending != null) {
             return ending.tick();
         }
-        if (started) {
-            ticks++;
-        }
-        started = true;
-        if (ticks < duration) {
+        if (!finished()) {
             return null;
         }
-        CameraControl.Placement end = new CameraControl.Placement(points.get(points.size() - 1), finalTarget(),
-            finalView());
+        CameraControl.Placement end = end();
         CameraControl.place(end);
         ending = answer.apply(end);
         return ending.tick();
@@ -109,7 +121,7 @@ final class CameraMove implements Action, Engine.SelfTimed {
                 through.add(toVec(at));
             }
         }
-        double progress = Math.min(1, (ticks + CameraControl.realPartialTick()) / duration);
+        double progress = Math.min(1, (CameraControl.ticks() - start + CameraControl.realPartialTick()) / duration);
         return new Frame(new CameraPath(through), progress, ease.apply(progress));
     }
 

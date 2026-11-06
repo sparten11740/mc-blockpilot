@@ -229,6 +229,7 @@ public final class Engine {
     public int stopAll(Result error) {
         int stopped = cancelWhere(job -> true, error, false);
         game.releaseInputs();
+        game.stopBackground();
         return stopped;
     }
 

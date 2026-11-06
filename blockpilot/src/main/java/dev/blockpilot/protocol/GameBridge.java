@@ -49,6 +49,10 @@ public interface GameBridge {
     /** Lets go of every key, button and movement an agent holds. */
     void releaseInputs();
 
+    /** Ends what runs beside the scripts, such as a camera move in the background; stop and real input call it. */
+    default void stopBackground() {
+    }
+
     /** Lets go of what this session's commands hold, e.g. when its script fails or it disconnects. */
     void releaseInputs(int sessionId);
 }
