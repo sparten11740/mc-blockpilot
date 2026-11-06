@@ -60,12 +60,15 @@ float, boolean)` when the boolean is true, the world's field of view (the
 hand's passes false), after NeoForge's field-of-view event; on 26.x at the
 return of `Camera.calculateFov(float)`, which `Camera.update` stores as the
 field of view the projection is set up with. The roll is applied, only while a
-placed camera's lens has one, so the player's own view is untouched, at the
-end of `Camera.setRotation`, on each version and on NeoForge's overload with a
-roll, turning the rotation quaternion about its own forward axis, so every
-place that sets the rotation, NeoForge's event included, keeps it, and the
-view matrix, particles and frustum see it. `recordRendered` reports the
-lens's roll for a placed camera, added to the loader's.
+placed camera's lens has one, so the player's own view is untouched, in the
+hook that places the camera, right after it sets the rotation from the
+placement's yaw and pitch, turning the rotation quaternion about its own
+forward axis, so the view matrix, particles and frustum see it. That hook
+runs after anything else sets the rotation for the frame: on NeoForge 1.21.1
+the camera-angle event fires inside `Camera.setup`, before the hook at its
+end, and on 26.x `alignWithEntity` comes before the hook in `Camera.update`.
+`recordRendered` reports the lens's roll for a placed camera, added to the
+loader's.
 
 ### D4: Ranges are checked before anything changes
 
@@ -76,8 +79,12 @@ syntax` naming the range, before the camera moves, and on `camera reset`,
 ## Risks / Trade-offs
 
 - [Another mod also rolls the camera] → Blockpilot's roll applies after the
-  game's rotation, on top of whatever a mod did before it; a mod that rolls
-  later wins.
+  game's rotation, on top of whatever a mod did before it; a loader or mod
+  that sets the rotation again after the placing hook loses the roll, as it
+  would lose the placed camera's yaw and pitch.
+- [A glide from the player's view starts from the field-of-view setting] →
+  Sprinting or a potion widens the player's view a little beyond it, so the
+  first frame of such a glide can narrow slightly.
 - [A very narrow field of view shows a far away world the client hasn't
   loaded] → Chunks still load by the player or an away camera; `settle`
   and `away` serve as they do for any far shot.
