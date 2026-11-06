@@ -13,7 +13,7 @@
 
 ## 2. Integration checks
 
-- [ ] 2.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new check and its marks file, and that the JSON shapes of the `record` steps still match within each loader
+- [x] 2.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new check and its marks file, and that the JSON shapes of the `record` steps still match within each loader
 
 ## Workflow follow-up
 
