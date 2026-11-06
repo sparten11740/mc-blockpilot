@@ -8,8 +8,8 @@
 
 ## 2. Tick waits (player-control, command-language)
 
-- [ ] 2.1 Make `WaitTicks` answer on the Nth tick after the one it started in (D2), and update `EngineTest.waitForTicks` (not done after 3 ticks, `ok` on the 4th) and `aSampleRunsBesideAWait` (eleven rows); verify both fail before the change and the protocol tests pass after it
-- [ ] 2.2 Add a smoke step `sample status every 1t x1`, forty `wait 1t`, `sample status every 1t x1` that checks the two rows' client ticks `c<n>` are 40 apart; verify on the 1.21.1 NeoForge dev client that it fails before the change (0 apart) and passes after
+- [x] 2.1 Make `WaitTicks` answer on the Nth tick after the one it started in (D2), and update `EngineTest.waitForTicks` (not done after 3 ticks, `ok` on the 4th) and `aSampleRunsBesideAWait` (eleven rows); verify both fail before the change and the protocol tests pass after it
+- [x] 2.2 Add a smoke step `sample status every 1t x1`, forty `wait 1t`, `sample status every 1t x1` that checks the two rows' client ticks `c<n>` are 40 apart; verify on the 1.21.1 NeoForge dev client that it fails before the change (0 apart) and passes after
 - [ ] 2.3 Say in `wait`'s help and the `wait` row of `docs/commands.md` that the step after `wait <N>t` runs N ticks after the one before; verify `help wait` on the dev client shows it
 
 ## 3. Integration checks

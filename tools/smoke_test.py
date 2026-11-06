@@ -345,6 +345,15 @@ def check_functions(game_dir, world):
     return f"missing {missing}: {output.strip()[:600]}" if missing else None
 
 
+def check_tick_waits(game_dir):
+    """Forty wait 1t put forty client ticks between the samples around them."""
+    _, output = run(game_dir, "sample status every 1t x1; " + "wait 1t; " * 40 + "sample status every 1t x1")
+    ticks = [int(tick) for tick in re.findall(r"^  t\d+ c(\d+)\b", output, re.MULTILINE)]
+    if len(ticks) != 2 or ticks[1] - ticks[0] != 40:
+        return f"client ticks around forty wait 1t are {ticks}, not 40 apart"
+    return None
+
+
 def check_video_upright(game_dir, world):
     """A recorded video is upright too; its frames come from another readback than `pixels` reads."""
     ffmpeg = shutil.which("ffmpeg")
@@ -423,8 +432,9 @@ def main():
         ("create a test world", f"create world {world} flat peaceful rule:doDaylightCycle=false",
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
-        ("help", "help; help goto; help errors; help server",
-         [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true"]),
+        ("help", "help; help goto; help errors; help server; help wait",
+         [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
+          r"the step after wait <N>t runs N ticks after"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -563,6 +573,7 @@ def main():
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
         ("server function answers as the game sees it", lambda: check_functions(args.game_dir, world)),
+        ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
         ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),

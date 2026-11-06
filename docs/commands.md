@@ -223,8 +223,8 @@ speed, climb, world y, height above ground), `sable:find <sub> <block|#tag|*patt
 - `fmt text|json`: the reply format for the session.
 - `sub on|off`, `sub log <level>|off`: pushes events, and log lines from a level up, as they happen.
 - `stop`: cancels the running and queued actions of every session and releases held input.
-- `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`: waits a number of ticks, or until a query's
-  fields match.
+- `wait <Nt>`, `wait <query> until <field><op><value> [clock=server]`: waits a number of ticks, so the step after it
+  runs that many ticks after the one before, or until a query's fields match.
 - `sample <query> [and <query>…] every <Nt> x<n> [clock=server]`: a row per query and run. Client and server queries
   together, also `side=server` ones, run on the client's ticks with one server read per run, and those rows add the
   client's own tick `c<n>`; under `load server` such reads hold the client, which `held_client=` reports.

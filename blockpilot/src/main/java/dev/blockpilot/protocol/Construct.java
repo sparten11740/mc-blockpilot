@@ -8,12 +8,13 @@ record Construct(String name, List<String> usages, String help, String example) 
         new Construct("wait", List.of("wait <duration>", "wait idle",
             "wait <query> until <predicate> [and …] [stable=<duration>] [every=<duration>] [timeout=<duration>] "
                 + "[clock=server|client]"),
-            "waits a time, until the action queue is idle, or until the read-only query's predicates hold; "
-                + "predicates are <field><op><value> with == != < <= > >=, or ok, and a value $<field> compares with "
-                + "another field (hp<$max_hp); stable= how long they must keep holding (default 1t), every= how "
-                + "often to check (default 1t), timeout= (default 60s, a plain number is seconds), clock= the side "
-                + "the query runs on; server-side queries are checked at the end of server ticks and report the "
-                + "tick (t<n>); a query that fails with err syntax ends the wait at once, other errors are retried",
+            "waits a time (the step after wait <N>t runs N ticks after the one before it), until the action "
+                + "queue is idle, or until the read-only query's predicates hold; predicates are <field><op><value> "
+                + "with == != < <= > >=, or ok, and a value $<field> compares with another field (hp<$max_hp); "
+                + "stable= how long they must keep holding (default 1t), every= how often to check (default 1t), "
+                + "timeout= (default 60s, a plain number is seconds), clock= the side the query runs on; server-side "
+                + "queries are checked at the end of server ticks and report the tick (t<n>); a query that fails "
+                + "with err syntax ends the wait at once, other errors are retried",
             "wait block ~1,0,0 until id==air timeout=5s"),
         new Construct("sample", List.of("sample <query> [and <query>…] every <duration> x<n> [clock=server|client]",
             "sample <query> [and <query>…] every <duration> [x<n>] [clock=server|client] while <action|wait>"),
