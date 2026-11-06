@@ -23,6 +23,20 @@ script.
 - `stop` and real input end a move in the background as they end one in
   the foreground, leaving the camera where the last frame drew it.
 - Without `background`, `camera move` answers when the move ends, as now.
+- The corner scenario of curved moves samples every tick: rows two ticks
+  apart lie up to half a block from the via point however the curve runs,
+  so the scenario could fail by sampling alone. A row read from a frame the
+  game drew late counts with the next one in the constant-speed scenario,
+  and the easing scenario samples every tick and takes the next row read
+  from a new frame in its place.
+- A move stopped in the background is promised to stay where the last frame
+  drew it, part of the way along: how far it got depends on when the `stop`
+  arrives.
+- The player stands still whenever a camera is placed with `away`, also on
+  1.21.1, where it sank a little.
+- A move from a camera placed away no longer promises its reply names the
+  block at its end: the chunks there may still be on their way, and `block`
+  after `settle` is what shows the world followed the camera.
 - The help, `docs/commands.md`, `docs/grammar.ebnf` and its diagrams show
   the new form and keyword.
 
