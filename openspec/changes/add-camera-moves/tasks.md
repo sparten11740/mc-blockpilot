@@ -31,5 +31,5 @@
 ## Workflow follow-up
 
 - Merge into `main`, then archive this change.
-- Add `camera move` and the 2.1.0 API to the next release's section of `CHANGELOG.md`.
+- Add `camera move` and the 2.1.0 API to the 1.1.0 section of `CHANGELOG.md`.
 - Pushing needs Jan's go-ahead.
