@@ -43,6 +43,13 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   the player stands now, and JSON's `at_abs` is where the sound started.
 - `sounds playing [since=] [match=] [limit=]`: what plays now, with `loop` and `played=<s>`. A sound whose category or
   the master volume is 0 never plays.
+- `sound <id> [at <pos>] [volume=] [pitch=] [source=]`: plays a sound event on this client only, sending nothing to any
+  server. With `at` it starts there and fades with distance from the camera as rendered, so a placed camera hears it
+  from its own seat; without, it is an interface sound. `volume=` (default 1) above 1 carries it farther, as with
+  `playsound`, `pitch=` takes 0.5 to 2 (default 1) and `source=` a sound category (default `master`). It answers with
+  the id, category, absolute position or `ui`, volume, pitch and tick, and `muted` when the category or the master
+  volume is 0. An unknown id fails as `sounds match=` does. It is an action, so `sample`, `wait` and `assert` can't
+  run it.
 - `messages [since=] [kind=] [match=]`: chat, action bar, titles and subtitles; `match=*engaged*` matches the whole
   text in any case.
 - `particles [since=]`: particles spawned per type over a window.

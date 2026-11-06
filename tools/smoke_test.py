@@ -443,9 +443,10 @@ def main():
         ("create a test world", f"create world {world} flat peaceful rule:doDaylightCycle=false",
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
-        ("help", "help; help goto; help errors; help server; help wait",
+        ("help", "help; help goto; help errors; help server; help wait; help sound",
          [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
-          r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart"]),
+          r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart",
+          r"plays a sound event on this client only"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -536,6 +537,24 @@ def main():
          [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on"]),
         ("settle", "settle", [r"settled="]),
         ("camera", "camera at ~4,3,4 look ~0,1,0; status; camera reset", [r"ok camera ", r"cam:"]),
+        ("sound at a placed camera", "camera at ~40,2,0; sound minecraft:block.bell.use at ~40,0,3; "
+                                     "sounds playing match=block.bell.use; camera reset",
+         [r"^ok minecraft:block\.bell\.use master at -?[\d.]+,-?[\d.]+,-?[\d.]+ vol1 pitch1 t\d+$",
+          r"block\.bell\.use master ~40(\.\d+)?,0(\.\d+)?,3(\.\d+)? vol\S+ pitch\S+ asked:1/1"]),
+        ("interface sound", "sound minecraft:ui.button.click; sounds match=ui.button.click limit=1",
+         [r"^ok minecraft:ui\.button\.click master ui vol1 pitch1 t\d+$", r"ui\.button\.click master ui"]),
+        ("muted sound", "option soundCategory_block 0; sound minecraft:block.anvil.land at ~0,0,3 source=block; "
+                        "sounds match=block.anvil.land limit=1; sounds playing match=block.anvil.land; "
+                        "option soundCategory_block 1",
+         [r"^ok minecraft:block\.anvil\.land block at .* t\d+ muted$", r"block\.anvil\.land block ~",
+          r"^ok tick=\d+ count=0$"]),
+        ("unknown sound", "sound minecraft:block.bell.uze",
+         [r"^err syntax unknown sound minecraft:block\.bell\.uze; closest: .*minecraft:block\.bell\.use"], True),
+        ("sound pitch out of range", "sound minecraft:block.bell.use pitch=3",
+         [r"^err syntax pitch= takes 0\.5 to 2"], True),
+        ("unknown sound in match", "sounds match=minecraft:block.bell.uze",
+         [r"^err syntax unknown sound minecraft:block\.bell\.uze; closest: .*minecraft:block\.bell\.use.*; "
+          r"or match=\*block\.bell\.uze\*$"], True),
         ("logs", "server title @p actionbar {\"text\":\"smoke\"}; wait 3t; messages kind=actionbar; sounds limit=1; "
                  "particles; log mark", [r"actionbar t\d+ smoke", r"mark=\d+"]),
         ("titles and subtitles", "server title @p subtitle {\"text\":\"smoke-sub\"}; "

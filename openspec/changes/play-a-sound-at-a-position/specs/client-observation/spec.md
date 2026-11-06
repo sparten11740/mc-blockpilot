@@ -12,8 +12,8 @@ above 1 SHALL carry it farther, as with `playsound`; `pitch=` takes 0.5 to 2
 - **WHEN** an agent runs `camera at ~40,2,0; sound minecraft:block.bell.use
   at ~40,0,3`
 - **THEN** `sounds playing match=block.bell.use` lists the bell at `~40,0,3`
-  with `vol1 pitch1`, playing about 3.6 blocks from the listener, which is
-  the camera, not 40 from it
+  with `asked:1/1`, the volume and pitch it was played with, playing about
+  3.6 blocks from the listener, which is the camera, not 40 from it
 
 #### Scenario: An interface sound
 - **WHEN** an agent runs `sound minecraft:ui.button.click`
