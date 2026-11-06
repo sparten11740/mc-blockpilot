@@ -11,6 +11,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.common.Sides;
+import dev.blockpilot.game.observe.CameraPath.Vec;
 import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
@@ -19,6 +20,8 @@ import dev.blockpilot.protocol.Engine;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -34,6 +37,13 @@ final class CameraCommands {
     private static final int MAX_VIA = 32;
     /** How long camera at … away waits for the client to get the camera's chunk before it answers. */
     private static final int AWAY_CHUNK_TICKS = 200;
+    /** The forms that take ease=: the timed motions. */
+    private static final Set<String> EASED = Set.of("move", "orbit");
+
+    /** The handler of each form, by its first word. */
+    private final Map<String, CommandSpec.ActionHandler> forms = Map.of("at", this::at, "move", this::move,
+        "follow", this::follow, "orbit", this::orbit, "wait", (context, args) -> new WaitForMove(),
+        "reset", CameraCommands::reset, "off", CameraCommands::reset);
 
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
@@ -46,9 +56,16 @@ final class CameraCommands {
                     .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
+            .form(form -> form.keyword("op", "follow").arg("subject", ArgType.ENTITY)
+                .optional(at -> at.keyword("offsetting", "at").arg("offset", ArgType.POSITION))
+                .optionalKeyword("turning", "turning"))
+            .form(form -> form.keyword("op", "orbit").arg("centre", ArgType.POSITION, ArgType.ENTITY)
+                .optional(by -> by.keyword("by", "by").arg("degrees", ArgType.NUMBER))
+                .keyword("timing", "over").arg("duration", ArgType.DURATION)
+                .optionalKeyword("background", "background"))
             .form(form -> form.keyword("op", "reset", "off", "wait"))
-            .option("ease", "camera move: how the speed changes along the path; linear (the default) keeps it, in "
-                + "starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
+            .option("ease", "camera move and orbit: how the speed changes along the way; linear (the default) keeps "
+                + "it, in starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
             .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
                 + "an entity look target is read where the entity is drawn each frame; "
                 + "clear: when the point is in a block with a collision shape, moves the camera toward the look point "
@@ -67,6 +84,18 @@ final class CameraCommands {
                 + "on (server steps, sound, other actions), until a camera at, camera move or camera reset replaces "
                 + "it; camera wait answers once a move in the background has ended, as camera at would there, and at "
                 + "once with nothing moving; "
+                + "camera follow <entity> [at <~dx,dy,dz>] [turning]: keeps the camera at that offset from the "
+                + "entity's feet in every frame, looking at it as camera at … look does, until the next camera "
+                + "command (stop and real input leave it); without at, the offset the camera has now, so a shot "
+                + "framed with camera at … look carries on as the entity walks; with turning, the offset is in the "
+                + "entity's frame as Minecraft's ^ coordinates (x to its left, z the way it faces) and turns with it, "
+                + "catching up with a quick turn over a second or two; a removed entity leaves the camera where it "
+                + "was last drawn; "
+                + "camera orbit <pos|entity> [by <degrees>] over <duration> [background] [ease=]: circles the camera "
+                + "round the centre (an entity followed as it moves) from where it is drawn now, keeping its distance "
+                + "across and height and looking at the centre, a full turn without by, a positive angle to the "
+                + "camera's right as it faces the centre; timed as camera move is (background, camera wait, stop), "
+                + "then left where it ended looking at the centre; "
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
                 + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
@@ -93,19 +122,18 @@ final class CameraCommands {
 
     private Action camera(CommandContext context, Args args) throws CommandException {
         String op = args.word("op");
-        if (args.hasOption("ease") && !op.equals("move")) {
-            throw new CommandException("syntax", "ease= is for camera move");
+        if (args.hasOption("ease") && !EASED.contains(op)) {
+            throw new CommandException("syntax", "ease= is for camera move and camera orbit");
         }
-        if (op.equals("move")) {
-            return move(context, args);
-        }
-        if (op.equals("wait")) {
-            return new WaitForMove();
-        }
-        if (!op.equals("at")) {
-            CameraControl.reset();
-            return () -> Result.ok();
-        }
+        return forms.get(op).start(context, args);
+    }
+
+    private static Action reset(CommandContext context, Args args) {
+        CameraControl.reset();
+        return () -> Result.ok();
+    }
+
+    private Action at(CommandContext context, Args args) throws CommandException {
         if (args.has("away")) {
             // The server's gate, checked before anything changes.
             if (Minecraft.getInstance().getSingleplayerServer() == null) {
@@ -125,7 +153,7 @@ final class CameraCommands {
             target = partialTick -> player.getEyePosition();
             lookPoint = player.getEyePosition();
         } else {
-            target = lookTarget(context, args, level);
+            target = point(context, args, "target", level);
             lookPoint = target.at(1);
         }
         Vec3 clear = args.has("clear") ? clearPoint(level, asked, inFrameOf(level, asked, lookPoint)) : asked;
@@ -154,29 +182,82 @@ final class CameraCommands {
         return () -> Sides.loaded(level, cell) || waited[0]++ >= AWAY_CHUNK_TICKS ? answer.tick() : null;
     }
 
-    /** A look target: an entity where it is drawn, or a position, which rides along aboard a sub-level. */
-    private static CameraControl.Point lookTarget(CommandContext context, Args args, Level level)
+
+    /** A position, which rides along aboard a sub-level, or the point a look at an entity aims at. */
+    private static CameraControl.Point point(CommandContext context, Args args, String name, Level level)
         throws CommandException {
-        if (args.type("target") == ArgType.ENTITY) {
-            Entity entity = level.getEntity(args.entity("target").id());
-            if (entity == null) {
-                throw new CommandException("no_entity", args.word("target"));
-            }
-            // Interpolated like the entity's model, so a camera tracking a walking mob turns smoothly.
-            return partialTick -> entity.isRemoved() ? null
-                : entity.getPosition(partialTick).add(0, entity.getBbHeight() / 2, 0);
+        if (args.type(name) == ArgType.ENTITY) {
+            return aimAt(entity(args, name, level));
         }
-        Position look = context.resolve(args.position("target"));
+        Position look = context.resolve(args.position(name));
         return CameraControl.drawn(level, new Vec3(look.x(), look.y(), look.z()));
     }
 
-    private Action move(CommandContext context, Args args) throws CommandException {
+    private static Entity entity(Args args, String name, Level level) throws CommandException {
+        Entity entity = level.getEntity(args.entity(name).id());
+        if (entity == null) {
+            throw new CommandException("no_entity", args.word(name));
+        }
+        return entity;
+    }
+
+    /** Half way up the entity where each frame draws it, null once it is gone. */
+    private static CameraControl.Point aimAt(Entity entity) {
+        // Interpolated like the entity's model, so a camera tracking a walking mob turns smoothly.
+        return partialTick -> entity.isRemoved() ? null
+            : entity.getPosition(partialTick).add(0, entity.getBbHeight() / 2, 0);
+    }
+
+    private static int duration(Args args) throws CommandException {
         int duration = args.duration("duration").ticks();
         if (duration < 1) {
             throw new CommandException("syntax", "over takes 1t or more");
         }
-        CameraPath.Ease ease = args.option("ease") == null ? CameraPath.Ease.LINEAR
+        return duration;
+    }
+
+    private static CameraPath.Ease ease(Args args) {
+        return args.option("ease") == null ? CameraPath.Ease.LINEAR
             : CameraPath.Ease.valueOf(args.option("ease").toUpperCase(Locale.ROOT));
+    }
+
+    /** Where the camera is drawn now: a placed camera, else the player's eyes. */
+    private static Vec3 drawnNow() {
+        CameraControl.Placement placement = CameraControl.placement();
+        Vec3 at = placement == null ? null : placement.position().at(1);
+        return at != null ? at : Minecraft.getInstance().player.getEyePosition();
+    }
+
+    /** As camera at answers, after its frames, for where the placement then puts the camera. */
+    private static Action answer(Level level, CameraControl.Placement placed) {
+        return ActionSupport.afterFrames(2, () -> {
+            Vec3 at = placed.position().at(1);
+            return Result.ok(placedFields(cameraFields(level, at), level, at, placed.target()));
+        });
+    }
+
+    /**
+     * As camera at answers for the point, for a move, whose reply names its end as given, a plot position aboard a
+     * sub-level included, not where the frame draws it.
+     */
+    private static Action answer(Level level, Vec3 point, CameraControl.Placement placed) {
+        return ActionSupport.afterFrames(2, () ->
+            Result.ok(placedFields(cameraFields(level, point), level, point, placed.target())));
+    }
+
+    /** A timed motion placed: it answers at its end, or at once in the background. */
+    private static Action start(CameraMotion motion, int duration) {
+        CameraControl.placeMove(motion);
+        if (motion.background()) {
+            return () -> Result.ok(new Fields().put("moving", true, "moving").put("over", duration,
+                "over=" + duration + "t"));
+        }
+        return motion;
+    }
+
+    private Action move(CommandContext context, Args args) throws CommandException {
+        int duration = duration(args);
+        CameraPath.Ease ease = ease(args);
         Level level = Minecraft.getInstance().level;
         var player = Minecraft.getInstance().player;
         CameraControl.Placement before = CameraControl.placement();
@@ -194,18 +275,39 @@ final class CameraCommands {
         if (args.has("target")) {
             boolean ahead = args.type("target") == ArgType.KEYWORD;
             look = ahead ? CameraMove.Look.AHEAD : CameraMove.Look.TARGET;
-            target = ahead ? null : lookTarget(context, args, level);
+            target = ahead ? null : point(context, args, "target", level);
         }
-        boolean background = args.has("background");
-        CameraMove move = new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
-            duration, ease, background, placed -> ActionSupport.afterFrames(2, () ->
-                Result.ok(placedFields(cameraFields(level, endPoint), level, endPoint, placed.target()))));
-        CameraControl.placeMove(move);
-        if (background) {
-            return () -> Result.ok(new Fields().put("moving", true, "moving").put("over", duration,
-                "over=" + duration + "t"));
+        return start(new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
+            duration, ease, args.has("background"), placed -> answer(level, endPoint, placed)), duration);
+    }
+
+    private Action follow(CommandContext context, Args args) throws CommandException {
+        Level level = Minecraft.getInstance().level;
+        Entity entity = entity(args, "subject", level);
+        boolean turning = args.has("turning");
+        Vec offset;
+        if (args.has("offset")) {
+            Position at = args.position("offset");
+            if (!at.relative()) {
+                throw new CommandException("syntax", "follow at takes an offset ~dx,dy,dz from the entity, not "
+                    + args.word("offset"));
+            }
+            offset = new Vec(at.x(), at.y(), at.z());
+        } else {
+            offset = CameraFollow.offsetOf(entity, drawnNow(), turning);
         }
-        return move;
+        CameraControl.Placement placement = CameraFollow.placement(entity, offset, turning, aimAt(entity));
+        CameraControl.place(placement);
+        return answer(level, placement);
+    }
+
+    private Action orbit(CommandContext context, Args args) throws CommandException {
+        int duration = duration(args);
+        Level level = Minecraft.getInstance().level;
+        CameraControl.Point centre = point(context, args, "centre", level);
+        double degrees = args.has("degrees") ? args.number("degrees", 360) : 360;
+        return start(new CameraOrbit(centre, drawnNow(), centre.at(1), degrees, duration, ease(args),
+            args.has("background"), placed -> answer(level, placed)), duration);
     }
 
     /** camera wait: answers once no camera move is under way, as camera at answers where the camera then rests. */
@@ -220,9 +322,7 @@ final class CameraCommands {
                 }
                 CameraControl.Placement placement = CameraControl.placement();
                 Level level = Minecraft.getInstance().level;
-                Vec3 at = placement == null || level == null ? null : placement.position().at(1);
-                answer = at == null ? () -> Result.ok() : ActionSupport.afterFrames(2, () ->
-                    Result.ok(placedFields(cameraFields(level, at), level, at, placement.target())));
+                answer = placement == null || level == null ? () -> Result.ok() : answer(level, placement);
             }
             return answer.tick();
         }

@@ -31,27 +31,37 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A frame rendered from a placed
   camera carries `camera <x,y,z>`.
 - `camera at <pos> [look <pos|e<id>>] [clear] [away]` / `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over
-  <duration> [ease=] [background]` / `camera wait` / `camera reset|off`: renders from a placed camera. `unloaded` when
-  the client hasn't loaded the camera's chunk. `clear` moves a camera that sits in a block with a collision shape toward
-  the look point, a quarter block at a time and at most 8 blocks, to the first clear point, answering
-  `cleared=<blocks>`, or `uncleared` when there is none. An entity look target is read where each frame draws it.
-  `camera move` glides the camera from where it is drawn now, a placed camera or the player's eyes, to the point over
-  the duration, placed anew in every frame, and answers as `camera at` does at the end: through up to 32 via points on
-  one smooth curve at a constant speed; without `look` it keeps looking at what it looked at, with a target it turns
+  <duration> [ease=] [background]` / `camera follow <entity> [at <~dx,dy,dz>] [turning]` / `camera orbit <pos|entity>
+  [by <degrees>] over <duration> [ease=] [background]` / `camera wait` / `camera reset|off`: renders from a placed
+  camera. `unloaded` when the client hasn't loaded the camera's chunk. `clear` moves a camera that sits in a block with
+  a collision shape toward the look point, a quarter block at a time and at most 8 blocks, to the first clear point,
+  answering `cleared=<blocks>`, or `uncleared` when there is none. An entity look target is read where each frame draws
+  it. `camera move` glides the camera from where it is drawn now, a placed camera or the player's eyes, to the point
+  over the duration, placed anew in every frame, and answers as `camera at` does at the end: through up to 32 via points
+  on one smooth curve at a constant speed; without `look` it keeps looking at what it looked at, with a target it turns
   toward it, and `look ahead` faces the way it travels; `ease=` is `linear` (the default, which keeps a chain of moves
   at speed), `in`, `out` or `inout` (for a single move from rest). It counts client ticks, so it goes on through `tick
   freeze`, and `stop` or real input leave the camera where the last frame drew it. With `background` it answers at once,
   `ok moving over=<n>t`, and the camera glides on its own while the script and the scripts after it go on, with server
   steps, `sound` or other actions, until a `camera at`, `camera move` or `camera reset` replaces it; `camera wait`
-  answers once it has ended, as `camera at` would there, and at once with nothing moving. With `away`, in singleplayer
-  with commands allowed, the integrated server treats the camera as where the player is for the world it loads, ticks
-  and sends: the chunks around it load and arrive, the entities there are sent, and sounds, particles, explosions and
-  `playsound` there are heard. The player stands still meanwhile, and actions that move it make no progress; how near a
-  player mobs spawn and despawn still goes by the player, so summon actors with `{PersistenceRequired:1b}`, and Sable
-  still sends its sub-levels by where the player is, so the camera doesn't show them there. It answers once the client
-  has the camera's chunk, after at most 10 s. A `camera move` keeps the camera away; `camera reset` or `off`, a `camera
-  at` without `away`, leaving the world, a dimension change and agent control off end it. For an effect spanning
-  hundreds of blocks, `option fov 110` and `option renderClouds off` widen and clear the view.
+  answers once it has ended, as `camera at` would there, and at once with nothing moving. `camera follow` keeps the
+  camera at an offset from the entity's feet in every frame, looking at it as `camera at … look` does, until the next
+  `camera` command; `stop` and real input leave it. Without `at` the offset is the one the camera has now, so a shot
+  framed with `camera at … look` carries on as the entity walks; with `turning` the offset is in the entity's frame, as
+  Minecraft's `^` coordinates (`x` to its left, `z` the way it faces), and turns with it, catching up with a quick turn
+  over a second or two. A removed entity leaves the camera where it was last drawn. `camera orbit` circles the camera
+  round a point or an entity, followed as it moves, from where it is drawn now, keeping its distance across and its
+  height and looking at the centre: a full turn without `by`, a positive angle to the camera's right as it faces the
+  centre. It is timed as `camera move` is, with `ease=`, `background`, `camera wait` and `stop`, and leaves the camera
+  where it ended, looking at the centre. With `away`, in singleplayer with commands allowed, the integrated server
+  treats the camera as where the player is for the world it loads, ticks and sends: the chunks around it load and
+  arrive, the entities there are sent, and sounds, particles, explosions and `playsound` there are heard. The player
+  stands still meanwhile, and actions that move it make no progress; how near a player mobs spawn and despawn still goes
+  by the player, so summon actors with `{PersistenceRequired:1b}`, and Sable still sends its sub-levels by where the
+  player is, so the camera doesn't show them there. It answers once the client has the camera's chunk, after at most 10
+  s. A `camera move`, `follow` or `orbit` keeps the camera away; `camera reset` or `off`, a `camera at` without `away`,
+  leaving the world, a dimension change and agent control off end it. For an effect spanning hundreds of blocks, `option
+  fov 110` and `option renderClouds off` widen and clear the view.
 - `settle [timeout=]`: waits until the chunks around the player, or a camera placed with `away`, have arrived and those
   in view have compiled, e.g. after `camera at`, a teleport or a render distance change.
 - `sounds [since=] [match=] [limit=]`: the sounds that started, the last 2000. `vol` and `pitch` are what plays, and

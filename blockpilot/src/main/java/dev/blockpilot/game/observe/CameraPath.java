@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The maths of a camera move, free of the game: a path through points that is smooth at each of them, walked at a
- * constant speed, the easing of that walk, and the turn of the view. Built anew for each frame from where the points
- * are drawn then.
+ * The maths of camera motion, free of the game: a path through points that is smooth at each of them, walked at a
+ * constant speed, the easing of that walk, the turn of the view, offsets turned about the vertical and a heading that
+ * follows another with a lag. A path is built anew for each frame from where its points are drawn then.
  */
 final class CameraPath {
     record Vec(double x, double y, double z) {
@@ -189,6 +189,46 @@ final class CameraPath {
     /** The point between {@code a} at knot {@code ta} and {@code b} at {@code tb}, at {@code t}. */
     private static Vec lerp(Vec a, Vec b, double ta, double tb, double t) {
         return a.times((tb - t) / (tb - ta)).plus(b.times((t - ta) / (tb - ta)));
+    }
+
+    /**
+     * The offset turned about the vertical by an angle in degrees: a positive angle takes a point north of its centre
+     * toward the west, the way a camera there moves to its right as it faces the centre. Turned by minus an entity's
+     * yaw, an offset in the entity's frame, x to its left and z the way it faces as Minecraft's {@code ^} coordinates,
+     * becomes the world's, and turned by the yaw it goes back.
+     */
+    static Vec aroundVertical(Vec offset, double degrees) {
+        double radians = Math.toRadians(degrees);
+        double cos = Math.cos(radians);
+        double sin = Math.sin(radians);
+        return new Vec(offset.x * cos + offset.z * sin, offset.y, offset.z * cos - offset.x * sin);
+    }
+
+    /**
+     * A heading in degrees that follows a target heading with a lag: over {@code t} ticks it closes {@code 1 - e^(-t /
+     * lag)} of the gap, the short way round. It moves only when the time does, so the several reads of one frame
+     * agree.
+     */
+    static final class Heading {
+        private final double lag;
+        private double degrees = Double.NaN;
+        private double time;
+
+        Heading(double lagTicks) {
+            lag = lagTicks;
+        }
+
+        /** The heading at a time in ticks, toward the target heading then; the target itself on the first read. */
+        double at(double now, double target) {
+            if (Double.isNaN(degrees)) {
+                degrees = target;
+                time = now;
+            } else if (now > time) {
+                degrees += Math.IEEEremainder(target - degrees, 360) * (1 - Math.exp(-(now - time) / lag));
+                time = now;
+            }
+            return degrees;
+        }
     }
 
     /**

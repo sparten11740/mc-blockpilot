@@ -682,6 +682,104 @@ def check_entity_names(game_dir):
     return None
 
 
+# An armor stand to follow and circle, facing south; it turns its body to its yaw when teleported.
+WALKER = "server as=player summon minecraft:armor_stand ~3 ~ ~3 {Tags:[\"walker\"],NoGravity:1b,Rotation:[0f,0f]}"
+MOVE_WALKER = "server execute as @e[tag=walker] at @s run tp @s"
+
+
+def camera_positions(output):
+    """The camera position of each `status` reply, in order."""
+    return [tuple(float(value) for value in match) for match in
+            re.findall(r"^ok pos .*\bcamera (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", output, re.MULTILINE)]
+
+
+def entity_positions(output):
+    """The position of each `entity` reply, in order."""
+    return [tuple(float(value) for value in match) for match in
+            re.findall(r"^ok \S+ e\d+ pos (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", output, re.MULTILINE)]
+
+
+def check_camera_follow(game_dir):
+    """A follow keeps its offset from a moved entity, with turning stays behind it as it turns, outlasts a stop, stays
+    where it was when the entity goes, and refuses an absolute offset."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; ?server kill @e[tag=walker]; {WALKER}; wait 5t; "
+                              f"camera at ~0,2,-6 look @walker; camera follow @walker; {MOVE_WALKER} ~8 ~ ~; wait 5t; "
+                              f"status; camera follow @walker at ~0,2,-6 turning; {MOVE_WALKER} ~ ~ ~ 90 0; wait 3s; "
+                              "entity @walker; status; ?camera follow @walker at 0,2,-6")
+    run(game_dir, "stop")
+    _, after = run(game_dir, f"{MOVE_WALKER} ~8 ~ ~; wait 5t; entity @walker; status; server kill @e[tag=walker]; "
+                             "wait 5t; status; wait 1s; status; camera reset")
+    cameras, walkers = camera_positions(output), entity_positions(output)
+    later, moved = camera_positions(after), entity_positions(after)
+    problems = []
+    if not cameras or math.dist(cameras[0], at_base(8, 2, -6)) > 0.1:
+        problems.append(f"the framing didn't go along: {cameras[:1]}")
+    behind = (6, 2, 0)
+    if len(cameras) < 2 or not walkers or math.dist(tuple(c - w for c, w in zip(cameras[1], walkers[0])), behind) > 0.3:
+        problems.append(f"not behind the turned walker: camera {cameras[1:2]}, walker {walkers[:1]}")
+    if not re.search(r"^err syntax follow at takes an offset", output, re.MULTILINE):
+        problems.append("an absolute offset wasn't refused")
+    if len(later) != 3 or not moved or math.dist(tuple(c - w for c, w in zip(later[0], moved[0])), behind) > 0.3:
+        problems.append(f"stop ended the follow: camera {later[:1]}, walker {moved[:1]}")
+    elif later[1] != later[2]:
+        problems.append(f"the camera moved after the walker went: {later[1:]}")
+    _, away = run(game_dir, "camera at 1000,-58,0 look 1000,-60,5 away; "
+                            "server summon minecraft:armor_stand 1000 -60 5 {Tags:[\"far\"],NoGravity:1b}; wait 5t; "
+                            "camera follow @far; server execute as @e[tag=far] at @s run tp @s ~40 ~ ~; "
+                            "settle timeout=60s; block 1040,-61,0; status; wait 1s; status; server kill @e[tag=far]; "
+                            "camera reset; settle timeout=60s")
+    positions = re.findall(r"^ok pos (\S+) ", away, re.MULTILINE)
+    if not re.search(r"^ok grass_block", away, re.MULTILINE) or len(positions) != 2 or positions[0] != positions[1]:
+        problems.append("a follow far away didn't keep the world with the camera, or the player moved")
+    return "; ".join(problems) + f": {(output + after + away).strip()[:900]}" if problems else None
+
+
+def across(first, second):
+    """The horizontal distance between two points."""
+    return math.dist((first[0], first[2]), (second[0], second[2]))
+
+
+def check_camera_orbit(game_dir):
+    """An orbit keeps its distance and height round a point and ends by its angle, goes along with a moving entity,
+    holds when its entity goes, runs in the background for camera wait, and keeps a camera placed away away."""
+    centre = at_base(0, 1, 0)
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,3,-6 look ~0,1,0; sample status every 5t while camera "
+                              "orbit ~0,1,0 by 90 over 40t; status; camera at ~0,3,-6 look ~0,1,0; camera orbit "
+                              "~0,1,0 by -90 over 40t background; camera wait")
+    rows = [row[1] for row in camera_rows(output)]
+    problems = []
+    off = [round(across(row, centre), 2) for row in rows if abs(across(row, centre) - 6) > 0.2
+           or abs(row[1] - centre[1] - 2) > 0.2]
+    ends = camera_positions(output)
+    if len(rows) < 5 or off or not ends or math.dist(ends[-1], at_base(-6, 3, 0)) > 0.1:
+        problems.append(f"rows off the circle {off}, end {ends[-1:]}")
+    waited = re.search(r"^ok moving over=40t\n.*?^ok camera (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", output,
+                       re.MULTILINE | re.DOTALL)
+    if not waited or math.dist(tuple(float(value) for value in waited.groups()), at_base(6, 3, 0)) > 0.1:
+        problems.append("camera wait didn't answer at the background orbit's end")
+    _, moving = run(game_dir, f"?server kill @e[tag=walker]; {WALKER}; wait 5t; "
+                              "camera at ~3,2,-3 look @walker; entity @walker; status; "
+                              f"camera orbit @walker over 40t background; {MOVE_WALKER} ~10 ~ ~; wait 20t; "
+                              "entity @walker; status; camera wait; camera orbit @walker over 40t background; "
+                              "server kill @e[tag=walker]; wait 5t; status; wait 10t; status; camera wait; "
+                              "camera reset")
+    cameras, walkers = camera_positions(moving), entity_positions(moving)
+    if len(cameras) != 4 or len(walkers) != 2 \
+            or abs(across(cameras[1], walkers[1]) - across(cameras[0], walkers[0])) > 0.3:
+        problems.append(f"the orbit didn't go along with the walker: cameras {cameras[:2]}, walkers {walkers}")
+    elif cameras[2] != cameras[3] or len(re.findall(r"^ok camera ", moving, re.MULTILINE)) != 3:
+        problems.append(f"the orbit didn't hold when its walker went: {cameras[2:]}")
+    _, away = run(game_dir, "camera at 1000,-58,0 look 1000,-60,5 away; camera orbit 1000,-60,5 by 180 over 40t; "
+                            "settle timeout=60s; block 1000,-61,10; status; wait 1s; status; camera reset; "
+                            "settle timeout=60s")
+    positions = re.findall(r"^ok pos (\S+) ", away, re.MULTILINE)
+    if not re.search(r"^ok camera 1000,-58,10 ", away, re.MULTILINE) \
+            or not re.search(r"^ok grass_block", away, re.MULTILINE) or len(positions) != 2 \
+            or positions[0] != positions[1]:
+        problems.append("an orbit far away didn't keep the world with the camera, or the player moved")
+    return "; ".join(problems) + f": {(output + moving + away).strip()[:900]}" if problems else None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -921,6 +1019,8 @@ def main():
         ("a recorded camera move is in a new place each frame",
          lambda: check_camera_move_recording(args.game_dir, world)),
         ("@<name> takes an entity by its tag or name", lambda: check_entity_names(args.game_dir)),
+        ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
+        ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
     ]
     for name, check in checks:
         try:
