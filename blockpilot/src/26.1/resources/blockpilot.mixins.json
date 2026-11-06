@@ -33,6 +33,7 @@
     "KeyMappingAccessor",
     "KeyboardHandlerMixin",
     "LibraryMixin",
+    "LocalPlayerMixin",
     "MinecraftMixin",
     "MinecraftServerMixin",
     "MouseHandlerMixin",
