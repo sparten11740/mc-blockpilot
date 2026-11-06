@@ -30,6 +30,7 @@
     "KeyboardHandlerMixin",
     "LibraryMixin",
     "LevelRendererMixin",
+    "LocalPlayerMixin",
     "MinecraftMixin",
     "MinecraftServerMixin",
     "MouseHandlerMixin",
