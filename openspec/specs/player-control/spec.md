@@ -249,10 +249,15 @@ command as the player, with the leading `/` optional.
 - **THEN** the command is sent and any feedback arrives as `! chat` events
 
 ### Requirement: Waiting and cancelling
-`wait <Nt|Ns>` SHALL wait the given ticks or seconds. `wait idle` SHALL wait
-until queued actions finish. `wait <query> until <predicate>` SHALL wait until a
-condition holds; see command-language. `stop` SHALL cancel the running and
-queued actions and release held inputs.
+`wait <Nt|Ns>` SHALL wait the given ticks or seconds: the step after it runs
+that many ticks after the step before it, and `wait 0t` passes none. `wait
+idle` SHALL wait until queued actions finish. `wait <query> until <predicate>`
+SHALL wait until a condition holds; see command-language. `stop` SHALL cancel
+the running and queued actions and release held inputs.
+
+#### Scenario: One tick between two steps
+- **WHEN** an agent runs `wait 1t` forty times in one script
+- **THEN** the script takes forty client ticks, about 2 s
 
 #### Scenario: Wait for a block to disappear
 - **WHEN** an agent runs `use ~1,0,0; wait block ~1,0,0 until id==air
