@@ -90,6 +90,9 @@ class GrammarConformanceTest {
     private static void declare(Node node, Form form, AtomicInteger slots) {
         switch (node) {
             case Sequence sequence -> sequence.items().forEach(item -> declare(item, form, slots));
+            // The file doesn't give a repeated group's limit, only that it repeats.
+            case Repeat(Sequence group, char operator) when operator == '*' ->
+                form.repeated(Integer.MAX_VALUE, inner -> declare(group, inner, slots));
             case Repeat(Sequence group, char operator) -> form.optional(inner -> declare(group, inner, slots));
             case Repeat repeat -> declareSlot(repeat.item(), true, form, "slot" + slots.incrementAndGet());
             default -> declareSlot(node, false, form, "slot" + slots.incrementAndGet());

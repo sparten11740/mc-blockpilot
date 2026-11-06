@@ -1,7 +1,7 @@
 # Adding your own commands
 
 Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile against
-the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.0.0")`, from mavenLocal as in
+the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.1.0")`, from mavenLocal as in
 [dev-environment.md](dev-environment.md)) and register them during mod loading, in a class only touched when Blockpilot
 is installed:
 
@@ -60,6 +60,13 @@ for a declaration the grammar can't reach (a name or option name it can't write,
 with one name, a type an earlier one always takes first, or an optional slot that would take the next part's token), and
 freezes the spec. An example that doesn't parse, or doesn't start with the command's `<namespace>:<name>`, gets the
 command refused with a logged error.
+
+A part that may come several times is a repeated group: `form.arg("pos", ArgType.POSITION).repeated(8, via ->
+via.keyword("through", "via").arg("via", ArgType.POSITION))` takes `mymod:path 1,2,3 via 4,5,6 via 7,8,9`, up to 8
+times; one more is `err syntax` naming the limit. Help shows it as `[via <via>]…` and the grammar as `( "via" position
+)*`. `args.values("via")` gives every value the slot took, in order (`args.positions("via")` as positions), while
+`args.word("via")` and the other accessors read the first. Repeated groups are new in blockpilot-api 2.1.0; an
+integration built against 2.0.0 keeps working unchanged, and one that uses them needs Blockpilot 1.1.0 or later.
 
 Extensions can emit events too: `BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id, "uuid=" + id))`
 reaches every session as `! mymod:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of `blockpilot-api`, bumps its

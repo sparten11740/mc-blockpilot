@@ -1,5 +1,6 @@
 package dev.blockpilot.api;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,10 +24,32 @@ public final class Args {
 
     private final Map<String, Value> arguments;
     private final Map<String, Value> options;
+    private final Map<String, List<Value>> values;
 
     public Args(Map<String, Value> arguments, Map<String, Value> options) {
+        this(arguments, options, Map.of());
+    }
+
+    /** {@code values}: every value of the slots of a repeated group, in order; the other slots have their one. */
+    public Args(Map<String, Value> arguments, Map<String, Value> options, Map<String, List<Value>> values) {
         this.arguments = Collections.unmodifiableMap(new LinkedHashMap<>(arguments));
         this.options = Collections.unmodifiableMap(new LinkedHashMap<>(options));
+        Map<String, List<Value>> copy = new LinkedHashMap<>();
+        values.forEach((name, list) -> copy.put(name, List.copyOf(list)));
+        this.values = Collections.unmodifiableMap(copy);
+    }
+
+    /**
+     * Every value the argument took, in order: several for a slot of a repeated group ({@code [via <pos>]…}), one
+     * for another slot, none when it is absent.
+     */
+    public List<Value> values(String name) {
+        List<Value> list = values.get(name);
+        if (list != null) {
+            return list;
+        }
+        Value value = arguments.get(name);
+        return value == null ? List.of() : List.of(value);
     }
 
     /** The type the argument was taken as, or null when it is absent. */
@@ -61,6 +84,19 @@ public final class Args {
     public Position position(String name) {
         String token = typed(name, ArgType.POSITION);
         return token == null ? null : Position.parse(token);
+    }
+
+    /** Every position the argument took, in order, as {@link #values} gives them. */
+    public List<Position> positions(String name) {
+        List<Position> positions = new ArrayList<>();
+        for (Value value : values(name)) {
+            if (value.type() != ArgType.POSITION) {
+                throw new IllegalStateException(name + " was taken as " + value.type().production()
+                    + ", not as position");
+            }
+            positions.add(Position.parse(value.text()));
+        }
+        return positions;
     }
 
     public Point point(String name) {

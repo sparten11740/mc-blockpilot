@@ -201,7 +201,7 @@ final class Grammar {
         for (Form.Element element : elements) {
             items.add(switch (element) {
                 case Slot slot -> value(slot) + (slot.optional() ? "?" : "");
-                case Form.Group group -> "( " + items(group.elements()) + " )?";
+                case Form.Group group -> "( " + items(group.elements()) + " )" + (group.repeats() ? "*" : "?");
             });
         }
         return String.join(" ", items);

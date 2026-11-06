@@ -39,6 +39,30 @@ dependencies {
     }
 }
 
+// A minimal integration compiled against blockpilot-api 2.0.0 as attached to the v1.0.0 release, not against the
+// current source; the extension API test loads it against the current API, so integrations of 2.0.0 keep working.
+repositories {
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = "Blockpilot releases"
+                url = uri("https://github.com/sparten11740/mc-blockpilot/releases/download")
+                patternLayout { artifact("v1.0.0/[module]-[revision].[ext]") }
+                metadataSources { artifact() }
+            }
+        }
+        filter { includeModule("dev.blockpilot", "blockpilot-api") }
+    }
+}
+val apiFixture: SourceSet = the<SourceSetContainer>().create("apiFixture") {
+    java.setSrcDirs(listOf(treeDir.resolve("src/apiFixture/java")))
+    resources.setSrcDirs(listOf<File>())
+}
+dependencies {
+    apiFixture.compileOnlyConfigurationName("dev.blockpilot:blockpilot-api:2.0.0")
+    "testRuntimeOnly"(apiFixture.output)
+}
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
     // The grammar tests read the specs, the active changes and the grammar file, so editing them reruns the tests.

@@ -34,6 +34,17 @@ class FormTest {
     }
 
     @Test
+    void aRepeatedGroupShowsItRepeatsAndIsTakenAtLeastOnce() {
+        Form path = new Form().arg("pos", ArgType.POSITION)
+            .repeated(4, via -> via.keyword("through", "via").arg("via", ArgType.POSITION));
+        assertEquals("<pos> [via <via>]…", path.usage());
+        Form.Group group = (Form.Group) path.elements().get(1);
+        assertEquals(4, group.limit());
+        assertEquals(1, new Form.Group(group.elements()).limit());
+        assertThrows(IllegalArgumentException.class, () -> new Form.Group(group.elements(), 0));
+    }
+
+    @Test
     void aSlotCanTakeWordsOrTokens() {
         Form swap = new Form().arg("a", List.of("head", "offhand"), ArgType.INT)
             .optionalArg("b", List.of("feet"), ArgType.INT, ArgType.ID);
