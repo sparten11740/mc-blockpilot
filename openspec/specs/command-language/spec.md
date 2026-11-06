@@ -465,8 +465,8 @@ as the action too.
 
 #### Scenario: Sampling across a wait
 - **WHEN** an agent runs `sample status every 20t while wait 200t`
-- **THEN** the result is the wait's `ok` with ten rows of `status` fields, the
-  first taken before the wait began
+- **THEN** the result is the wait's `ok` with eleven rows of `status` fields,
+  the first taken before the wait began and the last as it ends
 
 #### Scenario: Something other than an action after while
 - **WHEN** an agent runs `sample status every 2t while look`
