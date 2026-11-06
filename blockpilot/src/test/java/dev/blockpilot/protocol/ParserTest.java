@@ -68,6 +68,8 @@ class ParserTest {
         registry.register(CommandSpec.query("nest", QUERY)
             .form(form -> form.optional(outer -> outer.keyword("x", "x")
                 .optional(inner -> inner.arg("n", ArgType.INT)))));
+        registry.register(CommandSpec.query("path", QUERY).form(form -> form.arg("pos", ArgType.POSITION)
+            .repeated(2, group -> group.keyword("through", "via").arg("via", ArgType.POSITION))));
         registry.register(CommandSpec.query("solo", QUERY).form(form -> { }).form(form -> form.keyword("op", "a")));
         registry.register(CommandSpec.query("duo", QUERY).form(form -> form.keyword("op", "a")).form(form -> { }));
         registry.register(CommandSpec.query("twin", QUERY)
@@ -77,6 +79,15 @@ class ParserTest {
             .form(form -> form.arg("n", ArgType.INT))
             .form(form -> form.arg("p", ArgType.POSITION))
             .form(form -> form.arg("n", ArgType.INT).arg("m", ArgType.INT)));
+    }
+
+    @Test
+    void aRepeatedGroupIsTakenAgainUpToItsLimit() {
+        assertEquals(List.of(), call("path 1,2,3").args().values("via"));
+        Args two = call("path 1,2,3 via 4,5,6 via 7,8,9").args();
+        assertEquals(List.of("4,5,6", "7,8,9"), two.values("via").stream().map(Args.Value::text).toList());
+        assertEquals("4,5,6", two.word("via"), "the one value is the first");
+        assertErrorAt("path 1,2,3 via 4,5,6 via 7,8,9 via 1,1,1", "via 1,1,1", "at most 2 via groups");
     }
 
     private Parser.Line line(String script) {

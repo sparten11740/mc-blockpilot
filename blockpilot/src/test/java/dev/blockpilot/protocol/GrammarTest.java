@@ -77,6 +77,13 @@ class GrammarTest {
     }
 
     @Test
+    void aRepeatedGroupIsStarred() {
+        assertEquals(List.of("path-command ::= \"path\" position ( \"via\" position )*"),
+            productions(CommandSpec.query("path", QUERY).form(form -> form.arg("pos", ArgType.POSITION)
+                .repeated(4, via -> via.keyword("through", "via").arg("via", ArgType.POSITION)))));
+    }
+
+    @Test
     void slotsPrintTheirWordsAndTypes() {
         assertEquals(List.of("say-command ::= \"say\" \"team\"? text"), productions(CommandSpec.query("say", QUERY)
             .optionalKeyword("to", "team").arg("message", ArgType.TEXT)));

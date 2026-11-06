@@ -22,6 +22,17 @@ class RegistryTest {
     }
 
     @Test
+    void aRepeatedGroupCantTakeWhatFollowsIt() {
+        CommandSpec greedy = CommandSpec.query("greedy", (context, args) -> Result.ok())
+            .form(form -> form.repeated(3, group -> group.arg("a", ArgType.INT)).optionalArg("b", ArgType.INT));
+        assertThrows(IllegalArgumentException.class, () -> new CommandRegistry().register(greedy));
+        CommandSpec inner = CommandSpec.query("inner", (context, args) -> Result.ok())
+            .form(form -> form.repeated(3, group -> group.keyword("k", "via").optionalArg("n", ArgType.ID)));
+        assertThrows(IllegalArgumentException.class, () -> new CommandRegistry().register(inner),
+            "an optional id after via could take the next via");
+    }
+
+    @Test
     void brokenExamplesAreRejected() {
         CommandSpec broken = CommandSpec.query("look", (context, args) -> Result.ok())
             .optionalArg("radius", ArgType.INT).example("look twelve");

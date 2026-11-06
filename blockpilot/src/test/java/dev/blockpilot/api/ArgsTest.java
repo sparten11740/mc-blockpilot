@@ -27,6 +27,18 @@ class ArgsTest {
     }
 
     @Test
+    void aRepeatedSlotGivesEveryValueInOrder() {
+        Args repeated = new Args(Map.of("via", value("1,2,3", ArgType.POSITION)), Map.of(), Map.of("via",
+            List.of(value("1,2,3", ArgType.POSITION), value("~4,5,6", ArgType.POSITION))));
+        assertEquals(List.of(Position.absolute(1, 2, 3), Position.relative(4, 5, 6)), repeated.positions("via"));
+        assertEquals(Position.absolute(1, 2, 3), repeated.position("via"), "the one value is the first");
+        Args single = arguments("a", "7", ArgType.INT);
+        assertEquals(List.of(value("7", ArgType.INT)), single.values("a"));
+        assertEquals(List.of(), single.values("b"));
+        assertThrows(IllegalStateException.class, () -> single.positions("a"));
+    }
+
+    @Test
     void accessorsConvertTheTypeTheSlotTook() {
         assertEquals(Position.relative(1, 0, -2), arguments("a", "~1,0,-2", ArgType.POSITION).position("a"));
         assertEquals(new Point(120, 40.5), arguments("a", "120,40.5", ArgType.POINT).point("a"));

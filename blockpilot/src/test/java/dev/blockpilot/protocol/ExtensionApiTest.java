@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.blockpilot.api.Action;
+import dev.blockpilot.api.ArgType;
+import dev.blockpilot.api.Args;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
@@ -60,6 +62,18 @@ class ExtensionApiTest {
         }).onServer());
 
         GuideSnippets.register();
+        // A repeated group, read back in order.
+        BlockpilotApi.register("test", CommandSpec.query("path", (context, args) -> {
+            List<String> via = args.values("via").stream().map(Args.Value::text).toList();
+            return Result.ok(new Fields().put("via", via.size(), "via=" + String.join(";", via)));
+        }).form(form -> form.arg("pos", ArgType.POSITION).repeated(4, group -> group.keyword("through", "via")
+            .arg("via", ArgType.POSITION))));
+        // An integration compiled against the blockpilot-api 2.0.0 jar of the v1.0.0 release.
+        try {
+            Class.forName("example.fixture.ApiFixture").getMethod("register").invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("the 2.0.0 fixture didn't register", e);
+        }
 
         CommandRegistry registry = new CommandRegistry();
         FakeGame game = new FakeGame();
@@ -157,5 +171,17 @@ class ExtensionApiTest {
         assertEquals("sample:assembled", reply.getAsJsonArray("events").get(0).getAsJsonObject().get("event")
             .getAsString());
         assertTrue(Formatter.text(engine.submit(session, null, "help sample:").join()).contains("sample:info"));
+
+        engine.submit(session, null, "fmt text").join();
+        assertEquals("ok via=", Formatter.text(engine.submit(session, null, "test:path 1,2,3").join()));
+        assertEquals("ok via=4,5,6;7,8,9",
+            Formatter.text(engine.submit(session, null, "test:path 1,2,3 via 4,5,6 via 7,8,9").join()));
+        String tooMany = Formatter.text(engine.submit(session, null,
+            "test:path 1,2,3 via 1,1,1 via 2,2,2 via 3,3,3 via 4,4,4 via 5,5,5").join());
+        assertTrue(tooMany.startsWith("err syntax col 57: at most 4 via groups"), tooMany);
+        assertTrue(Formatter.text(engine.submit(session, null, "help test:path").join())
+            .contains("test:path <pos> [via <via>]…"));
+        assertEquals("ok hello ann", Formatter.text(engine.submit(session, null, "fixture:greet ann").join()));
+        assertEquals("ok HELLO ann", Formatter.text(engine.submit(session, null, "fixture:greet ann loud").join()));
     }
 }

@@ -12,10 +12,16 @@ public final class Form {
     public sealed interface Element permits Slot, Group {
     }
 
-    /** Optional parts taken together: when the first, which is required, fits the next token, the rest must follow. */
-    public record Group(List<Element> elements) implements Element {
+    /**
+     * Optional parts taken together: when the first, which is required, fits the next token, the rest must follow.
+     * The group is taken again while its first part fits, up to {@code limit} times.
+     */
+    public record Group(List<Element> elements, int limit) implements Element {
         public Group {
             elements = List.copyOf(elements);
+            if (limit < 1) {
+                throw new IllegalArgumentException("an optional group is taken at least once");
+            }
             if (elements.isEmpty()) {
                 throw new IllegalArgumentException("an optional group needs parts");
             }
@@ -27,9 +33,18 @@ public final class Form {
             }
         }
 
+        /** A group taken once at most. */
+        public Group(List<Element> elements) {
+            this(elements, 1);
+        }
+
         /** The part that decides whether the group is taken. */
         public Slot first() {
             return (Slot) elements.get(0);
+        }
+
+        public boolean repeats() {
+            return limit > 1;
         }
     }
 
@@ -82,6 +97,16 @@ public final class Form {
         Form inner = new Form();
         group.accept(inner);
         return add(new Group(inner.elements));
+    }
+
+    /**
+     * An optional group taken again while its first part fits, at most {@code limit} times, as {@code [via <pos>]…};
+     * {@link Args#values} reads every value its slots took.
+     */
+    public Form repeated(int limit, Consumer<Form> group) {
+        Form inner = new Form();
+        group.accept(inner);
+        return add(new Group(inner.elements, limit));
     }
 
     private static Slot slot(String name, boolean optional, List<String> words, ArgType type, ArgType... more) {
@@ -139,7 +164,13 @@ public final class Form {
             Element part = parts.get(index);
             List<Slot> next = first(parts.subList(index + 1, parts.size()), follow);
             if (part instanceof Group group) {
-                checkOptionalParts(group.elements(), next);
+                List<Slot> after = next;
+                if (group.repeats()) {
+                    // The group's own first part may follow it.
+                    after = new ArrayList<>(next);
+                    after.add(group.first());
+                }
+                checkOptionalParts(group.elements(), after);
             }
             if (isOptional(part)) {
                 Slot lead = lead(part);
@@ -190,7 +221,7 @@ public final class Form {
             }
             out.append(switch (element) {
                 case Slot slot -> slot.usage();
-                case Group group -> "[" + usage(group.elements()) + "]";
+                case Group group -> "[" + usage(group.elements()) + "]" + (group.repeats() ? "…" : "");
             });
         }
         return out.toString();

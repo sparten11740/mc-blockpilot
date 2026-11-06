@@ -166,7 +166,8 @@ final class Parser {
                     matcher.elements(spec.forms().get(form).elements(), false);
                     matcher.finish();
                     index = end;
-                    return new Statement.Call(entry, new Args(matcher.arguments, matcher.options), matcher.full);
+                    return new Statement.Call(entry, new Args(matcher.arguments, matcher.options, matcher.repeats),
+                        matcher.full);
                 } catch (Mismatch mismatch) {
                     best = Mismatch.better(best, mismatch.withUsage(usages.get(form)));
                 }
@@ -528,6 +529,7 @@ final class Parser {
             private int position;
             private final Map<String, Args.Value> arguments = new LinkedHashMap<>();
             private final Map<String, Args.Value> options = new LinkedHashMap<>();
+            private final Map<String, List<Args.Value>> repeats = new LinkedHashMap<>();
             private boolean full;
             /** What the optional parts skipped at {@link #skippedAt} would have taken, for an error there. */
             private final Set<String> skipped = new LinkedHashSet<>();
@@ -546,15 +548,25 @@ final class Parser {
                     switch (parts.get(part)) {
                         case Slot slot when slot.isText() -> freeText(slot);
                         case Slot slot -> slot(slot, textMayFollow);
-                        case Form.Group group -> {
-                            options(textMayFollow);
-                            if (position < end && group.first().match(text(position)) != null) {
-                                elements(group.elements(), textMayStart(parts, part + 1, textAfter));
-                            } else {
-                                skip(group.first());
-                            }
-                        }
+                        case Form.Group group -> group(group, textMayFollow, textMayStart(parts, part + 1, textAfter));
                     }
+                }
+            }
+
+            /** Takes the group while its first part fits, up to its limit; one more fails naming the limit. */
+            private void group(Form.Group group, boolean textMayFollow, boolean textAfter) throws Mismatch {
+                for (int taken = 0; ; taken++) {
+                    options(textMayFollow);
+                    boolean fits = position < end && group.first().match(text(position)) != null;
+                    if (fits && taken == group.limit() && group.repeats()) {
+                        throw new Mismatch(position, Set.of(), text(position), "at most " + group.limit() + " "
+                            + group.first().usage() + " groups");
+                    }
+                    if (!fits || taken == group.limit()) {
+                        skip(group.first());
+                        return;
+                    }
+                    elements(group.elements(), textAfter);
                 }
             }
 
@@ -572,7 +584,10 @@ final class Parser {
                 options(textMayFollow);
                 ArgType type = position < end ? slot.match(text(position)) : null;
                 if (type != null) {
-                    arguments.put(slot.name(), new Args.Value(text(position), type));
+                    Args.Value value = new Args.Value(text(position), type);
+                    // A repeated group's slot keeps its first value as the one, and every value in order.
+                    arguments.putIfAbsent(slot.name(), value);
+                    repeats.computeIfAbsent(slot.name(), name -> new ArrayList<>()).add(value);
                     position++;
                 } else if (slot.optional()) {
                     skip(slot);
