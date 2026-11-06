@@ -204,6 +204,16 @@ final class CameraPath {
         return new Vec(offset.x * cos + offset.z * sin, offset.y, offset.z * cos - offset.x * sin);
     }
 
+    /** The value {@code share} of the way from one value to another. */
+    static double between(double from, double to, double share) {
+        return from + (to - from) * share;
+    }
+
+    /** The angle in degrees {@code share} of the way from one angle to another, the short way round. */
+    static double angleBetween(double from, double to, double share) {
+        return from + Math.IEEEremainder(to - from, 360) * share;
+    }
+
     /**
      * A heading in degrees that follows a target heading with a lag: over {@code t} ticks it closes {@code 1 - e^(-t /
      * lag)} of the gap, the short way round. It moves only when the time does, so the several reads of one frame

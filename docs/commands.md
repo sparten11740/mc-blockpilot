@@ -53,7 +53,11 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   round a point or an entity, followed as it moves, from where it is drawn now, keeping its distance across and its
   height and looking at the centre: a full turn without `by`, a positive angle to the camera's right as it faces the
   centre. It is timed as `camera move` is, with `ease=`, `background`, `camera wait` and `stop`, and leaves the camera
-  where it ended, looking at the centre. With `away`, in singleplayer with commands allowed, the integrated server
+  where it ended, looking at the centre. `fov=<degrees>` (1 to 170) and `roll=<degrees>` (-180 to 180, a positive roll
+  leaning the camera to its right) give a placed camera its own vertical field of view, in place of the player's and its
+  effects, and tilt: `camera at` and `follow` set them at once, `move` and `orbit` glide to them along the way with
+  their `ease=`, a value left out stays, and `camera reset` returns to the player's view; `status` names the field of
+  view as `cam_fov` and the roll in `cam:`. With `away`, in singleplayer with commands allowed, the integrated server
   treats the camera as where the player is for the world it loads, ticks and sends: the chunks around it load and
   arrive, the entities there are sent, and sounds, particles, explosions and `playsound` there are heard. The player
   stands still meanwhile, and actions that move it make no progress; how near a player mobs spawn and despawn still goes

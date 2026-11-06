@@ -246,7 +246,7 @@ screenshot-command ::= "screenshot" integer? "sheet"?
 screenshot-option ::= "burst=" integer | "every=" duration | "hud=" ( "on" | "off" ) | "crop=" option-value | "timeout=" ( duration | seconds )
 
 camera-command ::= "camera" ( "at" position ( "look" ( position | entity ) )? "clear"? "away"? | "move" position ( "via" position )* ( "look" ( "ahead" | position | entity ) )? "over" duration "background"? | "follow" entity ( "at" position )? "turning"? | "orbit" ( position | entity ) ( "by" number )? "over" duration "background"? | ( "reset" | "off" | "wait" ) )
-camera-option ::= "ease=" ( "linear" | "in" | "out" | "inout" ) | "timeout=" ( duration | seconds )
+camera-option ::= "fov=" number | "roll=" number | "ease=" ( "linear" | "in" | "out" | "inout" ) | "timeout=" ( duration | seconds )
 
 settle-command ::= "settle"
 settle-option ::= "timeout=" ( duration | seconds )

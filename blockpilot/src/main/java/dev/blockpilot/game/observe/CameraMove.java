@@ -30,8 +30,8 @@ final class CameraMove extends CameraMotion {
     /** {@code points}: the start, the via points and the end. */
     CameraMove(List<CameraControl.Point> points, Look look, CameraControl.Point target,
         CameraControl.Placement before, Vec3 startDirection, int duration, CameraPath.Ease ease, boolean background,
-        Function<CameraControl.Placement, Action> answer) {
-        super(duration, ease, background, answer);
+        Double fov, Double roll, Function<CameraControl.Placement, Action> answer) {
+        super(duration, ease, background, fov, roll, answer);
         this.points = List.copyOf(points);
         this.look = look;
         this.target = target;
@@ -40,12 +40,12 @@ final class CameraMove extends CameraMotion {
     }
 
     @Override
-    CameraControl.Placement end() {
+    CameraControl.Placement endShape() {
         return new CameraControl.Placement(points.get(points.size() - 1), finalTarget(), finalView());
     }
 
     @Override
-    CameraControl.Placement placement() {
+    CameraControl.Placement movingShape() {
         return new CameraControl.Placement(partialTick -> {
             Frame frame = frame(partialTick);
             return toVec3(frame.path.at(frame.eased));
@@ -53,7 +53,7 @@ final class CameraMove extends CameraMotion {
     }
 
     @Override
-    CameraControl.Placement stillNow() {
+    CameraControl.Placement stillShape() {
         Frame now = frame(1);
         Vec3 at = toVec3(now.path.at(now.eased));
         Vec3 direction = direction(1, at);

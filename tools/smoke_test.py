@@ -780,6 +780,40 @@ def check_camera_orbit(game_dir):
     return "; ".join(problems) + f": {(output + moving + away).strip()[:900]}" if problems else None
 
 
+def check_camera_lens(game_dir):
+    """A narrow field of view fills the frame with a far block, a roll puts the sky to one side, a move glides the field
+    of view, a placement keeps it, and a value out of range is refused before anything changes."""
+    # A red block 20 blocks in front of the camera, looked at through its centre.
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; server as=player setblock ~5 ~1 ~5 "
+                              "minecraft:red_concrete; wait 5t; camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5; wait 3t; "
+                              "pixels wide=0.48,0.48,0.52,0.52; camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5 fov=10; "
+                              "wait 3t; pixels narrow=0.48,0.48,0.52,0.52; "
+                              "camera at ~0,2,0 look ~0,2,10 fov=70 roll=90; wait 3t; "
+                              "pixels left=0,0.4,0.2,0.6 right=0.8,0.4,1,0.6; status; "
+                              "camera at ~0,2,-6 look ~0,1,0 fov=70 roll=0; "
+                              "sample status every 10t while camera move ~0,2,-8 look ~0,1,0 over 40t fov=30; "
+                              "camera at ~4,2,-6; status; ?camera at ~0,2,0 fov=200; ?camera reset roll=10; "
+                              "camera reset; server as=player setblock ~5 ~1 ~5 minecraft:air; option reset")
+    problems = []
+    wide, narrow = means(output, "wide"), means(output, "narrow")
+    if not (narrow[0] > narrow[1] + 60 and narrow[0] > narrow[2] + 60) or wide[0] > wide[2] + 60:
+        problems.append(f"the narrow view {narrow} isn't red, or the wide one {wide} is")
+    left, right = means(output, "left"), means(output, "right")
+    rolled = re.search(r"^ok pos .*\bcam:-?[\d.]+/-?[\d.]+/(-?[\d.]+)", output, re.MULTILINE)
+    if not (left[2] > left[0] and right[0] > right[2]) or not rolled or abs(float(rolled.group(1)) - 90) > 0.5:
+        problems.append(f"rolled: left {left}, right {right}, roll {rolled.group(1) if rolled else None}")
+    fovs = [float(value) for value in re.findall(r"^  t\d+ c\d+ .*\bcam_fov=([\d.]+)", output, re.MULTILINE)]
+    if len(fovs) < 4 or abs(fovs[2] - 50) > 4 or abs(fovs[-1] - 30) > 1:
+        problems.append(f"the zoom along the move read {fovs}")
+    if not re.search(r"^ok pos .*\bcam_fov=30\b", output, re.MULTILINE):
+        problems.append("the next placement didn't keep the field of view")
+    if not re.search(r"^err syntax fov= takes 1 to 170 degrees, not 200", output, re.MULTILINE) \
+            or not re.search(r"^err syntax fov= and roll= are for camera at, move, follow and orbit", output,
+                             re.MULTILINE):
+        problems.append("a value out of range or an option on reset wasn't refused")
+    return "; ".join(problems) + f": {output.strip()[:900]}" if problems else None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -1021,6 +1055,7 @@ def main():
         ("@<name> takes an entity by its tag or name", lambda: check_entity_names(args.game_dir)),
         ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
+        ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
     ]
     for name, check in checks:
         try:

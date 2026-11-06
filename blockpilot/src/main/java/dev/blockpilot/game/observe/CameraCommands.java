@@ -7,6 +7,7 @@ import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.common.Ids;
@@ -39,6 +40,8 @@ final class CameraCommands {
     private static final int AWAY_CHUNK_TICKS = 200;
     /** The forms that take ease=: the timed motions. */
     private static final Set<String> EASED = Set.of("move", "orbit");
+    /** The forms that take fov= and roll=: those that place a camera. */
+    private static final Set<String> PLACING = Set.of("at", "move", "follow", "orbit");
 
     /** The handler of each form, by its first word. */
     private final Map<String, CommandSpec.ActionHandler> forms = Map.of("at", this::at, "move", this::move,
@@ -64,6 +67,10 @@ final class CameraCommands {
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
             .form(form -> form.keyword("op", "reset", "off", "wait"))
+            .option("fov", "camera at, move, follow and orbit: the placed camera's vertical field of view, 1 to 170 "
+                + "degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
+            .option("roll", "camera at, move, follow and orbit: tilts the placed camera about the way it looks, -180 "
+                + "to 180 degrees, a positive roll leaning it to its right; kept until camera reset", ArgType.NUMBER)
             .option("ease", "camera move and orbit: how the speed changes along the way; linear (the default) keeps "
                 + "it, in starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
             .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
@@ -96,6 +103,9 @@ final class CameraCommands {
                 + "across and height and looking at the centre, a full turn without by, a positive angle to the "
                 + "camera's right as it faces the centre; timed as camera move is (background, camera wait, stop), "
                 + "then left where it ended looking at the centre; "
+                + "fov= and roll= give a placed camera its own field of view and tilt: at and follow set them at once, "
+                + "move and orbit glide to them along the way, a value left out stays, and camera reset returns to "
+                + "the player's view; status names the field of view as cam_fov and the roll in cam:; "
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
                 + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
@@ -125,7 +135,34 @@ final class CameraCommands {
         if (args.hasOption("ease") && !EASED.contains(op)) {
             throw new CommandException("syntax", "ease= is for camera move and camera orbit");
         }
+        if ((args.hasOption("fov") || args.hasOption("roll")) && !PLACING.contains(op)) {
+            throw new CommandException("syntax", "fov= and roll= are for camera at, move, follow and orbit");
+        }
+        // Range checks before anything changes; each form reads the values again as it places the camera.
+        fov(args);
+        roll(args);
         return forms.get(op).start(context, args);
+    }
+
+    private static Double fov(Args args) throws CommandException {
+        return degrees(args, "fov", 1, 170);
+    }
+
+    private static Double roll(Args args) throws CommandException {
+        return degrees(args, "roll", -180, 180);
+    }
+
+    /** An option in degrees within its range, or null when it is left out. */
+    private static Double degrees(Args args, String name, double min, double max) throws CommandException {
+        if (!args.hasOption(name)) {
+            return null;
+        }
+        double value = args.numberOption(name, 0);
+        if (value < min || value > max) {
+            throw new CommandException("syntax", name + "= takes " + Numbers.format(min) + " to " + Numbers.format(max)
+                + " degrees, not " + args.option(name));
+        }
+        return value;
     }
 
     private static Action reset(CommandContext context, Args args) {
@@ -158,7 +195,8 @@ final class CameraCommands {
         }
         Vec3 clear = args.has("clear") ? clearPoint(level, asked, inFrameOf(level, asked, lookPoint)) : asked;
         Vec3 position = clear == null ? asked : clear;
-        CameraControl.place(new CameraControl.Placement(CameraControl.drawn(level, position), target));
+        CameraControl.place(new CameraControl.Placement(CameraControl.drawn(level, position), target)
+            .withLens(CameraControl.lensWith(fov(args), roll(args))));
         if (args.has("away")) {
             AwayCamera.start();
         } else {
@@ -278,7 +316,8 @@ final class CameraCommands {
             target = ahead ? null : point(context, args, "target", level);
         }
         return start(new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
-            duration, ease, args.has("background"), placed -> answer(level, endPoint, placed)), duration);
+            duration, ease, args.has("background"), fov(args), roll(args), placed -> answer(level, endPoint, placed)),
+            duration);
     }
 
     private Action follow(CommandContext context, Args args) throws CommandException {
@@ -296,7 +335,8 @@ final class CameraCommands {
         } else {
             offset = CameraFollow.offsetOf(entity, drawnNow(), turning);
         }
-        CameraControl.Placement placement = CameraFollow.placement(entity, offset, turning, aimAt(entity));
+        CameraControl.Placement placement = CameraFollow.placement(entity, offset, turning, aimAt(entity))
+            .withLens(CameraControl.lensWith(fov(args), roll(args)));
         CameraControl.place(placement);
         return answer(level, placement);
     }
@@ -307,7 +347,7 @@ final class CameraCommands {
         CameraControl.Point centre = point(context, args, "centre", level);
         double degrees = args.has("degrees") ? args.number("degrees", 360) : 360;
         return start(new CameraOrbit(centre, drawnNow(), centre.at(1), degrees, duration, ease(args),
-            args.has("background"), placed -> answer(level, placed)), duration);
+            args.has("background"), fov(args), roll(args), placed -> answer(level, placed)), duration);
     }
 
     /** camera wait: answers once no camera move is under way, as camera at answers where the camera then rests. */

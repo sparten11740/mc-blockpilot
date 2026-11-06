@@ -23,6 +23,7 @@
     "EntityRenderDispatcherMixin",
     "EntityTickMixin",
     "FrameMixin",
+    "GameRendererMixin",
     "GuiMixin",
     "InputConstantsMixin",
     "InputKeyAccessor",
