@@ -6,8 +6,8 @@ to 170, in place of the player's and its effects, and `status` SHALL name a
 placed camera's own field of view as `cam_fov`.
 
 #### Scenario: A narrow view
-- **WHEN** an agent runs `camera at ~0,2,-20 look ~0,1,0 fov=10; pixels
-  mid=0.47,0.47,0.53,0.53` with a red block at `~0,1,0`
+- **WHEN** an agent runs `camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5 fov=10;
+  pixels mid=0.48,0.48,0.52,0.52` with a red block at `~5,1,5`
 - **THEN** `mid`'s mean colour is red, where with the player's field of
   view of 70 the block is too small to fill it
 
