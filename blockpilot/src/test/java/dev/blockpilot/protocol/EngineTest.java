@@ -92,6 +92,12 @@ class EngineTest {
         return Formatter.text(reply.join());
     }
 
+    /** The reply's text, failing rather than blocking when it hasn't come. */
+    private String answered(CompletableFuture<Reply> reply) {
+        assertTrue(reply.isDone(), "no reply yet");
+        return text(reply);
+    }
+
     private void tick(int times) {
         for (int index = 0; index < times; index++) {
             game.clientTicks++;
@@ -283,6 +289,78 @@ class EngineTest {
         assertFalse(log.contains("spin cancelled"));
         game.serverTasks.forEach(Runnable::run);
         assertTrue(log.contains("spin cancelled"));
+    }
+
+    @Test
+    void serverActionsThatAnswerAtOnceRunInOneServerTick() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "roll a 1; roll b 1");
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok\nok", answered(reply));
+        assertEquals(List.of("a", "b"), log);
+    }
+
+    @Test
+    void aServerActionStartsInTheServerTickTheOneBeforeItAnsweredIn() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null, "roll a 2; roll b 1");
+        tick(1);
+        engine.tickServer();
+        assertEquals(List.of("a"), log);
+        engine.tickServer();
+        assertEquals("ok\nok", answered(reply));
+        assertEquals(List.of("a", "a", "b"), log);
+    }
+
+    @Test
+    void aClientQueryEndsARunOfServerSteps() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null,
+            "roll a 1; roll b 1; counter; roll c 1");
+        tick(1);
+        engine.tickServer();
+        engine.tickServer();
+        assertEquals(List.of("a", "b"), log);
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok\nok\nok value=2\nok", answered(reply));
+    }
+
+    @Test
+    void aSideServerReadEndsARunOfServerSteps() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null,
+            "roll a 1; roll b 1; sided side=server; roll c 1");
+        tick(1);
+        engine.tickServer();
+        engine.tickServer();
+        assertEquals(List.of("a", "b"), log);
+        tick(1);
+        engine.tickServer();
+        assertTrue(reply.isDone());
+        assertEquals(List.of("a", "b", "c"), log);
+    }
+
+    @Test
+    void anIfThatHoldsEndsARunOfServerSteps() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null,
+            "roll a 1; if probe value>=0 then roll b 1; roll c 1");
+        tick(1);
+        engine.tickServer();
+        engine.tickServer();
+        assertEquals(List.of("a"), log);
+        // Its statement, which may be any step, is gated on the client, and the server steps after it with it.
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok\nok\nok", answered(reply));
+        assertEquals(List.of("a", "b", "c"), log);
+    }
+
+    @Test
+    void anIfThatDoesNotHoldKeepsARunOfServerStepsGoing() {
+        CompletableFuture<Reply> reply = engine.submit(engine.openSession(), null,
+            "roll a 1; if probe value<0 then roll b 1; roll c 1");
+        tick(1);
+        engine.tickServer();
+        assertEquals("ok\nok false value=1\nok", answered(reply));
+        assertEquals(List.of("a", "c"), log);
     }
 
     @Test

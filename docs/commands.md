@@ -164,10 +164,14 @@ call.
 
 - `server [as=player] [settle=Nt] <command>`: runs a server command and answers with its result value and feedback
   lines. It runs at the player's position and dimension, so `~` and `@p` count from the player, and with `as=player` as
-  the player. A failing command, a failing `execute if` test among them, is `err command_failed` with its `result`,
-  which `?server …` lets the script carry on past. A command that reports no result, such as a function without
-  `return`, is `ok success=true` without `result`, unless it sent a failure. A `;` inside the command, as in an NBT int
-  array, is written `\;` so it doesn't end the step: `server data modify storage test:x ids set value [I\;1,2]`.
+  the player. It answers `settle` server ticks after the command ran (default `2t`), once the client has the changes;
+  `settle=0t` answers in the server tick the command ran in. Consecutive server steps (`server`, `nbt`, `tick`) run back
+  to back on the server thread, each starting in the server tick the one before it answered in, so `settle=1t` spaces
+  them one server tick apart and `settle=0t` runs them in one. A failing command, a failing `execute if` test among
+  them, is `err command_failed` with its `result`, which `?server …` lets the script carry on past. A command that
+  reports no result, such as a function without `return`, is `ok success=true` without `result`, unless it sent a
+  failure. A `;` inside the command, as in an NBT int array, is written `\;` so it doesn't end the step:
+  `server data modify storage test:x ids set value [I\;1,2]`.
 - `nbt <pos|e<id>|uuid> [path=]`: the server-side data of a block entity or entity, SNBT in text and JSON in json.
 - `tick freeze|unfreeze|step <n>|rate <tps>|query`.
 - `block`, `blocks` and `find … side=server` read the integrated server's copy.

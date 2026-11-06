@@ -354,6 +354,17 @@ def check_tick_waits(game_dir):
     return None
 
 
+def check_server_steps(game_dir):
+    """Server steps run back to back: settle=1t puts them a server tick apart, settle=0t in one tick."""
+    problems = []
+    for settle, apart in (("1t", 1), ("0t", 0)):
+        _, output = run(game_dir, "; ".join([f"server settle={settle} time query gametime"] * 3))
+        times = [int(time) for time in re.findall(r"^ok result=(\d+) success=true", output, re.MULTILINE)]
+        if len(times) != 3 or any(later - earlier != apart for earlier, later in zip(times, times[1:])):
+            problems.append(f"game times at settle={settle} are {times}, not {apart} apart")
+    return "; ".join(problems) or None
+
+
 def check_video_upright(game_dir, world):
     """A recorded video is upright too; its frames come from another readback than `pixels` reads."""
     ffmpeg = shutil.which("ffmpeg")
@@ -434,7 +445,7 @@ def main():
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
         ("help", "help; help goto; help errors; help server; help wait",
          [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
-          r"the step after wait <N>t runs N ticks after"]),
+          r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -574,6 +585,7 @@ def main():
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
         ("server function answers as the game sees it", lambda: check_functions(args.game_dir, world)),
         ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
+        ("server steps run back to back", lambda: check_server_steps(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
         ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),

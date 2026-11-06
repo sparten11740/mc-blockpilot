@@ -66,8 +66,10 @@ final class ServerCommands {
         registry.register(CommandSpec.action("server", this::server).onServer().group("integrated")
             .arg("command", ArgType.TEXT).option("as", "player: run as the player, at the player's position",
                 List.of("player"))
-            .option("settle", "server ticks to wait before answering so the client has the changes (default 2t; "
-                + "0t for pure probes)", ArgType.DURATION, ArgType.SECONDS)
+            .option("settle", "server ticks to wait before answering so the client has the changes (default 2t); 0t "
+                + "answers in the server tick the command ran in; consecutive server steps run back to back on the "
+                + "server thread, each starting in the tick the one before it answered in, so settle=1t spaces them "
+                + "one server tick apart", ArgType.DURATION, ArgType.SECONDS)
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
                 + "every feedback line; it runs as the server, at the player's position, rotation and dimension, so "
                 + "~ and @p count from the player; options go before the command (server as=player settle=0t "
