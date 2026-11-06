@@ -26,7 +26,7 @@
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new camera steps and the recording check where ffmpeg is installed
+- [x] 5.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new camera steps and the recording check where ffmpeg is installed
 
 ## Workflow follow-up
 
