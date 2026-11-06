@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -53,6 +54,7 @@ public final class ObservationCommands {
     /** How far {@code camera at … clear} moves the camera at most, and in what steps, in blocks. */
     private static final double MAX_CLEAR = 8;
     private static final double CLEAR_STEP = 0.25;
+    private static final int MAX_VIA = 32;
     private static final List<String> SOUND_SOURCES = Arrays.stream(SoundSource.values()).map(SoundSource::getName)
         .toList();
 
@@ -78,12 +80,30 @@ public final class ObservationCommands {
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
                 .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY))
                 .optionalKeyword("clear", "clear"))
+            .form(form -> form.keyword("op", "move").arg("pos", ArgType.POSITION)
+                .repeated(MAX_VIA, via -> via.keyword("through", "via").arg("via", ArgType.POSITION))
+                .optional(look -> look.keyword("look", "look")
+                    .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY))
+                .keyword("timing", "over").arg("duration", ArgType.DURATION))
             .form(form -> form.keyword("op", "reset", "off"))
+            .option("ease", "camera move: how the speed changes along the path; linear (the default) keeps it, in "
+                + "starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
             .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
-                + "with Sable, a plot position, for the point or the look, rides along with its sub-level each frame; "
+                + "an entity look target is read where the entity is drawn each frame; "
                 + "clear: when the point is in a block with a collision shape, moves the camera toward the look point "
                 + "(the player's eyes without look), a quarter block at a time, at most 8 blocks and never past it, to "
                 + "the first point clear of such blocks; "
+                + "camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]: glides the camera "
+                + "from where it is drawn now (a placed camera, or the player's eyes) to the point over the duration, "
+                + "placed anew in every rendered frame, then leaves it placed there and answers as camera at does; "
+                + "through via points (up to 32) in order on one smooth curve with no corner at any, at a constant "
+                + "speed along the whole path; without look it keeps looking at what it looked at (from the player's "
+                + "view, the way the player looked), with a point or an entity it turns toward it over the move, and "
+                + "look ahead looks the way it travels; ease=inout suits a single move from rest, linear (the default) "
+                + "keeps the speed across chained moves; it counts client ticks, so it goes on through tick freeze, "
+                + "and stop or real input end it where the last frame drew it; "
+                + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
+                + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
                 + "around the player, so a camera beyond the render distance shows sky. To take in an effect that "
                 + "spans hundreds of blocks, widen the view with option fov 110 and clear it with option renderClouds "
@@ -92,6 +112,7 @@ public final class ObservationCommands {
             .field("unloaded", "set instead of block when the client hasn't loaded the camera's chunk")
             .field("cleared", "clear: how far the camera moved, in blocks, when it had to")
             .field("uncleared", "clear: set when no clear point was in reach, so the camera stayed at the point")
+            .field("looking", "the absolute point it looks at, with a look target")
             .example("camera at ~10,5,10 look ~0,1,0"));
         registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
             .help("waits until the chunks within the view distance of the player have arrived from the server and "
@@ -274,7 +295,14 @@ public final class ObservationCommands {
     }
 
     private Action camera(CommandContext context, Args args) throws CommandException {
-        if (!args.word("op").equals("at")) {
+        String op = args.word("op");
+        if (args.hasOption("ease") && !op.equals("move")) {
+            throw new CommandException("syntax", "ease= is for camera move");
+        }
+        if (op.equals("move")) {
+            return move(context, args);
+        }
+        if (!op.equals("at")) {
             CameraControl.reset();
             return () -> Result.ok();
         }
@@ -287,48 +315,98 @@ public final class ObservationCommands {
             var player = Minecraft.getInstance().player;
             target = partialTick -> player.getEyePosition();
             lookPoint = player.getEyePosition();
-        } else if (args.type("target") == ArgType.ENTITY) {
-            Entity entity = level.getEntity(args.entity("target").id());
-            if (entity == null) {
-                throw new CommandException("no_entity", args.word("target"));
-            }
-            target = partialTick -> entity.isRemoved() ? null : entity.getBoundingBox().getCenter();
-            lookPoint = entity.getBoundingBox().getCenter();
         } else {
-            Position look = context.resolve(args.position("target"));
-            lookPoint = new Vec3(look.x(), look.y(), look.z());
-            target = rendered(level, lookPoint);
+            target = lookTarget(context, args, level);
+            lookPoint = target.at(1);
         }
         Vec3 clear = args.has("clear") ? clearPoint(level, asked, inFrameOf(level, asked, lookPoint)) : asked;
         Vec3 position = clear == null ? asked : clear;
         CameraControl.place(new CameraControl.Placement(rendered(level, position), target));
-        // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
-        Position atAbsolute = Rel.absolute(position);
-        BlockPos cell = BlockPos.containing(position);
         return ActionSupport.afterFrames(2, () -> {
-            Vec3 looking = target.at(1);
-            Fields fields = new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+            Fields fields = cameraFields(level, position);
             if (clear == null) {
                 fields.put("uncleared", true, "uncleared");
             } else if (!clear.equals(asked)) {
                 fields.put("cleared", Math.round(clear.distanceTo(asked) * 100) / 100.0);
             }
-            if (!Sides.loaded(level, cell)) {
-                // A missing chunk reads as air, but renders as nothing.
-                fields.put("unloaded", true, "unloaded");
-            } else {
-                BlockState block = level.getBlockState(cell);
-                fields.put("block", Ids.of(block), "in:" + Ids.of(block));
-                if (block.isCollisionShapeFullBlock(level, cell)) {
-                    // The view starts inside a solid block, which shows its faces from within or nothing at all.
-                    fields.put("inside", Ids.of(block));
-                }
-            }
-            if (looking != null) {
-                fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
-            }
-            return Result.ok(fields);
+            return Result.ok(placedFields(fields, level, position, target));
         });
+    }
+
+    /** A look target: an entity where it is drawn, or a position, which rides along aboard a sub-level. */
+    private static CameraControl.Point lookTarget(CommandContext context, Args args, Level level)
+        throws CommandException {
+        if (args.type("target") == ArgType.ENTITY) {
+            Entity entity = level.getEntity(args.entity("target").id());
+            if (entity == null) {
+                throw new CommandException("no_entity", args.word("target"));
+            }
+            // Interpolated like the entity's model, so a camera tracking a walking mob turns smoothly.
+            return partialTick -> entity.isRemoved() ? null
+                : entity.getPosition(partialTick).add(0, entity.getBbHeight() / 2, 0);
+        }
+        Position look = context.resolve(args.position("target"));
+        return rendered(level, new Vec3(look.x(), look.y(), look.z()));
+    }
+
+    private Action move(CommandContext context, Args args) throws CommandException {
+        int duration = args.duration("duration").ticks();
+        if (duration < 1) {
+            throw new CommandException("syntax", "over takes 1t or more");
+        }
+        CameraPath.Ease ease = args.option("ease") == null ? CameraPath.Ease.LINEAR
+            : CameraPath.Ease.valueOf(args.option("ease").toUpperCase(Locale.ROOT));
+        Level level = Minecraft.getInstance().level;
+        var player = Minecraft.getInstance().player;
+        CameraControl.Placement before = CameraControl.placement();
+        List<CameraControl.Point> points = new ArrayList<>();
+        points.add(before != null ? before.position() : player::getEyePosition);
+        for (Position via : args.positions("via")) {
+            Position point = context.resolve(via);
+            points.add(rendered(level, new Vec3(point.x(), point.y(), point.z())));
+        }
+        Position end = context.resolve(args.position("pos"));
+        Vec3 endPoint = new Vec3(end.x(), end.y(), end.z());
+        points.add(rendered(level, endPoint));
+        CameraMove.Look look = CameraMove.Look.KEEP;
+        CameraControl.Point target = null;
+        if (args.has("target")) {
+            boolean ahead = args.type("target") == ArgType.KEYWORD;
+            look = ahead ? CameraMove.Look.AHEAD : CameraMove.Look.TARGET;
+            target = ahead ? null : lookTarget(context, args, level);
+        }
+        CameraMove move = new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
+            duration, ease, placed -> ActionSupport.afterFrames(2, () ->
+                Result.ok(placedFields(cameraFields(level, endPoint), level, endPoint, placed.target()))));
+        CameraControl.place(move.placement());
+        return move;
+    }
+
+    private static Fields cameraFields(Level level, Vec3 position) {
+        // Absolute positions: relative ones would be relative to the player, who may be far away or falling.
+        Position atAbsolute = Rel.absolute(position);
+        return new Fields().put("camera", atAbsolute, "camera " + atAbsolute);
+    }
+
+    /** What a placed camera answers after its frames: the block it sits in and, with a target, the point it faces. */
+    private static Fields placedFields(Fields fields, Level level, Vec3 position, CameraControl.Point target) {
+        BlockPos cell = BlockPos.containing(position);
+        if (!Sides.loaded(level, cell)) {
+            // A missing chunk reads as air, but renders as nothing.
+            fields.put("unloaded", true, "unloaded");
+        } else {
+            BlockState block = level.getBlockState(cell);
+            fields.put("block", Ids.of(block), "in:" + Ids.of(block));
+            if (block.isCollisionShapeFullBlock(level, cell)) {
+                // The view starts inside a solid block, which shows its faces from within or nothing at all.
+                fields.put("inside", Ids.of(block));
+            }
+        }
+        Vec3 looking = target == null ? null : target.at(1);
+        if (looking != null) {
+            fields.put("looking", Rel.absolute(looking), "looking " + Rel.absolute(looking));
+        }
+        return fields;
     }
 
     private Action settle(CommandContext context, Args args) throws CommandException {

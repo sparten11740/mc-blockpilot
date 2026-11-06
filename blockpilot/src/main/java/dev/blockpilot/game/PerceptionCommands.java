@@ -84,6 +84,7 @@ final class PerceptionCommands {
             .field("sub", "with Sable: the sub-level the aimed block is aboard; its position prints absolute")
             .field("world", "with Sable: where that block is in the world").field("vel", "velocity, blocks per tick")
             .field("on_ground", "standing on something").field("vehicle", "what the player rides")
+            .field("camera", "a placed camera's absolute position, where the last frame drew it")
             .field("aboard", "with Sable: the sub-level the player stands on or rides")
             .example("status"));
         registry.register(CommandSpec.query("look", this::look).needsWorld().diffable()
@@ -216,6 +217,10 @@ final class PerceptionCommands {
         flag(fields, player.isDeadOrDying(), "dead");
         if (ClientScreens.current() != null) {
             fields.put("screen", Screens.type(ClientScreens.current()), "screen:" + Screens.type(ClientScreens.current()));
+        }
+        Position placedAt = CameraControl.placement() != null ? CameraControl.frameCamera() : null;
+        if (placedAt != null) {
+            fields.put("camera", placedAt, "camera " + placedAt);
         }
         CameraControl.Angles camera = CameraControl.rendered();
         if (camera != null && (Math.abs(Mth.wrapDegrees(camera.yaw() - player.getYRot())) > 0.5

@@ -17,20 +17,72 @@ public final class CameraControl {
         Vec3 at(float partialTick);
     }
 
-    /** Where the camera sits and what it looks at; either may move (an entity, a block aboard a sub-level). */
-    public record Placement(Point position, Point target) {
-        /** Yaw and pitch from the position toward the target. */
-        public float[] angles(float partialTick) {
+    /** The way the camera looks for the frame being rendered, from where it sits then; null when it can't tell. */
+    @FunctionalInterface
+    public interface View {
+        Vec3 direction(float partialTick, Vec3 from);
+    }
+
+    /**
+     * Where the camera sits and what it looks at; either may move (an entity, a block aboard a sub-level). With a
+     * view, the camera looks the way it says instead, as during a move or after one that looked ahead.
+     */
+    public record Placement(Point position, Point target, View view) {
+        public Placement(Point position, Point target) {
+            this(position, target, null);
+        }
+
+        /** The view direction from a point: the view's, or toward the target; null when the target is gone. */
+        public Vec3 direction(float partialTick, Vec3 from) {
+            if (view != null) {
+                return view.direction(partialTick, from);
+            }
             Vec3 toward = target.at(partialTick);
-            if (toward == null) {
+            return toward == null ? null : toward.subtract(from);
+        }
+
+        /** Yaw and pitch from the position along the view direction. */
+        public float[] angles(float partialTick) {
+            Vec3 delta = direction(partialTick, position.at(partialTick));
+            if (delta == null) {
                 return new float[] {0, 0};
             }
-            Vec3 delta = toward.subtract(position.at(partialTick));
             double horizontal = Math.sqrt(delta.x * delta.x + delta.z * delta.z);
             float yaw = (float) (Mth.atan2(delta.z, delta.x) * Mth.RAD_TO_DEG) - 90f;
             float pitch = (float) -(Mth.atan2(delta.y, horizontal) * Mth.RAD_TO_DEG);
             return new float[] {yaw, pitch};
         }
+    }
+
+    /** The unit direction a yaw and pitch look along, as the game turns them. */
+    public static Vec3 direction(float yaw, float pitch) {
+        double yawRadians = Math.toRadians(yaw);
+        double pitchRadians = Math.toRadians(pitch);
+        return new Vec3(-Math.sin(yawRadians) * Math.cos(pitchRadians), -Math.sin(pitchRadians),
+            Math.cos(yawRadians) * Math.cos(pitchRadians));
+    }
+
+    /**
+     * The fraction of the current client tick the frame is drawn at, from the game's timer as it runs whether or not
+     * the world's ticks are frozen, so a camera move goes on through {@code tick freeze}.
+     */
+    static float realPartialTick() {
+        //? if >=26.1 {
+        /*return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+        *///?} else {
+        return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+        //?}
+    }
+
+    /** A camera fixed where the last frame drew it, looking as it did then; null without a frame from a placed one. */
+    static Placement fixedAtLastFrame() {
+        Vec3 from = renderedFrom;
+        Angles angles = rendered;
+        if (from == null || angles == null) {
+            return null;
+        }
+        Vec3 direction = direction(angles.yaw(), angles.pitch());
+        return new Placement(partialTick -> from, null, (partialTick, at) -> direction);
     }
 
     /** The camera's rotation as the game last rendered it, including mod camera shake and roll. */
@@ -62,6 +114,16 @@ public final class CameraControl {
         rendered = new Angles(angles[0], angles[1], 0);
     }
 
+    /**
+     * Swaps a placed camera's placement for another, on any thread: the GUI is already hidden, so only the volatile
+     * placement changes, as when {@code stop} ends a move from another session's thread.
+     */
+    static void hold(Placement value) {
+        if (placement != null) {
+            placement = value;
+        }
+    }
+
     /** Back to the player's view, restoring the GUI setting. Client thread. */
     public static void reset() {
         placement = null;
@@ -81,7 +143,7 @@ public final class CameraControl {
      * the player's view. It follows the frames, not the placement, so right after {@code camera reset} it still names
      * the camera. Menus outside a world don't record frames, and none of them is a placed camera's.
      */
-    static Position frameCamera() {
+    public static Position frameCamera() {
         Vec3 from = renderedFrom;
         return from == null || Minecraft.getInstance().level == null ? null : Rel.absolute(from);
     }

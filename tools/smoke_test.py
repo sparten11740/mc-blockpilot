@@ -20,6 +20,7 @@ tools/test_targets.py runs this on every target.
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import shutil
@@ -444,6 +445,137 @@ def check_marks(game_dir, world):
     return None
 
 
+# After LEVEL the player stands in block 0,-60,0, which ~dx,dy,dz counts from.
+BASE = (0, -60, 0)
+
+
+def camera_rows(output):
+    """(client tick, camera position, camera yaw) of each row of a status sample taken while a camera is placed."""
+    rows = []
+    for line in output.splitlines():
+        tick = re.search(r"^  t\d+ c(\d+)\b", line)
+        camera = re.search(r"\bcamera (-?[\d.]+),(-?[\d.]+),(-?[\d.]+)", line)
+        yaw = re.search(r"\bcam:(-?[\d.]+)/", line)
+        if tick and camera:
+            rows.append((int(tick.group(1)), tuple(float(value) for value in camera.groups()),
+                         float(yaw.group(1)) if yaw else None))
+    return rows
+
+
+def at_base(dx, dy, dz):
+    return BASE[0] + dx, BASE[1] + dy, BASE[2] + dz
+
+
+def yaw_toward(start, end):
+    """The game's yaw for looking from one point to another, horizontally."""
+    return math.degrees(math.atan2(end[2] - start[2], end[0] - start[0])) - 90
+
+
+def turned(first, second):
+    """The difference between two yaws, in degrees, the short way round."""
+    return abs((first - second + 180) % 360 - 180)
+
+
+def check_camera_move(game_dir):
+    """A move takes its duration, ends at its point as camera at would, and status and screenshot then name it."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,-6 look ~0,1,0; sample status every 1t x1; "
+                              "camera move ~6,2,0 look ~0,1,0 over 40t; sample status every 1t x1; screenshot 64; "
+                              "status; camera reset; status")
+    ticks = [row[0] for row in camera_rows(output)]
+    end = "{:g},{:g},{:g}".format(*at_base(6, 2, 0))
+    expected = [rf"^ok camera {end} ", rf"^ok \S+\.png .*camera {end}", rf"^ok pos .*\bcamera {end}"]
+    missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
+    statuses = [line for line in output.splitlines() if line.startswith("ok pos ")]
+    if len(ticks) != 2 or not 40 <= ticks[1] - ticks[0] <= 44 or missing or " camera " in statuses[-1]:
+        return f"client ticks {ticks}, missing {missing}: {output.strip()[:800]}"
+    return None
+
+
+def check_camera_easing(game_dir):
+    """Halfway through a move the camera is about halfway along with linear and inout, short of it with in and past
+    it with out."""
+    problems = []
+    for ease, low, high in (("linear", 4, 6.5), ("inout", 4, 6.5), ("in", 0, 4.5), ("out", 5.5, 10)):
+        _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 10t while camera move "
+                                  f"~10,2,0 over 40t ease={ease}; camera reset")
+        rows = camera_rows(output)
+        along = rows[2][1][0] - rows[0][1][0] if len(rows) >= 3 else None
+        if along is None or not low <= along <= high:
+            problems.append(f"{ease}: {along} blocks along at 20 ticks")
+    return "; ".join(problems) or None
+
+
+def check_camera_curve(game_dir):
+    """A curved move passes its via point without a corner, at an even speed along the path."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 2t while camera move "
+                              "~10,2,10 via ~10,2,0 over 40t; camera reset")
+    points = [row[1] for row in camera_rows(output)]
+    via = at_base(10, 2, 0)
+    nearest = min((math.dist(point, via) for point in points), default=None)
+    steps = [(first, second) for first, second in zip(points, points[1:]) if math.dist(first, second) > 0.05]
+    turns = [turned(yaw_toward(*one), yaw_toward(*other)) for one, other in zip(steps, steps[1:])]
+    # A smooth curve through a right-angled corner turns most of the quarter circle near it, 29 degrees a row here.
+    if nearest is None or nearest > 0.5 or not turns or max(turns) > 30:
+        return f"nearest {nearest} to the via point, turns {[round(turn) for turn in turns]}"
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 4t while camera move "
+                              "~12,2,0 via ~2,2,0 over 40t; camera reset")
+    points = [row[1] for row in camera_rows(output)]
+    gaps = [math.dist(first, second) for first, second in zip(points, points[1:])]
+    mean = sum(gaps) / len(gaps) if gaps else 0
+    if not gaps or any(abs(gap - mean) > 0.15 * mean for gap in gaps):
+        return f"gaps between rows {[round(gap, 2) for gap in gaps]}"
+    return None
+
+
+def check_camera_looks_ahead(game_dir):
+    """look ahead faces the way the camera travels from a fifth of the way on, and keeps that way at the end. The way
+    through a row is the chord between the rows either side; the chord to the next row lags a curve's tangent."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 2t while camera move "
+                              "~10,2,10 via ~10,2,0 look ahead over 40t; screenshot 64; status; camera reset")
+    rows = camera_rows(output)
+    off = [round(turned(rows[index][2], yaw_toward(rows[index - 1][1], rows[index + 1][1])))
+           for index in range(max(1, len(rows) // 5), len(rows) - 1)
+           if math.dist(rows[index - 1][1], rows[index + 1][1]) > 0.05]
+    final = re.findall(r"^ok pos .*\bcam:(-?[\d.]+)/", output, re.MULTILINE)
+    last = yaw_toward(rows[-2][1], rows[-1][1]) if len(rows) > 2 else None
+    if not off or max(off) > 10 or not final or last is None or turned(float(final[-1]), last) > 10:
+        return f"yaw off the way of travel by {off}, at the end {final} against {last}"
+    return None
+
+
+def check_camera_move_recording(game_dir, world):
+    """A move recorded at 60 fps is in a new place in nearly every frame, where camera at once a tick repeats them:
+    consecutive frames' ground, with the clouds off, barely differs only where the camera stood still."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        raise Skipped("ffmpeg isn't installed")
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option enableVsync off; option renderClouds off; camera at ~0,2,0; "
+                              f"record start {world}-move width=256 fps=60 audio=off; "
+                              "camera move ~10,2,10 via ~10,2,0 look ahead over 2s; record stop; camera reset; "
+                              "option reset")
+    reason = unsupported_reason(output, False)
+    if reason:
+        run(game_dir, "camera reset; option reset")
+        raise Skipped(reason)
+    video = re.search(r"^ok (.+\.mp4) \S+ (\d+)x(\d+) \S+ frames=(\d+) repeated=(\d+)", output, re.MULTILINE)
+    if not video:
+        return f"no video: {output.strip()[:600]}"
+    width, height, frames, repeated = (int(value) for value in video.groups()[1:])
+    if repeated * 5 > frames:
+        raise Skipped(f"the game rendered too slowly to tell: {repeated} of {frames} frames repeat in the recording")
+    # An even height, as 4:2:0 video crops to one.
+    rows = height // 2 & ~1
+    ground = subprocess.run([ffmpeg, "-v", "error", "-i", os.path.join(game_dir, video.group(1)), "-vf",
+                             f"crop={width}:{rows}:0:{height - rows},format=gray", "-f", "rawvideo", "-"],
+                            capture_output=True, check=True).stdout
+    size = width * rows
+    images = [ground[offset:offset + size] for offset in range(0, len(ground) - size + 1, size)]
+    differences = [sum(abs(one - other) for one, other in zip(first, second)) / size
+                   for first, second in zip(images, images[1:])]
+    still = sum(1 for difference in differences if difference < 0.5)
+    return None if still * 5 < len(differences) else f"{still} of {len(differences)} frames barely differ"
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -585,6 +717,9 @@ def main():
          [rf"^ok .+{world}\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=off"]),
         ("record with sound", f"record 1s {world}-sound width=256 fps=10",
          [rf"^ok .+{world}-sound\.mp4 [\d.]+s 256x\d+ 10fps frames=(9|10|11) .*audio=on"]),
+        ("camera move errors", "?camera move ~1,0,0 over 40t ease=fast; ?camera move ~1,0,0 "
+                               + "via ~1,1,1 " * 33 + "over 40t",
+         [r"^err syntax .*ease= takes linear\|in\|out\|inout", r"^err syntax .*at most 32 via groups"], True),
         ("record mark without a recording", "record mark x", [r"^err no_capture no recording is running"], True),
         ("record mark before the first frame", f"record start {world}-first width=256 audio=off; record mark first; "
                                                "record stop", [r"^ok mark first 0s frame=0$", r"^  first 0s frame=0$"]),
@@ -671,6 +806,12 @@ def main():
         ("stop leaves what was timed running", lambda: check_stop_leaves_timed_running(args.game_dir, world)),
         ("videos are upright", lambda: check_video_upright(args.game_dir, world)),
         ("a mark names the frame its change shows from", lambda: check_marks(args.game_dir, world)),
+        ("a camera move takes its time and ends at its point", lambda: check_camera_move(args.game_dir)),
+        ("a camera move's easing", lambda: check_camera_easing(args.game_dir)),
+        ("a curved camera move has no corner and an even speed", lambda: check_camera_curve(args.game_dir)),
+        ("a camera move looking ahead faces its way", lambda: check_camera_looks_ahead(args.game_dir)),
+        ("a recorded camera move is in a new place each frame",
+         lambda: check_camera_move_recording(args.game_dir, world)),
     ]
     for name, check in checks:
         try:

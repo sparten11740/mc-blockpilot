@@ -40,8 +40,9 @@ the limit.
 - **WHEN** an agent runs `sample status every 2t while camera move ~10,2,10
   via ~10,2,0 over 40t` from a camera placed at `~0,2,0`
 - **THEN** one row's `camera` position is within half a block of
-  `~10,2,0`, and from row to row the direction of travel turns by a few
-  degrees at most, never by a quarter circle at once
+  `~10,2,0`, and from row to row the direction of travel turns by a third of
+  a quarter circle at most, spreading the turn over several rows, never by a
+  quarter circle at once
 
 #### Scenario: Constant speed
 - **WHEN** an agent runs `sample status every 4t while camera move ~12,2,0
@@ -78,7 +79,8 @@ keep the last direction once the move ends.
 - **WHEN** an agent runs `sample status every 2t while camera move ~10,2,10
   via ~10,2,0 look ahead over 40t` from a camera placed at `~0,2,0`
 - **THEN** from a fifth of the way on, each row's `cam_yaw` points along the
-  way its `camera` position moves to the next row's, within a few degrees
+  way the `camera` position moves through it, from the row before to the row
+  after, within a few degrees
 
 ### Requirement: Camera move easing
 `ease=` SHALL shape a camera move's speed along its path: `linear`, the
