@@ -36,7 +36,8 @@ record Options(Path gameDir, boolean json, double timeout, double waitReady, boo
             String arg = args[i];
             if (optionsEnded || !arg.startsWith("-") || arg.equals("-")) {
                 if (script != null) {
-                    throw new IllegalArgumentException("only one script; separate its commands with ;");
+                    throw new IllegalArgumentException(
+                        "only one script: put its commands in one argument, separated by semicolons");
                 }
                 script = arg;
                 continue;

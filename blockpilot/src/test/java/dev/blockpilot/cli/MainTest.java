@@ -176,11 +176,19 @@ class MainTest {
     }
 
     @Test
-    void usageErrorsExitTwoAndHelpExitsZero() {
+    void usageErrorsExitTwoInOneLineAndHelpExitsZero() {
         assertEquals(2, run());
-        assertTrue(stderr().contains("usage: blockpilot") && stderr().endsWith("a script is required"), stderr());
+        assertEquals("blockpilot: a script is required; see --help", stderr());
+        assertEquals("", stdout());
         assertEquals(0, Main.run(new String[] {"--help"}, new PrintStream(out), new PrintStream(err)));
         assertTrue(stdout().startsWith("usage: blockpilot"));
+    }
+
+    @Test
+    void aScriptInSeveralArgumentsSaysToPutItInOne() {
+        assertEquals(2, run("status", "inv"));
+        assertEquals("blockpilot: only one script: put its commands in one argument, separated by semicolons; see "
+            + "--help", stderr());
     }
 
     /** A line-protocol endpoint for one connection: it checks the token, then answers each line with the reply. */
