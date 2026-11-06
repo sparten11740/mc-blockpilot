@@ -126,6 +126,7 @@ public final class CameraControl {
 
     /** Back to the player's view, restoring the GUI setting. Client thread. */
     public static void reset() {
+        AwayCamera.end();
         placement = null;
         rendered = null;
         if (hiddenGuiBefore != null) {

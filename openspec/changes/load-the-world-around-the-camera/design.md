@@ -140,6 +140,19 @@ While a camera is away, `settle` takes the camera's chunk as its centre
 instead of the player's; that is where the server now centres the client's
 chunks.
 
+### D8: The client draws around the camera on 1.21.1
+
+1.21.1's `LevelRenderer.setupRender` centres the sections it draws on the
+player's position, where 26.x centres them on the camera, so on 1.21.1 a
+camera 1000 blocks away showed only sky though its chunks had arrived. A
+1.21.1 mixin hands it the camera's position while a camera is away.
+
+### D9: Sable's sub-levels stay with the player
+
+Sable sends sub-levels to a client by where its player is, through its own
+tracking rather than the chunk map's, so a camera away doesn't show them;
+the help and `docs/sable.md` say so.
+
 ## Risks / Trade-offs
 
 - [A summoned monster at the set despawns at once, as it is more than 128
