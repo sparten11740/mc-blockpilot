@@ -10,7 +10,7 @@
 
 ## 2. Integration checks
 
-- [ ] 2.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new steps
+- [x] 2.1 Run `tools/test_targets.py` on all 11 targets from a clean build; verify every target passes, including the new steps
 
 ## Workflow follow-up
 
