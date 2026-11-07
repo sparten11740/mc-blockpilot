@@ -535,8 +535,9 @@ def check_camera_curve(game_dir):
     pairs = points[::2]
     steps = [(first, second) for first, second in zip(pairs, pairs[1:]) if math.dist(first, second) > 0.05]
     turns = [turned(yaw_toward(*one), yaw_toward(*other)) for one, other in zip(steps, steps[1:])]
-    # A smooth curve through a right-angled corner turns most of the quarter circle near it, 29 degrees a row pair here.
-    if nearest is None or nearest > 0.5 or not turns or max(turns) > 30:
+    # A smooth curve through a right-angled corner turns most of the quarter circle near it, about 30 degrees a row pair
+    # here depending on where the rows fall; a corner would turn 90 at once.
+    if nearest is None or nearest > 0.5 or not turns or max(turns) >= 45:
         return f"nearest {nearest} to the via point, turns {[round(turn) for turn in turns]}"
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 4t while camera move "
                               "~12,2,0 via ~2,2,0 over 40t; camera reset")
@@ -704,16 +705,17 @@ def check_camera_follow(game_dir):
     """A follow keeps its offset from a moved entity, with turning stays behind it as it turns, outlasts a stop, stays
     where it was when the entity goes, and refuses an absolute offset."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; ?server kill @e[tag=walker]; {WALKER}; wait 5t; "
-                              f"camera at ~0,2,-6 look @walker; camera follow @walker; {MOVE_WALKER} ~8 ~ ~; wait 5t; "
+                              f"camera at ~0,2,-6 look @walker; camera follow @walker; {MOVE_WALKER} ~8 ~ ~; wait 10t; "
                               f"status; camera follow @walker at ~0,2,-6 turning; {MOVE_WALKER} ~ ~ ~ 90 0; wait 3s; "
                               "entity @walker; status; ?camera follow @walker at 0,2,-6")
     run(game_dir, "stop")
-    _, after = run(game_dir, f"{MOVE_WALKER} ~8 ~ ~; wait 5t; entity @walker; status; server kill @e[tag=walker]; "
+    _, after = run(game_dir, f"{MOVE_WALKER} ~8 ~ ~; wait 10t; entity @walker; status; server kill @e[tag=walker]; "
                              "wait 5t; status; wait 1s; status; camera reset")
     cameras, walkers = camera_positions(output), entity_positions(output)
     later, moved = camera_positions(after), entity_positions(after)
     problems = []
-    if not cameras or math.dist(cameras[0], at_base(8, 2, -6)) > 0.1:
+    # The client eases a teleported entity in over a few ticks, and status reads the last frame drawn.
+    if not cameras or math.dist(cameras[0], at_base(8, 2, -6)) > 0.25:
         problems.append(f"the framing didn't go along: {cameras[:1]}")
     behind = (6, 2, 0)
     if len(cameras) < 2 or not walkers or math.dist(tuple(c - w for c, w in zip(cameras[1], walkers[0])), behind) > 0.3:
