@@ -6,7 +6,7 @@
 - [x] 1.2 Pass the sender with player chat from the NeoForge, Fabric and vanilla chat hooks, and withhold an untrusted player's text as `withheld from=<name>` before `Observations` and `Events` see it (D2), the agent's own player and system messages passing; verify with unit tests of the decision and that `messages match=` can't see withheld text
 - [x] 1.3 Detect servers that don't verify accounts (D3) and trust nobody but the agent's own player there; verify with unit tests of the offline-UUID check
 - [x] 1.4 Add the `trust` query, taking no arguments, and `BlockpilotApi.isTrusted(UUID)` (D6); verify with unit tests, that `trust add Mallory` answers `err syntax`, and that the 2.0.0 API fixture test still passes; document `trust`, withheld chat and setting trust in the config file in docs/commands.md and `isTrusted` in docs/extending.md
-- [ ] 1.5 Reload `trustedPlayers` and `agentCommands` when the config file changes (D7), within a second and without writing the file, keeping the last good settings on a broken file with one logged error; verify with unit tests of the reload decision
+- [x] 1.5 Reload `trustedPlayers` and `agentCommands` when the config file changes (D7), within a second and without writing the file, keeping the last good settings on a broken file with one logged error; verify with unit tests of the reload decision
 - [ ] 1.6 Add the development-only `-Pblockpilot.trustUnverified` switch (D3) through the platform seam, ignored in production and on the vanilla targets, with `trust` reporting `trust_unverified`; verify with unit tests and that the 1.21.1 NeoForge and Fabric dev runs pass the property
 
 ## 2. Play-only agents (agent-safety)

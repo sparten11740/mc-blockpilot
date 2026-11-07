@@ -43,25 +43,9 @@ public final class Trust {
         return trusts(sender, name) ? null : "withheld from=" + (name != null ? name : sender);
     }
 
-    /** False when the player was trusted already. */
-    public boolean add(String name) {
-        if (keys.contains(key(name))) {
-            return false;
-        }
-        List<String> changed = new ArrayList<>(names);
-        changed.add(name);
-        setNames(changed);
-        return true;
-    }
-
-    /** False when the player wasn't trusted. */
-    public boolean remove(String name) {
-        List<String> changed = new ArrayList<>(names);
-        if (!changed.removeIf(trusted -> key(trusted).equals(key(name)))) {
-            return false;
-        }
-        setNames(changed);
-        return true;
+    /** The list as the config file has it now. */
+    public void set(Collection<String> trusted) {
+        setNames(new ArrayList<>(trusted));
     }
 
     /** As the person wrote them. */
