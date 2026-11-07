@@ -19,23 +19,21 @@ what it may do in the game. The docs don't warn about it either.
   server, agents see other players' chat text only once those players are
   trusted. Single-player play and testing are unaffected, and system and
   mod messages pass as before.
-- A person at the agent's game can change the list in its config, or with
-  `/blockpilot trust <player>`, `/blockpilot untrust <player>` and
-  `/blockpilot trusted` typed in chat. A change is saved to the config at
-  once. These commands take effect only when a person types them. Sent for
-  an agent, through `cmd`, `chat` or keys typed into the chat screen, they
-  are refused with `err not_allowed`, and no agent command changes the
-  list.
+- Trust is set in `config/blockpilot/config.json` only. A change to the
+  file takes effect within a second, without a restart. No command, in the
+  game or from an agent, changes it.
 - On a server that doesn't verify accounts, where anyone can take any
-  name, nobody but the agent's own player counts as trusted.
+  name, nobody but the agent's own player counts as trusted. Only a
+  development run launched with `-Pblockpilot.trustUnverified` applies the
+  list there, so offline dev accounts can test it.
 - The read-only query `trust` tells agents whom the list trusts.
 - `agentCommands: "play"` in the config limits agents to playing as a
   player. Commands that reach beyond the game in front of them are refused
   with `err not_allowed <command>`: slash commands, the integrated server,
   world files, mod configs, files written to disk, switching worlds or
-  servers, and quitting. A slash command typed into the chat screen on an
-  agent's behalf isn't sent. The default stays `all`, as testing mods needs
-  these commands.
+  servers, and quitting. A slash command an agent types into the chat
+  screen or clicks in chat isn't sent. The default stays `all`, as testing
+  mods needs these commands.
 - `blockpilot-api` 2.1.0 lets extensions ask whether a player is trusted.
   The voice add-on then hears only trusted players. 2.1.0 isn't released
   yet, so this needs no new version.
@@ -43,35 +41,35 @@ what it may do in the game. The docs don't warn about it either.
   - what each setting does
   - that text from players is untrusted input, chat with senders the
     server relays as system messages included
-  - that the agent taking requests from players should run with
-    Blockpilot's tools only, with a ready permission setup for Claude Code
-- The README, `docs/commands.md` and the CHANGELOG say the same.
+  - the agent's own setup, checked against Claude Code's docs: Blockpilot's
+    tools only, no bypass modes, and a separate user, VM or container as
+    the strongest option
+- A short "Security" section in the README, and `docs/commands.md` and the
+  CHANGELOG, say the same.
+- `tools/security_smoke_test.py` checks all of it on every target, on its
+  own or after the smoke test.
 
 ## Capabilities
 
 ### New Capabilities
-- `agent-safety`: trusted players, empty by default, and how a person sets
-  them; withheld chat; unverified servers; and the play-only command
-  profile.
+- `agent-safety`: trusted players set in the config file, empty by default
+  and reloaded on change; withheld chat; unverified servers; and the
+  play-only command profile.
 
 ### Modified Capabilities
 - `extension-api`: extensions can read whether a player is trusted.
 
 ## Impact
 
-- `protocol/Config.java`: `trustedPlayers` and `agentCommands`, saved
-  when the list changes.
+- `protocol/Config.java`: `trustedPlayers` and `agentCommands`, reread
+  when the file changes.
 - The chat hooks of both loaders and the vanilla targets: the sender
   passed with player chat, so `Observations` and `Events` can withhold
   its text.
-- A `/blockpilot` client command on each loader, and on the vanilla
-  targets through the chat screen. It checks that no agent input reached
-  the chat screen it came from.
-- `Engine`/`CommandRegistry`: the play profile's refusals. `TalkCommands`
-  and the chat-screen send path: slash commands for agents.
+- `Engine`: the play profile's refusals at parse time. A mixin on the
+  client's slash-command sending, and `Refusal`, through which a dropped
+  command fails the step that sent it.
 - `dev.blockpilot.api`: `BlockpilotApi.isTrusted(UUID)`.
-- `tools/smoke_test.py` and the two-client runs: the second client's chat
-  withheld until trusted. Runs that need its chat trust it in the first
-  client's config before launch.
-- `docs/safety.md`, the README, `docs/commands.md`, `docs/extending.md`
-  and the CHANGELOG.
+- `tools/security_smoke_test.py`, and `--suite` in `tools/test_targets.py`.
+- `docs/safety.md`, the README, `docs/commands.md`, `docs/extending.md`,
+  `docs/dev-environment.md` and the CHANGELOG.
