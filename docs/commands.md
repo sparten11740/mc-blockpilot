@@ -97,7 +97,8 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
 
 `sounds` and `messages` add `from=<tick>`, where their log begins, when it dropped some of the asked window. `sounds`,
 `messages` and `particles` name the ticks they cover as `window=t<first>..t<now>`; a bare `since=` tick from before
-the world was joined adds `joined=t<tick>`, since `100t`, not `100`, counts back.
+the world was joined adds `joined=t<tick>`, since `100t`, not `100`, counts back. Entering a world, even the one just
+left, starts their logs anew, as their ticks are that world's; until the next world, they keep the last one's.
 
 Video and sound options an agent changes with `option` (graphics, render distance, particles, `hud`, sound volumes, …)
 apply at once, are never written to `options.txt`, and are put back when the player or the agent leaves the world, when

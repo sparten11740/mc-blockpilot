@@ -48,7 +48,8 @@ through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built a
 - **Fixes:** `server function` of a function without `return` answers `ok`, not `err command_failed`. `wait <N>t`
   waits N ticks, where it waited one fewer, so scripts that allowed for that run a tick longer per wait. On 26.x,
   `screenshot` now names a placed camera's position. A command line the launcher can't read prints one line saying
-  what is wrong, not its whole usage text first.
+  what is wrong, not its whole usage text first. Entering a world starts the sound, message and particle logs anew, so
+  `since=` no longer lists an earlier world's entries, whose ticks could lie in the new world's future.
 - **Extension API:** `Form.repeated(limit, group)` declares a part that may come several times, read back with
   `Args.values` and `Args.positions`. An `ArgType.ENTITY` slot takes `@<name>` too, looked up before the handler
   runs, so the handler still reads an id; `Lexicon.isEntityName` tells a name. `CommandContext.atEnd(action)` runs an

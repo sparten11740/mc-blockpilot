@@ -39,4 +39,18 @@ class TickLogTest {
         assertNull(log.from(21));
         assertNull(log.from(45));
     }
+
+    @Test
+    void clearedItHoldsNothingAndHasDroppedNothing() {
+        for (long tick = 1; tick <= 5; tick++) {
+            log.add(tick);
+        }
+        log.clear();
+        assertEquals(List.of(), log.since(Long.MIN_VALUE));
+        assertNull(log.oldest());
+        assertNull(log.from(Long.MIN_VALUE));
+        log.add(9L);
+        assertEquals(List.of(9L), log.since(Long.MIN_VALUE));
+        assertNull(log.from(Long.MIN_VALUE));
+    }
 }

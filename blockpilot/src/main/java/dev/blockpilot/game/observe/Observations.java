@@ -122,8 +122,19 @@ public final class Observations {
         }
     }
 
-    public static void joined(long tick) {
+    /**
+     * Notes the tick the player entered a world at, and starts the logs anew, as their ticks are that world's game
+     * time, which another world, or a new one under an old name, counts afresh.
+     */
+    public static synchronized void joined(long tick) {
         joinedTick = tick;
+        SOUND_LOG.clear();
+        MESSAGE_LOG.clear();
+        STARTED.clear();
+        PARTICLES.clear();
+        particlesDroppedThrough = null;
+        LAST_TEXT.clear();
+        LAST_TICK.clear();
     }
 
     public static Long joinedTick() {
