@@ -3,7 +3,9 @@ package dev.blockpilot.api;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,7 @@ public final class BlockpilotApi {
 
     private static final List<Registration> REGISTRATIONS = new ArrayList<>();
     private static volatile Consumer<Event> eventSink = event -> { };
+    private static volatile Predicate<UUID> trusted = player -> false;
     private static boolean frozen;
 
     private BlockpilotApi() {
@@ -61,10 +64,26 @@ public final class BlockpilotApi {
         eventSink.accept(Event.of(namespace + ":" + name, fields));
     }
 
+    /**
+     * Whether Blockpilot counts the player as trusted: on the trusted players list in its config file, or the agent's
+     * own player, and never on a server that doesn't verify accounts. An extension that turns players' words into
+     * agent input, such as speech, should pass on only trusted players'. False while Blockpilot isn't running. New in
+     * 2.1.0.
+     */
+    public static boolean isTrusted(UUID player) {
+        return trusted.test(player);
+    }
+
     /** Blockpilot's side: takes the registrations once loading completes; later ones are rejected. */
     public static synchronized List<Registration> freeze(Consumer<Event> sink) {
+        return freeze(sink, player -> false);
+    }
+
+    /** As {@link #freeze(Consumer)}, with the client's judgement of whom it trusts. */
+    public static synchronized List<Registration> freeze(Consumer<Event> sink, Predicate<UUID> trust) {
         frozen = true;
         eventSink = sink;
+        trusted = trust;
         return Collections.unmodifiableList(new ArrayList<>(REGISTRATIONS));
     }
 }

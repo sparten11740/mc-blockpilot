@@ -15,6 +15,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +86,13 @@ class ExtensionApiTest {
         BlockpilotApi.register("late", CommandSpec.query("x", (context, args) -> Result.ok()));
         assertTrue(BlockpilotApi.freeze(engine::broadcast).stream()
             .noneMatch(registration -> registration.namespace().equals("late")));
+
+        // Whom the client trusts, as extensions read it: nobody until Blockpilot says.
+        UUID steve = UUID.randomUUID();
+        assertFalse(BlockpilotApi.isTrusted(steve));
+        BlockpilotApi.freeze(engine::broadcast, steve::equals);
+        assertTrue(BlockpilotApi.isTrusted(steve));
+        assertFalse(BlockpilotApi.isTrusted(UUID.randomUUID()));
 
         Session session = engine.openSession();
         assertEquals("ok speed=5", Formatter.text(engine.submit(session, null, "sample:info").join()));
