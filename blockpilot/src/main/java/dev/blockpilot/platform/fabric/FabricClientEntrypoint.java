@@ -15,7 +15,6 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 //? if >=26.1 {
 /*import net.minecraft.resources.ResourceLocation;
@@ -45,13 +44,7 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             if (judged == message) {
                 return true;
             }
-            //? if >=26.2 {
-            /*Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(judged);
-            *///?} else if >=26.1 {
-            /*Minecraft.getInstance().gui.getChat().addClientSystemMessage(judged);
-            *///?} else {
-            Minecraft.getInstance().gui.getChat().addMessage(judged);
-            //?}
+            ClientPlatform.showLocal(judged);
             ClientPlatform.hooks().onChatReceived(judged);
             return false;
         });

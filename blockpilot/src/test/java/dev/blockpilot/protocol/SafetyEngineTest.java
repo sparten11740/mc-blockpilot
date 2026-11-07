@@ -3,6 +3,7 @@ package dev.blockpilot.protocol;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.blockpilot.api.Action;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandSpec;
@@ -35,6 +36,25 @@ class SafetyEngineTest {
         registry.register(action("delete").keyword("what", "world").arg("folder", ArgType.TEXT));
         registry.register(action("perf").form(form -> form.keyword("op", "start", "stop", "status"))
             .form(form -> form.arg("for", ArgType.DURATION)));
+        registry.register(CommandSpec.action("press", (context, args) -> {
+            ran.add("press");
+            return new Action() {
+                @Override
+                public Result tick() {
+                    Refusal.raise("not_allowed", "cmd");
+                    return Result.ok();
+                }
+
+                @Override
+                public void cancel() {
+                    ran.add("press cancelled");
+                }
+            };
+        }));
+        registry.register(CommandSpec.action("type", (context, args) -> {
+            Refusal.raise("not_allowed", "cmd");
+            return () -> Result.ok();
+        }));
         registry.addExtensions(List.of(new BlockpilotApi.Registration("mymod", "mymod",
             action("gear").freeze())));
         engine = new Engine(registry, game);
@@ -98,6 +118,19 @@ class SafetyEngineTest {
         assertEquals("err not_allowed perf", run("perf 1s"));
         assertEquals("err not_allowed perf", run("perf start"));
         assertEquals("ok", run("perf status"));
+    }
+
+    @Test
+    void aCommandHeldBackOnItsWayFailsTheStepThatSentIt() {
+        assertEquals("err not_allowed cmd\nskip", run("press; jump"));
+        assertEquals(List.of("press", "press cancelled"), ran);
+        assertEquals("err not_allowed cmd", run("type"));
+    }
+
+    @Test
+    void aStaleRefusalFailsNothing() {
+        Refusal.raise("not_allowed", "cmd");
+        assertEquals("ok", run("jump"));
     }
 
     @Test

@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Camera;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -189,6 +190,17 @@ public final class ClientPlatform {
 
     public static boolean developmentEnvironment() {
         return services().developmentEnvironment();
+    }
+
+    /** Adds a line to this game's chat window only: nothing goes to the server, and agents get no event for it. */
+    public static void showLocal(Component line) {
+        //? if >=26.2 {
+        /*Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(line);
+        *///?} else if >=26.1 {
+        /*Minecraft.getInstance().gui.getChat().addClientSystemMessage(line);
+        *///?} else {
+        Minecraft.getInstance().gui.getChat().addMessage(line);
+        //?}
     }
 
     public static Path gameDir() {

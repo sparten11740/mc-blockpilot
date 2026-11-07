@@ -2,7 +2,10 @@ package dev.blockpilot.game.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.blockpilot.game.common.ClientScreens;
+import java.lang.ref.WeakReference;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Sends input to the game the way the window system would: through vanilla's mouse and keyboard handlers, so the game
@@ -31,6 +34,8 @@ public final class Injection {
 
 
     private static int depth;
+    /** The chat screen Blockpilot's input last reached, so a command sent from it counts as the agent's. */
+    private static WeakReference<Screen> chatReached = new WeakReference<>(null);
 
     private Injection() {
     }
@@ -39,12 +44,26 @@ public final class Injection {
         return depth > 0;
     }
 
+    /** Whether Blockpilot's own input reached this chat screen since it opened. */
+    public static boolean reachedChat(Screen screen) {
+        return screen != null && chatReached.get() == screen;
+    }
+
     private static void run(Runnable injection) {
+        noteChat();
         depth++;
         try {
             injection.run();
         } finally {
             depth--;
+            // Also a chat screen the injection itself opened.
+            noteChat();
+        }
+    }
+
+    private static void noteChat() {
+        if (ClientScreens.current() instanceof ChatScreen chat) {
+            chatReached = new WeakReference<>(chat);
         }
     }
 

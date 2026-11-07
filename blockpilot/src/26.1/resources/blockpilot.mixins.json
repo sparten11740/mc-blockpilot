@@ -54,6 +54,7 @@
     "SelectionListAccessor",
     "ServerChunkCacheMixin",
     "ServerLevelMixin",
+    "SlashCommandMixin",
     "SoundEngineAccessor",
     "SoundEngineMixin",
     "SoundManagerAccessor"
