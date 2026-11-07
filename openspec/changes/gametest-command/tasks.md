@@ -6,9 +6,10 @@
 
 ## 2. GameTests (server-bridge)
 
-- [ ] 2.1 Add the tests the smoke check runs (D3): on 26.x a data pack with a passing and a failing block-based test, written into the smoke world before joining it again; on 1.21.1 Blockpilot's own two tests in a source set only the dev runs include, registered through `GameTestRegistry.register`, on NeoForge only with GameTests enabled, which its dev runs turn on; add a smoke check for the spec's scenarios, ending with `server test clearall`, and a unit test of the adapter's choice of answer for the Not enabled scenario, which no dev run reaches; verify the data pack's tests load after joining again, and that the check fails with `err syntax` for `gametest` before the change
+- [ ] 2.1 Add the tests the smoke check runs (D3): on 26.x a data pack with a passing and a failing block-based test, written into the smoke world before joining it again; on 1.21.1 Blockpilot's own two tests as ready-made `TestFunction`s in a source set only the 1.21.1 dev runs include, with their empty template written into the world's `generated` folder; turn GameTests on in every NeoForge dev run; add a smoke check for the spec's scenarios, ending with `server test clearall`, and a unit test of the choice of answer for the Not enabled scenario, which no dev run reaches; verify the data pack's tests load after joining again, and that the check fails with `err syntax` for `gametest` before the change
 - [ ] 2.2 Add `gametest run` over the 1.21.1 and 26.x adapters (D2), with its help and `err no_test` in the error table; verify the check passes on every target
-- [ ] 2.3 Describe it in the help, `docs/commands.md`, the README and the 1.1.0 section of `CHANGELOG.md`; regenerate the grammar files; verify the grammar checks pass
+- [ ] 2.3 Have `join world` and `snapshot save` and `restore`, when the game asks about experimental settings, load a test world without a backup with `experimental=true` and fail with `err join_failed` for any other world, the question left on screen, leaving other backup questions alone (D4); verify the smoke check's rejoin of its world with the data pack on 26.3, and the failure for a world not made by `create world`
+- [ ] 2.4 Describe it in the help, `docs/commands.md`, the README and the 1.1.0 section of `CHANGELOG.md`; regenerate the grammar files; verify the grammar checks pass
 
 ## 3. Integration checks
 
