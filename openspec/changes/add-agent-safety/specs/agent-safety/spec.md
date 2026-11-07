@@ -101,11 +101,11 @@ vanilla targets SHALL ignore it.
 
 ### Requirement: Play-only agents
 With `agentCommands` set to `play` in the config, a script with any of
-`cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`,
-`perf start`, `load`, `create world`, `delete world`, `join`, `leave` or
-`quit` SHALL fail before running any step, with `err not_allowed
-<command>`. Other commands, extension commands included, SHALL work as
-before. The default, `all`, SHALL refuse nothing.
+`cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`
+in any form, `perf` in any form but `perf status`, `load`, `create world`,
+`delete world`, `join`, `leave` or `quit` SHALL fail before running any
+step, with `err not_allowed <command>`. Other commands, extension commands
+included, SHALL work as before. The default, `all`, SHALL refuse nothing.
 
 #### Scenario: A slash command refused
 - **WHEN** `agentCommands` is `play` and an agent runs `goto 0,64,0; cmd
@@ -116,6 +116,12 @@ before. The default, `all`, SHALL refuse nothing.
 #### Scenario: Playing goes on
 - **WHEN** `agentCommands` is `play` and an agent runs `mine #logs x3`
 - **THEN** the logs are mined as before
+
+#### Scenario: Captures to disk refused, reading allowed
+- **WHEN** `agentCommands` is `play` and an agent runs `perf 1s`, then
+  `perf status`
+- **THEN** `perf 1s` fails with `err not_allowed perf`, and `perf status`
+  answers as before
 
 ### Requirement: No slash commands sent for play-only agents
 With `agentCommands` set to `play`, a slash command the agent sends any

@@ -98,7 +98,8 @@ set, and fails the script before any step runs. This is the same point as
 a syntax error, so nothing half-runs. The set is a list in one place,
 named by the command words as the registry knows them:
 - `cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`
-- `record`, `perf start`, `load`
+- `record` in every form; `perf` in every form but `perf status`, as a
+  timed capture and `perf start`/`stop` write to disk like `record`; `load`
 - `create world`, `delete world`, `join`, `leave`, `quit`
 
 Extension commands are allowed. The person who installed the mod chose
