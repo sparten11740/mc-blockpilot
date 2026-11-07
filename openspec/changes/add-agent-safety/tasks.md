@@ -11,7 +11,7 @@
 
 ## 2. Play-only agents (agent-safety)
 
-- [ ] 2.1 Refuse the D5 command set at parse time under `agentCommands: "play"`, nested steps included, with `err not_allowed <command>` before any step runs; verify with unit tests on the engine, including a refused step after an allowed one and inside `if`
+- [x] 2.1 Refuse the D5 command set at parse time under `agentCommands: "play"`, nested steps included, with `err not_allowed <command>` before any step runs; verify with unit tests on the engine, including a refused step after an allowed one and inside `if`
 - [ ] 2.2 Drop slash commands sent with agent origin under `play` at the send hooks, `sendCommand` and the click-event path of each version (D8), and fail the sending step with `err not_allowed cmd` through `Refusal`; verify with unit tests of the refusal in `ScriptJob` and in a 1.21.1 NeoForge dev client that an agent's `/say hi` typed into chat isn't sent; document the profile in docs/commands.md
 
 ## 3. Safety guide

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -53,6 +54,8 @@ public final class Engine {
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
     private final Parser parser;
+    /** agentCommands is play: scripts with a command beyond playing fail before running (PlayProfile). */
+    private volatile boolean playOnly;
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -67,6 +70,10 @@ public final class Engine {
 
     CommandRegistry registry() {
         return registry;
+    }
+
+    public void setPlayOnly(boolean value) {
+        playOnly = value;
     }
 
     GameBridge game() {
@@ -113,6 +120,15 @@ public final class Engine {
             List<Result> results = lines.stream().map(line -> line.error() != null && !line.soft()
                 ? Result.error("syntax", line.error()) : Result.skip()).toList();
             return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
+        }
+        if (playOnly) {
+            List<String> refused = lines.stream()
+                .map(line -> line.statement() == null ? null : PlayProfile.refusal(line.statement())).toList();
+            if (refused.stream().anyMatch(Objects::nonNull)) {
+                List<Result> results = refused.stream()
+                    .map(command -> command != null ? Result.error("not_allowed", command) : Result.skip()).toList();
+                return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
+            }
         }
         ScriptJob job = new ScriptJob(this, session, id, lines);
         if (job.hasAction()) {
