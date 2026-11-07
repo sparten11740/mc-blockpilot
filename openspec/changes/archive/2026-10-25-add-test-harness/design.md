@@ -274,7 +274,7 @@ singleplayer, otherwise the client level's. Every tick number in a reply uses
 it: `tick` commands, sample rows, waits, and the observation logs with their
 `since=`. The client's own copy lags the server's by a tick or more, and
 mixing the two made a `since=` taken from `tick query` miss events (reported by
-the Aerolarge play-tester). Observation entries recorded on the client thread
+a play-testing agent). Observation entries recorded on the client thread
 read the server's counter, a plain monotonic long.
 
 ## Risks / Trade-offs

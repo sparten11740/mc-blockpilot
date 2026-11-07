@@ -18,8 +18,8 @@ position SHALL be relative to where the player stands when the query runs, and
 its JSON SHALL add `at_abs`, the absolute position the sound started at.
 
 #### Scenario: Gear sound verified
-- **WHEN** a mod plays `aerolarge:gear_extend` at the landing gear and an agent
-  then runs `sounds since=<tick> match=aerolarge:*`
+- **WHEN** a mod plays `mymod:gear_extend` at the landing gear and an agent
+  then runs `sounds since=<tick> match=mymod:*`
 - **THEN** a row lists the sound with its category, position relative to the
   player, volume and pitch
 

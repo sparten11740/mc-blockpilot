@@ -9,7 +9,7 @@ cancel run on server ticks. Such commands follow the server-bridge gate and can
 be used with `clock=server` in `sample` and `wait`.
 
 #### Scenario: Server-side build command
-- **WHEN** an extension registers `aerolarge:build` as a server-thread action
+- **WHEN** an extension registers `mymod:build` as a server-thread action
   and an agent runs it in a cheats-enabled singleplayer world
 - **THEN** the handler runs on the server thread, and the result returns after
   the build has finished

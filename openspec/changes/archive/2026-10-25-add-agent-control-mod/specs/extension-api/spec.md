@@ -17,9 +17,9 @@ fields, help text, and one example, which must parse. A registered declaration
 can't be changed afterwards.
 
 #### Scenario: Registered command is callable
-- **WHEN** a mod with id `aerolarge` registers an action `build` taking a
+- **WHEN** a mod with id `mymod` registers an action `build` taking a
   position and a direction
-- **THEN** `aerolarge:build 0,-60,0 south` runs that mod's handler, and the
+- **THEN** `mymod:build 0,-60,0 south` runs that mod's handler, and the
   result comes back in the session's format
 
 ### Requirement: Namespaced command names

@@ -17,14 +17,14 @@ returns once the player can act. Defaults are `flat`, `peaceful` and
 `creative`. A name that already exists fails with `err exists`.
 
 #### Scenario: Flat peaceful world
-- **WHEN** an agent runs `create world aerolarge-test flat peaceful
+- **WHEN** an agent runs `create world mymod-test flat peaceful
   rule:doDaylightCycle=false`
 - **THEN** a flat, peaceful world with commands allowed and the daylight cycle
-  off is created and joined, and the result is `ok joined aerolarge-test`
+  off is created and joined, and the result is `ok joined mymod-test`
 
 #### Scenario: Name taken
-- **WHEN** a save folder named `aerolarge-test` already exists
-- **THEN** `create world aerolarge-test` fails with `err exists` and the
+- **WHEN** a save folder named `mymod-test` already exists
+- **THEN** `create world mymod-test` fails with `err exists` and the
   existing world is untouched
 
 ### Requirement: Blockpilot-created worlds are marked
@@ -81,5 +81,5 @@ not_test_world`, and a loaded one with `err syntax` asking to leave first.
 - **THEN** the result is `err not_test_world`, and the save is untouched
 
 #### Scenario: Delete a test world
-- **WHEN** an agent runs `leave; delete world aerolarge-test`
+- **WHEN** an agent runs `leave; delete world mymod-test`
 - **THEN** the test world's save folder and its snapshots are removed

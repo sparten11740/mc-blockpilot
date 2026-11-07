@@ -39,7 +39,7 @@ screenshots, structured results and condition-based waits.
 - **Condition waits**: `wait <query> until <predicate>` re-runs a read-only
   command each tick until its fields match, which replaces `sleep`-based timing.
 - An **extension API** so other mods (and Blockpilot's own compat modules) can
-  register namespaced commands and events, for example `aerolarge:build` or
+  register namespaced commands and events, for example `mymod:build` or
   `sable:info`, that behave exactly like built-in ones. It ships as a
   compile-only, Minecraft-version-independent `blockpilot-api` artifact.
 - **Perception**: player status, surroundings (entities, notable blocks,

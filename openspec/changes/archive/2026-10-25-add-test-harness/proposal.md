@@ -55,7 +55,7 @@ after it.
     Blockpilot as a runtime dependency.
 - **Server-side extension handlers**: extension commands can declare that they
   run on the integrated server thread (queries and actions), so integrations
-  like `aerolarge:build` touch the server world safely.
+  like `mymod:build` touch the server world safely.
 - **Safety gate**: everything above that reads or changes server state works
   only in a singleplayer world that allows commands (cheats on). Elsewhere it
   fails with `err no_cheats` or `err no_server`. Agents playing a normal

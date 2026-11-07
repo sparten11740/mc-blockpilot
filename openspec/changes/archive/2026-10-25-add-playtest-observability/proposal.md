@@ -2,9 +2,9 @@
 
 ## Why
 
-The first agent play-testing a mod with Blockpilot (Aerolarge: a Create/Sable
-airliner with landing gear, air pockets, lightning and a laser) told us what it
-could not verify. It can't hear, so it needs a log of every sound the client
+The first agent play-testing a mod with Blockpilot (an aircraft mod with
+landing gear, air pockets, lightning and a laser) told us what it could not
+verify. It can't hear, so it needs a log of every sound the client
 plays. Effects last a few ticks, so a single screenshot misses them. Outside
 views need the camera placed somewhere other than the player's eyes. Camera
 shake and roll applied by mods are invisible in the player's own rotation.
