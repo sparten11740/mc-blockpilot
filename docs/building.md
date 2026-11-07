@@ -53,16 +53,18 @@ Measured on a dev client: `status` round trip over the line protocol about 15-30
 python3 tools/test_targets.py
 python3 tools/test_targets.py --targets 26.3-fabric,26.3-neoforge
 python3 tools/test_targets.py --baritone --targets 1.21.1-neoforge,26.3-fabric
+python3 tools/test_targets.py --suite security --targets 1.21.1-neoforge
 ```
 
 One target at a time, this builds it with its unit tests, checks its jar, starts its dev client, runs
-`tools/smoke_test.py` in text and JSON mode, and closes the client. It ends with a table of the targets and exits
-non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after it. JSON
-shapes must match those of the other targets of the loader, where the vanilla targets count as Fabric, as saved in
-`build/test-targets/<target>/` along with the logs. All the targets take about 25 minutes. Leave the game windows alone
-meanwhile: real input takes control back from the test. Ctrl-C closes the client under way, and a target whose client
-is already running fails rather than start a second one. It runs on macOS and Linux; on Windows it can't yet stop a
-client, so it refuses to start.
+`tools/smoke_test.py` in text and JSON mode and then `tools/security_smoke_test.py`, and closes the client. `--suite
+smoke` or `--suite security` runs only one of the two (the default is `all`). It ends with a table of the targets and
+exits non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after
+it. JSON shapes must match those of the other targets of the loader, where the vanilla targets count as Fabric, as saved
+in `build/test-targets/<target>/` along with the logs. All the targets take about 25 minutes. Leave the game windows
+alone meanwhile: real input takes control back from the test. Ctrl-C closes the client under way, and a target whose
+client is already running fails rather than start a second one. It runs on macOS and Linux; on Windows it can't yet stop
+a client, so it refuses to start.
 
 With `--baritone`, each client starts with Baritone and the smoke test runs only its check that `goto` and `mine` walk
 through it, as the other steps expect the built-in pathfinder; without a list, on every target with a Baritone build.
@@ -72,6 +74,12 @@ the game: what each mouse button does to a block and a slot, the camera, the cur
 game polls, that frames and videos are upright, the HUD, and perf timings. Recording needs ffmpeg, and recording with
 sound the game's audio capture. Without one those checks are reported as skipped, but a target fails if it skips what
 another ran.
+
+`tools/security_smoke_test.py --game-dir <run dir> [--json]` runs the security checks against a game already running:
+nobody trusted by default, `trustedPlayers` and `allowedExtensions` read from the config file within a second, no
+command that changes them, and `agentCommands: "play"` down to slash commands an agent types, the screens its input
+reaches and links. It writes the client's config file for that and puts it back afterwards, also on a failure or Ctrl-C,
+so it can run before or after the smoke test. The two-client checks need `--clients 2` and are skipped without it.
 
 A script can't check real input taking control back, a real press of F8 (agents are refused it), or installing through
 the Minecraft Launcher or the CurseForge app, so those are tested by hand. Whether a video looks right beyond its
