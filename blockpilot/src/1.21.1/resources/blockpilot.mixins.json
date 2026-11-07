@@ -11,6 +11,7 @@
     "AwayPlaySoundCommandMixin",
     "AwayServerLevelMixin",
     "AwayTrackedEntityMixin",
+    "BackupConfirmScreenAccessor",
     "BlockEntityRenderDispatcherMixin",
     "BoundTickingBlockEntityMixin",
     "CameraMixin",

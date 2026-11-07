@@ -34,6 +34,10 @@ through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built a
   Its settings decide whether it breaks or places blocks: with `allowBreak` and `allowPlace` off, a walk alters
   nothing. Without Baritone they walk as before, and `mine` by type now walks closer to a block it can't see before
   passing over it. Pathfinders sit behind one port, so another pathfinding mod is one adapter more.
+- **Worlds with experimental settings:** when the game asks whether to back a world up first as it uses experimental
+  settings, as a data pack's GameTests make it, `join world`, and `snapshot save` and `restore`, which join the world
+  again, load a test world without a backup, with `experimental=true`, and fail at once with `err join_failed` for any
+  other world, the question left on screen, where they waited until they timed out.
 - **Fewer fields in a sample:** `sample … fields=a,b` keeps only those fields in each row, so a wide readout stays
   readable.
 - **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands

@@ -10,6 +10,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.game.common.ExperimentalWorlds;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,7 +49,10 @@ final class SessionCommands {
             .form(form -> form.keyword("kind", "server").arg("name", ArgType.INT, ArgType.WORD))
             .option("tick", "frozen: freeze a world's server before its first tick, so it reads as saved until "
                 + "tick unfreeze or tick step", List.of("frozen"))
-            .help("joins a save folder or a server (list index or address); returns once the player can act")
+            .help("joins a save folder or a server (list index or address); returns once the player can act. When the "
+                + "game asks whether to back a world up first as it uses experimental settings, as a data pack's "
+                + "GameTests make it, a test world loads without a backup, with experimental=true, and any other "
+                + "world fails with err join_failed, the question left on screen")
             .example("join world New World"));
         registry.register(CommandSpec.action("leave", (context, args) -> leave()).group("session")
             .help("saves and quits singleplayer or disconnects, back to the title screen")
@@ -153,11 +157,14 @@ final class SessionCommands {
             ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft(),
                 ServerAddress.parseString(address), data, false, null);
         }
-        return new Joined(name);
+        return new Joined(name, world ? new ExperimentalWorlds(TestWorlds.isTestWorld(name)) : null);
     }
 
-    /** Waits until the player is in the world and can act, or the connection fails. */
-    private record Joined(String name) implements Action {
+    /**
+     * Waits until the player is in the world and can act, or the connection fails; a test world the game asks about for
+     * its experimental settings loads without a backup.
+     */
+    private record Joined(String name, ExperimentalWorlds experimental) implements Action {
         @Override
         public Result tick() throws CommandException {
             Minecraft minecraft = minecraft();
@@ -165,10 +172,20 @@ final class SessionCommands {
                 ServerCommands.freezeOnStart(null);
                 throw new CommandException("join_failed", describe(disconnected));
             }
+            if (experimental != null) {
+                try {
+                    experimental.answer(ClientScreens.current());
+                } catch (CommandException e) {
+                    ServerCommands.freezeOnStart(null);
+                    throw e;
+                }
+            }
             if (minecraft.player != null && minecraft.level != null
                 && (ClientScreens.current() == null || !Screens.type(ClientScreens.current()).equals("loading"))) {
                 ServerCommands.freezeOnStart(null);
-                return Result.ok(new Fields().put("joined", name, "joined " + name));
+                Fields fields = new Fields().put("joined", name, "joined " + name);
+                return Result.ok(experimental != null && experimental.experimental()
+                    ? fields.put("experimental", true) : fields);
             }
             return null;
         }
