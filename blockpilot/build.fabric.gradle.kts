@@ -121,3 +121,6 @@ tasks.processResources {
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))
+// Remapping a mod dependency to the development names drops the jars it declares nested; baritone.gradle.kts adds them.
+extra["remapsMods"] = !loomx.isUnobfuscated
+apply(from = treeDir.resolve("baritone.gradle.kts"))

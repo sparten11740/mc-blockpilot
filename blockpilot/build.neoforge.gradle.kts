@@ -113,3 +113,4 @@ tasks.processResources {
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))
+apply(from = treeDir.resolve("baritone.gradle.kts"))
