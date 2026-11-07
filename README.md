@@ -78,10 +78,10 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | | `sneak` | Sneak, or tap sneak |
 | | `sprint` | Sprint |
 | | `fly` | Fly in creative |
-| | `goto` | Walk to a position or entity along a path |
+| | `goto` | Walk to a position or entity along a path, through Baritone when it is installed |
 | interact | `use` | Use a block, entity or item |
 | | `attack` | Hit entities |
-| | `mine` | Break blocks by position or type |
+| | `mine` | Break blocks by position or type, walking to them through Baritone when it is installed |
 | | `place` | Place an item against a block |
 | inventory | `select` | Select a hotbar slot or item |
 | | `swap` | Swap two inventory slots |
@@ -165,5 +165,10 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
 
 Apache-2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The license doesn't cover the name Blockpilot: forks need
 a name of their own.
+
+[Baritone](https://github.com/cabaletta/baritone), which `goto` and `mine` walk through when the player has installed
+it, is cabaletta's, under LGPL-3.0. Blockpilot neither ships it nor compiles against it: it calls Baritone's public API
+at run time. Only dev runs with `-Pblockpilot.baritone` fetch it, from cabaletta's GitHub releases, checked against
+their checksums.
 
 Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.

@@ -89,8 +89,10 @@ final class MovementCommands {
             .option("near", "stop within this many blocks", ArgType.NUMBER)
             .help("walks there through loaded chunks (walk, step up 1, drop up to 3, swim, ladders; never digs). To a "
                 + "position without near=, fails at once with err no_path and why when the player can't stand in "
-                + "that cell (a block fills it, no room for the head, nothing to stand on, danger, an unloaded chunk)")
-            .field("took", "seconds").example("goto 120,64,-30"));
+                + "that cell (a block fills it, no room for the head, nothing to stand on, danger, an unloaded chunk). "
+                + "With Baritone installed, it walks through Baritone instead, which digs and places blocks on the way "
+                + "unless Baritone's allowBreak and allowPlace settings are off")
+            .field("took", "seconds").field("by", "baritone when Baritone walked").example("goto 120,64,-30"));
     }
 
     /**

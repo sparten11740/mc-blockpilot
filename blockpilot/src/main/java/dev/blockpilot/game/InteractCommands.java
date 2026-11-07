@@ -93,7 +93,9 @@ final class InteractCommands {
                 + "the n nearest <block|#tag>, also with states (oak_log[axis=x]); picks the best tool. A block the "
                 + "player can't break (bedrock outside creative, adventure mode) fails at once with err unbreakable; "
                 + "by type such blocks are passed over, as is one still out of sight after walking closer. A block at "
-                + "<pos> behind another fails with err out_of_reach naming what the crosshair hits")
+                + "<pos> behind another fails with err out_of_reach naming what the crosshair hits. With Baritone "
+                + "installed, the walks go through Baritone, which digs its way to blocks unless its allowBreak "
+                + "setting is off, and the reply adds by=baritone")
             .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)

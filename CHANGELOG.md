@@ -3,8 +3,8 @@
 ## 1.1.0 (unreleased)
 
 For filming: a camera that glides, follows, circles, zooms and tilts, one that films far from the player, entities taken
-by name, sounds where the camera hears them, and marks for the edit. `blockpilot-api` becomes 2.1.0, an addition, so
-integrations built against 2.0.0 keep working.
+by name, sounds where the camera hears them, and marks for the edit. With Baritone installed, `goto` and `mine` walk
+through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built against 2.0.0 keep working.
 
 - **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the camera
   to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed. It keeps
@@ -29,6 +29,11 @@ integrations built against 2.0.0 keep working.
   the reply carries the take's summary as `! record …`, so a failing step no longer leaves a recording running.
 - **Recording marks:** `record mark <label>` notes the video time and frame a script reached; `record stop` lists the
   marks, and `<name>.marks.json` keeps them beside the video.
+- **Baritone:** with [Baritone](https://github.com/cabaletta/baritone) installed, `goto` and `mine` by type walk
+  through it on their own, digging into closed rooms and to blocks behind walls, and their replies add `by=baritone`.
+  Its settings decide whether it breaks or places blocks: with `allowBreak` and `allowPlace` off, a walk alters
+  nothing. Without Baritone they walk as before, and `mine` by type now walks closer to a block it can't see before
+  passing over it. Pathfinders sit behind one port, so another pathfinding mod is one adapter more.
 - **Fewer fields in a sample:** `sample … fields=a,b` keeps only those fields in each row, so a wide readout stays
   readable.
 - **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands
