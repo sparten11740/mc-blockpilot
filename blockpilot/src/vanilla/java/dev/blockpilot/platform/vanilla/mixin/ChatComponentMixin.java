@@ -1,6 +1,7 @@
 package dev.blockpilot.platform.vanilla.mixin;
 
 import dev.blockpilot.platform.ClientPlatform;
+import dev.blockpilot.platform.vanilla.VanillaChat;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.network.chat.Component;
@@ -12,12 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Chat messages as they are shown, decorated with their sender. Only the chat listener adds them, for player and
- * disguised chat alike; system messages come through {@link ChatListenerMixin}.
+ * disguised chat alike, and names the player while it shows a player's line; system messages come through
+ * {@link ChatListenerMixin}.
  */
 @Mixin(ChatComponent.class)
 public abstract class ChatComponentMixin {
     @Inject(method = "addPlayerMessage", at = @At("HEAD"))
     private void blockpilot$chat(Component message, MessageSignature signature, GuiMessageTag tag, CallbackInfo info) {
-        ClientPlatform.hooks().onChatReceived(message);
+        ClientPlatform.hooks().onChatReceived(message, VanillaChat.sender);
     }
 }

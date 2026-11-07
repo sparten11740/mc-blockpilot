@@ -11,6 +11,7 @@ import java.util.Objects;
 //? if >=26.1 {
 /*import java.util.Set;
 *///?}
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Camera;
@@ -78,7 +79,8 @@ public final class ClientPlatform {
         default void onHudRender(GuiGraphics graphics) {
         }
 
-        default void onChatReceived(Component message) {
+        /** {@code sender}: the player whose chat it is, or null for system and mod messages. */
+        default void onChatReceived(Component message, UUID sender) {
         }
 
         default void onScreenInit(Screen screen) {

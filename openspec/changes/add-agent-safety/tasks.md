@@ -3,8 +3,8 @@
 ## 1. Trusted players (agent-safety)
 
 - [x] 1.1 Add `trustedPlayers` (empty by default) and `agentCommands` (`all` by default, or `play`) to `protocol/Config`, saved atomically when the list changes; verify with unit tests for the defaults, a round trip and an unknown `agentCommands` value
-- [ ] 1.2 Pass the sender with player chat from the NeoForge, Fabric and vanilla chat hooks, and withhold an untrusted player's text as `withheld from=<name>` before `Observations` and `Events` see it (D2), the agent's own player and system messages passing; verify with unit tests of the decision and that `messages match=` can't see withheld text
-- [ ] 1.3 Detect servers that don't verify accounts (D3) and trust nobody but the agent's own player there; verify with unit tests of the offline-UUID check
+- [x] 1.2 Pass the sender with player chat from the NeoForge, Fabric and vanilla chat hooks, and withhold an untrusted player's text as `withheld from=<name>` before `Observations` and `Events` see it (D2), the agent's own player and system messages passing; verify with unit tests of the decision and that `messages match=` can't see withheld text
+- [x] 1.3 Detect servers that don't verify accounts (D3) and trust nobody but the agent's own player there; verify with unit tests of the offline-UUID check
 - [ ] 1.4 Handle `/blockpilot trust <player>`, `untrust <player>` and `trusted` at the `sendCommand` hook on every target (D4), never sent to the server, with local replies, saved to the config, and taken only from a person: refused after agent input reached that chat screen, for an injected enter, from `cmd` and from `chat`, failing the agent's command with `err not_allowed`; verify with unit tests of the origin rules and in a 1.21.1 NeoForge dev client that typing it works while `cmd blockpilot trust X` and `type` plus `key enter` are refused
 - [ ] 1.5 Add the `trust` query and `BlockpilotApi.isTrusted(UUID)` (D6); verify with unit tests and that the 2.0.0 API fixture test still passes; document `trust`, withheld chat and `err not_allowed` in docs/commands.md and `isTrusted` in docs/extending.md
 
