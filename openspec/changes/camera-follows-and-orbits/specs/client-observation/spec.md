@@ -13,7 +13,7 @@ relative SHALL fail with `err syntax`.
 - **WHEN** an agent runs `camera at ~0,2,-6 look @walker; camera follow
   @walker`, then `server execute as @e[tag=walker] at @s run tp @s ~8 ~ ~;
   wait 5t; status`, with an armor stand tagged `walker` standing at `~3,0,3`
-- **THEN** `status` names the camera 8 blocks east of `~0,2,-6`
+- **THEN** `status` names the camera about 8 blocks east of `~0,2,-6`
 
 #### Scenario: An absolute offset
 - **WHEN** an agent runs `camera follow @walker at 0,2,-6`
@@ -41,7 +41,7 @@ drew it, looking the same way.
 - **WHEN** session B runs `stop` while session A's `camera follow @walker`
   is placed, and then `server execute as @e[tag=walker] at @s run tp @s ~8 ~
   ~; wait 5t; status`
-- **THEN** the camera moves 8 blocks east with it
+- **THEN** the camera moves about 8 blocks east with it
 
 #### Scenario: The entity goes
 - **WHEN** an agent runs `server kill @e[tag=walker]; wait 5t; status; wait
