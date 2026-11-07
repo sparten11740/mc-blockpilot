@@ -194,13 +194,18 @@ call.
 
 - `worlds`, `servers`: the saved worlds and the server list.
 - `join world|server <name>`: `join world tick=frozen <folder>` freezes the world's server before its first tick, so
-  it reads as saved until `tick unfreeze` or `tick step`.
+  it reads as saved until `tick unfreeze` or `tick step`. When the game asks before loading a world whether to back it
+  up first, as it does for a world whose data pack adds GameTests or other registry entries (experimental settings),
+  a test world made by `create world` loads without a backup, with `experimental=true`, and any other world fails at
+  once with `err join_failed`, the question left on screen for a person; other backup questions, such as for a world
+  last played in another version, are left alone.
 - `leave`: after a singleplayer world answers `saved_at=t<tick>`, the game time it was saved at.
 - `quit`: leaves, answers `ok pid=<pid>` and `saved_at` as `leave` does, and closes the game.
 - `respawn`: respawns from the death screen.
 - `create world <name> [flat|void|normal] …`: a new world with cheats on, joined when ready (by default flat,
   peaceful and creative).
-- `snapshot save|restore|delete <name>`, `snapshot list`: saves and restores a world's state.
+- `snapshot save|restore|delete <name>`, `snapshot list`: saves and restores a world's state. Joining a world with
+  experimental settings again, `snapshot save` and `restore` meet the game's question as `join world` does.
 - `delete world <folder>`: test worlds only.
 - `config`: the mods with NeoForge config files. `config <mod> [client|common|server|startup] [match=]` lists their
   values by dotted key. `config <mod> [<type>] <key> [<value>]` gives a value's default, what it takes and the mod's

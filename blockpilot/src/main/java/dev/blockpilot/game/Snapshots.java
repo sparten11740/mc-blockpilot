@@ -11,6 +11,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.game.common.ExperimentalWorlds;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -40,7 +41,8 @@ final class Snapshots {
             .form(form -> form.keyword("op", "save", "restore", "delete").arg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "list"))
             .help("copies of this world's whole save folder: save, restore and delete one by name, or list them; "
-                + "save and restore leave the world, copy, and join it again")
+                + "save and restore leave the world, copy, and join it again, meeting a question about experimental "
+                + "settings as join world does")
             .example("snapshot save base"));
         registry.register(CommandSpec.action("delete", this::delete).group("session")
             .keyword("what", "world").arg("folder", ArgType.TEXT)
@@ -144,16 +146,20 @@ final class Snapshots {
         }
         long bytes = size(restore ? save : snapshot);
         Minecraft.getInstance().createWorldOpenFlows().openWorld(folder, () -> { });
+        ExperimentalWorlds experimental = new ExperimentalWorlds(TestWorlds.isTestWorld(folder));
         return () -> {
             Minecraft minecraft = Minecraft.getInstance();
+            experimental.answer(ClientScreens.current());
             if (minecraft.player == null || minecraft.level == null
                 || ClientScreens.current() != null && Screens.type(ClientScreens.current()).equals("loading")) {
                 return null;
             }
-            double seconds = (System.nanoTime() - started) / 1e9;
-            return Result.ok(new Fields().put(restore ? "restored" : "saved", name, (restore ? "restored " : "saved ")
-                    + name).put("mb", megabytes(bytes), Numbers.format(megabytes(bytes)) + "MB")
-                .put("seconds", Math.round(seconds * 10) / 10.0, Numbers.format(Math.round(seconds * 10) / 10.0) + "s"));
+            double seconds = Math.round((System.nanoTime() - started) / 1e8) / 10.0;
+            String done = restore ? "restored" : "saved";
+            Fields fields = new Fields().put(done, name, done + " " + name)
+                .put("mb", megabytes(bytes), Numbers.format(megabytes(bytes)) + "MB")
+                .put("seconds", seconds, Numbers.format(seconds) + "s");
+            return Result.ok(experimental.experimental() ? fields.put("experimental", true) : fields);
         };
     }
 
