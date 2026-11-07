@@ -85,9 +85,10 @@ loom {
             // ./gradlew runClient -Pblockpilot.autojoin=<world> [-Pblockpilot.autocreate=flat] joins a world on launch;
             // -Pblockpilot.sable.version=<version> stands in for the Sable companion version found.
             // -Pblockpilot.trustUnverified trusts the config's players on servers that don't verify accounts, as the
-            // offline dev accounts' servers don't.
+            // offline dev accounts' servers don't. -Pblockpilot.devcheck=true registers devcheck:ping for
+            // tools/test_targets.py.
             val forwarded = listOf("blockpilot.autojoin", "blockpilot.autocreate", "blockpilot.sable.version",
-                "blockpilot.trustUnverified")
+                "blockpilot.trustUnverified", "blockpilot.devcheck")
             forwarded.forEach { key ->
                 providers.gradleProperty(key).orNull?.let { property(key, it) }
             }

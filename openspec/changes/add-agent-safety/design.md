@@ -218,8 +218,10 @@ is allowed or among the fixed namespaces Blockpilot's compat modules emit
 under (`sable`); a voice add-on's `voice:heard` reaches nobody until
 allowed. `help` lists such a namespace with a note naming the setting,
 so an agent can tell a person what to add, and `help grammar` leaves its
-commands out, as agents can't use them. Development runs register a
-stand-in, `devcheck:ping`, for the security smoke check to allow and call.
+commands out, as agents can't use them. A client started with
+`-Dblockpilot.devcheck=true`, as `tools/test_targets.py` starts every
+target's, vanilla included, registers a stand-in, `devcheck:ping`, for the
+security smoke check to allow and call.
 
 ## Risks / Trade-offs
 

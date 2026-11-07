@@ -148,11 +148,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         LogCapture.setSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
         SableSupport.start(registry);
-        if (ClientPlatform.developmentEnvironment()) {
-            // A development run's stand-in for another mod's command, for the check that allowedExtensions gates it.
+        if (Boolean.getBoolean("blockpilot.devcheck")) {
+            // A test run's stand-in for another mod's command, for the check that allowedExtensions gates it.
             BlockpilotApi.register("devcheck", "devcheck", CommandSpec.query("ping",
                 (context, args) -> Result.ok(new Fields().put("pong", true, "pong")))
-                .help("a development run's stand-in for another mod's command").example("devcheck:ping"));
+                .help("a test run's stand-in for another mod's command").example("devcheck:ping"));
         }
         registry.addExtensions(BlockpilotApi.freeze(engine::broadcastExtension, trust.trust()::trusts));
         HumanInput.setListener(this::onHumanInput);

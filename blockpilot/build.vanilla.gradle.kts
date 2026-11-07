@@ -67,7 +67,7 @@ neoForge {
         register("client") {
             client()
             jvmArguments.add(tasks.jar.flatMap { it.archiveFile }.map { "-javaagent:${it.asFile.absolutePath}" })
-            listOf("blockpilot.autojoin", "blockpilot.autocreate").forEach { key ->
+            listOf("blockpilot.autojoin", "blockpilot.autocreate", "blockpilot.devcheck").forEach { key ->
                 providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
             }
         }
