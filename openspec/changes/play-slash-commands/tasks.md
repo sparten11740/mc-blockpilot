@@ -12,7 +12,7 @@
 
 ## 3. Integration checks
 
-- [ ] 3.1 Update and add security smoke checks, restoring the config afterwards: under `play` with `playSlashCommands: ["fill"]`, `cmd fill ~ ~ ~ ~ ~ ~ stone` runs and `cmd op X` is refused naming `op`; an agent-typed `/fill` goes out and `/op` doesn't; `devcheck:ping` runs under `all` without `allowedExtensions` and is refused under `play`; verify on 1.21.1 NeoForge
+- [x] 3.1 Update and add security smoke checks, restoring the config afterwards: under `play` with `playSlashCommands: ["fill"]`, `cmd fill ~ ~ ~ ~ ~ ~ stone` runs and `cmd op X` is refused naming `op`; an agent-typed `/fill` goes out and `/op` doesn't; `devcheck:ping` runs under `all` without `allowedExtensions` and is refused under `play`; verify on 1.21.1 NeoForge
 - [ ] 3.2 Run `tools/test_targets.py --suite security` on all 11 targets; verify every target passes
 
 ## Workflow follow-up

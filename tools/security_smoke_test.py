@@ -4,12 +4,12 @@
     python3 tools/security_smoke_test.py --game-dir <run dir> [--json] [--clients 2]
 
 Checks who reaches the agent through the game and what the agent may do in it (docs/safety.md): nobody trusted by
-default, trustedPlayers read from config/blockpilot/config.json within a second, no command that changes trust, and
-the play profile (agentCommands: "play"), down to slash commands an agent types into the chat screen, the screens its
-input reaches and links, allowedExtensions for other mods' commands, and dangerouslyAllowAll lifting all of it. It
-writes the client's config file for that, restores it in the end, also on a failure or Ctrl-C, and waits for the client
-to read it back, so it leaves the client as it found it and can run before or after tools/smoke_test.py. It makes a
-throwaway flat world and deletes it again.
+default, trustedPlayers read from config/blockpilot/config.json within a second, no command that changes trust, and the
+play profile (agentCommands: "play"), down to slash commands an agent types into the chat screen, the screens its input
+reaches and links, the slash commands playSlashCommands lets through, allowedExtensions for other mods' commands under
+play, and dangerouslyAllowAll lifting all of it. It writes the client's config file for that, restores it in the end,
+also on a failure or Ctrl-C, and waits for the client to read it back, so it leaves the client as it found it and can
+run before or after tools/smoke_test.py. It makes a throwaway flat world and deletes it again.
 
 --json reads every reply as JSON instead of text. --clients 2 runs the two-client checks, which need the second client
 of the two-client test runs; without it, they are reported as skipped. Exit code 0 when every check passed; a check
@@ -144,9 +144,9 @@ def check_play_profile(game_dir, config, as_json, world):
         if [outcome[0] if outcome[0] != "err" else f"err {outcome[1]} {outcome[2]}" for outcome in outcomes] != wanted:
             problems.append(f"{script} answered {[outcome[3] for outcome in outcomes]}, not {wanted}")
 
-    expect("jump; cmd say hi", ["skip", "err not_allowed cmd"])
+    expect("jump; cmd say hi", ["skip", "err not_allowed cmd say"])
     expect("server time query gametime", ["err not_allowed server"])
-    expect("if status ok then cmd say hi", ["err not_allowed cmd"])
+    expect("if status ok then cmd say hi", ["err not_allowed cmd say"])
     expect(f"create world {world}-other flat", ["err not_allowed create world"])
     expect(f"delete world {world}", ["err not_allowed delete world"])
     expect("quit", ["err not_allowed quit"])
@@ -157,11 +157,38 @@ def check_play_profile(game_dir, config, as_json, world):
     expect("goto ~2,0,0", ["ok"])
     # Typed into the chat screen and sent with enter, as a person would.
     outcomes = steps(game_dir, "key t; wait 5t; type /say security-hi; key enter", as_json)
-    if [outcome[0] for outcome in outcomes] != ["ok", "ok", "ok", "err"] or not refused(outcomes[3], "cmd"):
+    if [outcome[0] for outcome in outcomes] != ["ok", "ok", "ok", "err"] or not refused(outcomes[3], "cmd say"):
         problems.append(f"an agent-typed /say answered {[outcome[3] for outcome in outcomes]}")
     _, said = run(game_dir, "wait 10t; ?close; messages since=5s match=*security-hi*", as_json=as_json)
     if "security-hi" in said and not as_json or as_json and '"count":0' not in said.replace(" ", ""):
         problems.append(f"the agent-typed /say reached the server: {said.strip()[:300]}")
+    return "; ".join(problems) or None
+
+
+def check_play_slash_commands(game_dir, config, as_json):
+    """Under play a slash command goes out only when playSlashCommands lists its root, by cmd or typed into chat."""
+    config.write(agentCommands="play", playSlashCommands=["fill"])
+    if until(lambda: play_applies(game_dir, as_json)) is None:
+        return f"agentCommands play wasn't in force after {RELOAD_SECONDS} s"
+    problems = []
+
+    def above():
+        return run(game_dir, "wait 10t; block ~0,3,0 side=server", as_json=as_json)[1]
+
+    filled = steps(game_dir, "cmd fill ~ ~3 ~ ~ ~3 ~ stone", as_json)[0]
+    if filled[0] != "ok" or "stone" not in above():
+        problems.append(f"cmd fill answered {filled[3]} and placed no stone")
+    op = steps(game_dir, "cmd op Mallory", as_json)[0]
+    if not refused(op, "cmd op"):
+        problems.append(f"cmd op answered {op[3]}")
+    typed = steps(game_dir, "key t; wait 5t; type /fill ~ ~3 ~ ~ ~3 ~ air; key enter", as_json)
+    run(game_dir, "wait 5t; ?close")
+    if [outcome[0] for outcome in typed] != ["ok", "ok", "ok", "ok"] or "stone" in above():
+        problems.append(f"an agent-typed /fill didn't go out: {[outcome[3] for outcome in typed]}")
+    typed = steps(game_dir, "key t; wait 5t; type /op Mallory; key enter", as_json)
+    run(game_dir, "wait 5t; ?close")
+    if [outcome[0] for outcome in typed] != ["ok", "ok", "ok", "err"] or not refused(typed[3], "cmd op"):
+        problems.append(f"an agent-typed /op answered {[outcome[3] for outcome in typed]}")
     return "; ".join(problems) or None
 
 
@@ -208,21 +235,23 @@ def check_play_links(game_dir, config, as_json):
 
 
 def check_extensions_allowed(game_dir, config, as_json):
-    """Another mod's command is refused until its namespace is in allowedExtensions, then works, also under play."""
+    """Another mod's command runs under all; under play it is refused until its namespace is in allowedExtensions."""
     _, overview = run(game_dir, "help")
     if "devcheck" not in overview:
         raise Skipped("no devcheck:ping in this run; a client started with -Dblockpilot.devcheck=true registers it")
-    before = steps(game_dir, "devcheck:ping", as_json)[0]
-    if not refused(before, "devcheck:ping"):
-        return f"devcheck:ping answered {before[3]} before devcheck was allowed"
-    config.write(allowedExtensions=["devcheck"])
+    config.write(allowedExtensions=[])
     if until(lambda: steps(game_dir, "devcheck:ping", as_json)[0][0] == "ok") is None:
-        return f"devcheck:ping was still refused {RELOAD_SECONDS} s after devcheck was allowed"
-    config.write(allowedExtensions=["devcheck"], agentCommands="play")
+        return "devcheck:ping without allowedExtensions was refused under all"
+    config.write(allowedExtensions=[], agentCommands="play")
     if until(lambda: play_applies(game_dir, as_json)) is None:
         return f"agentCommands play wasn't in force after {RELOAD_SECONDS} s"
-    under_play = steps(game_dir, "devcheck:ping", as_json)[0]
-    return None if under_play[0] == "ok" else f"an allowed extension command under play answered {under_play[3]}"
+    before = steps(game_dir, "devcheck:ping", as_json)[0]
+    if not refused(before, "devcheck:ping"):
+        return f"devcheck:ping answered {before[3]} under play before devcheck was allowed"
+    config.write(allowedExtensions=["devcheck"], agentCommands="play")
+    if until(lambda: steps(game_dir, "devcheck:ping", as_json)[0][0] == "ok") is None:
+        return f"devcheck:ping was still refused under play {RELOAD_SECONDS} s after devcheck was allowed"
+    return None
 
 
 def check_allow_all(game_dir, config, as_json):
@@ -272,9 +301,11 @@ def main():
             ("no command changes trust", lambda: check_no_command_changes_trust(game_dir, config, as_json)),
             ("the play profile refuses what goes beyond playing",
              lambda: check_play_profile(game_dir, config, as_json, world)),
+            ("the play profile sends only the slash commands listed for it",
+             lambda: check_play_slash_commands(game_dir, config, as_json)),
             ("the play profile keeps input to gameplay screens", lambda: check_play_screens(game_dir, config, as_json)),
             ("the play profile follows no links", lambda: check_play_links(game_dir, config, as_json)),
-            ("another mod's commands need allowedExtensions",
+            ("another mod's commands need allowedExtensions under play",
              lambda: check_extensions_allowed(game_dir, config, as_json)),
             ("dangerouslyAllowAll turns every check off", lambda: check_allow_all(game_dir, config, as_json)),
             ("untrusted chat is withheld between two clients",
