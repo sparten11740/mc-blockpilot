@@ -13,24 +13,24 @@ gives `goto` and `mine` the reach of a dedicated pathfinder.
 
 ## What Changes
 
-- With Baritone installed, `goto <pos|e<id>> [near=]` takes
-  `via=baritone`, and `mine <block|#tag> x<n>` takes it too: Blockpilot
-  hands the goal to Baritone, reports its progress as the action's, and
-  answers as the built-in pathfinder does, `ok` with `took=`, `err stuck`
-  or `err no_path`. Without Baritone, `via=baritone` fails with `err
-  unsupported`, the code for what a loader or machine lacks, naming
-  Baritone, and the help of `via=` says so.
-- `via=blockpilot`, the default, keeps the built-in pathfinder, which never
-  breaks or places blocks; Baritone does both, so it is for worlds the agent
-  may change, and a config key `"pathfinder"` makes it the default for
-  players who want that.
+- With Baritone installed, `goto <pos|e<id>> [near=]` and the walk of `mine
+  <block|#tag> x<n>` into reach of each block go through it on their own, with
+  no option to give: Blockpilot hands the goal to Baritone, reports its progress
+  as the action's, and answers as the built-in pathfinder does, `ok` with
+  `took=`, `err stuck` or `err no_path`, adding `by=baritone` so the agent sees
+  which pathfinder walked. Without Baritone, nothing changes.
+- Baritone breaks and places blocks where its own settings allow it
+  (`allowBreak`, `allowPlace`), which the player sets in Baritone; the
+  built-in pathfinder never does.
 - `stop`, real input and a script's failure end Baritone's goal as they end
   the built-in walk, and Blockpilot releases the inputs Baritone held.
 - Baritone's code is not copied or bundled: Blockpilot calls its public
   API, looked up at run time, so Blockpilot stays Apache-2.0 and Baritone a
-  mod the player installs.
-- The help, `docs/commands.md`, the README and the CHANGELOG describe the
-  option.
+  mod the player installs. Builds exist for every NeoForge and Fabric
+  target, 1.21.1, 26.1, 26.2 and 26.3; the vanilla agent targets have no
+  loader to load it, so they keep the built-in pathfinder.
+- The help of `goto` and `mine`, `docs/commands.md`, the README and the
+  CHANGELOG say so.
 
 ## Capabilities
 
@@ -43,14 +43,17 @@ None.
 
 ## Impact
 
-- `game/path/`: a `Pathfinder` seam, the built-in `Navigator` behind it and
-  a `BaritonePathfinder` that reaches Baritone's API reflectively.
-- `game/MovementCommands.java`, `game/InteractCommands.java`: the `via=`
-  option and the backend choice.
-- `common/Config`: the `pathfinder` default.
-- Dev runs: Baritone's release jar for 1.21.1 Fabric and NeoForge as a
+- `game/path/`: a `Pathfinder` adapter port for walking, with
+  `BuiltInPathfinder` over `Navigator` and `BaritonePathfinder` reaching
+  Baritone's API reflectively as its adapters, and `Pathfinders` choosing
+  the first available one, so another pathfinding mod is one more adapter.
+- `game/MovementCommands.java`, `game/InteractCommands.java`: the walk and
+  the mining through whichever pathfinder is available.
+- Dev runs: the Baritone build for each NeoForge and Fabric target, from
+  cabaletta's GitHub releases and checked against their checksums, as a
   run-time-only mod of a dedicated run configuration, downloaded like the
-  API fixture, so the smoke check can exercise it; it skips where no
-  Baritone build exists (26.x today).
-- `tools/smoke_test.py`: a `goto via=baritone` check across a gap the
-  built-in pathfinder can't cross, skipped without Baritone.
+  API fixture, so the smoke check can exercise it.
+- `tools/smoke_test.py`: a check, run in the Baritone run configuration
+  and skipped elsewhere, that `goto` digs into a closed room the built-in
+  pathfinder can't reach and that `mine` by type reaches blocks behind a
+  wall through Baritone.
