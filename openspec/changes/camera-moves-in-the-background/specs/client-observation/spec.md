@@ -50,8 +50,8 @@ the limit.
   via ~10,2,0 over 40t` from a camera placed at `~0,2,0`
 - **THEN** one row's `camera` position is within half a block of
   `~10,2,0`, and between rows two ticks apart the direction of travel turns
-  by a third of a quarter circle at most, spreading the turn over several
-  rows, never by a quarter circle at once
+  by less than half a quarter circle, spreading the turn over several rows,
+  never by a quarter circle at once
 
 #### Scenario: Constant speed
 - **WHEN** an agent runs `sample status every 4t while camera move ~12,2,0
