@@ -1,7 +1,6 @@
 package dev.blockpilot.game.safety;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -12,33 +11,45 @@ import java.util.stream.Collectors;
 
 /**
  * Whom agents take words from: the players a person trusted, by name ignoring case, and the agent's own player. On a
- * server that doesn't verify accounts nobody else counts, as anyone can take any name there. Read from any thread;
- * changed on the client thread.
+ * server that doesn't verify accounts nobody else counts, as anyone can take any name there. Read from any thread
+ * (the integrated server's and extensions' too), so each state is one immutable snapshot swapped whole.
  */
 public final class Trust {
-    private volatile List<String> names;
-    private volatile Set<String> keys;
-    private volatile UUID self;
-    private volatile boolean unverified;
-    /** The players the client knows, by UUID, so a UUID can be judged off the client thread. */
-    private volatile Map<UUID, String> players = Map.of();
+    private record Names(List<String> written, Set<String> keys) {
+        static Names of(Collection<String> names) {
+            Set<String> keys = names.stream().map(Trust::key).collect(Collectors.toUnmodifiableSet());
+            return new Names(List.copyOf(names), keys);
+        }
+    }
+
+    /** What the client knows about its connection; {@code players}: the players it knows, by UUID. */
+    private record Connection(UUID self, boolean unverified, Map<UUID, String> players) {
+    }
+
+    private volatile Names names;
+    private volatile Connection connection = new Connection(null, false, Map.of());
     /** A development run's switch: the list applies on unverified servers too, for offline dev accounts. */
     private final boolean trustUnverified;
 
     public Trust(Collection<String> trusted, boolean trustUnverified) {
         this.trustUnverified = trustUnverified;
-        setNames(new ArrayList<>(trusted));
+        this.names = Names.of(trusted);
     }
 
     public boolean trusts(UUID player, String name) {
-        if (player != null && player.equals(self)) {
-            return true;
-        }
-        return (!unverified || trustUnverified) && name != null && keys.contains(key(name));
+        return trusts(connection, player, name);
     }
 
     public boolean trusts(UUID player) {
-        return player != null && trusts(player, players.get(player));
+        Connection now = connection;
+        return player != null && trusts(now, player, now.players().get(player));
+    }
+
+    private boolean trusts(Connection now, UUID player, String name) {
+        if (player != null && player.equals(now.self())) {
+            return true;
+        }
+        return (!now.unverified() || trustUnverified) && name != null && names.keys().contains(key(name));
     }
 
     /** What agents get in place of a player's chat: null to pass it as it came, else its stand-in text. */
@@ -48,16 +59,16 @@ public final class Trust {
 
     /** The list as the config file has it now. */
     public void set(Collection<String> trusted) {
-        setNames(new ArrayList<>(trusted));
+        names = Names.of(trusted);
     }
 
     /** As the person wrote them. */
     public List<String> names() {
-        return names;
+        return names.written();
     }
 
     public boolean unverified() {
-        return unverified;
+        return connection.unverified();
     }
 
     public boolean trustUnverified() {
@@ -66,18 +77,16 @@ public final class Trust {
 
     /** Whether the named player is among those the client knows. */
     public boolean online(String name) {
-        return players.values().stream().anyMatch(player -> key(player).equals(key(name)));
+        return connection.players().values().stream().anyMatch(player -> key(player).equals(key(name)));
     }
 
     public String nameOf(UUID player) {
-        return player != null ? players.get(player) : null;
+        return player != null ? connection.players().get(player) : null;
     }
 
     /** What the client knows about the connection: the agent's own player, whether accounts are verified, who is on. */
     void update(UUID ownPlayer, boolean accountsUnverified, Map<UUID, String> knownPlayers) {
-        self = ownPlayer;
-        unverified = accountsUnverified;
-        players = Map.copyOf(knownPlayers);
+        connection = new Connection(ownPlayer, accountsUnverified, Map.copyOf(knownPlayers));
     }
 
     /**
@@ -86,11 +95,6 @@ public final class Trust {
      */
     static boolean offlineAccount(UUID player, String name) {
         return player.equals(UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)));
-    }
-
-    private void setNames(List<String> changed) {
-        names = List.copyOf(changed);
-        keys = changed.stream().map(Trust::key).collect(Collectors.toUnmodifiableSet());
     }
 
     private static String key(String name) {
