@@ -287,6 +287,8 @@ load-option ::= "jitter=" integer | "timeout=" ( duration | seconds )
 log-command ::= "log" ( "mark" | "detail" integer )?
 log-option ::= "level=" ( "error" | "warn" | "info" ) | "since=" integer | "grep=" option-value | "logger=" option-value | "limit=" integer
 
+trust-command ::= "trust"
+
 sable.list-command ::= "sable:list" integer?
 sable.list-option ::= "side=" ( "client" | "server" )
 
