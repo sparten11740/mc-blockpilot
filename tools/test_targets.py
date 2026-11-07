@@ -342,7 +342,9 @@ def test_target(target, result, baritone, suite="all"):
     try:
         log = os.path.join(directory, "client.log")
         with open(log, "w", encoding="utf-8") as output:
-            gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"]
+            # devcheck:ping stands in for another mod's command in the security suite's allowedExtensions check.
+            gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient",
+                                       "-Pblockpilot.devcheck=true"]
                                       + (["-Pblockpilot.baritone"] if baritone else []), cwd=ROOT,
                                       stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
         answered = False

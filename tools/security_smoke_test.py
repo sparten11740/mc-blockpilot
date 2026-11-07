@@ -211,7 +211,7 @@ def check_extensions_allowed(game_dir, config, as_json):
     """Another mod's command is refused until its namespace is in allowedExtensions, then works, also under play."""
     _, overview = run(game_dir, "help")
     if "devcheck" not in overview:
-        raise Skipped("no devcheck:ping in this run; development runs register it")
+        raise Skipped("no devcheck:ping in this run; a client started with -Dblockpilot.devcheck=true registers it")
     before = steps(game_dir, "devcheck:ping", as_json)[0]
     if not refused(before, "devcheck:ping"):
         return f"devcheck:ping answered {before[3]} before devcheck was allowed"
