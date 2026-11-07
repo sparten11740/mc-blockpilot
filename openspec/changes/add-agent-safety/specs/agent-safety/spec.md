@@ -84,13 +84,39 @@ accounts.
 ### Requirement: No trust where names aren't verified
 On a server that doesn't verify players' accounts, where anyone can join
 under any name, no player but the agent's own SHALL count as trusted, and
-`trust` SHALL report `unverified`.
+`trust` SHALL report `unverified`. Only a development environment launched
+with `-Pblockpilot.trustUnverified` SHALL apply the list there too, with
+`trust` reporting `trust_unverified` as well; production installs and the
+vanilla targets SHALL ignore it.
 
 #### Scenario: An offline-mode server
 - **WHEN** the list holds `Steve` and the agent plays on a server that
   doesn't verify accounts
 - **THEN** a message from a player named `Steve` reaches agents as
   `withheld from=Steve`, and `trust` reports `unverified`
+
+#### Scenario: A development run with offline accounts
+- **WHEN** a development client launched with `-Pblockpilot.trustUnverified`
+  trusts `Steve` on a server that doesn't verify accounts
+- **THEN** `Steve`'s messages reach agents with their text, and `trust`
+  reports `unverified` and `trust_unverified`
+
+### Requirement: Settings take effect without a restart
+A change to `trustedPlayers` or `agentCommands` in the config file SHALL
+take effect within a second, without a restart. A file that can't be read
+SHALL leave the last good settings in force and be logged once. A change a
+person makes with `/blockpilot` SHALL be saved without being undone by the
+reload.
+
+#### Scenario: A name written into the file
+- **WHEN** a person adds `Steve` to `trustedPlayers` in the config file
+  while the game runs
+- **THEN** within a second `trust` lists `Steve`
+
+#### Scenario: A broken file
+- **WHEN** the config file is saved with a syntax error
+- **THEN** the trusted players and `agentCommands` stay as they were, and
+  one error is logged
 
 ### Requirement: Play-only agents
 With `agentCommands` set to `play` in the config, a script with any of
