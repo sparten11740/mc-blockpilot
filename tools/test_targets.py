@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Tests Blockpilot on every target, or the ones named, end to end.
 
-    python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--baritone] [--list]
+    python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--suite smoke|security|all] [--baritone]
+        [--list]
 
 It refuses to start if blockpilot/versions or the release workflow's rows disagree with settings.gradle.kts.
 
 One target at a time, from those in settings.gradle.kts: builds it with its unit tests, checks its jar, starts its dev
-client, runs tools/smoke_test.py in text and JSON mode, closes the client and checks it shut down. JSON shapes must
-match those saved from the other targets of its loader; the vanilla targets count as Fabric, whose replies they share.
+client, runs tools/smoke_test.py in text and JSON mode, then tools/security_smoke_test.py, closes the client and checks
+it shut down. JSON shapes must match those saved from the other targets of its loader; the vanilla targets count as
+Fabric, whose replies they share. --suite smoke or --suite security runs only one of the two suites (default all).
 
 --baritone starts each client with Baritone (-Pblockpilot.baritone, which fetches the build its gradle.properties
 names) and runs only the smoke test's check of walks through it, on the targets that have a Baritone build. It doesn't
@@ -194,12 +196,14 @@ def wait_for_client(gradle, game_dir, log):
 def smoke_arguments(mode, directory):
     """What the smoke test is given in each mode: text saves the JSON shapes, baritone runs only Baritone's check."""
     return {"text": ["--shapes", os.path.join(directory, "shapes.txt")], "json": ["--json"],
-            "baritone": ["--baritone"]}[mode]
+            "baritone": ["--baritone"], "security": []}[mode]
 
 
 def run_smoke_test(game_dir, directory, mode, result):
-    """Runs the smoke test and takes its assertions into the result; returns whether it finished."""
-    command = [sys.executable, "-u", os.path.join(ROOT, "tools", "smoke_test.py"), "--game-dir", game_dir]
+    """Runs a suite (a smoke test mode, or security) and takes its assertions into the result; returns whether it
+    finished."""
+    script = "security_smoke_test.py" if mode == "security" else "smoke_test.py"
+    command = [sys.executable, "-u", os.path.join(ROOT, "tools", script), "--game-dir", game_dir]
     command += smoke_arguments(mode, directory)
     log = os.path.join(directory, f"smoke-{mode}.log")
     returncode = None
@@ -301,7 +305,7 @@ def has_baritone(target):
     return "baritone_version" in properties(os.path.join(node_dir(target), "gradle.properties"))
 
 
-def test_target(target, result, baritone):
+def test_target(target, result, baritone, suite="all"):
     minecraft = properties(os.path.join(node_dir(target), "gradle.properties"))["minecraft_version"]
     loader = target.rsplit("-", 1)[1]
     directory = os.path.join(OUTPUT, target)
@@ -347,7 +351,9 @@ def test_target(target, result, baritone):
             answered = problem is None
             # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
             result.check("client reaches a screen", problem)
-            for mode in (["baritone"] if baritone else ["text", "json"]):
+            modes = ["baritone"] if baritone else (["text", "json"] if suite in ("smoke", "all") else []) \
+                + (["security"] if suite in ("security", "all") else [])
+            for mode in modes:
                 if not answered or not run_smoke_test(game_dir, directory, mode, result):
                     break
         finally:
@@ -420,6 +426,8 @@ def main():
     parser.add_argument("--targets", help="comma-separated targets; all of them when left out")
     parser.add_argument("--baritone", action="store_true",
                         help="start the clients with Baritone and run only the check of walks through it")
+    parser.add_argument("--suite", choices=["smoke", "security", "all"], default="all",
+                        help="run only the smoke test or only the security checks (default: both)")
     parser.add_argument("--list", action="store_true", help="print the targets and exit")
     args = parser.parse_args()
     configured = configured_targets()
@@ -450,7 +458,7 @@ def main():
             print(f"testing {target}", flush=True)
             result = Result(target)
             try:
-                test_target(target, result, args.baritone)
+                test_target(target, result, args.baritone, args.suite)
             except Exception as error:
                 # A surprise in one target, such as a corrupt jar, mustn't lose the results of the others.
                 result.check("the test itself", repr(error)[:400])
