@@ -48,16 +48,6 @@ class ConfigTest {
     }
 
     @Test
-    void savesTheTrustedPlayers() throws Exception {
-        Path file = directory.resolve("config.json");
-        Config config = Config.load(file);
-        config.trustedPlayers.add("Steve");
-        config.save();
-        assertEquals(List.of("Steve"), Config.load(file).trustedPlayers);
-        assertFalse(Files.exists(directory.resolve("config.json.tmp")));
-    }
-
-    @Test
     void anUnknownCommandProfileHoldsAgentsToPlaying() throws Exception {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{\"agentCommands\": \"everything\", \"trustedPlayers\": null}");

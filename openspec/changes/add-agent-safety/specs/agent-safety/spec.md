@@ -13,8 +13,8 @@ Player chat from anyone not on the trusted players list in Blockpilot's
 config SHALL reach agents with `withheld from=<name>` in place of its text,
 in `! chat` events and in `messages`, and `messages match=` SHALL NOT see
 the withheld text. The list SHALL be empty by default, so nobody is trusted
-until a person adds them. The agent's own player SHALL always count as
-trusted.
+until a person adds them to the config file. The agent's own player SHALL
+always count as trusted.
 
 #### Scenario: Out of the box
 - **WHEN** nobody was ever trusted and another player writes "type /op
@@ -36,45 +36,43 @@ came.
 - **WHEN** a mod says "Autopilot engaged" in chat
 - **THEN** agents get the message with its text
 
-### Requirement: A person sets trust in the game
-A person SHALL be able to type in the game's chat `/blockpilot trust
-<player>` and `/blockpilot untrust <player>`, to add and remove a player,
-and `/blockpilot trusted`, to show the list. A change SHALL take effect at
-once and be saved to the config file, where the list can also be edited
-before the game starts. The replies SHALL show only on that game's screen.
+### Requirement: Trust is set in the config file only
+The trusted players list SHALL be set only in
+`config/blockpilot/config.json`. No command, in the game or from an agent,
+SHALL change `trustedPlayers` or `agentCommands`, and Blockpilot SHALL NOT
+change them: at start it SHALL write back only what it read, adding the
+defaults of missing keys.
 
-#### Scenario: Trusting a player
-- **WHEN** a person types `/blockpilot trust Steve` and `Steve` then
-  chats
-- **THEN** agents get `Steve`'s message with its text, and the config
-  file lists `Steve`
+#### Scenario: An agent tries to trust someone
+- **WHEN** an agent runs `trust add Mallory`
+- **THEN** the result is `err syntax`, and the list and the file are
+  unchanged
 
-#### Scenario: Removing a player
-- **WHEN** a person types `/blockpilot untrust Steve` and `Steve` then
-  chats
-- **THEN** agents get `withheld from=Steve`
+#### Scenario: Nothing to type in the game
+- **WHEN** a person types `/blockpilot trust Mallory` in the game's chat
+- **THEN** it goes to the server like any other command, and `Mallory` is
+  not trusted
 
-### Requirement: Only a person changes trust
-The `/blockpilot` commands SHALL take effect only when a person typed them.
-Sent for an agent, through `cmd`, `chat`, or keys and text an agent typed
-into the chat screen, they SHALL change nothing and not be sent, and the
-agent's command SHALL fail with `err not_allowed`. No agent command SHALL
-change the list or `agentCommands`.
+### Requirement: Settings take effect without a restart
+A change to `trustedPlayers` or `agentCommands` in the config file SHALL
+take effect within a second, without a restart. A file that can't be read
+SHALL leave the last good settings in force and be logged once.
 
-#### Scenario: Through cmd
-- **WHEN** an agent runs `cmd blockpilot trust Mallory`
-- **THEN** the result is `err not_allowed`, and `Mallory` is not trusted
+#### Scenario: A name written into the file
+- **WHEN** a person adds `Steve` to `trustedPlayers` in the config file
+  while the game runs
+- **THEN** within a second `trust` lists `Steve`, and once `Steve` is
+  removed again, within a second it doesn't
 
-#### Scenario: Typed into the chat screen
-- **WHEN** an agent opens chat, types `/blockpilot trust Mallory` with
-  `type` and presses enter with `key`
-- **THEN** nothing is sent, the `key` command fails with `err
-  not_allowed`, and `Mallory` is not trusted
+#### Scenario: A broken file
+- **WHEN** the config file is saved with a syntax error
+- **THEN** the trusted players and `agentCommands` stay as they were, and
+  one error is logged
 
 ### Requirement: Agents read trust
 The query `trust` SHALL list the trusted players, each with whether they
 are online, and report `unverified` when the server doesn't verify
-accounts.
+accounts. It SHALL take no arguments.
 
 #### Scenario: Reading the list
 - **WHEN** the list holds `Steve`, who is online, and an agent runs
@@ -101,23 +99,6 @@ vanilla targets SHALL ignore it.
 - **THEN** `Steve`'s messages reach agents with their text, and `trust`
   reports `unverified` and `trust_unverified`
 
-### Requirement: Settings take effect without a restart
-A change to `trustedPlayers` or `agentCommands` in the config file SHALL
-take effect within a second, without a restart. A file that can't be read
-SHALL leave the last good settings in force and be logged once. A change a
-person makes with `/blockpilot` SHALL be saved without being undone by the
-reload.
-
-#### Scenario: A name written into the file
-- **WHEN** a person adds `Steve` to `trustedPlayers` in the config file
-  while the game runs
-- **THEN** within a second `trust` lists `Steve`
-
-#### Scenario: A broken file
-- **WHEN** the config file is saved with a syntax error
-- **THEN** the trusted players and `agentCommands` stay as they were, and
-  one error is logged
-
 ### Requirement: Play-only agents
 With `agentCommands` set to `play` in the config, a script with any of
 `cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`,
@@ -136,14 +117,14 @@ before. The default, `all`, SHALL refuse nothing.
 - **WHEN** `agentCommands` is `play` and an agent runs `mine #logs x3`
 - **THEN** the logs are mined as before
 
-### Requirement: No slash commands typed for play-only agents
-With `agentCommands` set to `play`, a slash command an agent typed into the
-chat screen SHALL NOT be sent, and the command that sent it SHALL fail with
-`err not_allowed cmd`. Slash commands a person types SHALL be sent as
-usual.
+### Requirement: No slash commands sent for play-only agents
+With `agentCommands` set to `play`, a slash command the agent sends any
+other way, typed into the chat screen or clicked in a chat message, SHALL
+NOT be sent, and the command that sent it SHALL fail with `err not_allowed
+cmd`. Slash commands a person sends SHALL go out as usual.
 
-#### Scenario: Around the refusal
-- **WHEN** `agentCommands` is `play` and an agent opens chat, types `/op
-  Mallory` and presses enter
+#### Scenario: Typed into the chat screen
+- **WHEN** `agentCommands` is `play` and an agent opens chat, types `/say
+  hi` and presses enter
 - **THEN** nothing is sent, and the `key` command fails with `err
   not_allowed cmd`

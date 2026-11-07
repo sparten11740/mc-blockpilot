@@ -15,9 +15,12 @@
   human-input detection already tells agent input from a person's this
   way.
 - `cmd` calls `connection.sendCommand`, and `chat` calls `sendChat`. The
-  chat screen sends a typed `/command` through `sendCommand` too.
-- `protocol/Config` loads `config/blockpilot/config.json` and writes it
-  with defaults when it is missing.
+  chat screen sends a typed `/command` through `sendCommand` too. A
+  command clicked in a chat message goes out through `sendUnsignedCommand`
+  on 1.21.1 and `sendUnattendedCommand` from 26.1 on, which send the
+  packet themselves.
+- `protocol/Config` loads `config/blockpilot/config.json` at start and
+  writes it back with the defaults of missing keys.
 - Scripts are parsed before any step runs (`Engine` and `Parser`), which
   is where syntax errors already fail.
 
@@ -25,7 +28,8 @@
 
 **Goals:**
 - No player can steer an agent by chat unless a person trusted them.
-- Neither the agent nor anyone talking to it can change who is trusted.
+- Neither the agent nor anyone talking to it can change who is trusted:
+  that is the config file, and only the file.
 - An agent that takes requests from players can be held to playing.
 
 **Non-Goals:**
@@ -76,27 +80,15 @@ installs ignore it, so a player's launcher can't switch it on, and agents
 have no command for it. `trust` reports `trust_unverified` while it
 applies.
 
-### D4: The `/blockpilot` command at the send hook, only from a person
+### D4: Trust only in the file
 
-A mixin on `ClientPacketListener.sendCommand` catches a command starting
-with `blockpilot `, on every target, the vanilla ones included. It handles
-the command locally and never sends it to the server. One path then serves
-both loaders and the vanilla targets, without each loader's client-command
-API, at the cost of tab completion. The replies go to the chat window as
-local messages.
-
-A command counts as typed by a person only if:
-1. no Blockpilot-sent input reached the chat screen it came from since
-   that screen opened (`Injection.active()` during a key or character,
-   recorded per screen)
-2. it wasn't sent while `Injection` was active, as an injected enter
-3. it wasn't sent by `cmd`, which sets an agent-origin flag around its
-   call
-
-Anything else is dropped, and the agent's command fails with `err
-not_allowed`. For `cmd`, that is direct. For a `key` that pressed enter,
-the refusal is recorded and the action fails on its next tick. `chat`
-refuses a text starting with `/blockpilot` up front.
+Trust is set in the config file and nowhere else. An in-game command for a
+person (`/blockpilot trust`) was designed and dropped: telling a person's
+typing from an agent's is one more thing that can go wrong, and the file
+is out of reach of anything said in the game. So Blockpilot has no command
+that changes `trustedPlayers` or `agentCommands`, `trust` takes no
+arguments, and Blockpilot writes the file only at start, keeping what it
+read and adding missing keys' defaults.
 
 ### D5: The play profile at parse time
 
@@ -117,9 +109,9 @@ A value of `agentCommands` other than `all`, such as a typo, counts as
 are camelCase, `trustedPlayers` and `agentCommands`, like the file's other
 keys.
 
-Under `play`, the same `sendCommand` hook drops any slash command sent
-with agent origin (D4's rules), so typing `/op` into the chat screen
-doesn't get around the refused `cmd`.
+Under `play`, the send hooks drop any slash command sent with agent
+origin (D8), so typing `/op` into the chat screen doesn't get around the
+refused `cmd`.
 
 ### D6: The API
 
@@ -136,25 +128,45 @@ modification time with the last one it read. When it changed, it reads
 to the engine's profile, which `Engine` holds in a volatile field read when
 a script is submitted. Other settings, such as the port, still need a
 restart. A file that doesn't parse leaves the last good settings in force
-and logs one error per broken version of the file. `/blockpilot trust`
-saves on the client thread too and then records the new modification time,
-so the reload never reads it back as a change or races it. A file watcher
-was the alternative; polling the time once a second costs nothing and
-needs no thread.
+and logs one error per broken version of the file. The reload reads the
+file without writing it, so it never changes what a person wrote. A file
+watcher was the alternative; polling the time once a second costs nothing
+and needs no thread.
+
+### D8: Slash commands for play-only agents at the send hooks
+
+A mixin on `ClientPacketListener` hooks every way a slash command leaves
+the client: `sendCommand`, and the click-event path (`sendUnsignedCommand`
+on 1.21.1, `sendUnattendedCommand` from 26.1 on, chosen by a version
+condition). Under `play` it drops a command sent with agent origin, and
+the step that sent it fails with `err not_allowed cmd`. A command has agent
+origin when:
+1. it was sent while `Injection` was active, as an injected enter or click
+2. Blockpilot-sent input reached the chat screen it came from since that
+   screen opened (recorded per screen by `Injection`)
+
+`cmd` is refused at parse time and never gets this far. The hook can't
+throw through vanilla code, so it raises the refusal on `Refusal`, which
+`ScriptJob` takes after the step's start and after each of its ticks; it
+then cancels the step and fails it. A refusal left pending is dropped as
+the next step starts.
 
 ## Risks / Trade-offs
 
 - [Agents on servers no longer see other players' chat by default] →
-  Intended, and marked BREAKING in the CHANGELOG. One `/blockpilot trust`
-  per player restores it. Single-player and tests are unaffected, and the
-  two-client runs trust the second client in the first's config.
+  Intended, and marked BREAKING in the CHANGELOG. A name in the config
+  file restores it, within a second. Single-player and tests are
+  unaffected.
 - [Servers with chat plugins send player chat as system messages, which
   pass] → Documented in `docs/safety.md`. Trust protects chat that
   arrives as player chat, which covers vanilla and LAN worlds and modded
   servers without such plugins.
-- [A person types the command into a chat screen an agent typed in
-  before] → Refused, since agent input reached that screen. Reopening
-  chat clears it.
+- [Under `play`, a person's slash command typed into a chat screen an
+  agent typed in before is dropped] → Agent input reached that screen, so
+  it can't be told apart. Reopening chat clears it.
+- [A broken config file at start] → The defaults apply (nobody trusted,
+  `all`) and the error is logged; a broken file later keeps the last good
+  settings (D7).
 - [Someone with access to the PC's files edits the config] → Out of reach
   for a game mod. The docs say whoever runs the agent controls its file
   access.
