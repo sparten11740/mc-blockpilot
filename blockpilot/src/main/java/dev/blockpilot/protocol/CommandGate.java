@@ -19,11 +19,11 @@ final class CommandGate {
     private static final Map<String, String> SHOWN = Map.of("create", "create world", "delete", "delete world");
 
     private final boolean playOnly;
-    private final Predicate<String> extensionAllowed;
+    private final Predicate<CommandRegistry.Entry> usable;
 
-    CommandGate(boolean playOnly, Predicate<String> extensionAllowed) {
+    CommandGate(boolean playOnly, Predicate<CommandRegistry.Entry> usable) {
         this.playOnly = playOnly;
-        this.extensionAllowed = extensionAllowed;
+        this.usable = usable;
     }
 
     /** The first refused command in the step, nested ones included, as the refusal names it; null when none. */
@@ -49,7 +49,7 @@ final class CommandGate {
         String name = entry.spec().name();
         if (!entry.namespace().isEmpty()) {
             // On the integrated server an extension command reaches beyond the player, as server does.
-            boolean refused = !extensionAllowed.test(entry.namespace()) || playOnly && entry.spec().runsOnServer();
+            boolean refused = !usable.test(entry) || playOnly && entry.spec().runsOnServer();
             return refused ? entry.qualifiedName() : null;
         }
         if (!playOnly || !REFUSED.contains(name)) {

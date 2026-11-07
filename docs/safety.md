@@ -53,8 +53,13 @@ Commands that other mods register, and the events they send, reach agents only o
 ```
 
 Until then a call answers `err not_allowed <namespace>:<name>` before any step runs, the mod's events are dropped, and
-`help` lists the namespace as not allowed. Blockpilot's own compat modules, such as `sable:`, need no entry. Like the
-other settings, it is set in the file only and applies within a second.
+`help` lists the namespace as not allowed. Blockpilot's own compat modules, such as its `sable:` commands, need no
+entry; another mod's commands in the same namespace still do. Like the other settings, it is set in the file only and
+applies within a second.
+
+The allow-list decides which other mods' commands and events agents use. It is no sandbox against a malicious mod,
+which runs with the game's full rights anyway, and an event isn't proven to come from the mod its namespace names:
+install only mods you trust.
 
 ## Play-only agents
 

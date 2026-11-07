@@ -12,7 +12,7 @@
 - [x] 1.8 Drop null and blank names from `trustedPlayers` (a trailing comma), and keep the last good settings when applying a reload throws; verify with unit tests for `["Steve",]`, `[null]` and a failing apply
 - [x] 1.9 Fail closed when the config file can't be read at start: `play`, nobody trusted, the file untouched, one error logged; verify with a unit test
 - [x] 1.10 Keep `Trust`'s state as two immutable snapshots swapped whole, as other threads read it; verify the trust unit tests still pass
-- [x] 1.11 Use another mod's commands and events only while its namespace is in `allowedExtensions` (D10): refuse calls before any step, drop events, mark the namespace in `help` and leave it out of `help grammar`, Blockpilot's own namespaces built in; register `devcheck:ping` in development runs; verify with unit tests for a call, an event and help, with the existing extension tests and the 2.0.0 fixture allowed through the setting
+- [x] 1.11 Use another mod's commands and events only while its namespace is in `allowedExtensions` (D10): refuse calls before any step, drop events, mark the namespace in `help` and leave it out of `help grammar`, built in by the registration path and judged per entry, events by a fixed set of compat namespaces; register `devcheck:ping` in development runs; verify with unit tests for a call, an event and help, with the existing extension tests and the 2.0.0 fixture allowed through the setting
 
 ## 2. Play-only agents (agent-safety)
 

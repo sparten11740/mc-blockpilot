@@ -203,14 +203,20 @@ server-side withholding of D2.
 An extension's commands and events are input to the agent and reach beyond
 it, so they wait for a person too: `allowedExtensions` in the config lists
 the namespaces agents may use, empty by default and reloaded with the other
-safety settings (D7). Namespaces Blockpilot registers itself, its Sable
-compat module's included (registrant `blockpilot`), are built in. The
-engine checks every call, nested ones too, in the same gate as the play
-profile (`CommandGate`), under `all` and `play` alike, and fails the script
-before any step with `err not_allowed <namespace>:<name>`. An extension's
-event goes through `Engine.broadcastExtension`, which drops it when its
-namespace isn't allowed, so a voice add-on's `voice:heard` reaches nobody
-until it is. `help` lists such a namespace with a note naming the setting,
+safety settings (D7). A command is built in by the way it was registered,
+not by a name it gives: Blockpilot's core commands and its compat modules'
+(today Sable's, through `CommandRegistry.addBuiltIn`) carry a built-in flag
+on their entry, and everything that arrives through `BlockpilotApi`, which
+any mod can call with any registrant, is an extension. The engine checks
+each call, nested ones too, per entry in the same gate as the play profile
+(`CommandGate`): built in, or its namespace allowed, so another mod's
+command in the `sable` namespace still needs allowing. This holds under
+`all` and `play` alike, and a refused call fails the script before any
+step with `err not_allowed <namespace>:<name>`. Events carry no proof of
+origin, so `Engine.broadcastExtension` delivers one only when its namespace
+is allowed or among the fixed namespaces Blockpilot's compat modules emit
+under (`sable`); a voice add-on's `voice:heard` reaches nobody until
+allowed. `help` lists such a namespace with a note naming the setting,
 so an agent can tell a person what to add, and `help grammar` leaves its
 commands out, as agents can't use them. Development runs register a
 stand-in, `devcheck:ping`, for the security smoke check to allow and call.
@@ -225,6 +231,10 @@ stand-in, `devcheck:ping`, for the security smoke check to allow and call.
   pass] → Documented in `docs/safety.md`. Trust protects chat that
   arrives as player chat, which covers vanilla and LAN worlds and modded
   servers without such plugins.
+- [The allow-list is no sandbox] → It limits which other mods' commands
+  and events agents use. A malicious mod runs with the game's full rights
+  anyway, and an event isn't authenticated by its namespace; the docs say
+  so.
 - [Integrations stop working until their namespace is allowed] → Marked
   BREAKING; `help` names the setting, and the docs make it the first step
   for integration authors.

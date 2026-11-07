@@ -14,11 +14,11 @@ import java.util.function.Predicate;
 public final class Help {
     private static final String CONSTRUCT_GROUP = "meta";
     private final CommandRegistry registry;
-    private final Predicate<String> extensionAllowed;
+    private final Predicate<CommandRegistry.Entry> usable;
 
-    public Help(CommandRegistry registry, Predicate<String> extensionAllowed) {
+    public Help(CommandRegistry registry, Predicate<CommandRegistry.Entry> usable) {
         this.registry = registry;
-        this.extensionAllowed = extensionAllowed;
+        this.usable = usable;
     }
 
     public Result answer(String topic) {
@@ -82,7 +82,7 @@ public final class Help {
         rows.add(Row.of("commands", new Fields().bare("ebnf", Grammar.COMMANDS_COMMENT)));
         // An extension agents may not use isn't part of their language.
         for (CommandRegistry.Entry entry : registry.all()) {
-            if (!extensionAllowed.test(entry.namespace())) {
+            if (!usable.test(entry)) {
                 continue;
             }
             Grammar.command(entry).forEach(line -> rows.add(Row.of(entry.qualifiedName(), new Fields().bare("ebnf",
@@ -111,10 +111,11 @@ public final class Help {
         for (String namespace : registry.namespaces()) {
             List<String> names = registry.namespace(namespace).stream().map(CommandRegistry.Entry::qualifiedName)
                 .toList();
-            String kind = extensionAllowed.test(namespace) ? " (extension):"
+            boolean allowed = registry.namespace(namespace).stream().allMatch(usable);
+            String kind = allowed ? " (extension):"
                 : " (extension, not allowed: add it to allowedExtensions in config/blockpilot/config.json):";
             rows.add(Row.of(namespace, new Fields().put("group", namespace, namespace + kind)
-                .put("commands", names, String.join(" ", names)).put("allowed", extensionAllowed.test(namespace), "")));
+                .put("commands", names, String.join(" ", names)).put("allowed", allowed, "")));
         }
         rows.add(Row.of("more", new Fields().bare("hint",
             "help <command|group|namespace:|errors|grammar>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes "
