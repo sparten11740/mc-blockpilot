@@ -55,10 +55,11 @@ wait-option  ::= ( "stable=" | "every=" ) duration
 sample       ::= "sample" blank+ sample-query
                  ( blank+ "and" blank+ sample-query )*
                  blank+ "every" blank+ duration
-                 ( blank+ count ( blank+ clock )? ( blank+ beside )?
-                 | ( blank+ clock )? blank+ beside )
+                 ( blank+ count ( blank+ sample-option )* ( blank+ beside )?
+                 | ( blank+ sample-option )* blank+ beside )
 beside       ::= "while" blank+ ( wait | call )
 clock        ::= "clock=" ( "server" | "client" )
+sample-option ::= clock | "fields=" name ( "," name )*
 assert       ::= "assert" blank+ query blank+ predicates
 if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
                  "?"? statement
@@ -480,11 +481,22 @@ reads as `none`, so `==none` holds for it and an ordering on it never does.
 `sample <query> every <duration> x<n>` SHALL run a read-only query n times, 1
 to 1,000, every N ticks, at least 1t. A server-side query is sampled on the
 server clock: `clock=server` asserts that, and `clock=client` is refused for a
-server-side query.
+server-side query. `fields=<name>[,<name>…]` SHALL keep only those fields in
+each row, in text and JSON alike, besides its tick and query, and `err` for
+a failed query; a name no row has SHALL NOT be an error.
 
 #### Scenario: Too many samples
 - **WHEN** an agent runs `sample status every 1t x1001`
 - **THEN** the result is `err syntax` naming the 1,000 limit
+
+#### Scenario: Only the fields asked for
+- **WHEN** an agent runs `sample status every 10t x3 fields=pos,hp`
+- **THEN** each of the three rows gives its ticks, `pos` and `hp`, and none
+  of `status`'s other fields
+
+#### Scenario: A field name that can't be one
+- **WHEN** an agent runs `sample status every 10t x3 fields=pos,Hp!`
+- **THEN** the result is `err syntax` naming `Hp!`
 
 ### Requirement: Sampling beside an action
 With `while <action>`, `sample` SHALL run the action as if written alone and
