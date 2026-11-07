@@ -159,7 +159,17 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
 - [Testing a mod](docs/testing.md): smoke tests, CI and how Blockpilot fits with Minecraft's GameTests
 - [Adding your own commands](docs/extending.md) from another mod
 - [Building and releasing](docs/building.md)
+- [Playing with others safely](docs/safety.md)
 - [Changelog](CHANGELOG.md)
+
+## Security
+
+- Player chat reaches agents only from `trustedPlayers` in `config/blockpilot/config.json`, empty by default and set
+  in that file only; everyone else's arrives as `withheld from=<name>`, on screen and in the logs too.
+- `agentCommands: "play"` in the same file keeps agents from slash commands, world files, recordings, mod configs,
+  switching servers and quitting.
+- Blockpilot can only limit what happens through the game. Keeping the agent off the computer it runs on is the job of
+  the agent's own setup; [safety.md](docs/safety.md) shows one for Claude Code.
 
 ##
 

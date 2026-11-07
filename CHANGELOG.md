@@ -6,6 +6,15 @@ For filming: a camera that glides, follows, circles, zooms and tilts, one that f
 by name, sounds where the camera hears them, and marks for the edit. With Baritone installed, `goto` and `mine` walk
 through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built against 2.0.0 keep working.
 
+- **BREAKING, chat from other players:** player chat reaches agents with its text only from `trustedPlayers` in
+  `config/blockpilot/config.json`, empty by default; everyone else's arrives as `withheld from=<name>`, in `! chat`
+  events, `messages`, the chat window, its log line and, when the agent hosts, the server's log line. On a server that
+  doesn't check accounts nobody is trusted. The list is set in the file only and applies within a second; `trust`
+  shows it, and `BlockpilotApi.isTrusted` tells extensions. Single-player play and tests are unaffected
+  ([safety.md](docs/safety.md)).
+- **Play-only agents:** `agentCommands: "play"` refuses `cmd`, `server`, world files, recordings, captures, mod
+  configs, switching worlds and quitting with `err not_allowed`, and holds back slash commands an agent types or
+  clicks in chat.
 - **Camera moves:** `camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]` glides the camera
   to a point, placed anew in every frame, through up to 32 via points on one smooth curve at a constant speed. It keeps
   its target, turns to a new one or looks ahead, and `ease=in|out|inout` shapes its speed. With `background` it glides
