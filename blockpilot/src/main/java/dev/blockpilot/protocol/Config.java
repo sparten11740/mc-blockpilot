@@ -36,6 +36,8 @@ public final class Config {
     public String agentCommands = "all";
     /** The namespaces of other mods' commands agents may use; Blockpilot's own need none. */
     public List<String> allowedExtensions = new ArrayList<>();
+    /** Dangerous: true turns every agent safety check off (trusted players, allowedExtensions, agentCommands). */
+    public boolean dangerouslyAllowAll = false;
 
     /**
      * Reads the file and writes it back with the defaults of missing keys. A file that is there but can't be read is
@@ -83,7 +85,8 @@ public final class Config {
             .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    /** Whether agents are held to playing; never while dangerouslyAllowAll is on. */
     public boolean playOnly() {
-        return !agentCommands.equals("all");
+        return !dangerouslyAllowAll && !agentCommands.equals("all");
     }
 }

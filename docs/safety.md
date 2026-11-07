@@ -87,6 +87,24 @@ chat-links prompt off.
 The default, `all`, refuses nothing, since testing a mod needs these commands. A value Blockpilot doesn't know counts as
 `play`.
 
+## Turning it all off, dangerously
+
+```json
+{
+  "dangerouslyAllowAll": true
+}
+```
+
+**This turns every safety check on this page off.** Every player's chat reaches agents with its text, also on servers
+that don't check accounts, and `BlockpilotApi.isTrusted` says yes to everyone; every mod's commands and events are
+used, whatever `allowedExtensions` says; and `agentCommands` is ignored as if it were `all`, so no command, screen or
+link is refused and slash commands go out as before. It is fine when nobody but you can reach the agent: testing a mod
+alone, in single-player, or on a world only your own clients join. Never leave it on while the agent plays with other
+people. Like the other settings it is set in the file only, applies within a second and counts as false in a file
+Blockpilot can't read. While it is on, Blockpilot logs a warning at start and on each change of the file, `trust`
+reports `dangerously_allow_all`, and the agent indicator on screen says "safety off" (hidden while recording, like the
+rest of it).
+
 ## Text from players is untrusted input
 
 Even a trusted player's words are a request the agent weighs, not an order: an agent that takes requests from players

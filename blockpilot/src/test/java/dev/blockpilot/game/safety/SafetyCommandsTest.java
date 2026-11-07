@@ -30,6 +30,13 @@ class SafetyCommandsTest {
     }
 
     @Test
+    void saysWhenEverythingIsAllowed() {
+        Trust trust = new Trust(List.of(), false);
+        trust.setAllowAll(true);
+        assertEquals(true, new SafetyCommands(trust).trust().fields().get("dangerously_allow_all"));
+    }
+
+    @Test
     void saysWhenADevelopmentRunTrustsUnverifiedServers() {
         Trust trust = new Trust(List.of(), true);
         trust.update(UUID.randomUUID(), true, Map.of());

@@ -6,10 +6,10 @@
 Checks who reaches the agent through the game and what the agent may do in it (docs/safety.md): nobody trusted by
 default, trustedPlayers read from config/blockpilot/config.json within a second, no command that changes trust, and
 the play profile (agentCommands: "play"), down to slash commands an agent types into the chat screen, the screens its
-input reaches and links, and allowedExtensions for other mods' commands. It writes the
-client's config file for that, restores it in the end, also on a failure or Ctrl-C, and waits for the client to read it
-back, so it leaves the client as it found it and can run before or after tools/smoke_test.py. It makes a throwaway
-flat world and deletes it again.
+input reaches and links, allowedExtensions for other mods' commands, and dangerouslyAllowAll lifting all of it. It
+writes the client's config file for that, restores it in the end, also on a failure or Ctrl-C, and waits for the client
+to read it back, so it leaves the client as it found it and can run before or after tools/smoke_test.py. It makes a
+throwaway flat world and deletes it again.
 
 --json reads every reply as JSON instead of text. --clients 2 runs the two-client checks, which need the second client
 of the two-client test runs; without it, they are reported as skipped. Exit code 0 when every check passed; a check
@@ -225,6 +225,25 @@ def check_extensions_allowed(game_dir, config, as_json):
     return None if under_play[0] == "ok" else f"an allowed extension command under play answered {under_play[3]}"
 
 
+def check_allow_all(game_dir, config, as_json):
+    """dangerouslyAllowAll lifts every check: another mod's command runs unlisted, and so does one play refuses."""
+    config.write(dangerouslyAllowAll=True, agentCommands="play", allowedExtensions=[])
+    if until(lambda: "dangerously_allow_all" in run(game_dir, "trust", as_json=as_json)[1]) is None:
+        return f"trust didn't report dangerously_allow_all {RELOAD_SECONDS} s after it was switched on"
+    problems = []
+    _, overview = run(game_dir, "help")
+    if "devcheck" in overview:
+        ping = steps(game_dir, "devcheck:ping", as_json)[0]
+        if ping[0] != "ok":
+            problems.append(f"devcheck:ping without allowedExtensions answered {ping[3]}")
+    else:
+        problems.append("no devcheck:ping in this run to call")
+    refusable = steps(game_dir, "config", as_json)[0]
+    if refused(refusable, "config"):
+        problems.append("config, which play refuses, was refused with dangerouslyAllowAll on")
+    return "; ".join(problems) or None
+
+
 def check_two_clients(game_dir, config, as_json, clients):
     if clients < 2:
         raise Skipped("needs --clients 2, the second client of the two-client test runs")
@@ -257,6 +276,7 @@ def main():
             ("the play profile follows no links", lambda: check_play_links(game_dir, config, as_json)),
             ("another mod's commands need allowedExtensions",
              lambda: check_extensions_allowed(game_dir, config, as_json)),
+            ("dangerouslyAllowAll turns every check off", lambda: check_allow_all(game_dir, config, as_json)),
             ("untrusted chat is withheld between two clients",
              lambda: check_two_clients(game_dir, config, as_json, args.clients)),
         ]
@@ -272,7 +292,8 @@ def main():
             finally:
                 config.restore()
                 until(lambda: not play_applies(game_dir, as_json) and trusted(game_dir, as_json)
-                      == (config.settings.get("trustedPlayers") or []))
+                      == (config.settings.get("trustedPlayers") or [])
+                      and "dangerously_allow_all" not in run(game_dir, "trust", as_json=as_json)[1])
             if problem:
                 failures += 1
                 print(f"FAIL {name}: {problem}")
