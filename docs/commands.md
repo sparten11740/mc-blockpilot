@@ -120,7 +120,11 @@ those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<ca
 - `sprint on|off`. `sneak on` and `sprint on` last as held keys do; see input.
 - `fly on|off`.
 - `goto <pos|e<id>> [near=]`: walks there along a path. To a position without `near=`, `err no_path` comes at once
-  with the reason when the player can't stand there, e.g. `stone fills ~2,-1,0; stand at ~2,0,0`.
+  with the reason when the player can't stand there, e.g. `stone fills ~2,-1,0; stand at ~2,0,0`. With
+  [Baritone](https://github.com/cabaletta/baritone) installed, it walks through Baritone, with no option to give, and
+  the reply adds `by=baritone`. Baritone digs and places blocks on the way, as its settings allow: turning its
+  `allowBreak` and `allowPlace` off gives a walk that alters nothing. Its `err no_path` comes once Baritone has walked
+  as near as it can, and `stop` or real input ends its walk as any other.
 
 ## interact
 
@@ -137,7 +141,9 @@ those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<ca
   blocks are passed over. `err out_of_reach <pos> is behind <block> <pos>` names what is in the way. Only what the
   player was digging counts as mined. If something else changes the block first, `mine` at a position or the crosshair
   digs what is there now, or gives `err no_block <pos> is air`, and `mine` by type goes on to the next block. By type,
-  it walks into reach of each block and, when the crosshair still can't hit one, closer once before passing over it.
+  it walks into reach of each block and, when the crosshair still can't hit one, closer once before passing over it;
+  with Baritone installed, both walks go through Baritone, which digs its way to blocks behind others, and the reply
+  adds `by=baritone`.
 - `place <item> <pos>`: aims at the face of the neighbouring block's shape, so also on a carpet or against a fence
   post. `err no_item` says to give the item first; a taken cell names the cell above when that one is free; when the
   crosshair hits something else or another face, `err out_of_reach` names it and nothing is placed.

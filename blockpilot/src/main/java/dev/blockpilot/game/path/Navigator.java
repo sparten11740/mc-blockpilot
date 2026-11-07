@@ -92,7 +92,7 @@ public final class Navigator implements Action {
             sinceProgress = 0;
         } else if (++sinceProgress > STUCK_TICKS) {
             release();
-            throw new CommandException("stuck", player.blockPosition().toShortString().replace(", ", ","));
+            throw new CommandException("stuck", Pathfinders.cell(player.blockPosition()));
         }
         follow(player, goal);
         return null;

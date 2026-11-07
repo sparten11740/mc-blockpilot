@@ -3,6 +3,7 @@ package dev.blockpilot.game.path;
 import dev.blockpilot.api.Position;
 import java.util.List;
 import java.util.function.Supplier;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -10,9 +11,9 @@ import net.minecraft.world.phys.Vec3;
  * walks. Another pathfinding mod plugs in as one more adapter in {@link Installed}.
  */
 public final class Pathfinders {
-    /** Built on first use, in the game, as the adapters look for their mods then. */
+    /** Built on first use, in the game, as the adapters look for their mods then, once. */
     private static final class Installed {
-        static final Pathfinders VALUE = new Pathfinders(List.of(new BuiltInPathfinder()));
+        static final Pathfinders VALUE = new Pathfinders(List.of(new BaritonePathfinder(), new BuiltInPathfinder()));
     }
 
     private final List<Pathfinder> preferred;
@@ -41,6 +42,11 @@ public final class Pathfinders {
             Vec3 at = target.get();
             return at == null ? null : Position.absolute(at.x, at.y, at.z);
         };
+    }
+
+    /** A block position as replies give it, x,y,z. */
+    static String cell(BlockPos pos) {
+        return pos.getX() + "," + pos.getY() + "," + pos.getZ();
     }
 
     /** Whether the pathfinder is Blockpilot's own, whose replies don't name it. */
