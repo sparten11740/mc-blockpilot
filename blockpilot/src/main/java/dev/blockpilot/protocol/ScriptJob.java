@@ -196,8 +196,17 @@ final class ScriptJob implements CommandContext {
                 }
                 return false;
             }
+            // A refusal no step took is stale: it belongs to no command of this script.
+            Refusal.take();
             try {
                 run(statement);
+                Result refused = Refusal.take();
+                if (refused != null && running != null) {
+                    running.action().cancel();
+                    engine.game().releaseInputs();
+                    running = null;
+                    finish(refused);
+                }
             } catch (CommandException e) {
                 finish(e.toResult());
             } catch (RuntimeException e) {
@@ -404,6 +413,12 @@ final class ScriptJob implements CommandContext {
     private Result tickRunning() {
         try {
             Result result = running.action().tick();
+            Result refused = Refusal.take();
+            if (refused != null) {
+                running.action().cancel();
+                engine.game().releaseInputs();
+                return refused;
+            }
             if (result != null) {
                 return result;
             }
