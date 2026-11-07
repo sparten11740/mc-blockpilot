@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 (unreleased)
+## 1.1.0 (2026-11-07)
 
 For filming: a camera that glides, follows, circles, zooms and tilts, one that films far from the player, entities taken
 by name, sounds where the camera hears them, and marks for the edit. With Baritone installed, `goto` and `mine` walk
