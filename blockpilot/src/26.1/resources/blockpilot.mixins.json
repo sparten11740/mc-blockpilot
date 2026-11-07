@@ -48,6 +48,7 @@
     "ParticleMixin",
     "PersistentEntitySectionManagerMixin",
     "PlayerChunkSenderMixin",
+    "PlayerListMixin",
     "QuadParticleGroupMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",

@@ -63,9 +63,14 @@ public final class NeoForgeClientEntrypoint {
         //?}
         NeoForge.EVENT_BUS.addListener(RenderGuiEvent.Post.class,
             event -> ClientPlatform.hooks().onHudRender(event.getGuiGraphics()));
+        // First, so that the window, its log line and every later listener get an untrusted player's line withheld.
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, ClientChatReceivedEvent.class, event -> {
+            if (!event.isSystem()) {
+                event.setMessage(ClientPlatform.hooks().judgeChat(event.getMessage(), event.getSender()));
+            }
+        });
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class,
-            event -> ClientPlatform.hooks().onChatReceived(event.getMessage(),
-                event.isSystem() ? null : event.getSender()));
+            event -> ClientPlatform.hooks().onChatReceived(event.getMessage()));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class,
             event -> ClientPlatform.hooks().onScreenInit(event.getScreen()));
         NeoForge.EVENT_BUS.addListener(GameShuttingDownEvent.class, event -> ClientPlatform.hooks().onClientStopping());

@@ -82,8 +82,21 @@ public final class ClientPlatform {
         default void onHudRender(GuiGraphics graphics) {
         }
 
-        /** {@code sender}: the player whose chat it is, or null for system and mod messages. */
-        default void onChatReceived(Component message, UUID sender) {
+        /**
+         * What the chat window shows for an incoming line, decided before it is shown: the line itself, or a stand-in
+         * for an untrusted player's. {@code sender}: the player whose chat it is, or null for system and mod messages.
+         */
+        default Component judgeChat(Component message, UUID sender) {
+            return message;
+        }
+
+        /** What the integrated server logs for a player's chat line, decided as {@link #judgeChat}; server thread. */
+        default Component judgeServerChat(Component content, UUID sender, String name) {
+            return content;
+        }
+
+        /** A line the chat window shows, as judged. */
+        default void onChatReceived(Component message) {
         }
 
         default void onScreenInit(Screen screen) {

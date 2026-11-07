@@ -15,6 +15,8 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 //? if >=26.1 {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
@@ -35,12 +37,29 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         *///?} else {
         HudRenderCallback.EVENT.register((graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
         //?}
+        // Fabric can't change a chat line, so an untrusted player's is cancelled and its stand-in shown instead, in the
+        // window and its log line alike.
+        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
+            Component judged = ClientPlatform.hooks().judgeChat(message,
+                signedMessage != null ? signedMessage.sender() : null);
+            if (judged == message) {
+                return true;
+            }
+            //? if >=26.2 {
+            /*Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(judged);
+            *///?} else if >=26.1 {
+            /*Minecraft.getInstance().gui.getChat().addClientSystemMessage(judged);
+            *///?} else {
+            Minecraft.getInstance().gui.getChat().addMessage(judged);
+            //?}
+            ClientPlatform.hooks().onChatReceived(judged);
+            return false;
+        });
         ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
-            ClientPlatform.hooks().onChatReceived(message,
-                signedMessage != null ? signedMessage.sender() : null));
+            ClientPlatform.hooks().onChatReceived(message));
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             if (!overlay) {
-                ClientPlatform.hooks().onChatReceived(message, null);
+                ClientPlatform.hooks().onChatReceived(message);
             }
         });
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> ClientPlatform.hooks().onScreenInit(screen));
