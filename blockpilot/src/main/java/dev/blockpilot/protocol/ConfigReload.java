@@ -1,6 +1,5 @@
 package dev.blockpilot.protocol;
 
-import com.google.gson.JsonParseException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,13 +35,12 @@ public final class ConfigReload {
             return;
         }
         try {
-            Config read = Config.parse(text);
+            apply.accept(Config.parse(text));
             seen = text;
             failed = null;
-            apply.accept(read);
-        } catch (JsonParseException e) {
+        } catch (RuntimeException e) {
             failed = text;
-            LOGGER.error("Could not read {}; the last settings stay until it is fixed: {}", file, e.getMessage());
+            LOGGER.error("Could not read {}; the last settings stay until it is fixed", file, e);
         }
     }
 

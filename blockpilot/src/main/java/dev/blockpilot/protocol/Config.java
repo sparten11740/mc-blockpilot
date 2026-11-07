@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,16 +35,28 @@ public final class Config {
     /** {@code all}, or {@code play} to hold agents to playing; any other value counts as {@code play}. */
     public String agentCommands = "all";
 
+    /**
+     * Reads the file and writes it back with the defaults of missing keys. A file that is there but can't be read is
+     * left as it is, and the safety settings fail closed until it is fixed: agents held to play, nobody trusted.
+     */
     public static Config load(Path file) {
         Config config = new Config();
-        try {
-            if (Files.exists(file)) {
+        if (Files.exists(file)) {
+            try {
                 config = parse(Files.readString(file, StandardCharsets.UTF_8));
+            } catch (IOException | JsonParseException e) {
+                LOGGER.error("Could not read {}; agents are held to play and nobody is trusted until it is fixed",
+                    file, e);
+                Config closed = new Config();
+                closed.agentCommands = "play";
+                return closed;
             }
+        }
+        try {
             Files.createDirectories(file.getParent());
             Files.writeString(file, GSON.toJson(config), StandardCharsets.UTF_8);
-        } catch (IOException | JsonParseException e) {
-            LOGGER.warn("Could not read {}; using defaults", file, e);
+        } catch (IOException e) {
+            LOGGER.warn("Could not write {}", file, e);
         }
         return config;
     }
@@ -54,9 +67,9 @@ public final class Config {
         if (config == null) {
             config = new Config();
         }
-        if (config.trustedPlayers == null) {
-            config.trustedPlayers = new ArrayList<>();
-        }
+        // A trailing comma reads as a null name.
+        config.trustedPlayers = config.trustedPlayers == null ? new ArrayList<>() : config.trustedPlayers.stream()
+            .filter(name -> name != null && !name.isBlank()).collect(Collectors.toCollection(ArrayList::new));
         if (config.agentCommands == null) {
             config.agentCommands = "all";
         }
