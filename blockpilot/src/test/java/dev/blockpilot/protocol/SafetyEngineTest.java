@@ -199,6 +199,18 @@ class SafetyEngineTest {
     }
 
     @Test
+    void allowingEverythingUsesEveryExtensionAndItsEvents() {
+        engine.setAllowAll(true);
+        assertEquals("ok", run("mymod:gear"));
+        assertEquals("ok", run("claimed:grab"));
+        Session session = engine.openSession();
+        engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
+        assertEquals("ok count=0\n! mymod:assembled", Formatter.text(engine.submit(session, null, "trust").join()));
+        engine.setAllowAll(false);
+        assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
+    }
+
+    @Test
     void playingAndExtensionsGoOn() {
         engine.setAllowedExtensions(List.of("mymod"));
         engine.setPlayOnly(true);

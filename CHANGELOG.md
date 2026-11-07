@@ -6,6 +6,11 @@
   above, north, south, west, east), so it fills a hole two blocks ahead from the hole's far side and places above the
   eyes beside a block, where it failed with `err out_of_reach` because the first neighbour's face was hidden. Wherever
   it worked before, it places against the same neighbour as before.
+- **Dangerous, `dangerouslyAllowAll`:** `true` in `config/blockpilot/config.json` turns every agent safety check off:
+  everyone's chat reaches agents with its text, every mod's commands and events are used whatever `allowedExtensions`
+  says, and `agentCommands` is ignored. For testing a mod alone or in single-player only. It is set in the file only and
+  counts as false in a file that can't be read; while it is on, the log warns, `trust` reports `dangerously_allow_all`
+  and the agent indicator says "safety off" ([safety.md](docs/safety.md)).
 
 ## 1.1.0 (2026-11-07)
 

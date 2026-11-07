@@ -196,7 +196,8 @@ call.
   server that doesn't check accounts, where nobody is trusted. Another player's chat arrives as `withheld from=<name>`,
   in `! chat` events and in `messages`, the agent's own player's and system and mod messages as they came. The list is
   `trustedPlayers` in `config/blockpilot/config.json`, empty by default; a change to the file applies within a second,
-  and no command changes it ([safety.md](safety.md)).
+  and no command changes it ([safety.md](safety.md)). `dangerously_allow_all` means `dangerouslyAllowAll` is on in the
+  file: every safety check is off and everyone counts as trusted.
 
 With `agentCommands: "play"` in `config/blockpilot/config.json`, agents may only play: a script with `cmd`, `server`,
 `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`, `create world`,

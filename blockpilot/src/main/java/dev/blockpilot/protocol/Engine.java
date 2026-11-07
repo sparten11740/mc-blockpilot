@@ -62,6 +62,8 @@ public final class Engine {
     private volatile Set<String> allowedExtensions = Set.of();
     /** The namespaces Blockpilot's own compat modules emit events under; events carry no other proof of origin. */
     private volatile Set<String> ownEventNamespaces = Set.of();
+    /** dangerouslyAllowAll: every extension's commands and events are used. */
+    private volatile boolean allowAll;
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -92,14 +94,18 @@ public final class Engine {
 
     /** Whether agents may use the command: Blockpilot's own, or another mod's whose namespace is allowed. */
     boolean usable(CommandRegistry.Entry entry) {
-        return entry.builtIn() || allowedExtensions.contains(entry.namespace());
+        return allowAll || entry.builtIn() || allowedExtensions.contains(entry.namespace());
+    }
+
+    public void setAllowAll(boolean value) {
+        allowAll = value;
     }
 
     /** An extension's event: delivered when its namespace is allowed or one of Blockpilot's own, else dropped. */
     public void broadcastExtension(Event event) {
         String name = event.name();
         String namespace = name.substring(0, Math.max(name.indexOf(':'), 0));
-        if (ownEventNamespaces.contains(namespace) || allowedExtensions.contains(namespace)) {
+        if (allowAll || ownEventNamespaces.contains(namespace) || allowedExtensions.contains(namespace)) {
             broadcast(event);
         }
     }

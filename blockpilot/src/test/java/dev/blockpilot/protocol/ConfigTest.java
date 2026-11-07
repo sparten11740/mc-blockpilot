@@ -68,6 +68,23 @@ class ConfigTest {
     }
 
     @Test
+    void allowingEverythingIsOffByDefaultAndInABrokenFile() throws Exception {
+        Path file = directory.resolve("config.json");
+        assertFalse(Config.load(file).dangerouslyAllowAll);
+        Files.writeString(file, "{\"dangerouslyAllowAll\": true, ");
+        Config broken = Config.load(file);
+        assertFalse(broken.dangerouslyAllowAll);
+        assertTrue(broken.playOnly());
+    }
+
+    @Test
+    void allowingEverythingIgnoresThePlayProfile() throws Exception {
+        Path file = directory.resolve("config.json");
+        Files.writeString(file, "{\"dangerouslyAllowAll\": true, \"agentCommands\": \"play\"}");
+        assertFalse(Config.load(file).playOnly());
+    }
+
+    @Test
     void anUnknownCommandProfileHoldsAgentsToPlaying() throws Exception {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{\"agentCommands\": \"everything\", \"trustedPlayers\": null}");

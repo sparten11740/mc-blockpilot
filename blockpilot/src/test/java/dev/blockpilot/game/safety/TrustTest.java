@@ -55,6 +55,16 @@ class TrustTest {
     }
 
     @Test
+    void allowingEverythingTrustsEveryoneEvenUnverified() {
+        Trust trust = trust(List.of(), true);
+        trust.setAllowAll(true);
+        assertTrue(trust.trusts(MALLORY));
+        assertNull(trust.withheld(MALLORY, "Mallory"));
+        trust.setAllowAll(false);
+        assertFalse(trust.trusts(MALLORY));
+    }
+
+    @Test
     void anUnknownSenderIsNamedByUuid() {
         Trust trust = trust(List.of("Steve"), false);
         UUID stranger = UUID.randomUUID();

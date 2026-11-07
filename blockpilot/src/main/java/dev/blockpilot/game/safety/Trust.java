@@ -30,6 +30,8 @@ public final class Trust {
     private volatile Connection connection = new Connection(null, false, Map.of());
     /** A development run's switch: the list applies on unverified servers too, for offline dev accounts. */
     private final boolean trustUnverified;
+    /** dangerouslyAllowAll: everyone counts as trusted. */
+    private volatile boolean allowAll;
 
     public Trust(Collection<String> trusted, boolean trustUnverified) {
         this.trustUnverified = trustUnverified;
@@ -46,7 +48,7 @@ public final class Trust {
     }
 
     private boolean trusts(Connection now, UUID player, String name) {
-        if (player != null && player.equals(now.self())) {
+        if (allowAll || player != null && player.equals(now.self())) {
             return true;
         }
         return (!now.unverified() || trustUnverified) && name != null && names.keys().contains(key(name));
@@ -73,6 +75,14 @@ public final class Trust {
 
     public boolean trustUnverified() {
         return trustUnverified;
+    }
+
+    public boolean allowAll() {
+        return allowAll;
+    }
+
+    public void setAllowAll(boolean value) {
+        allowAll = value;
     }
 
     /** Whether the named player is among those the client knows. */

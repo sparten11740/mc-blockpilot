@@ -141,6 +141,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         engine.setPlayOnly(config.playOnly());
         engine.setAllowedExtensions(config.allowedExtensions);
         engine.setOwnEventNamespaces(Set.of(SableSupport.NAMESPACE));
+        applyAllowAll(config.dangerouslyAllowAll);
         PlayGuard.install(() -> config.playOnly());
         engine.startWatchdog();
         events = new Events(engine);
@@ -377,7 +378,22 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     /** The trusted players and the agent command profile as the config file has them now. */
+    /** dangerouslyAllowAll into the checks that lift with it; the play profile lifts through Config.playOnly. */
+    private void applyAllowAll(boolean allowAll) {
+        trust.trust().setAllowAll(allowAll);
+        engine.setAllowAll(allowAll);
+        if (allowAll) {
+            Blockpilot.LOGGER.warn("dangerouslyAllowAll is on in config/blockpilot/config.json: every agent safety "
+                + "check is off, so anyone's chat reaches agents, every mod's commands run and agentCommands is ignored");
+        }
+    }
+
     private void applySafetySettings(Config read) {
+        if (config.dangerouslyAllowAll && !read.dangerouslyAllowAll) {
+            Blockpilot.LOGGER.info("dangerouslyAllowAll is off again; the agent safety checks are back on");
+        }
+        config.dangerouslyAllowAll = read.dangerouslyAllowAll;
+        applyAllowAll(read.dangerouslyAllowAll);
         config.trustedPlayers = read.trustedPlayers;
         config.agentCommands = read.agentCommands;
         trust.trust().set(read.trustedPlayers);
@@ -452,8 +468,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             return;
         }
         String activity = presence.shownActivity();
-        String text = !enabled ? "Blockpilot: agent control off (" + toggleKey.getTranslatedKeyMessage().getString()
-            + ")" : activity != null ? "Blockpilot: " + activity : "Blockpilot: agent active";
+        String text = (!enabled ? "Blockpilot: agent control off (" + toggleKey.getTranslatedKeyMessage().getString()
+            + ")" : activity != null ? "Blockpilot: " + activity : "Blockpilot: agent active")
+            + (config.dangerouslyAllowAll ? ", safety off" : "");
         int color = !enabled ? 0xFFFF5555 : activity != null ? 0xFF55FF55 : 0xFFAAAAAA;
         graphics.drawString(Minecraft.getInstance().font, text, 4, 4, color);
     }
