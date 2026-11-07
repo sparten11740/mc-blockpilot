@@ -60,6 +60,11 @@ public final class ClientPlatform {
         default float cameraRoll(Camera camera) {
             return 0;
         }
+
+        /** Why the loader doesn't run GameTests, naming what turns them on, or null when it does. */
+        default String gameTestsOff() {
+            return null;
+        }
     }
 
     /** Callbacks the loader's entry point forwards its events to. */
@@ -198,6 +203,10 @@ public final class ClientPlatform {
 
     public static float cameraRoll(Camera camera) {
         return services().cameraRoll(camera);
+    }
+
+    public static String gameTestsOff() {
+        return services().gameTestsOff();
     }
 
     // Categories are registered objects from 26.1. A loader that leaves that to the mod calls this for each mapping.

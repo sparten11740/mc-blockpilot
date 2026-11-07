@@ -117,6 +117,7 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | integrated | `server` | Run a server command and get its output |
 | | `nbt` | The data of a block entity or entity |
 | | `tick` | Freeze, step or change the game's tick rate |
+| | `gametest` | Run the game's own GameTests and report each one |
 | observe | `screenshot` | Save frames, bursts and contact sheets |
 | | `camera` | Render from a placed camera: glide, follow, orbit, zoom and tilt |
 | | `settle` | Wait until the chunks in view have loaded |

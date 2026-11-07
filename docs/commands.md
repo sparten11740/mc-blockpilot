@@ -228,6 +228,14 @@ call.
   `server data modify storage test:x ids set value [I\;1,2]`.
 - `nbt <pos|e<id>|uuid> [path=]`: the server-side data of a block entity or entity, SNBT in text and JSON in json.
 - `tick freeze|unfreeze|step <n>|rate <tps>|query`.
+- `gametest run <selector>`: runs the game's own GameTests whose ids match the selector, `*` for any run of characters:
+  `namespace:path` on 26.x, from data packs and mods (`gametest run mymod:*`), and `class.method` in lower case on
+  1.21.1, registered by mods (`gametest run mymod.*`). The tests build their structures beside the player, as `/test
+  run` does, and `server test clearall` removes them. It answers once every test has ended, `passed=` and `failed=` with
+  a row per test, `passed`, or `failed` and its message; `err no_test` when nothing matches. NeoForge runs GameTests
+  only in a development environment started with `-Dneoforge.enableGameTest=true` (Blockpilot's dev runs set it), and
+  answers `err unsupported` without it. A data pack's tests load with the world, so after adding one, join the world
+  again.
 - `block`, `blocks` and `find … side=server` read the integrated server's copy.
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats

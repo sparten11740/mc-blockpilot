@@ -243,6 +243,9 @@ nbt-option ::= "path=" option-value
 tick-command ::= "tick" ( ( "freeze" | "unfreeze" | "query" ) | "step" integer | "rate" number )
 tick-option ::= "timeout=" ( duration | seconds )
 
+gametest-command ::= "gametest" "run" word
+gametest-option ::= "timeout=" ( duration | seconds )
+
 screenshot-command ::= "screenshot" integer? "sheet"?
 screenshot-option ::= "burst=" integer | "every=" duration | "hud=" ( "on" | "off" ) | "crop=" option-value | "timeout=" ( duration | seconds )
 

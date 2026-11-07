@@ -10,7 +10,10 @@ version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1
 `-vanilla` node starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a NeoForge or
 Fabric dev client with Baritone: it fetches the build that node's `gradle.properties` names (`baritone_version`) from
 cabaletta's GitHub releases and checks it against `baritone_sha1`, the SHA-1 in that release's `checksums.txt`. It
-goes on the dev client's runtime classpath only, never into a jar.
+goes on the dev client's runtime classpath only, never into a jar. NeoForge dev clients start with
+`-Dneoforge.enableGameTest=true`, which `gametest run` needs there, and the 1.21.1 dev clients include
+`src/gameTests/`, two GameTests of Blockpilot's own (one fails on purpose) that the smoke test runs; the published jars
+leave them out.
 
 The mod is one source tree, built with [Stonecutter](https://stonecutter.kikugie.dev/) once per Minecraft version and
 loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilot/versions/` with its own

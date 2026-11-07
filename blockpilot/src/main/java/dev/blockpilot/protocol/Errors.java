@@ -40,6 +40,7 @@ public final class Errors {
         CODES.put("unloaded", "the position is in a chunk that is not loaded");
         CODES.put("join_failed", "joining the world or server failed; the reason is attached");
         CODES.put("exists", "a world, or a recording, with that name already exists");
+        CODES.put("no_test", "gametest: no registered GameTest matches the selector");
         CODES.put("no_snapshot", "this world has no snapshot with that name (snapshot list)");
         CODES.put("not_test_world", "only worlds made by create world can be deleted");
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");

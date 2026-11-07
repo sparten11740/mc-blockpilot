@@ -13,6 +13,7 @@ import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.gametest.GameTestHooks;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 
 /** What NeoForge answers for the mod. */
@@ -102,5 +103,11 @@ final class NeoForgeServices implements ClientPlatform.Services {
     @Override
     public float cameraRoll(Camera camera) {
         return camera.getRoll();
+    }
+
+    @Override
+    public String gameTestsOff() {
+        return GameTestHooks.isGametestEnabled() ? null
+            : "NeoForge runs GameTests only in a development environment started with -Dneoforge.enableGameTest=true";
     }
 }

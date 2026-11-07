@@ -34,6 +34,9 @@ through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built a
   Its settings decide whether it breaks or places blocks: with `allowBreak` and `allowPlace` off, a walk alters
   nothing. Without Baritone they walk as before, and `mine` by type now walks closer to a block it can't see before
   passing over it. Pathfinders sit behind one port, so another pathfinding mod is one adapter more.
+- **GameTests:** `gametest run <selector>` runs the game's own GameTests, the ones a mod or a data pack registers, on
+  the integrated server, and answers with a row per test, passed or failed with its message, on every target. NeoForge
+  runs them only in a development environment with `-Dneoforge.enableGameTest=true`.
 - **Worlds with experimental settings:** when the game asks whether to back a world up first as it uses experimental
   settings, as a data pack's GameTests make it, `join world`, and `snapshot save` and `restore`, which join the world
   again, load a test world without a backup, with `experimental=true`, and fail at once with `err join_failed` for any
