@@ -8,36 +8,46 @@
 - `mine` by type walks to each block with the same machinery.
 - Baritone (LGPL-3.0) exposes `baritone.api.BaritoneAPI`: the primary
   `IBaritone` per player, its custom goal process (`setGoalAndPath` with a
-  `GoalNear` or `GoalBlock`), its mine process (`mine(count, blocks)`), its
-  pathing behaviour (`isPathing`, `cancelEverything`) and input overrides.
-  Builds exist for 1.21.1 Fabric and NeoForge; none for 26.x yet.
+  `GoalNear` or `GoalBlock`), its pathing behaviour (`isPathing`,
+  `cancelEverything`), its event bus and input overrides.
+  cabaletta publishes builds for NeoForge and Fabric on 1.21.1 (v1.11.3),
+  26.1 (v1.18.0), 26.2 (v1.19.0) and 26.3 (v1.20.0) on GitHub, with
+  checksums; the vanilla agent targets have no loader to load a mod.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- `goto` and `mine` through Baritone when it is installed, chosen per call
-  or by default, with the same answers and the same ways to stop.
+- `goto` and `mine` through Baritone whenever it is installed, with no
+  option to give, the same answers and the same ways to stop.
 - No dependency: Blockpilot loads and works the same without Baritone.
 
 **Non-Goals:**
-- Baritone's other processes (building, farming, exploring) or its chat
-  commands.
+- Baritone's other processes (its own mining, building, farming,
+  exploring) or its chat commands; `mine` keeps its own choice of blocks.
 - Shipping or downloading Baritone for players.
 - Any Baritone code in Blockpilot.
 
 ## Decisions
 
-### D1: A pathfinder seam
+### D1: Pathfinders behind one adapter port
 
-`Pathfinder` gives an `Action` that brings the player near a target
-(`walk(session, target, near)`) and one that mines a number of blocks of a
-kind (`mine(session, matcher, count)`). The built-in one wraps `Navigator`
-and today's mining walk unchanged. Pathfinders register in a map keyed by
-their `via=` name; `goto` and `mine` look up `via=`, or the config's
-`pathfinder`, there, and an unknown name answers `err syntax` listing the
-registered ones, so a further backend is one more registration and the
-commands don't change. `use`, `open` and `take`, which walk to a block on
-the way, keep the built-in `Navigator`.
+`goto` and `mine` depend only on a `Pathfinder` port, never on a backend:
+`name()`, `available()` and an `Action` that brings the player near a target
+(`walk(session, target, near)`). Each backend is an adapter behind that
+port, in a class of its own: `BuiltInPathfinder` wraps `Navigator` unchanged
+and is always available, and `BaritonePathfinder` keeps everything about
+Baritone, its reflection included, to itself. `mine` by type keeps choosing
+and digging blocks itself and walks into reach of each through the port, so
+with Baritone it digs its way to blocks the built-in walk can't reach.
+`Pathfinders` holds the adapters in order of preference, Baritone's first,
+and picks the first available one at each call, as Baritone is only
+available once its class is loaded and a world gives it a player; an adapter
+other than the built-in one adds its name to the reply as `by=`, so the
+built-in pathfinder's replies keep their shape. Swapping in another
+pathfinding mod is one adapter class and one line in that order, with no
+change to the commands or to the other adapters. `use`, `open` and `take`,
+which walk a few blocks to a block on the way, keep the built-in
+`Navigator`.
 
 ### D2: Baritone through reflection
 
@@ -67,7 +77,11 @@ the goal; the release after an action releases Baritone's overrides too.
 - [Baritone's API changes between versions] → One adapter class, found by
   reflection, fails clearly; the smoke check runs on the Baritone build the
   dev runs fetch.
-- [No Baritone for 26.x] → `via=baritone` answers `err unsupported` there
-  until a build exists; the check skips.
-- [Baritone breaks and places blocks] → That is the point of choosing it;
-  the built-in pathfinder, which never does, stays the default.
+- [The vanilla agent targets can't load Baritone] → They keep the built-in
+  pathfinder; the check skips there.
+- [With Baritone installed, `goto` may break and place blocks] → That is
+  what installing it asks for; Baritone's own `allowBreak` and `allowPlace`
+  settings turn it off, the help says so, and `by=` shows which pathfinder
+  walked.
+- [Tests of the built-in pathfinder in a game with Baritone] → The regular
+  runs have no Baritone; only the Baritone run configuration loads it.
