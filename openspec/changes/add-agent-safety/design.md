@@ -66,6 +66,16 @@ offline UUID derived from its name. If they are equal, the server didn't
 verify the account, so it doesn't verify anyone's. The result is checked
 on joining and cached for the connection.
 
+Development runs log in with offline accounts, so every two-client run is
+unverified. `-Pblockpilot.trustUnverified` makes the dev run pass the
+system property `blockpilot.trustUnverified`, which applies the list on
+unverified servers too. It counts only where the platform says this is a
+development environment (NeoForge's `FMLEnvironment.production` false,
+Fabric's `isDevelopmentEnvironment()`); the vanilla targets and production
+installs ignore it, so a player's launcher can't switch it on, and agents
+have no command for it. `trust` reports `trust_unverified` while it
+applies.
+
 ### D4: The `/blockpilot` command at the send hook, only from a person
 
 A mixin on `ClientPacketListener.sendCommand` catches a command starting
@@ -117,6 +127,20 @@ doesn't get around the refused `cmd`.
 supplier Blockpilot installs at load, like the event sink. Without
 Blockpilot running, it answers false. It joins 2.1.0, which isn't released
 yet, and the 2.0.0 fixture test keeps 2.0 integrations honest.
+
+### D7: Settings reloaded from the file
+
+About once a second the client thread compares the config file's
+modification time with the last one it read. When it changed, it reads
+`trustedPlayers` and `agentCommands` again and applies them to `Trust` and
+to the engine's profile, which `Engine` holds in a volatile field read when
+a script is submitted. Other settings, such as the port, still need a
+restart. A file that doesn't parse leaves the last good settings in force
+and logs one error per broken version of the file. `/blockpilot trust`
+saves on the client thread too and then records the new modification time,
+so the reload never reads it back as a change or races it. A file watcher
+was the alternative; polling the time once a second costs nothing and
+needs no thread.
 
 ## Risks / Trade-offs
 
