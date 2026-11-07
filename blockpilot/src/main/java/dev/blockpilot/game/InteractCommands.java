@@ -13,6 +13,7 @@ import static dev.blockpilot.game.PlayerActions.options;
 import static dev.blockpilot.game.PlayerActions.player;
 import static dev.blockpilot.game.PlayerActions.point;
 import static dev.blockpilot.game.PlayerActions.seen;
+import static dev.blockpilot.game.PlayerActions.seesFace;
 import static dev.blockpilot.game.PlayerActions.target;
 
 import dev.blockpilot.api.Action;
@@ -37,7 +38,9 @@ import dev.blockpilot.game.path.Pathfinders;
 import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.protocol.CommandRegistry;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -99,9 +102,10 @@ final class InteractCommands {
             .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)
-            .help("places the item at pos against an adjacent block, aiming at the face of that block's shape (a "
-                + "carpet's top); when the crosshair hits something else, or another face, it fails with err "
-                + "out_of_reach naming what it hits, and places nothing").example("place torch ~1,0,0"));
+            .help("places the item at pos against the first neighbour, below, above, north, south, west or east, "
+                + "whose face toward pos is in sight within reach, aiming at that face of its shape (a carpet's top); "
+                + "with none in sight it aims at the first, and fails with err out_of_reach naming what the crosshair "
+                + "hits, placing nothing").example("place torch ~1,0,0"));
     }
 
     /** The main hand's item, else the off hand's, or null with both hands empty. */
@@ -634,6 +638,34 @@ final class InteractCommands {
         }
     }
 
+    /**
+     * Of the neighbours to place against, in their order, the first whose face toward the cell the player sees; else
+     * the first, which then fails after turning as it does when that face is hidden. Aboard a sub-level, whose blocks a
+     * ray through the world doesn't meet where they are, always the first.
+     */
+    private static Support support(Level level, BlockPos pos, List<Direction> supports) {
+        Support first = Support.of(level, pos, supports.get(0));
+        if (SableSupport.subLevels().at(level, pos) != null) {
+            return first;
+        }
+        for (Direction direction : supports) {
+            Support support = Support.of(level, pos, direction);
+            if (seesFace(level, support.against(), support.face(), support.aim())) {
+                return support;
+            }
+        }
+        return first;
+    }
+
+    /** The neighbour a placement goes against, the face of it toward the cell, and where on that face to aim. */
+    private record Support(BlockPos against, Direction face, Vec3 aim) {
+        static Support of(Level level, BlockPos pos, Direction direction) {
+            BlockPos against = pos.relative(direction);
+            Direction face = direction.getOpposite();
+            return new Support(against, face, Shapes.faceToward(level, against, face));
+        }
+    }
+
     private Action place(CommandContext context, Args args) throws CommandException {
         closeScreen();
         Item item = InventoryOps.item(args.word("item"));
@@ -645,26 +677,21 @@ final class InteractCommands {
             throw new CommandException("syntax", Rel.of(pos) + " is occupied by " + Ids.of(level.getBlockState(pos))
                 + free);
         }
-        Direction support = null;
-        for (Direction direction : Direction.values()) {
-            BlockPos neighbour = pos.relative(direction);
-            if (!level.getBlockState(neighbour).canBeReplaced()) {
-                support = direction;
-                break;
-            }
-        }
-        if (support == null) {
+        List<Direction> supports = Arrays.stream(Direction.values())
+            .filter(direction -> !level.getBlockState(pos.relative(direction)).canBeReplaced()).toList();
+        if (supports.isEmpty()) {
             throw new CommandException("no_block", "nothing next to " + Rel.of(pos) + " to place against");
         }
+        Support support = support(level, pos, supports);
         String id = Ids.of(new ItemStack(item));
         if (InventoryOps.find(item) < 0) {
             throw new CommandException("no_item",
                 id + "; not in the inventory, give it first (cmd give @s " + id + ")");
         }
         InventoryOps.select(item);
-        BlockPos against = pos.relative(support);
-        Direction face = support.getOpposite();
-        Supplier<Vec3> point = seen(level, Shapes.faceToward(level, against, face));
+        BlockPos against = support.against();
+        Direction face = support.face();
+        Supplier<Vec3> point = seen(level, support.aim());
         int[] step = {0};
         return named("place", () -> {
             step[0]++;

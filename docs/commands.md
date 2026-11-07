@@ -145,9 +145,11 @@ those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<ca
   it walks into reach of each block and, when the crosshair still can't hit one, closer once before passing over it;
   with Baritone installed, both walks go through Baritone, which digs its way to blocks behind others, and the reply
   adds `by=baritone`.
-- `place <item> <pos>`: aims at the face of the neighbouring block's shape, so also on a carpet or against a fence
-  post. `err no_item` says to give the item first; a taken cell names the cell above when that one is free; when the
-  crosshair hits something else or another face, `err out_of_reach` names it and nothing is placed.
+- `place <item> <pos>`: places against the first neighbour, below, above, north, south, west, east, whose face toward
+  the cell is in sight within reach, so it fills a hole from its far side, and aims at that face of the neighbour's
+  shape, so also on a carpet or against a fence post. With no face in sight it aims at the first neighbour, and `err
+  out_of_reach` names what the crosshair hits there; nothing is placed. `err no_item` says to give the item first; a
+  taken cell names the cell above when that one is free.
 
 ## inventory
 
