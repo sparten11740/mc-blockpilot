@@ -1,10 +1,12 @@
 package dev.blockpilot.game.safety;
 
 import dev.blockpilot.platform.ClientPlatform;
-import dev.blockpilot.protocol.Config;
+import dev.blockpilot.protocol.Connection;
+import dev.blockpilot.protocol.SafetyPolicy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -16,13 +18,18 @@ import net.minecraft.server.MinecraftServer;
 public final class TrustTracker {
     private static final int REFRESH_TICKS = 20;
 
-    private final Trust trust;
+    private final Trust trust = new Trust();
+    private final Supplier<SafetyPolicy> policy;
     private long ticks;
 
-    public TrustTracker(Config config) {
-        String trustUnverified = System.getProperty("blockpilot.trustUnverified");
-        this.trust = new Trust(config.trustedPlayers, ClientPlatform.developmentEnvironment()
-            && trustUnverified != null && !trustUnverified.equals("false"));
+    public TrustTracker(Supplier<SafetyPolicy> policy) {
+        this.policy = policy;
+    }
+
+    /** -Pblockpilot.trustUnverified, honoured only where the loader reports a development environment. */
+    public static boolean trustUnverified() {
+        String value = System.getProperty("blockpilot.trustUnverified");
+        return ClientPlatform.developmentEnvironment() && value != null && !value.equals("false");
     }
 
     public Trust trust() {
@@ -41,14 +48,19 @@ public final class TrustTracker {
             return message;
         }
         refresh();
-        String withheld = trust.withheld(sender, trust.nameOf(sender));
-        return withheld == null ? message : Component.literal(withheld);
+        return judged(message, sender, trust.connection());
     }
 
     /** The integrated server's log line for a player's chat, judged as the client judges it; server thread. */
     public Component judgeServer(Component content, UUID sender, String name) {
-        String withheld = trust.withheld(sender, name);
-        return withheld == null ? content : Component.literal(withheld);
+        return judged(content, sender, trust.connection().with(sender, name));
+    }
+
+    private Component judged(Component message, UUID sender, Connection now) {
+        if (policy.get().trusts(sender, now)) {
+            return message;
+        }
+        return Component.literal(Trust.withheld(sender, now.nameOf(sender)));
     }
 
     private void refresh() {

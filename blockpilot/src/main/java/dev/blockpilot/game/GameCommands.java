@@ -9,6 +9,7 @@ import dev.blockpilot.game.observe.PixelCommands;
 import dev.blockpilot.game.perf.PerfCommands;
 import dev.blockpilot.game.record.RecordCommands;
 import dev.blockpilot.game.safety.SafetyCommands;
+import dev.blockpilot.game.safety.TrustTracker;
 import dev.blockpilot.protocol.CommandRegistry;
 
 /** Registers every built-in command that needs the game. */
@@ -37,6 +38,7 @@ final class GameCommands {
         new RecordCommands(() -> client.config().ffmpeg).register(registry);
         new LoadCommands().register(registry);
         new LogCommands().register(registry);
-        new SafetyCommands(client.trust().trust()).register(registry);
+        new SafetyCommands(client::safetyPolicy, client.trust().trust(), TrustTracker.trustUnverified())
+            .register(registry);
     }
 }

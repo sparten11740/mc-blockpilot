@@ -14,10 +14,12 @@ import dev.blockpilot.game.safety.SafetyCommands;
 import dev.blockpilot.game.safety.Trust;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,12 +27,15 @@ import org.junit.jupiter.api.Test;
 class SafetyEngineTest {
     private final List<String> ran = new ArrayList<>();
     private final FakeGame game = new FakeGame();
+    private final AtomicReference<SafetyPolicy> safety = new AtomicReference<>(ConfiguredPolicy.DEFAULT);
+    private Set<String> allowed = Set.of();
+    private boolean playOnly;
     private Engine engine;
 
     @BeforeEach
     void setUp() {
         CommandRegistry registry = new CommandRegistry();
-        new SafetyCommands(new Trust(List.of(), false)).register(registry);
+        new SafetyCommands(safety::get, new Trust(), false).register(registry);
         registry.register(CommandSpec.query("status", (context, args) -> Result.ok()));
         registry.register(action("jump"));
         registry.register(action("goto").arg("to", ArgType.POSITION));
@@ -70,6 +75,12 @@ class SafetyEngineTest {
             new BlockpilotApi.Registration("sable", "sable", action("pull"))));
         engine = new Engine(registry, game);
         engine.setOwnEventNamespaces(List.of("sable"));
+        engine.setSafetyPolicy(safety::get);
+    }
+
+    /** The settings this test has set, as one policy the way the client swaps it in. */
+    private void apply() {
+        safety.set(new ConfiguredPolicy(List.of(), allowed, playOnly, false));
     }
 
     private CommandSpec action(String name) {
@@ -106,7 +117,8 @@ class SafetyEngineTest {
 
     @Test
     void aPlayOnlyScriptWithARefusedCommandRunsNoStep() {
-        engine.setPlayOnly(true);
+        playOnly = true;
+        apply();
         assertEquals("skip\nerr not_allowed cmd", run("jump; cmd say hi"));
         assertEquals("err not_allowed server", run("server time query gametime"));
         assertEquals(List.of(), ran);
@@ -114,14 +126,16 @@ class SafetyEngineTest {
 
     @Test
     void aRefusedCommandInsideIfIsRefused() {
-        engine.setPlayOnly(true);
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed cmd", run("if status ok then cmd say hi"));
         assertEquals(List.of(), ran);
     }
 
     @Test
     void worldFilesAndQuittingAreRefusedByWhatTheyDo() {
-        engine.setPlayOnly(true);
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed create world", run("create world mymod-test"));
         assertEquals("err not_allowed delete world", run("delete world mymod-test"));
         assertEquals("err not_allowed quit", run("quit"));
@@ -130,7 +144,8 @@ class SafetyEngineTest {
 
     @Test
     void perfOnlyReads() {
-        engine.setPlayOnly(true);
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed perf", run("perf 1s"));
         assertEquals("err not_allowed perf", run("perf start"));
         assertEquals("ok", run("perf status"));
@@ -151,7 +166,8 @@ class SafetyEngineTest {
 
     @Test
     void anExtensionCommandOnTheIntegratedServerIsRefused() {
-        engine.setPlayOnly(true);
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed sable:tp", run("sable:tp"));
         assertEquals(List.of(), ran);
     }
@@ -160,7 +176,8 @@ class SafetyEngineTest {
     void anExtensionThatIsntAllowedIsRefusedUntilItIs() {
         assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
         assertEquals(List.of(), ran);
-        engine.setAllowedExtensions(List.of("mymod"));
+        allowed = Set.of("mymod");
+        apply();
         assertEquals("ok", run("mymod:gear"));
     }
 
@@ -200,20 +217,23 @@ class SafetyEngineTest {
 
     @Test
     void allowingEverythingUsesEveryExtensionAndItsEvents() {
-        engine.setAllowAll(true);
+        safety.set(AllowAllPolicy.INSTANCE);
         assertEquals("ok", run("mymod:gear"));
         assertEquals("ok", run("claimed:grab"));
         Session session = engine.openSession();
         engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
-        assertEquals("ok count=0\n! mymod:assembled", Formatter.text(engine.submit(session, null, "trust").join()));
-        engine.setAllowAll(false);
+        assertEquals("ok count=0 dangerously_allow_all\n! mymod:assembled",
+            Formatter.text(engine.submit(session, null, "trust").join()));
+        apply();
         assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
     }
 
     @Test
     void playingAndExtensionsGoOn() {
-        engine.setAllowedExtensions(List.of("mymod"));
-        engine.setPlayOnly(true);
+        allowed = Set.of("mymod");
+        apply();
+        playOnly = true;
+        apply();
         assertEquals("ok\nok", run("goto 0,64,0; mymod:gear"));
         assertEquals(List.of("goto", "gear"), ran);
     }

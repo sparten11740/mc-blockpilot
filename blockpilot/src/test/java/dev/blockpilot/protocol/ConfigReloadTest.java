@@ -41,7 +41,7 @@ class ConfigReloadTest {
         reload.check();
         assertEquals(1, applied.size());
         assertEquals(List.of("Steve"), applied.get(0).trustedPlayers);
-        assertTrue(applied.get(0).playOnly());
+        assertTrue(SafetyPolicy.from(applied.get(0), false).playOnly());
     }
 
     @Test

@@ -44,7 +44,7 @@ class ConfigTest {
     void trustsNobodyAndAllowsEveryCommandByDefault() {
         Config config = Config.load(directory.resolve("config.json"));
         assertEquals(List.of(), config.trustedPlayers);
-        assertFalse(config.playOnly());
+        assertFalse(SafetyPolicy.from(config, false).playOnly());
     }
 
     @Test
@@ -53,7 +53,7 @@ class ConfigTest {
         String broken = "{\"agentCommands\": \"play\", \"trustedPlayers\": [\"Steve\"";
         Files.writeString(file, broken);
         Config config = Config.load(file);
-        assertTrue(config.playOnly());
+        assertTrue(SafetyPolicy.from(config, false).playOnly());
         assertEquals(List.of(), config.trustedPlayers);
         assertEquals(broken, Files.readString(file));
     }
@@ -74,14 +74,14 @@ class ConfigTest {
         Files.writeString(file, "{\"dangerouslyAllowAll\": true, ");
         Config broken = Config.load(file);
         assertFalse(broken.dangerouslyAllowAll);
-        assertTrue(broken.playOnly());
+        assertTrue(SafetyPolicy.from(broken, false).playOnly());
     }
 
     @Test
     void allowingEverythingIgnoresThePlayProfile() throws Exception {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{\"dangerouslyAllowAll\": true, \"agentCommands\": \"play\"}");
-        assertFalse(Config.load(file).playOnly());
+        assertFalse(SafetyPolicy.from(Config.load(file), false).playOnly());
     }
 
     @Test
@@ -89,7 +89,7 @@ class ConfigTest {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{\"agentCommands\": \"everything\", \"trustedPlayers\": null}");
         Config config = Config.load(file);
-        assertTrue(config.playOnly());
+        assertTrue(SafetyPolicy.from(config, false).playOnly());
         assertEquals(List.of(), config.trustedPlayers);
     }
 }

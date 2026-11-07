@@ -85,8 +85,4 @@ public final class Config {
             .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    /** Whether agents are held to playing; never while dangerouslyAllowAll is on. */
-    public boolean playOnly() {
-        return !dangerouslyAllowAll && !agentCommands.equals("all");
-    }
 }

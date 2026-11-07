@@ -15,6 +15,7 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
@@ -739,7 +740,7 @@ class EngineTest {
                 (context, args) -> Result.ok()))));
         Engine isolated = new Engine(registry, new FakeGame());
         // Sable's own registration won, so it is another mod's command, which the config allows.
-        isolated.setAllowedExtensions(List.of("sable"));
+        isolated.setSafetyPolicy(() -> new ConfiguredPolicy(List.of(), Set.of("sable"), false, false));
         Session session = isolated.openSession();
         String reply = Formatter.text(isolated.submit(session, null, "sable:info; help").join());
         assertTrue(reply.startsWith("err ext_failed sable:info boom\nskip"), reply);
