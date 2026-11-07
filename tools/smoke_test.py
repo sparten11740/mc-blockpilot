@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """End-to-end smoke test against a running game with Blockpilot.
 
-    python3 tools/smoke_test.py --game-dir <run dir> [--json] [--shapes <file>]
+    python3 tools/smoke_test.py --game-dir <run dir> [--json] [--baritone] [--shapes <file>]
 
 Creates a throwaway flat test world, exercises the command groups (perception, actions, inventory, containers,
 crafting, raw input, observation, the integrated server, sampling, performance capture, snapshots, JSON output),
@@ -10,6 +10,9 @@ step passed; a step that can't run here, such as one needing ffmpeg, is reported
 
 --json runs the same steps in JSON mode and checks the structure of each reply instead of its text: one JSON line
 with one result per step, each ok unless the step expects an error.
+
+--baritone, for a game with Baritone installed, runs only the check that goto and mine walk through it, as the other
+steps expect the built-in pathfinder. Without it, that check is skipped.
 
 --shapes writes the JSON structure (field names, row field names) of a set of queries to a file, so runs on two
 loaders can be compared with diff.
@@ -317,6 +320,41 @@ def check_mine_moves_on(game_dir):
     if len(positions) != 2 or abs(positions[1] - positions[0]) > 0.2:
         return f"didn't stop walking: {positions}"
     return None
+
+
+# A room east of the player, 3x3x3 inside, walled, floored and roofed with the block named; 12,-60,0 is in it.
+ROOM = "server fill 10 -61 -2 14 -57 2 minecraft:{} hollow"
+ROOM_GONE = "server fill 10 -60 -2 14 -57 2 minecraft:air; server fill 10 -61 -2 14 -61 2 minecraft:grass_block"
+
+
+def check_baritone(game_dir, installed):
+    """With Baritone installed, goto digs into a closed room, mine digs to gold blocks behind its walls, a walk into
+    bedrock answers no_path, and stop ends a walk, all through Baritone."""
+    if not installed:
+        raise Skipped("Baritone isn't installed in this run; tools/test_targets.py --baritone runs this")
+    problems = []
+    for script, expected in ((f"{LEVEL}; {ROOM.format('stone')}; goto 12,-60,0", r"^ok \S+s by=baritone$"),
+                             (f"{LEVEL}; {ROOM.format('stone')}; server fill 11 -60 0 13 -60 0 minecraft:gold_block; "
+                              "mine gold_block x3", r"^ok mine 3/3 gold_block by=baritone$"),
+                             (f"{LEVEL}; {ROOM.format('bedrock')}; ?goto 12,-60,0",
+                              r"^err no_path Baritone found none to 12,-60,0 by=baritone$")):
+        _, output = run(game_dir, script)
+        run(game_dir, ROOM_GONE)
+        if not re.search(expected, output, re.MULTILINE):
+            problems.append(f"{script.rsplit('; ', 1)[1]}: {output.strip()[-300:]}")
+    run(game_dir, LEVEL)
+    walking = subprocess.Popen(launcher(game_dir) + ["--game-dir", game_dir, "--timeout", "90", "goto 0,-60,60"],
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    time.sleep(3)
+    run(game_dir, "stop")
+    answer, _ = walking.communicate(timeout=30)
+    _, output = run(game_dir, f"status; wait 10t; status; {LEVEL}")
+    positions = [[float(part) for part in place.split(",")]
+                 for place in re.findall(r"^ok pos (\S+)", output, re.MULTILINE)]
+    # A player who has stopped still slides a little; one still walking covers two blocks in these 10 ticks.
+    if "err cancelled" not in answer or len(positions) != 2 or math.dist(*positions) > 0.2:
+        problems.append(f"stop: the walk answered {answer.strip()[-200:]}, then the player was at {positions}")
+    return "; ".join(problems) or None
 
 
 def check_functions(game_dir, world):
@@ -947,6 +985,8 @@ def main():
     parser.add_argument("--game-dir", default="run")
     parser.add_argument("--json", action="store_true", help="run the steps in JSON mode and check reply structure")
     parser.add_argument("--shapes", help="also write the JSON shapes of a set of queries to this file")
+    parser.add_argument("--baritone", action="store_true",
+                        help="Baritone is installed in this game: run only the check of walks through it")
     args = parser.parse_args()
     world = f"smoke-{int(time.time())}"
     give = "; ".join(f"server give @p minecraft:{item}" for item in
@@ -1097,6 +1137,9 @@ def main():
           r"^  particle render flame ", r"^  particle tick flame "]),
         ("snapshot", "snapshot save s1; snapshot list; snapshot restore s1", [r"saved s1", r"restored s1"]),
     ] + version_steps(game_version(args.game_dir))
+    if args.baritone:
+        # goto and mine walk through Baritone here, which the other steps don't expect.
+        steps = [step for step in steps if step[0] == "create a test world"]
     failures = 0
     skipped = 0
     for name, script, expectations, *expected_error in steps:
@@ -1121,7 +1164,9 @@ def main():
             run(args.game_dir, "?close")
         else:
             print(f"pass {name}")
-    checks = [
+    baritone = ("goto and mine go through Baritone when it is installed",
+                lambda: check_baritone(args.game_dir, args.baritone))
+    checks = [baritone] if args.baritone else [
         ("perception is passive", lambda: check_perception_is_passive(args.game_dir)),
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
@@ -1157,6 +1202,7 @@ def main():
          lambda: check_surroundings_of_an_away_camera(args.game_dir)),
         ("slow motion by the tick rate", lambda: check_slow_motion(args.game_dir, world)),
         ("a recording ends with its script", lambda: check_record_script(args.game_dir, world)),
+        baritone,
     ]
     for name, check in checks:
         try:
