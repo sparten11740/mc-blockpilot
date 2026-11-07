@@ -18,9 +18,9 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
-// The license and notice, named so they can't clash with another jar's.
+// Both licenses, named so they can't clash with another jar's.
 tasks.named<Jar>("jar") {
-    from(rootProject.files("LICENSE", "NOTICE")) { rename { "${it}_$modId" } }
+    from(rootProject.files("LICENSE-APACHE", "LICENSE-MIT")) { rename { "${it}_$modId" } }
 }
 
 dependencies {

@@ -32,7 +32,7 @@ tasks.withType<JavaCompile>().configureEach {
 }
 
 tasks.jar {
-    from(rootProject.files("LICENSE", "NOTICE")) { rename { "${it}_blockpilot-api" } }
+    from(rootProject.files("LICENSE-APACHE", "LICENSE-MIT")) { rename { "${it}_blockpilot-api" } }
 }
 
 publishing {
