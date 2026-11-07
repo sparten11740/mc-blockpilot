@@ -61,15 +61,13 @@ class TrustTest {
     }
 
     @Test
-    void addingAndRemovingKeepsTheNamesAsWritten() {
+    void aNewListReplacesTheOldAndKeepsTheNamesAsWritten() {
         Trust trust = trust(List.of(), false);
-        assertTrue(trust.add("Steve"));
-        assertFalse(trust.add("STEVE"));
-        assertEquals(List.of("Steve"), trust.names());
+        trust.set(List.of("STEVE"));
+        assertEquals(List.of("STEVE"), trust.names());
+        assertTrue(trust.trusts(STEVE));
         assertTrue(trust.online("steve"));
-        assertTrue(trust.remove("steve"));
-        assertFalse(trust.remove("Steve"));
-        assertEquals(List.of(), trust.names());
+        trust.set(List.of());
         assertFalse(trust.trusts(STEVE));
     }
 }

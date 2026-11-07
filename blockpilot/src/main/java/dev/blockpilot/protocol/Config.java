@@ -38,21 +38,27 @@ public final class Config {
         Config config = new Config();
         try {
             if (Files.exists(file)) {
-                Config read = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), Config.class);
-                if (read != null) {
-                    config = read;
-                }
-            }
-            if (config.trustedPlayers == null) {
-                config.trustedPlayers = new ArrayList<>();
-            }
-            if (config.agentCommands == null) {
-                config.agentCommands = "all";
+                config = parse(Files.readString(file, StandardCharsets.UTF_8));
             }
             Files.createDirectories(file.getParent());
             Files.writeString(file, GSON.toJson(config), StandardCharsets.UTF_8);
         } catch (IOException | JsonParseException e) {
             LOGGER.warn("Could not read {}; using defaults", file, e);
+        }
+        return config;
+    }
+
+    /** The settings in a config file's text, without writing anything. */
+    static Config parse(String text) {
+        Config config = GSON.fromJson(text, Config.class);
+        if (config == null) {
+            config = new Config();
+        }
+        if (config.trustedPlayers == null) {
+            config.trustedPlayers = new ArrayList<>();
+        }
+        if (config.agentCommands == null) {
+            config.agentCommands = "all";
         }
         return config;
     }

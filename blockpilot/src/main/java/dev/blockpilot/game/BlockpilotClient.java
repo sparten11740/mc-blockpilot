@@ -33,6 +33,7 @@ import dev.blockpilot.game.safety.TrustTracker;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Config;
+import dev.blockpilot.protocol.ConfigReload;
 import dev.blockpilot.protocol.Endpoint;
 import dev.blockpilot.protocol.Engine;
 import dev.blockpilot.protocol.GameBridge;
@@ -84,6 +85,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile Path endpointFile;
     private volatile Events events;
     private volatile TrustTracker trust;
+    private ConfigReload configReload;
     private volatile boolean enabled = true;
     private long ticks;
     private boolean autoJoined;
@@ -131,6 +133,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         Path directory = ClientPlatform.configDir().resolve(Blockpilot.MOD_ID);
         config = Config.load(directory.resolve("config.json"));
         trust = new TrustTracker(config);
+        configReload = new ConfigReload(directory.resolve("config.json"), this::applySafetySettings);
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
         engine.startWatchdog();
@@ -240,6 +243,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
         restoreOnWorldExit();
+        if (ticks % 20 == 0) {
+            configReload.check();
+        }
         trust.tick();
         Perf.clientTick();
         if (++ticks % 200 == 0) {
@@ -356,6 +362,13 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         SessionCommands.onServerStopping(server);
         ServerCommands.onServerStopping(server);
         ConfigCommands.forgetServerValues();
+    }
+
+    /** The trusted players and the agent command profile as the config file has them now. */
+    private void applySafetySettings(Config read) {
+        config.trustedPlayers = read.trustedPlayers;
+        config.agentCommands = read.agentCommands;
+        trust.trust().set(read.trustedPlayers);
     }
 
     @Override

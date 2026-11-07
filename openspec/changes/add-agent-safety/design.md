@@ -123,16 +123,18 @@ yet, and the 2.0.0 fixture test keeps 2.0 integrations honest.
 
 ### D7: Settings reloaded from the file
 
-About once a second the client thread compares the config file's
-modification time with the last one it read. When it changed, it reads
-`trustedPlayers` and `agentCommands` again and applies them to `Trust` and
-to the engine's profile, which `Engine` holds in a volatile field read when
-a script is submitted. Other settings, such as the port, still need a
-restart. A file that doesn't parse leaves the last good settings in force
-and logs one error per broken version of the file. The reload reads the
-file without writing it, so it never changes what a person wrote. A file
-watcher was the alternative; polling the time once a second costs nothing
-and needs no thread.
+About once a second the client thread reads the config file and compares
+its text with the last it applied. Comparing the text, not the
+modification time, also catches two saves within the filesystem's time
+granularity, as a test that writes a setting and restores it at once
+makes them. When it changed, `trustedPlayers` and `agentCommands` are
+applied to `Trust` and to the engine's profile, which `Engine` holds in a
+volatile field read when a script is submitted. Other settings, such as
+the port, still need a restart. A file that doesn't parse leaves the last
+good settings in force and logs one error for that text of the file. The
+reload reads without writing, so it never changes what a person wrote. A
+file watcher was the alternative; reading a few hundred bytes once a
+second costs nothing and needs no thread.
 
 ### D8: Slash commands for play-only agents at the send hooks
 
