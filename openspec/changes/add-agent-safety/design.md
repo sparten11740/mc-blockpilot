@@ -223,6 +223,24 @@ commands out, as agents can't use them. A client started with
 target's, vanilla included, registers a stand-in, `devcheck:ping`, for the
 security smoke check to allow and call.
 
+### D11: One safety policy, swapped whole
+
+Every safety decision is a method of one immutable `SafetyPolicy`:
+`trusts(player, connection)`, `extensionAllowed(entry)`,
+`eventAllowed(namespace)`, `playOnly()` and `indicatorNote()`. It is a
+sealed interface with two answers, `ConfiguredPolicy` (the config file's
+trusted names, allowed extensions, play profile and the development run's
+trust switch) and `AllowAllPolicy.INSTANCE` (`dangerouslyAllowAll`).
+`SafetyPolicy.from(config, trustUnverified)` picks one, at load and on
+every reload, and the client swaps it whole in an `AtomicReference`, so no
+check sees half of a change. `Trust` keeps only the connection facts (own
+player, verification, players online) as one `Connection` snapshot. The
+engine takes one snapshot per script for the command gate, the event
+filter and help ask it, chat and the server's log line are judged through
+it, `BlockpilotApi.isTrusted` reads it, and so do `PlayGuard` and the
+agent indicator; no check keeps a copy of a setting. A later check is a new
+`SafetyPolicy` method, which doesn't compile until both policies answer it.
+
 ## Risks / Trade-offs
 
 - [Agents on servers no longer see other players' chat by default] →

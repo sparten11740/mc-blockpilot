@@ -33,12 +33,15 @@ import dev.blockpilot.game.safety.PlayGuard;
 import dev.blockpilot.game.safety.TrustTracker;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
+import dev.blockpilot.protocol.AllowAllPolicy;
 import dev.blockpilot.protocol.Config;
+import dev.blockpilot.protocol.ConfiguredPolicy;
 import dev.blockpilot.protocol.ConfigReload;
 import dev.blockpilot.protocol.Endpoint;
 import dev.blockpilot.protocol.Engine;
 import dev.blockpilot.protocol.GameBridge;
 import dev.blockpilot.protocol.McpServer;
+import dev.blockpilot.protocol.SafetyPolicy;
 import dev.blockpilot.protocol.Token;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +54,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -87,6 +91,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile Path endpointFile;
     private volatile Events events;
     private volatile TrustTracker trust;
+    /** Every agent safety decision, swapped whole when the config file changes. */
+    private final AtomicReference<SafetyPolicy> policy = new AtomicReference<>(ConfiguredPolicy.DEFAULT);
+    private boolean trustUnverified;
     private ConfigReload configReload;
     private volatile boolean enabled = true;
     private long ticks;
@@ -126,6 +133,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         return trust;
     }
 
+    public SafetyPolicy safetyPolicy() {
+        return policy.get();
+    }
+
     KeyMapping toggleKey() {
         return toggleKey;
     }
@@ -134,15 +145,16 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     public void onLoadComplete() {
         Path directory = ClientPlatform.configDir().resolve(Blockpilot.MOD_ID);
         config = Config.load(directory.resolve("config.json"));
-        trust = new TrustTracker(config);
+        trustUnverified = TrustTracker.trustUnverified();
+        policy.set(SafetyPolicy.from(config, trustUnverified));
+        warnIfAllowingAll(policy.get());
+        trust = new TrustTracker(policy::get);
         configReload = new ConfigReload(directory.resolve("config.json"), this::applySafetySettings);
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
-        engine.setPlayOnly(config.playOnly());
-        engine.setAllowedExtensions(config.allowedExtensions);
+        engine.setSafetyPolicy(policy::get);
         engine.setOwnEventNamespaces(Set.of(SableSupport.NAMESPACE));
-        applyAllowAll(config.dangerouslyAllowAll);
-        PlayGuard.install(() -> config.playOnly());
+        PlayGuard.install(() -> policy.get().playOnly());
         engine.startWatchdog();
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);
@@ -155,7 +167,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
                 (context, args) -> Result.ok(new Fields().put("pong", true, "pong")))
                 .help("a test run's stand-in for another mod's command").example("devcheck:ping"));
         }
-        registry.addExtensions(BlockpilotApi.freeze(engine::broadcastExtension, trust.trust()::trusts));
+        registry.addExtensions(BlockpilotApi.freeze(engine::broadcastExtension,
+            player -> policy.get().trusts(player, trust.trust().connection())));
         HumanInput.setListener(this::onHumanInput);
         writeLauncher();
         try {
@@ -377,28 +390,22 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         ConfigCommands.forgetServerValues();
     }
 
-    /** The trusted players and the agent command profile as the config file has them now. */
-    /** dangerouslyAllowAll into the checks that lift with it; the play profile lifts through Config.playOnly. */
-    private void applyAllowAll(boolean allowAll) {
-        trust.trust().setAllowAll(allowAll);
-        engine.setAllowAll(allowAll);
-        if (allowAll) {
-            Blockpilot.LOGGER.warn("dangerouslyAllowAll is on in config/blockpilot/config.json: every agent safety "
-                + "check is off, so anyone's chat reaches agents, every mod's commands run and agentCommands is ignored");
+    /** The safety the config file sets now, swapped in whole. */
+    private void applySafetySettings(Config read) {
+        SafetyPolicy now = SafetyPolicy.from(read, trustUnverified);
+        SafetyPolicy previous = policy.getAndSet(now);
+        warnIfAllowingAll(now);
+        if (previous instanceof AllowAllPolicy && !(now instanceof AllowAllPolicy)) {
+            Blockpilot.LOGGER.info("dangerouslyAllowAll is off again; the agent safety checks are back on");
         }
     }
 
-    private void applySafetySettings(Config read) {
-        if (config.dangerouslyAllowAll && !read.dangerouslyAllowAll) {
-            Blockpilot.LOGGER.info("dangerouslyAllowAll is off again; the agent safety checks are back on");
+    private static void warnIfAllowingAll(SafetyPolicy now) {
+        if (now instanceof AllowAllPolicy) {
+            Blockpilot.LOGGER.warn("dangerouslyAllowAll is on in config/blockpilot/config.json: every agent safety "
+                + "check is off, so anyone's chat reaches agents, every mod's commands run and agentCommands is "
+                + "ignored");
         }
-        config.dangerouslyAllowAll = read.dangerouslyAllowAll;
-        applyAllowAll(read.dangerouslyAllowAll);
-        config.trustedPlayers = read.trustedPlayers;
-        config.agentCommands = read.agentCommands;
-        trust.trust().set(read.trustedPlayers);
-        engine.setPlayOnly(read.playOnly());
-        engine.setAllowedExtensions(read.allowedExtensions);
     }
 
     @Override
@@ -470,7 +477,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         String activity = presence.shownActivity();
         String text = (!enabled ? "Blockpilot: agent control off (" + toggleKey.getTranslatedKeyMessage().getString()
             + ")" : activity != null ? "Blockpilot: " + activity : "Blockpilot: agent active")
-            + (config.dangerouslyAllowAll ? ", safety off" : "");
+            + policy.get().indicatorNote();
         int color = !enabled ? 0xFFFF5555 : activity != null ? 0xFF55FF55 : 0xFFAAAAAA;
         graphics.drawString(Minecraft.getInstance().font, text, 4, 4, color);
     }

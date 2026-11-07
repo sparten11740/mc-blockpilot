@@ -15,6 +15,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,7 +81,8 @@ class ExtensionApiTest {
         FakeGame game = new FakeGame();
         Engine engine = new Engine(registry, game);
         // As allowedExtensions in the config lists them.
-        engine.setAllowedExtensions(List.of("sample", "mymod", "test", "fixture"));
+        engine.setSafetyPolicy(() -> new ConfiguredPolicy(List.of(), Set.of("sample", "mymod", "test", "fixture"), false,
+            false));
         List<BlockpilotApi.Registration> registrations = BlockpilotApi.freeze(engine::broadcastExtension);
         registry.addExtensions(registrations);
 

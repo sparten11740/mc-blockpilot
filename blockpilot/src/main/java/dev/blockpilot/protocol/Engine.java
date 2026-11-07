@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,14 +57,10 @@ public final class Engine {
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
     private final Parser parser;
-    /** agentCommands is play: scripts with a command beyond playing fail before running (CommandGate). */
-    private volatile boolean playOnly;
-    /** The namespaces of other mods' commands and events that agents may use (allowedExtensions). */
-    private volatile Set<String> allowedExtensions = Set.of();
+    /** Every safety decision; the client swaps the policy whole when the config file changes. */
+    private volatile Supplier<SafetyPolicy> safety = () -> ConfiguredPolicy.DEFAULT;
     /** The namespaces Blockpilot's own compat modules emit events under; events carry no other proof of origin. */
     private volatile Set<String> ownEventNamespaces = Set.of();
-    /** dangerouslyAllowAll: every extension's commands and events are used. */
-    private volatile boolean allowAll;
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -80,12 +77,8 @@ public final class Engine {
         return registry;
     }
 
-    public void setPlayOnly(boolean value) {
-        playOnly = value;
-    }
-
-    public void setAllowedExtensions(Collection<String> namespaces) {
-        allowedExtensions = Set.copyOf(namespaces);
+    public void setSafetyPolicy(Supplier<SafetyPolicy> policy) {
+        safety = policy;
     }
 
     public void setOwnEventNamespaces(Collection<String> namespaces) {
@@ -94,18 +87,14 @@ public final class Engine {
 
     /** Whether agents may use the command: Blockpilot's own, or another mod's whose namespace is allowed. */
     boolean usable(CommandRegistry.Entry entry) {
-        return allowAll || entry.builtIn() || allowedExtensions.contains(entry.namespace());
-    }
-
-    public void setAllowAll(boolean value) {
-        allowAll = value;
+        return safety.get().extensionAllowed(entry);
     }
 
     /** An extension's event: delivered when its namespace is allowed or one of Blockpilot's own, else dropped. */
     public void broadcastExtension(Event event) {
         String name = event.name();
         String namespace = name.substring(0, Math.max(name.indexOf(':'), 0));
-        if (allowAll || ownEventNamespaces.contains(namespace) || allowedExtensions.contains(namespace)) {
+        if (ownEventNamespaces.contains(namespace) || safety.get().eventAllowed(namespace)) {
             broadcast(event);
         }
     }
@@ -155,7 +144,8 @@ public final class Engine {
                 ? Result.error("syntax", line.error()) : Result.skip()).toList();
             return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
         }
-        CommandGate gate = new CommandGate(playOnly, this::usable);
+        SafetyPolicy policy = safety.get();
+        CommandGate gate = new CommandGate(policy.playOnly(), policy::extensionAllowed);
         List<String> refused = lines.stream()
             .map(line -> line.statement() == null ? null : gate.refusal(line.statement())).toList();
         if (refused.stream().anyMatch(Objects::nonNull)) {
