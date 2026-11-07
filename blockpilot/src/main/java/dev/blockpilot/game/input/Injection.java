@@ -2,7 +2,9 @@ package dev.blockpilot.game.input;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.protocol.Refusal;
 import java.lang.ref.WeakReference;
+import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -34,6 +36,8 @@ public final class Injection {
 
 
     private static int depth;
+    /** Which screens Blockpilot's input may reach; escape, which only closes a screen, and releases always may. */
+    private static Predicate<Screen> screenGate = screen -> true;
     /** The chat screen Blockpilot's input last reached, so a command sent from it counts as the agent's. */
     private static WeakReference<Screen> chatReached = new WeakReference<>(null);
 
@@ -44,12 +48,25 @@ public final class Injection {
         return depth > 0;
     }
 
+    public static void setScreenGate(Predicate<Screen> gate) {
+        screenGate = gate;
+    }
+
     /** Whether Blockpilot's own input reached this chat screen since it opened. */
     public static boolean reachedChat(Screen screen) {
         return screen != null && chatReached.get() == screen;
     }
 
     private static void run(Runnable injection) {
+        run(injection, false);
+    }
+
+    /** Sends the input unless the screen gate refuses the screen under it, which fails the step that sent it. */
+    private static void run(Runnable injection, boolean ungated) {
+        if (!ungated && !screenGate.test(ClientScreens.current())) {
+            Refusal.raise("not_allowed", "screen");
+            return;
+        }
         noteChat();
         depth++;
         try {
@@ -100,7 +117,7 @@ public final class Injection {
             }
             int action = down ? InputConstants.PRESS : InputConstants.RELEASE;
             mouse().blockpilot$press(window(), button, action, modifiers());
-        });
+        }, !down);
     }
 
     /** Moves the cursor to an absolute window position in screen pixels; in-world this turns the camera. */
@@ -122,8 +139,9 @@ public final class Injection {
     }
 
     public static void key(int key, boolean down) {
-        run(() -> keyboard().blockpilot$keyPress(window(), key, WindowSystem.otherKeyCode(key),
-            down ? InputConstants.PRESS : InputConstants.RELEASE, modifiers()));
+        int action = down ? InputConstants.PRESS : InputConstants.RELEASE;
+        run(() -> keyboard().blockpilot$keyPress(window(), key, WindowSystem.otherKeyCode(key), action, modifiers()),
+            !down || key == InputConstants.KEY_ESCAPE);
     }
 
     public static void typeCharacter(int codePoint) {

@@ -166,6 +166,38 @@ throw through vanilla code, so it raises the refusal on `Refusal`, which
 then cancels the step and fails it. A refusal left pending is dropped as
 the next step starts.
 
+### D9: Gameplay screens and links for play-only agents
+
+The engine refuses commands, but a play-only agent could still leave
+through the game's own screens: the pause menu's buttons, the title
+screen's server and world lists, the options, and the confirm screen of a
+link. `Injection`, through which every key, character, click, move and
+scroll of Blockpilot's reaches the game, asks a screen gate before it sends
+anything. Under `play` the gate lets input reach only the world (no
+screen), `AbstractContainerScreen` (inventories, chests, mod machines),
+`ChatScreen`, sign editing and the book screens. On any other screen the
+input isn't sent, and the step that sent it fails through `Refusal` with
+`err not_allowed screen`. It is a list of what is allowed, so a screen
+nobody thought of is refused. The escape key always passes, since it only
+closes screens, and so do releases, so that no key stays held down. The
+death screen isn't on the list, as its title-screen button leaves the
+world; `respawn` respawns without it.
+
+Links are refused where vanilla acts on a clicked text's click event:
+`Screen.handleComponentClicked` on 1.21.1, `Screen.defaultHandleClickEvent`
+from 26.1 on. Under `play`, a click Blockpilot made on one that opens a
+web address or a file, or copies to the clipboard, isn't acted on and fails
+with `err not_allowed link`, before the confirm screen and also with the
+chat-links prompt off. A person's click goes through.
+
+An extension command that runs on the integrated server reaches beyond the
+player as `server` does, Blockpilot's own Sable commands included, so the
+play profile refuses it as `<namespace>:<name>`.
+
+On the integrated server, `/msg` and `/teammsg` send their line straight to
+the players and log nothing, so only the broadcast chat line needs the
+server-side withholding of D2.
+
 ## Risks / Trade-offs
 
 - [Agents on servers no longer see other players' chat by default] →
@@ -176,6 +208,9 @@ the next step starts.
   pass] → Documented in `docs/safety.md`. Trust protects chat that
   arrives as player chat, which covers vanilla and LAN worlds and modded
   servers without such plugins.
+- [Mod screens that aren't container screens are refused under `play`]
+  → Fails closed by design; the docs name the limit. A mod whose screen
+  the agent needs can use container screens or add commands.
 - [Under `play`, a person's slash command typed into a chat screen an
   agent typed in before is dropped] → Agent input reached that screen, so
   it can't be told apart. Reopening chat clears it.

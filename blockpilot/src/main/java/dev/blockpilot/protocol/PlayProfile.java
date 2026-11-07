@@ -8,7 +8,8 @@ import java.util.stream.Stream;
 /**
  * What a play-only agent may not run: the commands that reach beyond playing as a player (slash commands, the
  * integrated server, world files, mod configs, files written to disk, switching worlds or servers, quitting).
- * Extension commands are left alone, as the person who installed the mod chose them.
+ * Extension commands are left alone, as the person who installed the mod chose them, unless they run on the
+ * integrated server.
  */
 final class PlayProfile {
     private static final Set<String> REFUSED = Set.of("cmd", "server", "nbt", "tick", "gametest", "snapshot",
@@ -40,7 +41,11 @@ final class PlayProfile {
     private static String refusal(Statement.Call call) {
         CommandRegistry.Entry entry = call.entry();
         String name = entry.spec().name();
-        if (!entry.namespace().isEmpty() || !REFUSED.contains(name)) {
+        if (!entry.namespace().isEmpty()) {
+            // On the integrated server an extension command reaches beyond the player, as server does.
+            return entry.spec().runsOnServer() ? entry.qualifiedName() : null;
+        }
+        if (!REFUSED.contains(name)) {
             return null;
         }
         // Reading how a capture goes writes nothing.

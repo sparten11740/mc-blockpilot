@@ -51,6 +51,7 @@
     "PlayerListMixin",
     "QuadParticleGroupMixin",
     "RebuildTaskMixin",
+    "ScreenLinkMixin",
     "SelectionListAccessor",
     "ServerChunkCacheMixin",
     "ServerLevelMixin",

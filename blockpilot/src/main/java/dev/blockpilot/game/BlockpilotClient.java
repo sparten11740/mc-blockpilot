@@ -29,7 +29,7 @@ import dev.blockpilot.game.observe.Screenshots;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.game.record.Recorder;
 import dev.blockpilot.game.sable.SableSupport;
-import dev.blockpilot.game.safety.SlashCommands;
+import dev.blockpilot.game.safety.PlayGuard;
 import dev.blockpilot.game.safety.TrustTracker;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -138,7 +138,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
         engine.setPlayOnly(config.playOnly());
-        SlashCommands.install(() -> config.playOnly());
+        PlayGuard.install(() -> config.playOnly());
         engine.startWatchdog();
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);
