@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import sys
+import threading
 import time
 
 # Read-only commands that must not move, turn or reselect anything, nor make the client send packets.
@@ -865,6 +866,44 @@ def check_slow_motion(game_dir, world):
     return "; ".join(problems) or None
 
 
+def check_record_script(game_dir, world):
+    """record script films to the end of its script, ends at a failing step, and ends when another call stops the
+    script, each time saving the take and reporting it as an event of the script's reply."""
+    _, filmed = run(game_dir, f"record script {world}-script fps=20 audio=off; wait 20t")
+    _, failing = run(game_dir, f"record script {world}-script2 fps=20 audio=off; wait 10t; entity e999999; wait 10t")
+    _, between = run(game_dir, "record status")
+    taken = {}
+    take = threading.Thread(target=lambda: taken.update(
+        out=run(game_dir, f"record script {world}-script3 audio=off; wait 200t")[1]))
+    take.start()
+    time.sleep(3)
+    run(game_dir, "stop")
+    take.join(120)
+    _, after = run(game_dir, "record status")
+    stopped = taken.get("out", "")
+    _, earlier = run(game_dir, f"record script {world}-script4 audio=off; wait 10t; record stop; "
+                               f"record start {world}-script5 audio=off")
+    _, still = run(game_dir, "record status; record stop")
+    problems = []
+    length = re.search(rf"^! record \S*{re.escape(world)}-script\.mp4 ([\d.]+)s ", filmed, re.MULTILINE)
+    if not re.search(rf"^ok recording {re.escape(world)}-script\b", filmed, re.MULTILINE) or not length \
+            or not 0.5 <= float(length.group(1)) <= 3:
+        problems.append(f"filmed to the end: {filmed.strip()[:400]}")
+    if not re.search(r"^err no_entity e999999", failing, re.MULTILINE) \
+            or not re.search(rf"^! record \S*{re.escape(world)}-script2\.mp4 ", failing, re.MULTILINE) \
+            or "no recording running" not in between:
+        problems.append(f"a failing step: {failing.strip()[:400]} / {between.strip()}")
+    if not re.search(r"^err cancelled", stopped, re.MULTILINE) \
+            or not re.search(rf"^! record \S*{re.escape(world)}-script3\.mp4 ", stopped, re.MULTILINE) \
+            or "no recording running" not in after:
+        problems.append(f"stopped from another call: {stopped.strip()[:400]} / {after.strip()}")
+    # A take the script stopped itself leaves the recording started after it running.
+    if not re.search(rf"^ok \S*{re.escape(world)}-script4\.mp4 ", earlier, re.MULTILINE) or "! record" in earlier \
+            or not re.search(rf"^ok {re.escape(world)}-script5 ", still, re.MULTILINE):
+        problems.append(f"stopped by the script: {earlier.strip()[:400]} / {still.strip()[:200]}")
+    return "; ".join(problems) or None
+
+
 def write_shapes(game_dir, path):
     """Writes one line per query, unless a reply couldn't be read, as then they can't be compared with another target's;
     returns how many couldn't."""
@@ -1110,6 +1149,7 @@ def main():
         ("look and find around a camera placed away",
          lambda: check_surroundings_of_an_away_camera(args.game_dir)),
         ("slow motion by the tick rate", lambda: check_slow_motion(args.game_dir, world)),
+        ("a recording ends with its script", lambda: check_record_script(args.game_dir, world)),
     ]
     for name, check in checks:
         try:

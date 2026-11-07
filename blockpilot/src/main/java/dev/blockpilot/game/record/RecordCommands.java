@@ -42,7 +42,7 @@ public final class RecordCommands {
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("record", this::record).group("observe")
-            .form(form -> form.keyword("op", "start").optionalArg("name", ArgType.WORD))
+            .form(form -> form.keyword("op", "start", "script").optionalArg("name", ArgType.WORD))
             .form(form -> form.keyword("op", "stop", "status"))
             .form(form -> form.keyword("op", "mark").arg("label", ArgType.WORD))
             .form(form -> form.arg("for", ArgType.DURATION).optionalArg("name", ArgType.WORD))
@@ -69,7 +69,10 @@ public final class RecordCommands {
                 + "write a video description's 0:00 chapters; record start refuses a name whose marks file exists, a "
                 + "failed take takes its marks file with it, and a recording takes at most 1000 marks. record "
                 + "<duration> [name]: records that long and answers as record stop does, so its take has no marks; "
-                + "stop cancels the wait and leaves the recording running. Needs "
+                + "stop cancels the wait and leaves the recording running. record script [name]: starts one as record "
+                + "start does that ends with the script, after its last step, at an error that stops it, or when stop "
+                + "or real input cancels it; the script's reply comes once the file is saved, with the summary as the "
+                + "event ! record …, and a record stop in the script ends it earlier. Needs "
                 + "ffmpeg, on the PATH, in the usual install folders, or set as \"ffmpeg\" in "
                 + "config/blockpilot/config.json")
             .field("recording", "the recording's name").field("file", "the saved video")
@@ -87,8 +90,11 @@ public final class RecordCommands {
             return new Timed(args.duration("for"));
         }
         switch (args.word("op")) {
-            case "start" -> {
+            case "start", "script" -> {
                 Recording started = start(args);
+                if (args.word("op").equals("script")) {
+                    context.atEnd(new ScriptEnd(started));
+                }
                 Fields fields = new Fields().put("recording", started.name(), "recording " + started.name());
                 return () -> Result.ok(size(fields, started).put("audio", started.audio() ? "on" : "off"));
             }
@@ -247,6 +253,35 @@ public final class RecordCommands {
             } catch (RuntimeException e) {
                 throw new CommandException("record_failed", Recorder.message(e));
             }
+        }
+
+        @Override
+        public String label() {
+            return "record";
+        }
+    }
+
+    /**
+     * record script: when the script ends, stops the recording it started, if that same recording still runs, and
+     * answers as record stop does; it times itself, as saving a long take can take a while.
+     */
+    private static final class ScriptEnd implements Action, Engine.SelfTimed {
+        private final Recording recording;
+        private Action stop;
+
+        ScriptEnd(Recording recording) {
+            this.recording = recording;
+        }
+
+        @Override
+        public Result tick() throws CommandException {
+            if (stop == null) {
+                if (Recorder.recording() != recording || recording.stopping()) {
+                    return Result.skip();
+                }
+                stop = new Stop(recording);
+            }
+            return stop.tick();
         }
 
         @Override
