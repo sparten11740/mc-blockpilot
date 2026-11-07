@@ -35,6 +35,12 @@ final class TickLog<T> {
         return out;
     }
 
+    /** Empties the log, forgetting what it dropped too, as for another world's ticks. */
+    void clear() {
+        entries.clear();
+        droppedThrough = null;
+    }
+
     /** The tick of the oldest entry kept, or null when there is none. */
     Long oldest() {
         return entries.isEmpty() ? null : tick.applyAsLong(entries.getFirst());

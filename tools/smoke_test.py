@@ -487,6 +487,24 @@ def check_gametests(game_dir, world):
     return f"missing {missing}: {output.strip()[:600]}" if missing else None
 
 
+def check_logs_per_world(game_dir, world):
+    """Entering a world, even the one just left, starts the sound and message logs anew, so a sound and a chat line from
+    before are gone."""
+    def counts():
+        found = [re.search(r"^ok tick=\d+ count=(\d+)", run(game_dir, query)[1], re.MULTILINE)
+                 for query in ("sounds match=block.note_block.bell", "messages match=*logs-per-world*")]
+        return [int(match.group(1)) if match else None for match in found]
+    run(game_dir, "sound minecraft:block.note_block.bell; server say logs-per-world; wait 5t")
+    before = counts()
+    if None in before or min(before) < 1:
+        return f"the sound and the chat line weren't logged: {before}"
+    _, joined = run(game_dir, f"leave; join world {world}")
+    if f"ok joined {world}" not in joined:
+        return f"didn't join the world again: {joined.strip()[-300:]}"
+    after = counts()
+    return None if after == [0, 0] else f"the logs kept the last visit's entries: sounds, messages {after}"
+
+
 def check_tick_waits(game_dir):
     """Forty wait 1t put forty client ticks between the samples around them."""
     _, output = run(game_dir, "sample status every 1t x1; " + "wait 1t; " * 40 + "sample status every 1t x1")
@@ -1273,6 +1291,7 @@ def main():
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
         ("server function answers as the game sees it", lambda: check_functions(args.game_dir, world)),
         ("gametest run reports each test", lambda: check_gametests(args.game_dir, world)),
+        ("the logs start anew in each world", lambda: check_logs_per_world(args.game_dir, world)),
         ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
         ("server steps run back to back", lambda: check_server_steps(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
