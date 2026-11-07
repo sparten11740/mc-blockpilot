@@ -22,7 +22,7 @@
 
 ## 5. Integration checks
 
-- [ ] 5.1 Run `tools/test_targets.py` on all 11 targets; verify every target passes, including the new checks
+- [x] 5.1 Run `tools/test_targets.py` on all 11 targets; verify every target passes, including the new checks
 
 ## Workflow follow-up
 

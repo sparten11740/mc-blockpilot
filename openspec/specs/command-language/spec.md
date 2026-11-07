@@ -100,7 +100,8 @@ word         ::= token - ( option | test-shape )
 /* Slot types */
 position     ::= "~"? decimal "," decimal "," decimal
 point        ::= decimal "," decimal
-entity       ::= "e" digits                                       /* [C] */
+entity       ::= "e" digits | "@" entity-name                     /* [C] */
+entity-name  ::= [a-zA-Z] [a-zA-Z0-9_.-]+
 widget       ::= "w" digits                                       /* [C] */
 menu-slot    ::= "s" digits                                       /* [C] */
 uuid         ::= hex8 "-" hex4 "-" hex4 "-" hex4 "-" hex8 hex4
@@ -321,11 +322,46 @@ namespace. Input SHALL accept both forms, in arguments and in predicates, where
 
 ### Requirement: Entity references
 Entities SHALL be referenced as `e<id>`, where `<id>` is the client-side entity
-id. Every entity in a reply carries its reference.
+id, or by name as `@<name>`. Every entity in a reply carries its `e<id>`.
 
 #### Scenario: Attack listed entity
 - **WHEN** `look` lists `zombie e812 ~4,0,-2 hp14`
 - **THEN** `attack e812` targets that zombie
+
+### Requirement: Entity names
+`@<name>` SHALL stand for the entity whose custom name is `<name>`, ignoring
+case, or, in singleplayer with commands allowed, whose scoreboard tags hold
+`<name>` exactly; of several, the one nearest where the server takes the
+player to be, the camera while one is placed with `away`. A command SHALL see
+it as that entity's `e<id>`, looked up each time the command runs, also on
+every check of a `wait` or `sample`, and SHALL fail with `err no_entity`
+naming it when no entity matches.
+
+#### Scenario: An actor by its tag
+- **WHEN** an agent runs `server summon cow ~2 ~ ~2 {Tags:["star"]}; entity
+  @star; camera at ~0,2,-6 look @star`
+- **THEN** `entity @star` describes the cow with its `e<id>`, and the camera
+  looks at the cow
+
+#### Scenario: By custom name
+- **WHEN** a cow is named Daisy with a name tag, and an agent runs `face
+  @daisy`
+- **THEN** the player turns toward the cow
+
+#### Scenario: Nobody by that name
+- **WHEN** an agent runs `entity @nobody` and no entity is named or tagged
+  nobody
+- **THEN** the result is `err no_entity @nobody`
+
+#### Scenario: Waiting for an actor to appear
+- **WHEN** an agent runs `wait entity @star until ok timeout=5s` and then
+  summons a cow tagged star from another session
+- **THEN** the wait answers once the cow exists, as `err no_entity` is
+  retried like any other error but `err syntax`
+
+#### Scenario: Text keeps its @
+- **WHEN** an agent runs `chat hello @bob`
+- **THEN** the chat line reads `hello @bob`
 
 ### Requirement: Omit default and empty fields
 Replies SHALL leave out fields that have their default or empty value (no

@@ -190,3 +190,19 @@ session, and with it the script), and that a longer script needs a larger
   has `timeout=540s`, and the wait doesn't end within 300 s
 - **THEN** the CLI exits with code 2 after 300 s, and its stderr message says
   it waited 300 s, the script was cancelled, and to raise `--timeout`
+
+### Requirement: Usage errors in one line
+A command line the CLI refuses as it reads its options and script SHALL get
+exactly one line on stderr,
+`blockpilot: <what is wrong>; see --help`, nothing on stdout, and exit code
+2. The usage text SHALL be printed only for `--help` or `-h`.
+
+#### Scenario: A script in several arguments
+- **WHEN** an agent runs `blockpilot "status" "inv"`
+- **THEN** stderr is the one line `blockpilot: only one script: put its
+  commands in one argument, separated by semicolons; see --help`, and the
+  exit code is 2
+
+#### Scenario: Help
+- **WHEN** an agent runs `blockpilot --help`
+- **THEN** the usage text is printed to stdout, and the exit code is 0
