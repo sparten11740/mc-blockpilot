@@ -478,7 +478,9 @@ def check_gametests(game_dir, world):
         write_structure(os.path.join(save, "generated", "blockpilot", "structures", "smoke_empty.nbt"),
                         TEST_DATA_VERSION[(1, 21)], (1, 1, 1), [])
         selector, passed, failed = "blockpilotsmoketests.*", "blockpilotsmoketests.passes", "blockpilotsmoketests.fails"
-    _, output = run(game_dir, f"{LEVEL}; gametest run {selector}; ?gametest run nothing_here:*; server test clearall")
+    # Far from where the other checks look: clearing the tests' area leaves stone in its floor on 1.21.1.
+    _, output = run(game_dir, f"server as=player tp @s 1000.5 -60 1000.5 0 0; wait 10t; gametest run {selector}; "
+                              f"?gametest run nothing_here:*; server test clearall; {LEVEL}")
     expected = [r"^ok passed=1 failed=1$", rf"^  {re.escape(passed)} passed$",
                 rf"^  {re.escape(failed)} failed .*fails on purpose", r"^err no_test nothing_here:\*$"]
     missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
