@@ -25,7 +25,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.input.InputState;
-import dev.blockpilot.game.path.Navigator;
+import dev.blockpilot.game.path.Pathfinders;
 import dev.blockpilot.game.path.PathSearch;
 import dev.blockpilot.game.path.Terrain;
 import dev.blockpilot.game.path.WorldTerrain;
@@ -282,7 +282,7 @@ final class MovementCommands {
             Vec3 goal = Vec3.atBottomCenterOf(block);
             target = () -> goal;
         }
-        return new Navigator(context.sessionId(), target, near);
+        return Pathfinders.installed().current().walk(context.sessionId(), Pathfinders.positions(target), near);
     }
 
     /** Why the player can't stand in the cell, naming the blocks, or null when it can. */

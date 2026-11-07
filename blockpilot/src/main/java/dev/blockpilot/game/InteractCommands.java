@@ -32,7 +32,8 @@ import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.common.Shapes;
 import dev.blockpilot.game.input.AimedClick;
 import dev.blockpilot.game.input.InputState;
-import dev.blockpilot.game.path.Navigator;
+import dev.blockpilot.game.path.Pathfinder;
+import dev.blockpilot.game.path.Pathfinders;
 import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -444,6 +445,9 @@ final class InteractCommands {
             BlockPos next() throws CommandException;
         }
 
+        /** How near, in blocks, a walk into reach goes. */
+        private static final double REACH_WALK = 3;
+
         private final int session;
         private final Targets targets;
         private final int wanted;
@@ -452,7 +456,9 @@ final class InteractCommands {
         private BlockPos current;
         private Supplier<Vec3> aim;
         private BlockState original;
-        private Navigator walking;
+        private Action walking;
+        /** The pathfinder that walked into reach when it isn't the built-in one, for by= in the reply; else null. */
+        private String walkedBy;
         private int mined;
         private int blockedTicks;
         private int digTicks;
@@ -506,8 +512,7 @@ final class InteractCommands {
                     throw new CommandException("out_of_reach", Rel.of(current).toString());
                 }
                 if (walking == null) {
-                    BlockPos target = current;
-                    walking = new Navigator(session, () -> Vec3.atBottomCenterOf(target), 3);
+                    walking = walkTo(current, REACH_WALK);
                 }
                 try {
                     walking.tick();
@@ -558,6 +563,14 @@ final class InteractCommands {
             digTicks = 0;
         }
 
+        private Action walkTo(BlockPos block, double near) {
+            Pathfinder pathfinder = Pathfinders.installed().current();
+            if (!Pathfinders.builtIn(pathfinder)) {
+                walkedBy = pathfinder.name();
+            }
+            return pathfinder.walk(session, Pathfinders.positions(() -> Vec3.atBottomCenterOf(block)), near);
+        }
+
         private void stopWalking() {
             if (walking != null) {
                 walking.cancel();
@@ -571,8 +584,9 @@ final class InteractCommands {
                 throw new CommandException("no_block", what == null ? "nothing mined" : what);
             }
             String label = mined + "/" + wanted;
-            return Result.ok(new Fields().put("mined", mined, "mine " + label).bare("block", minedId == null ? "?"
-                : minedId));
+            Fields fields = new Fields().put("mined", mined, "mine " + label).bare("block", minedId == null ? "?"
+                : minedId);
+            return Result.ok(walkedBy == null ? fields : fields.put("by", walkedBy));
         }
 
         @Override
