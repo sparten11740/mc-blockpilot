@@ -154,7 +154,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         engine = new Engine(registry, this);
         engine.setSafetyPolicy(policy::get);
         engine.setOwnEventNamespaces(Set.of(SableSupport.NAMESPACE));
-        PlayGuard.install(() -> policy.get().playOnly());
+        PlayGuard.install(policy::get);
         engine.startWatchdog();
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);

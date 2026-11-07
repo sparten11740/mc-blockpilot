@@ -199,13 +199,16 @@ call.
   and no command changes it ([safety.md](safety.md)). `dangerously_allow_all` means `dangerouslyAllowAll` is on in the
   file: every safety check is off and everyone counts as trusted.
 
-With `agentCommands: "play"` in `config/blockpilot/config.json`, agents may only play: a script with `cmd`, `server`,
-`nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`, `create world`,
-`delete world`, `join`, `leave` or `quit` fails before any step with `err not_allowed <command>`, and a slash command an
-agent types into the chat screen or clicks in chat isn't sent, failing the command that sent it with `err not_allowed
-cmd`. Extension commands that run on the integrated server are refused too. Input reaches only gameplay screens (the
-world, container screens, chat, signs, books), else `err not_allowed screen`, and a click on a link fails with `err
-not_allowed link`. A change to the setting applies within a second.
+With `agentCommands: "play"` in `config/blockpilot/config.json`, agents may only play: a script with `server`, `nbt`,
+`tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`, `create world`,
+`delete world`, `join`, `leave` or `quit` fails before any step with `err not_allowed <command>`. A slash command, by
+`cmd`, typed into the chat screen or clicked in chat, goes out only if its root (the first word without `/` or
+`minecraft:`, ignoring case) is in `playSlashCommands`, empty by default; else it fails with `err not_allowed cmd
+<root>`. **Never list `execute` or `function`**, which run any other command, and back the world up before a session
+that lists `fill` or other commands that change it. Extension commands that run on the integrated server are refused
+too. Input reaches only gameplay screens (the world, container screens, chat, signs, books), else `err not_allowed
+screen`, and a click on a link fails with `err not_allowed link`. A change to the settings applies within a second
+([safety.md](safety.md)).
 
 ## session
 

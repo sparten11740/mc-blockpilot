@@ -70,11 +70,12 @@ install only mods you trust.
 ```
 
 With `play`, agents may only play. A script with any of these fails before any step with `err not_allowed <command>`:
-`cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`,
-`create world`, `delete world`, `join`, `leave` and `quit`. A slash command an agent types into the chat screen or
-clicks in a chat message isn't sent either, and the command that sent it fails with `err not_allowed cmd`. Extension
-commands still work, as the person who installed the mod chose them, except those that run on the integrated server,
-which are refused like `server` as `err not_allowed <namespace>:<name>`.
+`server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`,
+`create world`, `delete world`, `join`, `leave` and `quit`. A `cmd` fails the same way, as `err not_allowed cmd
+<root>`, unless its root is in `playSlashCommands` (below). A slash command an agent types into the chat screen or
+clicks in a chat message isn't sent either unless its root is listed, and the command that sent it fails with `err
+not_allowed cmd <root>`. Extension commands still work, as the person who installed the mod chose them, except those
+that run on the integrated server, which are refused like `server` as `err not_allowed <namespace>:<name>`.
 
 Blockpilot's input (`click`, `type`, `key`, `mouse`, `scroll`, `drag`, `cursor`) reaches only gameplay screens: the
 world itself, container screens (inventories, chests, mod machines), the chat screen, sign editing and books. On any
@@ -87,6 +88,25 @@ chat-links prompt off.
 The default, `all`, refuses nothing, since testing a mod needs these commands. A value Blockpilot doesn't know counts as
 `play`.
 
+### Slash commands under play
+
+`playSlashCommands`, empty by default, lists the slash commands a play-only agent may send, by `cmd`, typed or
+clicked. Each entry is a command's root: its first word without the leading `/` and an optional `minecraft:` prefix,
+matched ignoring case, so `fill` lets `cmd fill …`, `/fill …` and `/minecraft:FILL …` through and nothing else:
+
+```json
+{
+  "agentCommands": "play",
+  "playSlashCommands": ["fill", "setblock"]
+}
+```
+
+A listed command runs with the agent player's rights, whoever asked for it, so list only commands you would let
+anyone the agent listens to run. **Never list `execute` or `function`**: each runs any other command, so listing one
+lets everything through. Commands that change the world, such as `fill`, can undo hours of building in one line; back
+the world up before a building session that lists them. Like the other settings, the list is set in the file only and
+applies within a second.
+
 ## Turning it all off, dangerously
 
 ```json
@@ -96,14 +116,14 @@ The default, `all`, refuses nothing, since testing a mod needs these commands. A
 ```
 
 **This turns every safety check on this page off.** Every player's chat reaches agents with its text, also on servers
-that don't check accounts, and `BlockpilotApi.isTrusted` says yes to everyone; every mod's commands and events are
-used, whatever `allowedExtensions` says; and `agentCommands` is ignored as if it were `all`, so no command, screen or
-link is refused and slash commands go out as before. It is fine when nobody but you can reach the agent: testing a mod
-alone, in single-player, or on a world only your own clients join. Never leave it on while the agent plays with other
-people. Like the other settings it is set in the file only, applies within a second and counts as false in a file
-Blockpilot can't read. While it is on, Blockpilot logs a warning at start and on each change of the file, `trust`
-reports `dangerously_allow_all`, and the agent indicator on screen says "safety off" (hidden while recording, like the
-rest of it).
+that don't check accounts, and `BlockpilotApi.isTrusted` says yes to everyone; every mod's commands and events are used,
+whatever `allowedExtensions` says; and `agentCommands` is ignored as if it were `all`, so no command, screen or link is
+refused and every slash command goes out, whatever `playSlashCommands` says. It is fine when nobody but you can reach
+the agent: testing a mod alone, in single-player, or on a world only your own clients join. Never leave it on while the
+agent plays with other people. Like the other settings it is set in the file only, applies within a second and counts as
+false in a file Blockpilot can't read. While it is on, Blockpilot logs a warning at start and on each change of the
+file, `trust` reports `dangerously_allow_all`, and the agent indicator on screen says "safety off" (hidden while
+recording, like the rest of it).
 
 ## Text from players is untrusted input
 

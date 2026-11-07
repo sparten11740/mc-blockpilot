@@ -26,6 +26,11 @@ public enum AllowAllPolicy implements SafetyPolicy {
     }
 
     @Override
+    public boolean slashCommandAllowed(String root) {
+        return true;
+    }
+
+    @Override
     public boolean playOnly() {
         return false;
     }

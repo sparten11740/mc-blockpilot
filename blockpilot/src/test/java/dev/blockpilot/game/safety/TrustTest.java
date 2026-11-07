@@ -24,7 +24,7 @@ class TrustTest {
     }
 
     private static ConfiguredPolicy policy(List<String> names) {
-        return new ConfiguredPolicy(names, Set.of(), false, false);
+        return new ConfiguredPolicy(names, Set.of(), false, false, List.of());
     }
 
     @Test
@@ -51,7 +51,7 @@ class TrustTest {
 
     @Test
     void aDevelopmentRunTrustsTheListWhereAccountsArentVerified() {
-        ConfiguredPolicy policy = new ConfiguredPolicy(List.of("Steve"), Set.of(), false, true);
+        ConfiguredPolicy policy = new ConfiguredPolicy(List.of("Steve"), Set.of(), false, true, List.of());
         assertTrue(policy.trusts(STEVE, connection(true)));
         assertFalse(policy.trusts(MALLORY, connection(true)));
     }

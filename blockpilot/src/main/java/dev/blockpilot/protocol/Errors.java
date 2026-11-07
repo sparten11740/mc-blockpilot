@@ -56,8 +56,9 @@ public final class Errors {
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
         CODES.put("not_allowed", "refused by config/blockpilot/config.json: another mod's command whose namespace isn't "
-            + "in allowedExtensions, or with agentCommands play the named command, a slash command sent another way "
-            + "(cmd), input to a screen beyond gameplay (screen) or a click on a link (link) (docs/safety.md)");
+            + "in allowedExtensions, or with agentCommands play the named command, a slash command whose root isn't in "
+            + "playSlashCommands (cmd <root>), input to a screen beyond gameplay (screen) or a click on a link (link) "
+            + "(docs/safety.md)");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");
         CODES.put("no_room", "sable:tp found no spot with room for the player near that block aboard");
         CODES.put("not_aboard", "sable:tp: the client never showed the player standing on the spot aboard; what it "

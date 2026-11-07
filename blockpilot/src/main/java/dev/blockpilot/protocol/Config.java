@@ -36,6 +36,8 @@ public final class Config {
     public String agentCommands = "all";
     /** The namespaces of other mods' commands agents may use; Blockpilot's own need none. */
     public List<String> allowedExtensions = new ArrayList<>();
+    /** The slash command roots a play-only agent may send, such as fill; matched ignoring case. */
+    public List<String> playSlashCommands = new ArrayList<>();
     /** Dangerous: true turns every agent safety check off (trusted players, allowedExtensions, agentCommands). */
     public boolean dangerouslyAllowAll = false;
 
@@ -73,6 +75,7 @@ public final class Config {
         }
         config.trustedPlayers = names(config.trustedPlayers);
         config.allowedExtensions = names(config.allowedExtensions);
+        config.playSlashCommands = names(config.playSlashCommands);
         if (config.agentCommands == null) {
             config.agentCommands = "all";
         }

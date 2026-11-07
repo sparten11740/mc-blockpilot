@@ -11,6 +11,10 @@
   says, and `agentCommands` is ignored. For testing a mod alone or in single-player only. It is set in the file only and
   counts as false in a file that can't be read; while it is on, the log warns, `trust` reports `dangerously_allow_all`
   and the agent indicator says "safety off" ([safety.md](docs/safety.md)).
+- **Play-only agents, `playSlashCommands`:** with `agentCommands` `play`, a slash command goes out, by `cmd`, typed or
+  clicked, when its root is in `playSlashCommands` in `config/blockpilot/config.json`, empty by default, such as
+  `["fill"]` for building sessions; any other is refused as `err not_allowed cmd <root>`, naming the root. Never list
+  `execute` or `function`, which run any other command ([safety.md](docs/safety.md)).
 
 ## 1.1.0 (2026-11-07)
 
