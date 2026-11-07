@@ -23,6 +23,15 @@ take a moment before the action. `audio=off` records without sound and leaves th
 gives up on a call after 300 s (`--timeout`), so for a longer take run `record start` and `record stop` as separate
 calls.
 
+`record script [name]`, with the options `record start` takes, starts a take that ends with its script: after the last
+step, at an error that stops the script, or when `stop` or real input cancels it, so a failing step never leaves a
+recording running into the next take. The script's reply comes once the file is saved, with the summary `record stop`
+would give as the event `! record …`; a `record stop` in the script ends the take earlier.
+
+```sh
+"<game dir>/blockpilot/blockpilot" "camera at ~6,3,6 look ~0,1,0; record script door hud=off; use ~0,0,2; wait 2s"
+```
+
 `record mark <label>` notes the video time the script reached it at, so an edit knows where the script's steps land in
 the take. It answers `ok mark door 2.15s frame=129`: the time from the video's first frame (0 before it, the clock
 `record status` counts), and the first video frame from that time, and it costs the script no tick. A change the client

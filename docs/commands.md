@@ -89,9 +89,10 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
 - `pixels [[name=]x0,y0,x1,y1|[name=]@<pos>]… [r=]`: mean rgb and luma, max and p90 luma of parts of the last frame,
   with `camera <x,y,z>` when a placed camera rendered it.
 - `record start [name] [width=] [fps=] [hud=off] [audio=off]`, `record stop`, `record status`, `record mark <label>`,
-  `record <duration> [name] …`: a video of the game with its sound; `record mark` notes the video time and frame the
-  script reached it at, `record stop` lists the marks and `<name>.marks.json` keeps them beside the video; see
-  [recording.md](recording.md).
+  `record <duration> [name] …`, `record script [name] …`: a video of the game with its sound; `record script` ends the
+  take with its script, however it ends, and the reply carries its summary as `! record …`; `record mark` notes the
+  video time and frame the script reached it at, `record stop` lists the marks and `<name>.marks.json` keeps them beside
+  the video; see [recording.md](recording.md).
 - `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>`: the game log.
 
 `sounds` and `messages` add `from=<tick>`, where their log begins, when it dropped some of the asked window. `sounds`,

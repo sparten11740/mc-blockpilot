@@ -274,7 +274,7 @@ pixels-command ::= "pixels" text?
 perf-command ::= "perf" ( "start" "profile" word? | "start" ( word "profile"? )? | ( "stop" | "status" ) | duration "profile" word? | duration ( word "profile"? )? )
 perf-option ::= "timeout=" ( duration | seconds )
 
-record-command ::= "record" ( "start" word? | ( "stop" | "status" ) | "mark" word | duration word? )
+record-command ::= "record" ( ( "start" | "script" ) word? | ( "stop" | "status" ) | "mark" word | duration word? )
 record-option ::= "width=" integer | "fps=" integer | "hud=" ( "on" | "off" ) | "audio=" ( "on" | "off" ) | "timeout=" ( duration | seconds )
 
 load-command ::= "load" ( "off"? | ( "server" | "client" | "net" ) integer )
