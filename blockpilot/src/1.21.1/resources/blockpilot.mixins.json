@@ -43,6 +43,7 @@
     "ParticleMixin",
     "PersistentEntitySectionManagerMixin",
     "PlayerChunkSenderMixin",
+    "PlayerListMixin",
     "RebuildTaskMixin",
     "SelectionListAccessor",
     "ServerChunkCacheMixin",

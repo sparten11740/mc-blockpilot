@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class ChatListenerMixin {
     @Inject(method = "handleSystemMessage", at = @At("HEAD"))
     private void blockpilot$systemMessage(Component message, boolean remote, CallbackInfo info) {
-        ClientPlatform.hooks().onChatReceived(message, null);
+        ClientPlatform.hooks().onChatReceived(message);
     }
 
     @Inject(method = "showMessageToPlayer", at = @At("HEAD"))

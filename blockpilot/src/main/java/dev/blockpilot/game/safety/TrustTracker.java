@@ -35,7 +35,7 @@ public final class TrustTracker {
         }
     }
 
-    /** The message agents get for a chat line: as it came, or the stand-in for an untrusted player's. */
+    /** What the chat window shows for a chat line: the line, or the stand-in for an untrusted player's. */
     public Component judge(Component message, UUID sender) {
         if (sender == null) {
             return message;
@@ -43,6 +43,12 @@ public final class TrustTracker {
         refresh();
         String withheld = trust.withheld(sender, trust.nameOf(sender));
         return withheld == null ? message : Component.literal(withheld);
+    }
+
+    /** The integrated server's log line for a player's chat, judged as the client judges it; server thread. */
+    public Component judgeServer(Component content, UUID sender, String name) {
+        String withheld = trust.withheld(sender, name);
+        return withheld == null ? content : Component.literal(withheld);
     }
 
     private void refresh() {

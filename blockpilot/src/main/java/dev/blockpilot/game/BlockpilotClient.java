@@ -374,12 +374,21 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
-    public void onChatReceived(Component message, UUID sender) {
+    public Component judgeChat(Component message, UUID sender) {
+        return trust.judge(message, sender);
+    }
+
+    @Override
+    public Component judgeServerChat(Component content, UUID sender, String name) {
+        return trust.judgeServer(content, sender, name);
+    }
+
+    @Override
+    public void onChatReceived(Component message) {
         chatSinceTick.incrementAndGet();
-        Component judged = trust.judge(message, sender);
-        Observations.message("chat", judged);
+        Observations.message("chat", message);
         if (events != null) {
-            events.chat(judged);
+            events.chat(message);
         }
     }
 
