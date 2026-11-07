@@ -15,7 +15,7 @@ class SafetyEngineTest {
     @BeforeEach
     void setUp() {
         CommandRegistry registry = new CommandRegistry();
-        new SafetyCommands(new Trust(List.of())).register(registry);
+        new SafetyCommands(new Trust(List.of(), false)).register(registry);
         engine = new Engine(registry, new FakeGame());
     }
 

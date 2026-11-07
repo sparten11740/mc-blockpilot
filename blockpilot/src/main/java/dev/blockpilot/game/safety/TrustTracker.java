@@ -1,5 +1,6 @@
 package dev.blockpilot.game.safety;
 
+import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.Config;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,9 @@ public final class TrustTracker {
     private long ticks;
 
     public TrustTracker(Config config) {
-        this.trust = new Trust(config.trustedPlayers);
+        String trustUnverified = System.getProperty("blockpilot.trustUnverified");
+        this.trust = new Trust(config.trustedPlayers, ClientPlatform.developmentEnvironment()
+            && trustUnverified != null && !trustUnverified.equals("false"));
     }
 
     public Trust trust() {

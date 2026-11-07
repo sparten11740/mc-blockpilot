@@ -65,10 +65,10 @@ public final class BlockpilotApi {
     }
 
     /**
-     * Whether Blockpilot counts the player as trusted: on the trusted players list in its config file, or the agent's
-     * own player, and never on a server that doesn't verify accounts. An extension that turns players' words into
-     * agent input, such as speech, should pass on only trusted players'. False while Blockpilot isn't running. New in
-     * 2.1.0.
+     * Whether Blockpilot counts the player as trusted: the agent's own player, or one on the trusted players list in
+     * its config file, though on a server that doesn't verify accounts only in a development run told to. An extension
+     * that turns players' words into agent input, such as speech, should pass on only trusted players'. False while
+     * Blockpilot isn't running. New in 2.1.0.
      */
     public static boolean isTrusted(UUID player) {
         return trusted.test(player);

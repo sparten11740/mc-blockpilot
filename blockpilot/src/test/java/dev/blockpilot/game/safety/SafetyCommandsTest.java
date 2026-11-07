@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class SafetyCommandsTest {
     @Test
     void listsTheTrustedPlayersOnlineOrOffline() {
-        Trust trust = new Trust(List.of("Steve", "Alex"));
+        Trust trust = new Trust(List.of("Steve", "Alex"), false);
         trust.update(UUID.randomUUID(), false, Map.of(UUID.randomUUID(), "steve"));
         Result result = new SafetyCommands(trust).trust();
         assertEquals(2, result.fields().get("count"));
@@ -21,10 +21,18 @@ class SafetyCommandsTest {
 
     @Test
     void saysWhenTheServerDoesntVerifyAccounts() {
-        Trust trust = new Trust(List.of());
+        Trust trust = new Trust(List.of(), false);
         trust.update(UUID.randomUUID(), true, Map.of());
         Result result = new SafetyCommands(trust).trust();
         assertEquals(true, result.fields().get("unverified"));
         assertEquals(0, result.fields().get("count"));
+        assertEquals(null, result.fields().get("trust_unverified"));
+    }
+
+    @Test
+    void saysWhenADevelopmentRunTrustsUnverifiedServers() {
+        Trust trust = new Trust(List.of(), true);
+        trust.update(UUID.randomUUID(), true, Map.of());
+        assertEquals(true, new SafetyCommands(trust).trust().fields().get("trust_unverified"));
     }
 }

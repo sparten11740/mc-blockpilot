@@ -12,6 +12,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.gametest.GameTestHooks;
 import net.neoforged.neoforgespi.language.IModFileInfo;
@@ -48,6 +49,15 @@ final class NeoForgeServices implements ClientPlatform.Services {
     @Override
     public Path configDir() {
         return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Override
+    public boolean developmentEnvironment() {
+        //? if >=26.1 {
+        /*return !FMLEnvironment.isProduction();
+        *///?} else {
+        return !FMLEnvironment.production;
+        //?}
     }
 
     @Override

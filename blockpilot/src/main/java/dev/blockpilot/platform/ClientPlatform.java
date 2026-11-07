@@ -43,6 +43,9 @@ public final class ClientPlatform {
 
         Path gameDir();
 
+        /** True in a development run (the loader's own flag); never in a player's install or on the vanilla agent. */
+        boolean developmentEnvironment();
+
         /** The jar, or in a dev run the folders, the loader loaded this mod from. */
         List<Path> modPaths();
 
@@ -169,6 +172,10 @@ public final class ClientPlatform {
 
     public static Path configDir() {
         return services().configDir();
+    }
+
+    public static boolean developmentEnvironment() {
+        return services().developmentEnvironment();
     }
 
     public static Path gameDir() {

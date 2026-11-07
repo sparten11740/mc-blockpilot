@@ -77,8 +77,8 @@ unverified servers too. It counts only where the platform says this is a
 development environment (NeoForge's `FMLEnvironment.production` false,
 Fabric's `isDevelopmentEnvironment()`); the vanilla targets and production
 installs ignore it, so a player's launcher can't switch it on, and agents
-have no command for it. `trust` reports `trust_unverified` while it
-applies.
+have no command for it. `trust` reports `trust_unverified` while it is
+switched on, which also shows that a dev run got the property.
 
 ### D4: Trust only in the file
 

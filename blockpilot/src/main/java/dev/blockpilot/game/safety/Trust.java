@@ -22,8 +22,11 @@ public final class Trust {
     private volatile boolean unverified;
     /** The players the client knows, by UUID, so a UUID can be judged off the client thread. */
     private volatile Map<UUID, String> players = Map.of();
+    /** A development run's switch: the list applies on unverified servers too, for offline dev accounts. */
+    private final boolean trustUnverified;
 
-    public Trust(Collection<String> trusted) {
+    public Trust(Collection<String> trusted, boolean trustUnverified) {
+        this.trustUnverified = trustUnverified;
         setNames(new ArrayList<>(trusted));
     }
 
@@ -31,7 +34,7 @@ public final class Trust {
         if (player != null && player.equals(self)) {
             return true;
         }
-        return !unverified && name != null && keys.contains(key(name));
+        return (!unverified || trustUnverified) && name != null && keys.contains(key(name));
     }
 
     public boolean trusts(UUID player) {
@@ -55,6 +58,10 @@ public final class Trust {
 
     public boolean unverified() {
         return unverified;
+    }
+
+    public boolean trustUnverified() {
+        return trustUnverified;
     }
 
     /** Whether the named player is among those the client knows. */
