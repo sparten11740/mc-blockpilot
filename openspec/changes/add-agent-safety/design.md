@@ -53,14 +53,25 @@ Matching by UUID was the alternative. It would survive renames, but a
 person can't type it, and on unverified servers UUIDs are derived from
 names anyway (D3).
 
-### D2: Withholding where chat comes in
+### D2: Withholding before the chat window
 
-The chat hook gains the sender: a UUID and name, or none for system
-messages. `BlockpilotClient.onChatReceived` decides once: a player's
-message from an untrusted sender becomes the text `withheld from=<name>`
-before it reaches `Observations` and `Events`. So the log, `messages
-match=` and the events never hold the text. The vanilla chat window is
-left alone, since the person at the game still reads everything.
+The chat hook gains the sender: a UUID, or none for system messages, and
+judges the line before the chat window adds it. A player's line from an
+untrusted sender becomes the text `withheld from=<name>` there, so the
+window, its `[CHAT]` log line, screenshots and recorded frames, the message
+log, `messages match=` and the events all hold only the stand-in:
+- NeoForge: a listener at the highest priority sets the event's message,
+  so later listeners and the window get the stand-in.
+- Fabric: its message API can't change a chat line, so `ALLOW_CHAT`
+  cancels an untrusted one and adds the stand-in to the chat window
+  itself.
+- Vanilla targets: the `addPlayerMessage` mixin swaps the line.
+
+When the agent hosts the world, the integrated server logs each player's
+line too. A mixin on `PlayerList`'s chat broadcast notes the sender and
+swaps the logged content the same way. Dropping the line from the agent's
+own screen was weighed against people's needs: the agent's game belongs to
+the agent, and the people it plays with read chat on their own games.
 
 ### D3: Unverified servers
 
@@ -131,7 +142,8 @@ makes them. When it changed, `trustedPlayers` and `agentCommands` are
 applied to `Trust` and to the engine's profile, which `Engine` holds in a
 volatile field read when a script is submitted. Other settings, such as
 the port, still need a restart. A file that doesn't parse leaves the last
-good settings in force and logs one error for that text of the file. The
+good settings in force and logs one error for that text of the file;
+anything thrown while applying it is caught the same way. The
 reload reads without writing, so it never changes what a person wrote. A
 file watcher was the alternative; reading a few hundred bytes once a
 second costs nothing and needs no thread.
@@ -167,9 +179,13 @@ the next step starts.
 - [Under `play`, a person's slash command typed into a chat screen an
   agent typed in before is dropped] → Agent input reached that screen, so
   it can't be told apart. Reopening chat clears it.
-- [A broken config file at start] → The defaults apply (nobody trusted,
-  `all`) and the error is logged; a broken file later keeps the last good
-  settings (D7).
+- [A broken config file at start] → Fails closed: agents held to `play`,
+  nobody trusted, the error logged and the file left alone. A broken file
+  later keeps the last good settings (D7). Gson reads leniently, so a
+  trailing comma in the list reads as a null name, which is dropped.
+- [Trust is read on other threads, the integrated server's and an
+  extension's] → Its state is two immutable snapshots, the names and what
+  the client knows of the connection, each swapped in one write.
 - [Someone with access to the PC's files edits the config] → Out of reach
   for a game mod. The docs say whoever runs the agent controls its file
   access.
