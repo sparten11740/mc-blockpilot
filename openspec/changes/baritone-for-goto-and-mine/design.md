@@ -38,7 +38,14 @@ port, in a class of its own: `BuiltInPathfinder` wraps `Navigator` unchanged
 and is always available, and `BaritonePathfinder` keeps everything about
 Baritone, its reflection included, to itself. `mine` by type keeps choosing
 and digging blocks itself and walks into reach of each through the port, so
-with Baritone it digs its way to blocks the built-in walk can't reach.
+with Baritone it digs its way to blocks the built-in walk can't reach. A
+walk to 3 blocks may end outside the wall the block is behind, so when the
+crosshair still can't hit a block in reach, `mine` walks closer once, to 1.5
+blocks, through the port before passing over it: Baritone digs through, and
+the built-in walk, which never digs, finds no path there, and the block is
+passed over as before. The walk closer has no time limit of its own: digging
+through a thick wall takes as long as it takes, and it ends when the
+pathfinder answers or `stop` or real input ends the script.
 `Pathfinders` holds the adapters in order of preference, Baritone's first,
 and picks the first available one at each call, as Baritone is only
 available once its class is loaded and a world gives it a player; an adapter
@@ -53,18 +60,31 @@ which walk a few blocks to a block on the way, keep the built-in
 
 `BaritonePathfinder` finds `baritone.api.BaritoneAPI` through the class loader
 that holds the mods (the game's, not Blockpilot's own, which may not see another
-mod) and calls its public API by reflection, building the goal object the same
-way. Polling `isPathing` can't tell arrival from failure, so the adapter
-registers a game event listener on Baritone's event bus, an interface it
-implements with `java.lang.reflect.Proxy`, and maps its path events: at the
-goal, or the player within `near=` of the target, answers `ok`; a failed path
-calculation answers `err no_path`; a path Baritone was following that its events
-report as failed or abandoned answers `err stuck <pos>`, while Blockpilot's own
-cancel answers `err cancelled`. No fixed time without movement counts as stuck,
-as breaking or placing a block keeps the player still for a while. Cancelling
-calls `cancelEverything`. Reflection keeps Baritone off the compile classpath
-and out of the jar, so licences and versions stay apart; an API change in
-Baritone shows up as `err unsupported` naming the method.
+mod), trying the thread's context class loader, then Minecraft's, then its own;
+the dev runs on 1.21.1 and 26.3 found it so on NeoForge and Fabric, and the
+proxied listener received path events on both. It calls the public API by
+reflection, building the goal object the same way: `GoalBlock` without `near=`,
+else `GoalNear` with `near=` rounded down, so wherever Baritone's goal ends
+counts as near enough. A moving target sets the goal again once it is more than
+2 blocks from it.
+
+The player within `near=` of the target answers `ok`. Polling Baritone can't
+tell a failure from a walk still under way, so the adapter registers a game
+event listener on Baritone's event bus, an interface it implements with
+`java.lang.reflect.Proxy`. The 1.21.1 dev run showed how Baritone reports a
+goal it can't reach, sealed in bedrock: `CALC_STARTED`,
+`CALC_FINISHED_NOW_EXECUTING` for a partial path towards it,
+`NEXT_CALC_FAILED` twice as it walks, then `CALC_FAILED` at the wall. It
+tries again after `NEXT_CALC_FAILED`, walking as near as it can, so only
+`CALC_FAILED`, a calculation from where the player stands that finds
+nothing, answers `err no_path`. Baritone's custom goal process going idle
+short of the goal, after 10 ticks to take the goal on, answers `err stuck
+<pos>`, while Blockpilot's own cancel answers `err cancelled`. No fixed time
+without movement counts as stuck, as breaking or placing a block keeps the
+player still for a while. Cancelling calls `cancelEverything`. Reflection
+keeps Baritone off the compile classpath and out of the jar, so licences and
+versions stay apart; an API change in Baritone shows up as `err unsupported`
+naming the method.
 
 ### D3: Inputs and interrupts
 
@@ -85,3 +105,10 @@ the goal; the release after an action releases Baritone's overrides too.
   walked.
 - [Tests of the built-in pathfinder in a game with Baritone] → The regular
   runs have no Baritone; only the Baritone run configuration loads it.
+- [On 26.x, Baritone's own threads outlive `quit`, so the game's shutdown
+  watchdog ends it with a crash report] → Baritone's doing, seen in a dev run
+  that never walked through it; the Baritone runs don't check closing, and
+  the regular runs do.
+- [Loom's remapped copy of a mod no longer declares its nested jars] → On
+  1.21.1 the Fabric dev run takes Baritone's nested `nether-pathfinder` from
+  the checked jar as a plain library.

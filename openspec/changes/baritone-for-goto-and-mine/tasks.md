@@ -3,6 +3,7 @@
 ## 1. A pathfinder seam (player-control)
 
 - [ ] 1.1 Introduce the `Pathfinder` port, `BuiltInPathfinder` over `Navigator`, and `Pathfinders` picking the first available adapter in order of preference (D1), with `goto` and `mine`'s walk into reach depending only on the port, `mine` passing its reach of 3 through unchanged, and no change of behaviour; add unit tests for the choice with fake adapters (the first available wins, an unavailable one is skipped, the built-in one as the last resort); verify the unit tests and the movement and mining smoke checks pass on the 1.21.1 NeoForge dev client
+- [ ] 1.2 Have `mine` by type walk closer once, through the port, to a block in reach that the crosshair can't hit before passing over it (D1); add a smoke step for a gold block sealed in stone, which the built-in walk passes over with `err no_block gold_block`; verify the step passes on the 1.21.1 NeoForge dev client
 
 ## 2. Baritone (player-control)
 
