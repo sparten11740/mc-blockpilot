@@ -6,6 +6,7 @@ import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Duration;
+import dev.blockpilot.api.Event;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
@@ -55,6 +56,12 @@ final class ScriptJob implements CommandContext {
      * waited on the server; made up at the next one, so a server-side action keeps one tick per server tick.
      */
     private final AtomicInteger missedServerSteps = new AtomicInteger();
+    /** How long an ending that doesn't time itself may take before it is cancelled: 60 s. */
+    private static final int ENDING_TICKS = 1200;
+    /** What runs when the script ends, in order; see {@link CommandContext#atEnd}. */
+    private final List<Action> endings = new ArrayList<>();
+    private int endingIndex;
+    private int endingTicks;
     /** Whether an action or sample runs on the server clock, as the last step left the job; read without the lock. */
     private volatile boolean serverClocked;
     private int index;
@@ -118,7 +125,8 @@ final class ScriptJob implements CommandContext {
             }
             if (pendingCancel != null) {
                 cancelLocked(pendingCancel);
-                return true;
+                pendingCancel = null;
+                return end(affinity);
             }
             return done;
         } finally {
@@ -196,8 +204,55 @@ final class ScriptJob implements CommandContext {
                 finish(crash(name(statement), statement instanceof Statement.Call call ? call.entry() : null, e));
             }
         }
+        return end(affinity);
+    }
+
+    @Override
+    public void atEnd(Action ending) {
+        endings.add(ending);
+    }
+
+    /**
+     * Runs the endings, one after another on the client thread, each answering as an event for the reply, and then
+     * completes the reply; true once it is complete.
+     */
+    private boolean end(Affinity affinity) {
+        while (endingIndex < endings.size()) {
+            if (affinity != Affinity.CLIENT) {
+                return false;
+            }
+            Action ending = endings.get(endingIndex);
+            Result result;
+            try {
+                if (endingTicks++ >= ENDING_TICKS && !(ending instanceof Engine.SelfTimed)) {
+                    ending.cancel();
+                    result = Result.error("timeout", new Duration(ENDING_TICKS).seconds() + "s");
+                } else {
+                    result = ending.tick();
+                }
+            } catch (CommandException e) {
+                result = e.toResult();
+            } catch (RuntimeException e) {
+                result = crash(ending.label(), null, e);
+            }
+            if (result == null) {
+                return false;
+            }
+            if (result.status() != Result.Status.SKIP) {
+                session.deliver(Event.of(ending.label(), result.isOk() ? result.fields()
+                    : new Fields().put("err", result.code(), "err " + result.code()
+                        + (result.argument() == null ? "" : " " + result.argument()))));
+            }
+            endingIndex++;
+            endingTicks = 0;
+        }
         complete();
         return true;
+    }
+
+    /** Whether the reply is complete; a cancelled script may still be running its endings. */
+    boolean completed() {
+        return future.isDone();
     }
 
     /** Waiting on the server clock while the client ticks on and the server, paused, runs no ticks. */
@@ -458,7 +513,9 @@ final class ScriptJob implements CommandContext {
             index++;
             skipRest();
         }
-        complete();
+        if (endingIndex >= endings.size()) {
+            complete();
+        }
     }
 
     private void complete() {

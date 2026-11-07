@@ -34,7 +34,8 @@ integrations built against 2.0.0 keep working.
   `screenshot` now names a placed camera's position.
 - **Extension API:** `Form.repeated(limit, group)` declares a part that may come several times, read back with
   `Args.values` and `Args.positions`. An `ArgType.ENTITY` slot takes `@<name>` too, looked up before the handler
-  runs, so the handler still reads an id; `Lexicon.isEntityName` tells a name.
+  runs, so the handler still reads an id; `Lexicon.isEntityName` tells a name. `CommandContext.atEnd(action)` runs an
+  action when the script ends, however it ends, before its reply.
 
 ## 1.0.0 (2026-11-05)
 
