@@ -83,9 +83,9 @@ accounts. It SHALL take no arguments.
 On a server that doesn't verify players' accounts, where anyone can join
 under any name, no player but the agent's own SHALL count as trusted, and
 `trust` SHALL report `unverified`. Only a development environment launched
-with `-Pblockpilot.trustUnverified` SHALL apply the list there too, with
-`trust` reporting `trust_unverified` as well; production installs and the
-vanilla targets SHALL ignore it.
+with `-Pblockpilot.trustUnverified` SHALL apply the list there too, and
+`trust` SHALL report `trust_unverified` while it is switched on;
+production installs and the vanilla targets SHALL ignore it.
 
 #### Scenario: An offline-mode server
 - **WHEN** the list holds `Steve` and the agent plays on a server that

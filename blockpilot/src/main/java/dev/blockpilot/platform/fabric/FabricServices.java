@@ -51,6 +51,11 @@ final class FabricServices implements ClientPlatform.Services {
     }
 
     @Override
+    public boolean developmentEnvironment() {
+        return FabricLoader.getInstance().isDevelopmentEnvironment();
+    }
+
+    @Override
     public Path gameDir() {
         return FabricLoader.getInstance().getGameDir();
     }

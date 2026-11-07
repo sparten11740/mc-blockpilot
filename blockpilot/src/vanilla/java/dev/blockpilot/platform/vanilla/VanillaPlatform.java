@@ -90,6 +90,11 @@ public final class VanillaPlatform implements ClientPlatform.Services {
     }
 
     @Override
+    public boolean developmentEnvironment() {
+        return false;
+    }
+
+    @Override
     public Path configDir() {
         return gameDir().resolve("config");
     }
