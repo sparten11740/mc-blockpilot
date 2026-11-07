@@ -53,8 +53,19 @@ With `play`, agents may only play. A script with any of these fails before any s
 `cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`,
 `create world`, `delete world`, `join`, `leave` and `quit`. A slash command an agent types into the chat screen or
 clicks in a chat message isn't sent either, and the command that sent it fails with `err not_allowed cmd`. Extension
-commands still work, as the person who installed the mod chose them. The default, `all`, refuses nothing, since testing
-a mod needs these commands. A value Blockpilot doesn't know counts as `play`.
+commands still work, as the person who installed the mod chose them, except those that run on the integrated server,
+which are refused like `server` as `err not_allowed <namespace>:<name>`.
+
+Blockpilot's input (`click`, `type`, `key`, `mouse`, `scroll`, `drag`, `cursor`) reaches only gameplay screens: the
+world itself, container screens (inventories, chests, mod machines), the chat screen, sign editing and books. On any
+other screen, such as the pause menu, the title screen's server and world lists, the options or a confirm screen, it
+fails with `err not_allowed screen`; the escape key always gets through, as it only closes screens. Mod screens that
+aren't container screens are refused too. A click on a text that opens a web address or a file, or copies to the
+clipboard, in chat or a book, fails with `err not_allowed link` before any confirm screen, also with the game's
+chat-links prompt off.
+
+The default, `all`, refuses nothing, since testing a mod needs these commands. A value Blockpilot doesn't know counts as
+`play`.
 
 ## Text from players is untrusted input
 

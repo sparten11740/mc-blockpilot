@@ -56,7 +56,8 @@ class SafetyEngineTest {
             return () -> Result.ok();
         }));
         registry.addExtensions(List.of(new BlockpilotApi.Registration("mymod", "mymod",
-            action("gear").freeze())));
+            action("gear").freeze()), new BlockpilotApi.Registration("sable", "blockpilot",
+            action("tp").onServer().freeze())));
         engine = new Engine(registry, game);
     }
 
@@ -131,6 +132,13 @@ class SafetyEngineTest {
     void aStaleRefusalFailsNothing() {
         Refusal.raise("not_allowed", "cmd");
         assertEquals("ok", run("jump"));
+    }
+
+    @Test
+    void anExtensionCommandOnTheIntegratedServerIsRefused() {
+        engine.setPlayOnly(true);
+        assertEquals("err not_allowed sable:tp", run("sable:tp"));
+        assertEquals(List.of(), ran);
     }
 
     @Test

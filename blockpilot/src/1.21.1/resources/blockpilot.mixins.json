@@ -45,6 +45,7 @@
     "PlayerChunkSenderMixin",
     "PlayerListMixin",
     "RebuildTaskMixin",
+    "ScreenLinkMixin",
     "SelectionListAccessor",
     "ServerChunkCacheMixin",
     "ServerLevelMixin",

@@ -200,7 +200,9 @@ With `agentCommands: "play"` in `config/blockpilot/config.json`, agents may only
 `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`, `perf` (all but `perf status`), `load`, `create world`,
 `delete world`, `join`, `leave` or `quit` fails before any step with `err not_allowed <command>`, and a slash command an
 agent types into the chat screen or clicks in chat isn't sent, failing the command that sent it with `err not_allowed
-cmd`. A change to the setting applies within a second.
+cmd`. Extension commands that run on the integrated server are refused too. Input reaches only gameplay screens (the
+world, container screens, chat, signs, books), else `err not_allowed screen`, and a click on a link fails with `err
+not_allowed link`. A change to the setting applies within a second.
 
 ## session
 

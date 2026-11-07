@@ -123,8 +123,8 @@ With `agentCommands` set to `play` in the config, a script with any of
 `cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`
 in any form, `perf` in any form but `perf status`, `load`, `create world`,
 `delete world`, `join`, `leave` or `quit` SHALL fail before running any
-step, with `err not_allowed <command>`. Other commands, extension commands
-included, SHALL work as before. The default, `all`, SHALL refuse nothing.
+step, with `err not_allowed <command>`. Other commands SHALL work as
+before. The default, `all`, SHALL refuse nothing.
 
 #### Scenario: A slash command refused
 - **WHEN** `agentCommands` is `play` and an agent runs `goto 0,64,0; cmd
@@ -142,6 +142,17 @@ included, SHALL work as before. The default, `all`, SHALL refuse nothing.
 - **THEN** `perf 1s` fails with `err not_allowed perf`, and `perf status`
   answers as before
 
+### Requirement: Extension commands for play-only agents
+With `agentCommands` set to `play`, an extension command that runs on the
+integrated server SHALL be refused like `server`, before any step, with
+`err not_allowed <namespace>:<name>`. Other extension commands SHALL work
+as before, as the person who installed the mod chose them.
+
+#### Scenario: An extension command on the integrated server
+- **WHEN** `agentCommands` is `play` and an agent runs `sable:tp here
+  *seat*`, which runs on the integrated server
+- **THEN** the result is `err not_allowed sable:tp`
+
 ### Requirement: No slash commands sent for play-only agents
 With `agentCommands` set to `play`, a slash command the agent sends any
 other way, typed into the chat screen or clicked in a chat message, SHALL
@@ -153,3 +164,30 @@ cmd`. Slash commands a person sends SHALL go out as usual.
   hi` and presses enter
 - **THEN** nothing is sent, and the `key` command fails with `err
   not_allowed cmd`
+
+### Requirement: Play-only agents stay in gameplay screens
+With `agentCommands` set to `play`, Blockpilot's input to the game (`click`,
+`type`, `key`, `mouse`, `scroll`, `drag`, `cursor`) SHALL reach only the
+world itself, container screens, the chat screen, sign editing and books.
+On any other screen, such as the pause menu, the title screen's lists or the
+options, it SHALL fail with `err not_allowed screen`. The escape key, which
+only closes a screen, SHALL always reach the game.
+
+#### Scenario: Leaving through the pause menu
+- **WHEN** `agentCommands` is `play` and an agent presses escape and then
+  clicks the pause menu's button that leaves the world
+- **THEN** the click fails with `err not_allowed screen`, and the player is
+  still in the world
+
+### Requirement: Play-only agents follow no links
+With `agentCommands` set to `play`, a click by Blockpilot on a text whose
+click event opens a link or a file, or copies to the clipboard, in chat or
+in a book, SHALL NOT be acted on and SHALL fail with `err not_allowed
+link`, before any confirm screen opens and also when the game's chat-links
+prompt is switched off.
+
+#### Scenario: A link in chat
+- **WHEN** `agentCommands` is `play` and an agent clicks a chat line whose
+  click event opens a web address
+- **THEN** the click fails with `err not_allowed link`, no confirm screen
+  opens, and no browser starts
