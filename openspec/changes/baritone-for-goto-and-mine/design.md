@@ -108,7 +108,9 @@ the goal; the release after an action releases Baritone's overrides too.
 - [On 26.x, Baritone's own threads outlive `quit`, so the game's shutdown
   watchdog ends it with a crash report] → Baritone's doing, seen in a dev run
   that never walked through it; the Baritone runs don't check closing, and
-  the regular runs do.
+  the regular runs do. Baritone fixed it on its 1.21.4 branch (#5123,
+  2026-09-16), but not in the 26.x builds the dev runs fetch (v1.18.0 to
+  v1.20.0), the latest on 2026-11-07.
 - [Loom's remapped copy of a mod no longer declares its nested jars] → On
   1.21.1 the Fabric dev run takes Baritone's nested `nether-pathfinder` from
   the checked jar as a plain library.
