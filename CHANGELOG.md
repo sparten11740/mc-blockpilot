@@ -33,7 +33,8 @@ integrations built against 2.0.0 keep working.
   exactly one server tick apart and `settle=0t` runs them in one.
 - **Fixes:** `server function` of a function without `return` answers `ok`, not `err command_failed`. `wait <N>t`
   waits N ticks, where it waited one fewer, so scripts that allowed for that run a tick longer per wait. On 26.x,
-  `screenshot` now names a placed camera's position.
+  `screenshot` now names a placed camera's position. A command line the launcher can't read prints one line saying
+  what is wrong, not its whole usage text first.
 - **Extension API:** `Form.repeated(limit, group)` declares a part that may come several times, read back with
   `Args.values` and `Args.positions`. An `ArgType.ENTITY` slot takes `@<name>` too, looked up before the handler
   runs, so the handler still reads an id; `Lexicon.isEntityName` tells a name. `CommandContext.atEnd(action)` runs an
