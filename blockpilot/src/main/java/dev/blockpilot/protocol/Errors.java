@@ -55,6 +55,8 @@ public final class Errors {
             + "Soft)");
         CODES.put("command_failed", "the server command failed; its message is attached");
         CODES.put("ext_failed", "an extension command threw an exception; it is logged");
+        CODES.put("not_allowed", "agentCommands is play in config/blockpilot/config.json, so agents may only play: the "
+            + "named command, or a slash command sent another way, is refused (docs/safety.md)");
         CODES.put("no_sublevel", "no sub-level has that UUID or name, or here found none");
         CODES.put("no_room", "sable:tp found no spot with room for the player near that block aboard");
         CODES.put("not_aboard", "sable:tp: the client never showed the player standing on the spot aboard; what it "

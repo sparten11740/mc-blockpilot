@@ -136,6 +136,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         configReload = new ConfigReload(directory.resolve("config.json"), this::applySafetySettings);
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
+        engine.setPlayOnly(config.playOnly());
         engine.startWatchdog();
         events = new Events(engine);
         Observations.setEventSink(engine::broadcast);
@@ -369,6 +370,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         config.trustedPlayers = read.trustedPlayers;
         config.agentCommands = read.agentCommands;
         trust.trust().set(read.trustedPlayers);
+        engine.setPlayOnly(read.playOnly());
     }
 
     @Override
