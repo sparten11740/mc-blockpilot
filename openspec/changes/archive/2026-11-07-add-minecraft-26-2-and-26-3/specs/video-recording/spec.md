@@ -3,11 +3,12 @@
 ## MODIFIED Requirements
 
 ### Requirement: What ends a recording
-Only `record stop`, the end of a timed recording, an encoder failure, a GPU that
-doesn't finish reading a frame back and the game closing SHALL end a recording.
-Closing the game SHALL save it first.
-Leaving a world, closing the connection that started it and turning agent
-control off SHALL NOT end it.
+Only `record stop`, the end of a timed recording, the end of the script that
+ran `record script`, an encoder failure, a GPU that doesn't finish reading a
+frame back and the game closing SHALL end a recording. Closing the game SHALL
+save it first. Leaving a world, closing the connection that started a
+recording begun with `record start` and turning agent control off SHALL NOT
+end it.
 
 #### Scenario: Game closed while recording
 - **WHEN** a recording runs and the player closes the game
