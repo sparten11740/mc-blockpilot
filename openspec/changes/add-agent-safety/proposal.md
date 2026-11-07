@@ -29,7 +29,7 @@ what it may do in the game. The docs don't warn about it either.
 - On a server that doesn't verify accounts, where anyone can take any
   name, nobody but the agent's own player counts as trusted.
 - The read-only query `trust` tells agents whom the list trusts.
-- `agent_commands: "play"` in the config limits agents to playing as a
+- `agentCommands: "play"` in the config limits agents to playing as a
   player. Commands that reach beyond the game in front of them are refused
   with `err not_allowed <command>`: slash commands, the integrated server,
   world files, mod configs, files written to disk, switching worlds or
@@ -59,7 +59,7 @@ what it may do in the game. The docs don't warn about it either.
 
 ## Impact
 
-- `protocol/Config.java`: `trusted_players` and `agent_commands`, saved
+- `protocol/Config.java`: `trustedPlayers` and `agentCommands`, saved
   when the list changes.
 - The chat hooks of both loaders and the vanilla targets: the sender
   passed with player chat, so `Observations` and `Events` can withhold

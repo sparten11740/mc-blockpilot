@@ -59,7 +59,7 @@ The `/blockpilot` commands SHALL take effect only when a person typed them.
 Sent for an agent, through `cmd`, `chat`, or keys and text an agent typed
 into the chat screen, they SHALL change nothing and not be sent, and the
 agent's command SHALL fail with `err not_allowed`. No agent command SHALL
-change the list or `agent_commands`.
+change the list or `agentCommands`.
 
 #### Scenario: Through cmd
 - **WHEN** an agent runs `cmd blockpilot trust Mallory`
@@ -93,7 +93,7 @@ under any name, no player but the agent's own SHALL count as trusted, and
   `withheld from=Steve`, and `trust` reports `unverified`
 
 ### Requirement: Play-only agents
-With `agent_commands` set to `play` in the config, a script with any of
+With `agentCommands` set to `play` in the config, a script with any of
 `cmd`, `server`, `nbt`, `tick`, `gametest`, `snapshot`, `config`, `record`,
 `perf start`, `load`, `create world`, `delete world`, `join`, `leave` or
 `quit` SHALL fail before running any step, with `err not_allowed
@@ -101,23 +101,23 @@ With `agent_commands` set to `play` in the config, a script with any of
 before. The default, `all`, SHALL refuse nothing.
 
 #### Scenario: A slash command refused
-- **WHEN** `agent_commands` is `play` and an agent runs `goto 0,64,0; cmd
+- **WHEN** `agentCommands` is `play` and an agent runs `goto 0,64,0; cmd
   op Mallory`
 - **THEN** the result is `err not_allowed cmd`, the player hasn't moved,
   and no command was sent
 
 #### Scenario: Playing goes on
-- **WHEN** `agent_commands` is `play` and an agent runs `mine #logs x3`
+- **WHEN** `agentCommands` is `play` and an agent runs `mine #logs x3`
 - **THEN** the logs are mined as before
 
 ### Requirement: No slash commands typed for play-only agents
-With `agent_commands` set to `play`, a slash command an agent typed into the
+With `agentCommands` set to `play`, a slash command an agent typed into the
 chat screen SHALL NOT be sent, and the command that sent it SHALL fail with
 `err not_allowed cmd`. Slash commands a person types SHALL be sent as
 usual.
 
 #### Scenario: Around the refusal
-- **WHEN** `agent_commands` is `play` and an agent opens chat, types `/op
+- **WHEN** `agentCommands` is `play` and an agent opens chat, types `/op
   Mallory` and presses enter
 - **THEN** nothing is sent, and the `key` command fails with `err
   not_allowed cmd`

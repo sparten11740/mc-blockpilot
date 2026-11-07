@@ -39,7 +39,7 @@
 
 ### D1: Trust by name, empty by default
 
-`trusted_players` holds player names, matched ignoring case against the
+`trustedPlayers` holds player names, matched ignoring case against the
 sender's profile name. A name is what a person knows and types. On a
 server that verifies accounts, a name belongs to one account at a time.
 The agent's own player is always trusted, so its own messages and their
@@ -90,7 +90,7 @@ refuses a text starting with `/blockpilot` up front.
 
 ### D5: The play profile at parse time
 
-With `agent_commands: "play"`, `Engine` checks every parsed step,
+With `agentCommands: "play"`, `Engine` checks every parsed step,
 including those nested in `if`, `wait` and `sample`, against the refused
 set, and fails the script before any step runs. This is the same point as
 a syntax error, so nothing half-runs. The set is a list in one place,
@@ -101,6 +101,11 @@ named by the command words as the registry knows them:
 
 Extension commands are allowed. The person who installed the mod chose
 them.
+
+A value of `agentCommands` other than `all`, such as a typo, counts as
+`play`: a safety setting that can't be read fails closed. The config keys
+are camelCase, `trustedPlayers` and `agentCommands`, like the file's other
+keys.
 
 Under `play`, the same `sendCommand` hook drops any slash command sent
 with agent origin (D4's rules), so typing `/op` into the chat screen
