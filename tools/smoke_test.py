@@ -1154,6 +1154,27 @@ def main():
          "server as=player fill ~2 ~ ~-1 ~4 ~2 ~1 minecraft:stone; "
          "server as=player setblock ~3 ~1 ~ minecraft:gold_block; ?mine gold_block; "
          "server as=player fill ~2 ~ ~-1 ~4 ~2 ~1 minecraft:air", [r"err no_block gold_block"], True),
+        # place takes the first neighbour, below, above, north, south, west, east, whose face is in sight. A hole's
+        # floor is hidden behind the ground in front of it, so its far side takes the block.
+        ("place fills a hole against its far side",
+         "server as=player setblock ~ ~-1 ~2 minecraft:air; wait 5t; ?place cobblestone ~0,-1,2; wait 5t; "
+         "block ~0,-1,2 side=server; server as=player setblock ~ ~-1 ~2 minecraft:grass_block",
+         [r"^ok cobblestone$"]),
+        ("place above the eyes against a block beside it",
+         "server as=player fill ~2 ~ ~ ~2 ~1 ~ minecraft:stone; server as=player setblock ~2 ~2 ~-1 minecraft:stone; "
+         "wait 5t; ?place cobblestone ~2,2,0; wait 5t; block ~2,2,0 side=server; "
+         "server as=player fill ~2 ~ ~-1 ~2 ~2 ~ minecraft:air", [r"^ok cobblestone$"]),
+        # The ground in sight comes first, so a torch still stands on it with a wall beside it.
+        ("place stands a torch on the ground before a wall",
+         "server give @p minecraft:torch; server as=player setblock ~3 ~ ~ minecraft:stone; wait 5t; "
+         "place torch ~2,0,0; wait 5t; block ~2,0,0 side=server; server as=player fill ~2 ~ ~ ~3 ~ ~ minecraft:air",
+         [r"^ok torch$"]),
+        # find expects no cobblestone near, so the steps before this one clear what they placed.
+        ("place with no neighbour in sight fails at the first",
+         "server as=player setblock ~2 ~2 ~ minecraft:stone; server as=player setblock ~4 ~2 ~ minecraft:stone; "
+         "wait 5t; ?place cobblestone ~3,2,0; find cobblestone 6; server as=player fill ~2 ~2 ~ ~4 ~2 ~ minecraft:air",
+         [r"err out_of_reach cannot see the face to place against; the crosshair hits stone ~2,2,0 on its west face",
+          r"^ok none"], True),
         ("find by state", "server as=player setblock ~1 ~ ~-2 minecraft:oak_log[axis=y]; "
                           "server as=player setblock ~2 ~ ~-2 minecraft:oak_log[axis=x]; find oak_log[axis=x] 4 1; "
                           "server as=player fill ~1 ~ ~-2 ~2 ~ ~-2 minecraft:air", [r"^  oak_log ~2,0,-2$"]),

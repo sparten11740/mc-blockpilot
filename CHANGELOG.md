@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 (unreleased)
+
+- **Fixes:** `place` takes the first neighbour of the cell whose face it can see, in the same order as before (below,
+  above, north, south, west, east), so it fills a hole two blocks ahead from the hole's far side and places above the
+  eyes beside a block, where it failed with `err out_of_reach` because the first neighbour's face was hidden. Wherever
+  it worked before, it places against the same neighbour as before.
+
 ## 1.1.0 (2026-11-07)
 
 For filming: a camera that glides, follows, circles, zooms and tilts, one that films far from the player, entities taken

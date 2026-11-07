@@ -23,8 +23,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -118,6 +122,24 @@ final class PlayerActions {
             return () -> SableSupport.subLevels().toWorld(level, point).add(lead(level, point, subLevel.id()));
         }
         return () -> point;
+    }
+
+    /**
+     * Whether the player sees the block's face at the point, as the crosshair's pick would once turned to it: its ray,
+     * from the eyes through the point out to reach, stopping at the first block outline and passing through fluids,
+     * meets that block on that face first. A point at the eyes is never in sight, as no ray leads to it.
+     */
+    static boolean seesFace(Level level, BlockPos block, Direction face, Vec3 point) {
+        LocalPlayer player = player();
+        Vec3 eyes = player.getEyePosition();
+        Vec3 toward = point.subtract(eyes);
+        if (toward.lengthSqr() == 0) {
+            return false;
+        }
+        Vec3 end = eyes.add(toward.normalize().scale(player.blockInteractionRange()));
+        BlockHitResult hit = level.clip(new ClipContext(eyes, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE,
+            player));
+        return hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(block) && hit.getDirection() == face;
     }
 
     /**
