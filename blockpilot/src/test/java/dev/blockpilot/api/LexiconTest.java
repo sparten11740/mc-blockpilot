@@ -221,7 +221,7 @@ class LexiconTest {
         assertFalse(Lexicon.isName("2mine"));
         assertFalse(Lexicon.isName("max-dist"));
         assertFalse(Lexicon.isName(""));
-        assertTrue(Lexicon.isNamespace("aerolarge"));
+        assertTrue(Lexicon.isNamespace("mymod"));
         assertTrue(Lexicon.isNamespace("my.mod-id_2"));
         assertFalse(Lexicon.isNamespace("Sable"));
         assertFalse(Lexicon.isNamespace(""));

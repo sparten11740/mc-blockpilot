@@ -26,7 +26,7 @@ screen) appears. With `blockpilot.autocreate=<flat|void|normal>` too, the world
 is first created as by `create world` if it doesn't exist.
 
 #### Scenario: First launch in a fresh run directory
-- **WHEN** `runClient` starts with `-Dblockpilot.autojoin=aerolarge-test
+- **WHEN** `runClient` starts with `-Dblockpilot.autojoin=mymod-test
   -Dblockpilot.autocreate=flat` in an empty run directory
 - **THEN** the client skips past the onboarding screen, creates the flat test
   world, and joins it without any input

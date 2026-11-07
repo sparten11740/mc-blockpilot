@@ -120,8 +120,8 @@ class GrammarTest {
 
     @Test
     void extensionCommandsAreNamedWithADot() {
-        assertEquals(List.of("aerolarge.build-command ::= \"aerolarge:build\" position"),
-            productions("aerolarge:build", CommandSpec.query("build", QUERY).arg("at", ArgType.POSITION)));
+        assertEquals(List.of("mymod.build-command ::= \"mymod:build\" position"),
+            productions("mymod:build", CommandSpec.query("build", QUERY).arg("at", ArgType.POSITION)));
     }
 
     @Test

@@ -2,7 +2,7 @@
 
 ## Context
 
-Requested by the Aerolarge play-testing agent after the first jar. See
+Requested by the first agent play-testing a mod after the first jar. See
 `proposal.md`. The engine, the game layer and the 1.21.1 mixin set from
 `add-agent-control-mod` are in place. Sampling and the server clock come from
 `add-test-harness`'s design (D7).
