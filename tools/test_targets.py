@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Tests Blockpilot on every target, or the ones named, end to end.
 
-    python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--list]
+    python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--baritone] [--list]
 
 It refuses to start if blockpilot/versions or the release workflow's rows disagree with settings.gradle.kts.
 
 One target at a time, from those in settings.gradle.kts: builds it with its unit tests, checks its jar, starts its dev
 client, runs tools/smoke_test.py in text and JSON mode, closes the client and checks it shut down. JSON shapes must
 match those saved from the other targets of its loader; the vanilla targets count as Fabric, whose replies they share.
+
+--baritone starts each client with Baritone (-Pblockpilot.baritone, which fetches the build its gradle.properties
+names) and runs only the smoke test's check of walks through it, on the targets that have a Baritone build. It doesn't
+check that the client closes, as on 26.x Baritone keeps it from closing by itself.
 
 Ends with a table of the targets and exits non-zero if any assertion failed, naming the target and the assertion. A
 failure doesn't stop the targets after it. Logs and shapes are in build/test-targets/<target>/.
@@ -187,11 +191,16 @@ def wait_for_client(gradle, game_dir, log):
     return f"no screen within {START_SECONDS} s: " + last_lines(log, r"Mixin|Exception|Error|FAILED")
 
 
-def run_smoke_test(game_dir, directory, as_json, result):
+def smoke_arguments(mode, directory):
+    """What the smoke test is given in each mode: text saves the JSON shapes, baritone runs only Baritone's check."""
+    return {"text": ["--shapes", os.path.join(directory, "shapes.txt")], "json": ["--json"],
+            "baritone": ["--baritone"]}[mode]
+
+
+def run_smoke_test(game_dir, directory, mode, result):
     """Runs the smoke test and takes its assertions into the result; returns whether it finished."""
-    mode = "json" if as_json else "text"
     command = [sys.executable, "-u", os.path.join(ROOT, "tools", "smoke_test.py"), "--game-dir", game_dir]
-    command += ["--json"] if as_json else ["--shapes", os.path.join(directory, "shapes.txt")]
+    command += smoke_arguments(mode, directory)
     log = os.path.join(directory, f"smoke-{mode}.log")
     returncode = None
     with open(log, "w", encoding="utf-8") as output:
@@ -287,7 +296,12 @@ def alive(pid):
     return "java" in name
 
 
-def test_target(target, result):
+def has_baritone(target):
+    """Whether the target names a Baritone build to fetch, as the NeoForge and Fabric targets do."""
+    return "baritone_version" in properties(os.path.join(node_dir(target), "gradle.properties"))
+
+
+def test_target(target, result, baritone):
     minecraft = properties(os.path.join(node_dir(target), "gradle.properties"))["minecraft_version"]
     loader = target.rsplit("-", 1)[1]
     directory = os.path.join(OUTPUT, target)
@@ -324,7 +338,8 @@ def test_target(target, result):
     try:
         log = os.path.join(directory, "client.log")
         with open(log, "w", encoding="utf-8") as output:
-            gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"], cwd=ROOT,
+            gradle = subprocess.Popen([GRADLE, "--console=plain", f":blockpilot:{target}:runClient"]
+                                      + (["-Pblockpilot.baritone"] if baritone else []), cwd=ROOT,
                                       stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
         answered = False
         try:
@@ -332,15 +347,18 @@ def test_target(target, result):
             answered = problem is None
             # Mixins apply as their target classes load, so a stale one in a world shows in the smoke test instead.
             result.check("client reaches a screen", problem)
-            if answered and run_smoke_test(game_dir, directory, False, result):
-                run_smoke_test(game_dir, directory, True, result)
+            for mode in (["baritone"] if baritone else ["text", "json"]):
+                if not answered or not run_smoke_test(game_dir, directory, mode, result):
+                    break
         finally:
             # Gradle has a session of its own, so an interrupt doesn't reach the client it runs.
             stopped = stop_client(gradle, game_dir, answered)
     finally:
         if awake:
             awake.terminate()
-    if answered:
+    # On 26.x, Baritone's own threads outlive quit, with or without a walk, until the game's shutdown watchdog ends
+    # it; the regular runs check closing.
+    if answered and not baritone:
         result.check("client closes on quit", stopped)
         # The shutdown hook removes the file, which nothing else does.
         result.check("the shutdown hook ran", f"{endpoint} is still there" if os.path.exists(endpoint) else None)
@@ -400,6 +418,8 @@ def interrupted(signal_number, frame):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--targets", help="comma-separated targets; all of them when left out")
+    parser.add_argument("--baritone", action="store_true",
+                        help="start the clients with Baritone and run only the check of walks through it")
     parser.add_argument("--list", action="store_true", help="print the targets and exit")
     args = parser.parse_args()
     configured = configured_targets()
@@ -413,6 +433,11 @@ def main():
     unknown = [target for target in chosen if target not in configured]
     if unknown:
         parser.error(f"unknown targets {unknown}; these exist: {' '.join(configured)}")
+    if args.baritone:
+        without = [target for target in chosen if not has_baritone(target)]
+        if args.targets and without:
+            parser.error(f"{' '.join(without)} can't load Baritone; leave out --targets for all that can")
+        chosen = [target for target in chosen if target not in without]
     if os.name == "nt":
         parser.error("this can't stop a client on Windows yet; run tools/smoke_test.py against one there")
     if shutil.which("java") is None:
@@ -425,7 +450,7 @@ def main():
             print(f"testing {target}", flush=True)
             result = Result(target)
             try:
-                test_target(target, result)
+                test_target(target, result, args.baritone)
             except Exception as error:
                 # A surprise in one target, such as a corrupt jar, mustn't lose the results of the others.
                 result.check("the test itself", repr(error)[:400])

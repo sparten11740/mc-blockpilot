@@ -49,6 +49,7 @@ Measured on a dev client: `status` round trip over the line protocol about 15-30
 ```sh
 python3 tools/test_targets.py
 python3 tools/test_targets.py --targets 26.3-fabric,26.3-neoforge
+python3 tools/test_targets.py --baritone --targets 1.21.1-neoforge,26.3-fabric
 ```
 
 One target at a time, this builds it with its unit tests, checks its jar, starts its dev client, runs
@@ -59,6 +60,9 @@ shapes must match those of the other targets of the loader, where the vanilla ta
 meanwhile: real input takes control back from the test. Ctrl-C closes the client under way, and a target whose client
 is already running fails rather than start a second one. It runs on macOS and Linux; on Windows it can't yet stop a
 client, so it refuses to start.
+
+With `--baritone`, each client starts with Baritone and the smoke test runs only its check that `goto` and `mine` walk
+through it, as the other steps expect the built-in pathfinder; without a list, on every target with a Baritone build.
 
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
 the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
