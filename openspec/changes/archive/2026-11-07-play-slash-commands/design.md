@@ -23,6 +23,10 @@ decides both ways.
 `execute` and `function` run any other command, so listing either undoes
 the list; the docs say so in bold, as the code can't tell intent.
 
+The security smoke check fills the block three above the player rather
+than `~ ~ ~`, so the player isn't buried in stone, and reads it back with
+`block` to prove the command reached the server.
+
 ### D2: Other mods only under play, events always
 
 `ConfiguredPolicy.extensionAllowed` becomes `!playOnly || builtIn ||
