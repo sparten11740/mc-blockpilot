@@ -139,7 +139,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         LogCapture.setSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
         SableSupport.start(registry);
-        registry.addExtensions(BlockpilotApi.freeze(engine::broadcast));
+        registry.addExtensions(BlockpilotApi.freeze(engine::broadcast, trust.trust()::trusts));
         HumanInput.setListener(this::onHumanInput);
         writeLauncher();
         try {

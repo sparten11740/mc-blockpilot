@@ -78,6 +78,11 @@ arrives in the reply as an event named after the action's `label()`, which an en
 ending with nothing to report answers `Result.skip()`, which leaves none. An ending that hasn't answered after 60 s is
 cancelled and answers `err timeout`, so a longer cleanup doesn't belong there. `atEnd` is new in blockpilot-api 2.1.0.
 
+An extension that turns players' words into agent input, such as speech, should pass on only those of players
+Blockpilot trusts: `BlockpilotApi.isTrusted(uuid)` answers as Blockpilot filters chat, true for the players on
+`trustedPlayers` in its config and the agent's own player, false on a server that doesn't verify accounts and while
+Blockpilot isn't running. Extensions can read it but not change it. `isTrusted` is new in blockpilot-api 2.1.0.
+
 Extensions can emit events too: `BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id, "uuid=" + id))`
 reaches every session as `! mymod:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of `blockpilot-api`, bumps its
 minor version for additions and its major version for breaking changes; declare the range of Blockpilot versions your

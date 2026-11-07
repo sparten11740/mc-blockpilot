@@ -190,6 +190,11 @@ call.
 - `chat <text>`: sends a chat message.
 - `cmd <command>`: sends a `/command` as the player; its feedback arrives as `! chat` events (`server` captures
   output instead).
+- `trust`: the players whose chat reaches agents with its text, each `online` or `offline`, and `unverified` on a
+  server that doesn't check accounts, where nobody is trusted. Another player's chat arrives as `withheld from=<name>`,
+  in `! chat` events and in `messages`, the agent's own player's and system and mod messages as they came. The list is
+  `trustedPlayers` in `config/blockpilot/config.json`, empty by default; a change to the file applies within a second,
+  and no command changes it ([safety.md](safety.md)).
 
 ## session
 
