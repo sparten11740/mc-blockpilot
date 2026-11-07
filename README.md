@@ -176,8 +176,8 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
 
 ## License
 
-Apache-2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The license doesn't cover the name Blockpilot: forks need
-a name of their own.
+Apache-2.0 or MIT, at your option; see [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT). Neither
+license covers the name Blockpilot: forks need a name of their own.
 
 [Baritone](https://github.com/cabaletta/baritone), which `goto` and `mine` walk through when the player has installed
 it, is cabaletta's, under LGPL-3.0. Blockpilot neither ships it nor compiles against it: it calls Baritone's public API

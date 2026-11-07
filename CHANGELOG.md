@@ -18,6 +18,8 @@
 - **Other mods' commands:** 1.1.0's `allowedExtensions` now applies only under `agentCommands` `play`; under `all`, the
   default, every mod's commands are used again. Events from every mod always reach agents; an extension that turns
   players' words into events filters them through `BlockpilotApi.isTrusted` ([extending.md](docs/extending.md)).
+- **License:** Blockpilot is now dual-licensed under Apache-2.0 or MIT, at your option, where it was Apache-2.0 alone.
+  Each jar carries both licenses and no longer a NOTICE file, and the mod metadata names `Apache-2.0 OR MIT`.
 
 ## 1.1.0 (2026-11-07)
 
