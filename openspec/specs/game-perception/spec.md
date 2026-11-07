@@ -28,13 +28,13 @@ sleeping, open-screen type.
 - **THEN** the result is `ok menu <screen type>`
 
 ### Requirement: Look at surroundings
-`look [radius]` (default 16, max 64) SHALL list nearby entities (type,
-reference, relative position, health for living ones, held item when present)
-sorted by distance. It SHALL also list notable blocks within the radius: blocks
-with a block entity (containers, machines, including modded ones) and blocks on
-a user-configurable notable list (default: ores, liquids, crafting stations,
-beds, doors). Notable blocks are grouped by type with count and nearest relative
-position.
+`look [radius]` (default 16, max 64) SHALL list the entities around the
+player, or a camera placed with `away`, (type, reference, relative position,
+health for living ones, held item when present) sorted by distance, and the
+notable blocks within the radius: blocks with a block entity (containers,
+machines, modded ones too) and blocks on a configurable notable list
+(default: ores, liquids, crafting stations, beds, doors), grouped by type
+with count and nearest relative position.
 
 #### Scenario: Modded machine nearby
 - **WHEN** a modded block with a block entity (e.g. a Create mechanical press)
@@ -51,8 +51,9 @@ position.
 `find <block|item|entity-type|#tag> [radius] [limit]` SHALL return the nearest
 matches (default limit 5, max radius 128) as positions or entity references,
 nearest first. Results only include chunks the client has loaded. The radius
-reaches that many blocks each way from the player, a cube. A radius over the
-maximum SHALL be cut to it, and the result then carries `radius=128`.
+reaches that many blocks each way, a cube, from the player, or a camera
+placed with `away`. A radius over the maximum SHALL be cut to it, and the
+result then carries `radius=128`.
 
 #### Scenario: Find nearest logs
 - **WHEN** an agent runs `find #logs 32 3`
@@ -314,3 +315,26 @@ it. With `side=server` both come from the integrated server's level, as
 #### Scenario: Without light
 - **WHEN** an agent runs `block ~0,-1,0` standing on stone
 - **THEN** the result is `ok stone`, with no `sky=` or `block_light=`
+
+### Requirement: Surroundings of an away camera
+While a camera is placed with `away`, the surroundings `look` and `find`
+search SHALL be the camera's place, where the server takes the player to be,
+and they SHALL sort by distance from there. Positions in their rows SHALL
+stay relative to the player's block, and `~` in their arguments relative to
+the player.
+
+#### Scenario: Looking around the set
+- **WHEN** an agent runs `camera at 1000,-58,0 look 1000,-60,5 away; settle;
+  server summon minecraft:armor_stand 1003 -60 3; wait 5t; look 8`
+- **THEN** `look` lists the armor stand, at its position relative to the
+  player's block
+
+#### Scenario: Finding on the set
+- **WHEN** an agent runs `find armor_stand 8; find grass_block 3 1` with that
+  camera placed
+- **THEN** the armor stand is the first row of the first `find`, and the
+  second names the grass block `1000,-61,0` under the camera as `at_abs`
+
+#### Scenario: Back to the player
+- **WHEN** an agent runs `camera reset; settle; look 8`
+- **THEN** `look` lists what is around the player, without the armor stand

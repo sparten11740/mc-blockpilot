@@ -589,19 +589,20 @@ SHALL go in a straight line. A 33rd `via` SHALL fail with `err syntax` naming
 the limit.
 
 #### Scenario: Round a corner
-- **WHEN** an agent runs `sample status every 2t while camera move ~10,2,10
+- **WHEN** an agent runs `sample status every 1t while camera move ~10,2,10
   via ~10,2,0 over 40t` from a camera placed at `~0,2,0`
 - **THEN** one row's `camera` position is within half a block of
-  `~10,2,0`, and from row to row the direction of travel turns by a third of
-  a quarter circle at most, spreading the turn over several rows, never by a
-  quarter circle at once
+  `~10,2,0`, and between rows two ticks apart the direction of travel turns
+  by less than half a quarter circle, spreading the turn over several rows,
+  never by a quarter circle at once
 
 #### Scenario: Constant speed
 - **WHEN** an agent runs `sample status every 4t while camera move ~12,2,0
   via ~2,2,0 over 40t` from a camera placed at `~0,2,0`, whose first stretch
   is a sixth of its length
 - **THEN** successive rows' `camera` positions are about the same distance
-  apart all along the path
+  apart all along the path, a row read from a frame the game drew late
+  counting together with the row after it, and left out when it is the last
 
 #### Scenario: Too many via points
 - **WHEN** an agent runs `camera move` with 33 `via` points
@@ -641,10 +642,12 @@ starts and ends slowly. Every easing SHALL reach the point at the end of the
 duration.
 
 #### Scenario: Halfway
-- **WHEN** an agent runs `sample status every 10t while camera move ~10,2,0
+- **WHEN** an agent runs `sample status every 1t while camera move ~10,2,0
   over 40t` from a camera placed at `~0,2,0`, once with each easing
 - **THEN** the row taken 20 ticks in has the camera about 5 blocks along
-  with `linear` and `inout`, under 5 with `in` and over 5 with `out`
+  with `linear` and `inout`, under 5 with `in` and over 5 with `out`; when
+  that row read a frame the game drew late, repeating the row before, the
+  next row read from a new frame counts instead
 
 #### Scenario: Unknown easing
 - **WHEN** an agent runs `camera move ~10,2,0 over 40t ease=fast`
@@ -716,14 +719,16 @@ keep it away, so the server's world follows the camera along the move.
 #### Scenario: A move from the set
 - **WHEN** an agent runs `camera move 1400,-58,0 look 1400,-60,5 over 40t;
   settle; block 1400,-61,0` with that camera placed
-- **THEN** the move's reply names `air` as its block, and `block` reads
-  `grass_block`: the server's world followed the camera along the move
+- **THEN** `block` reads `grass_block`: the server's world followed the
+  camera along the move, whether or not its chunks had arrived when the move
+  answered
 
 ### Requirement: The player waits while the camera is away
-While a camera placed with `away` is farther from the player than the view
-distance, the server SHALL send nothing around the player, and the player
-SHALL stand where it was, neither moving nor falling, until the camera
-resets; then the server SHALL send the chunks around the player again.
+While a camera is placed with `away`, the player SHALL stand where it was,
+neither moving nor falling, until the camera resets, and while that camera
+is farther from the player than the view distance, the server SHALL send
+nothing around the player; after the reset the server SHALL send the chunks
+around the player again.
 
 #### Scenario: Standing still
 - **WHEN** an agent runs `status; wait 1s; status` with a camera placed 1000
@@ -751,3 +756,193 @@ integrated server and with `err no_cheats` where commands aren't allowed.
 - **WHEN** an agent connected to a multiplayer server runs `camera at
   1000,70,0 away`
 - **THEN** the result is `err no_server`, and no camera is placed
+
+### Requirement: Camera moves in the background
+`camera move … over <duration> background` SHALL answer at once with `ok
+moving over=<n>t` and glide the camera on its own over the duration, as the
+move would in the foreground, while the script and the scripts after it go
+on. A `camera at`, `camera move` or `camera reset` SHALL replace it, and
+`stop` and real input SHALL end it where the last frame drew it.
+
+#### Scenario: Server steps while the camera moves
+- **WHEN** an agent runs `camera at ~0,2,0; camera move ~10,2,0 over 40t
+  background; server settle=1t time query gametime; wait 20t; status`
+- **THEN** the move answers before the server step runs, and `status`
+  names the camera about 5 blocks along
+
+#### Scenario: Stopped in the background
+- **WHEN** session B runs `stop` 20 ticks into a move session A started in
+  the background
+- **THEN** `status` names the camera part of the way along, short of the
+  end, where the last frame drew it, and it stays there
+
+### Requirement: Waiting for a camera move
+`camera wait` SHALL answer once the camera move running in the background
+has ended, as `camera at` answers for its end point, and at once with the
+camera's position when no move runs.
+
+#### Scenario: Wait for the end
+- **WHEN** an agent runs `camera move ~10,2,0 over 40t background; camera
+  wait` from a camera placed at `~0,2,0`
+- **THEN** `camera wait` answers about 40 ticks later with `camera` at the
+  absolute position of `~10,2,0`
+
+#### Scenario: Nothing moving
+- **WHEN** an agent runs `camera at ~0,2,0; camera wait`
+- **THEN** `camera wait` answers with `camera` at the absolute position of
+  `~0,2,0`
+
+### Requirement: Following an entity with the camera
+`camera follow <entity> [at <~dx,dy,dz>]` SHALL place the camera at an
+offset from the entity in every rendered frame, read where that frame draws
+the entity, looking at the point `camera at … look` takes for it, until the
+next `camera` command: the offset given with `at`, or else the one the
+camera has from the entity when the command runs. The reply SHALL be that
+of `camera at` for where the camera sits. `at` with a position that isn't
+relative SHALL fail with `err syntax`.
+
+#### Scenario: The framing goes along
+- **WHEN** an agent runs `camera at ~0,2,-6 look @walker; camera follow
+  @walker`, then `server execute as @e[tag=walker] at @s run tp @s ~8 ~ ~;
+  wait 5t; status`, with an armor stand tagged `walker` standing at `~3,0,3`
+- **THEN** `status` names the camera about 8 blocks east of `~0,2,-6`
+
+#### Scenario: An absolute offset
+- **WHEN** an agent runs `camera follow @walker at 0,2,-6`
+- **THEN** the result is `err syntax` saying the offset is relative
+
+### Requirement: A following camera that turns
+With `turning`, `camera follow` SHALL keep the offset in the entity's frame,
+`x` to its left, `y` up and `z` the way it faces, and turn it as the entity
+turns, catching up with a quick turn over a second or two.
+
+#### Scenario: Over the shoulder
+- **WHEN** an agent runs `camera follow @walker at ~0,2,-6 turning` with the
+  walker facing south, then turns it to face west with `server execute as
+  @e[tag=walker] at @s run tp @s ~ ~ ~ 90 0`, waits 3 seconds and runs
+  `status`
+- **THEN** `status` names the camera about 6 blocks east of the walker and
+  2 above its feet, behind it as it now faces
+
+### Requirement: What a follow outlasts
+`stop` and real input SHALL leave a follow in place, as they leave `camera
+at`. When the entity is removed, the camera SHALL stay where the last frame
+drew it, looking the same way.
+
+#### Scenario: Stop leaves a follow
+- **WHEN** session B runs `stop` while session A's `camera follow @walker`
+  is placed, and then `server execute as @e[tag=walker] at @s run tp @s ~8 ~
+  ~; wait 5t; status`
+- **THEN** the camera moves about 8 blocks east with it
+
+#### Scenario: The entity goes
+- **WHEN** an agent runs `server kill @e[tag=walker]; wait 5t; status; wait
+  1s; status` while `camera follow @walker` is placed
+- **THEN** both `status` replies name the camera at the same position
+
+### Requirement: Orbiting with the camera
+`camera orbit <pos|entity> [by <degrees>] over <duration>` SHALL circle the
+camera round the centre from where the camera is drawn now, keeping its
+distance across and its height from the centre and looking at the centre,
+by the angle or a full turn without `by`: a positive angle to the camera's
+right as it faces the centre, a negative one to its left. At its end the
+camera SHALL stay where the orbit left it.
+
+#### Scenario: A quarter turn
+- **WHEN** an agent runs `sample status every 5t while camera orbit ~0,1,0
+  by 90 over 40t` from a camera placed at `~0,3,-6` looking at `~0,1,0`
+- **THEN** every row's `camera` is about 6 blocks across from `~0,1,0` and 2
+  above it, and the orbit answers with `camera` at the absolute position of
+  `~-6,3,0`
+
+### Requirement: An orbit is timed as a move
+An orbit SHALL take its duration in client ticks, shaped by `ease=`, and
+answer as `camera at` at its end, or at once with `ok moving over=<n>t`
+with `background`; `camera wait`, `stop`, real input and a newer `camera`
+command SHALL treat it as they treat a camera move. `by 0` SHALL hold the
+camera where it is for the duration.
+
+#### Scenario: Waiting for an orbit in the background
+- **WHEN** an agent runs `camera orbit ~0,1,0 by -90 over 40t background;
+  camera wait` from a camera placed at `~0,3,-6`
+- **THEN** `camera orbit` answers at once, and `camera wait` about 40 ticks
+  later with `camera` at the absolute position of `~6,3,0`
+
+### Requirement: An orbit round an entity
+An entity centre SHALL be read where each frame draws it, at the point
+`camera at … look` takes for it, so the circle goes along as the entity
+moves. When the entity is removed, the camera SHALL stay where the last
+frame drew it, looking the same way, and the orbit SHALL still answer at its
+time.
+
+#### Scenario: Round a moving entity
+- **WHEN** an agent runs `camera orbit @walker over 40t background; server
+  execute as @e[tag=walker] at @s run tp @s ~10 ~ ~; wait 20t; status` from
+  a camera placed 6 blocks from the walker
+- **THEN** `status` names the camera about 6 blocks across from where the
+  walker now stands
+
+#### Scenario: The centre goes
+- **WHEN** an agent runs `camera orbit @walker over 40t background; server
+  kill @e[tag=walker]; wait 5t; status; wait 10t; status; camera wait`
+- **THEN** both `status` replies name the camera at the same position, and
+  `camera wait` answers about 40 ticks after the orbit began
+
+### Requirement: A following or orbiting camera stays away
+`camera follow` and `camera orbit` from a camera placed with `away` SHALL
+keep it away, as a camera move does, so the server's world follows the
+camera.
+
+#### Scenario: An orbit far from the player
+- **WHEN** an agent runs `camera at 1000,-58,0 look 1000,-60,5 away; camera
+  orbit 1000,-60,5 by 180 over 40t; settle; block 1000,-61,10`
+- **THEN** `block` reads `grass_block`, and the player stands where it was
+
+### Requirement: A placed camera's field of view
+`fov=<degrees>` SHALL set a placed camera's vertical field of view, from 1
+to 170, in place of the player's and its effects, and `status` SHALL name a
+placed camera's own field of view as `cam_fov`.
+
+#### Scenario: A narrow view
+- **WHEN** an agent runs `camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5 fov=10;
+  pixels mid=0.48,0.48,0.52,0.52` with a red block at `~5,1,5`
+- **THEN** `mid`'s mean colour is red, where with the player's field of
+  view of 70 the block is too small to fill it
+
+### Requirement: A placed camera's roll
+`roll=<degrees>` SHALL tilt a placed camera about the way it looks, from
+-180 to 180, a positive roll leaning it to its right, and `status` SHALL
+give the roll in `cam:`.
+
+#### Scenario: A tilted horizon
+- **WHEN** an agent runs `camera at ~0,2,0 look ~0,2,10 roll=90; pixels
+  left=0,0.4,0.2,0.6 right=0.8,0.4,1,0.6; status`
+- **THEN** `left`'s mean colour is the sky's blue and `right`'s the
+  ground's, and `status` gives a roll of 90 in `cam:`
+
+### Requirement: Setting and gliding the lens
+`camera at` and `camera follow` SHALL set `fov=` and `roll=` at once, and
+`camera move` and `camera orbit` SHALL glide from the values in use to the
+given ones along the motion, shaped by its `ease=`. A value left out SHALL
+stay as it is until `camera reset`, which returns to the player's view.
+
+#### Scenario: A zoom along a move
+- **WHEN** an agent runs `sample status every 10t while camera move ~0,2,-8
+  look ~0,1,0 over 40t fov=30` from `camera at ~0,2,-6 look ~0,1,0 fov=70`
+- **THEN** the row taken 20 ticks in names `cam_fov` about 50, and the last
+  row 30
+
+#### Scenario: Kept through the next placement
+- **WHEN** an agent runs `camera at ~0,2,-6 fov=30; camera at ~4,2,-6;
+  status`
+- **THEN** `status` names `cam_fov=30`
+
+### Requirement: Lens values out of range
+A `fov=` or `roll=` out of its range, or either option on `camera reset`,
+`off` or `wait`, SHALL fail with `err syntax` naming the range or the forms
+that take it, before anything changes.
+
+#### Scenario: Out of range
+- **WHEN** an agent runs `camera at ~0,2,0 fov=200`
+- **THEN** the result is `err syntax` naming 1 to 170, and no camera is
+  placed
