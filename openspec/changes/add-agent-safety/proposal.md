@@ -19,6 +19,11 @@ what it may do in the game. The docs don't warn about it either.
   server, agents see other players' chat text only once those players are
   trusted. Single-player play and testing are unaffected, and system and
   mod messages pass as before.
+- **BREAKING** for integrations: another mod's commands and events reach
+  agents only while its namespace is in `allowedExtensions` in the config,
+  empty by default; Blockpilot's own compat modules need none. A call that
+  isn't allowed fails with `err not_allowed <namespace>:<name>`, its events
+  are dropped, and `help` names the setting.
 - Trust is set in `config/blockpilot/config.json` only. A change to the
   file takes effect within a second, without a restart. No command, in the
   game or from an agent, changes it.

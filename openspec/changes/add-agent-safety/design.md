@@ -198,6 +198,23 @@ On the integrated server, `/msg` and `/teammsg` send their line straight to
 the players and log nothing, so only the broadcast chat line needs the
 server-side withholding of D2.
 
+### D10: Other mods' commands and events only when allowed
+
+An extension's commands and events are input to the agent and reach beyond
+it, so they wait for a person too: `allowedExtensions` in the config lists
+the namespaces agents may use, empty by default and reloaded with the other
+safety settings (D7). Namespaces Blockpilot registers itself, its Sable
+compat module's included (registrant `blockpilot`), are built in. The
+engine checks every call, nested ones too, in the same gate as the play
+profile (`CommandGate`), under `all` and `play` alike, and fails the script
+before any step with `err not_allowed <namespace>:<name>`. An extension's
+event goes through `Engine.broadcastExtension`, which drops it when its
+namespace isn't allowed, so a voice add-on's `voice:heard` reaches nobody
+until it is. `help` lists such a namespace with a note naming the setting,
+so an agent can tell a person what to add, and `help grammar` leaves its
+commands out, as agents can't use them. Development runs register a
+stand-in, `devcheck:ping`, for the security smoke check to allow and call.
+
 ## Risks / Trade-offs
 
 - [Agents on servers no longer see other players' chat by default] →
@@ -208,6 +225,9 @@ server-side withholding of D2.
   pass] → Documented in `docs/safety.md`. Trust protects chat that
   arrives as player chat, which covers vanilla and LAN worlds and modded
   servers without such plugins.
+- [Integrations stop working until their namespace is allowed] → Marked
+  BREAKING; `help` names the setting, and the docs make it the first step
+  for integration authors.
 - [Mod screens that aren't container screens are refused under `play`]
   → Fails closed by design; the docs name the limit. A mod whose screen
   the agent needs can use container screens or add commands.

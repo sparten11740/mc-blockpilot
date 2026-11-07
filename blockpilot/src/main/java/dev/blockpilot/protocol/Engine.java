@@ -12,10 +12,12 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -54,8 +56,10 @@ public final class Engine {
     private final ConcurrentLinkedDeque<ScriptJob> queue = new ConcurrentLinkedDeque<>();
     private final List<ScriptJob> free = new CopyOnWriteArrayList<>();
     private final Parser parser;
-    /** agentCommands is play: scripts with a command beyond playing fail before running (PlayProfile). */
+    /** agentCommands is play: scripts with a command beyond playing fail before running (CommandGate). */
     private volatile boolean playOnly;
+    /** The namespaces of other mods' commands and events that agents may use (allowedExtensions). */
+    private volatile Set<String> allowedExtensions = Set.of();
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -63,7 +67,7 @@ public final class Engine {
     public Engine(CommandRegistry registry, GameBridge game) {
         this.registry = registry;
         this.game = game;
-        this.help = new Help(registry);
+        this.help = new Help(registry, this::extensionAllowed);
         this.parser = new Parser(registry);
         registerBuiltIns();
     }
@@ -74,6 +78,23 @@ public final class Engine {
 
     public void setPlayOnly(boolean value) {
         playOnly = value;
+    }
+
+    public void setAllowedExtensions(Collection<String> namespaces) {
+        allowedExtensions = Set.copyOf(namespaces);
+    }
+
+    /** Whether agents may use the namespace's commands and get its events: Blockpilot's own, or allowed. */
+    public boolean extensionAllowed(String namespace) {
+        return registry.builtIn(namespace) || allowedExtensions.contains(namespace);
+    }
+
+    /** An extension's event: delivered like Blockpilot's own when its namespace is allowed, else dropped. */
+    public void broadcastExtension(Event event) {
+        String name = event.name();
+        if (extensionAllowed(name.substring(0, Math.max(name.indexOf(':'), 0)))) {
+            broadcast(event);
+        }
     }
 
     GameBridge game() {
@@ -121,14 +142,13 @@ public final class Engine {
                 ? Result.error("syntax", line.error()) : Result.skip()).toList();
             return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
         }
-        if (playOnly) {
-            List<String> refused = lines.stream()
-                .map(line -> line.statement() == null ? null : PlayProfile.refusal(line.statement())).toList();
-            if (refused.stream().anyMatch(Objects::nonNull)) {
-                List<Result> results = refused.stream()
-                    .map(command -> command != null ? Result.error("not_allowed", command) : Result.skip()).toList();
-                return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
-            }
+        CommandGate gate = new CommandGate(playOnly, this::extensionAllowed);
+        List<String> refused = lines.stream()
+            .map(line -> line.statement() == null ? null : gate.refusal(line.statement())).toList();
+        if (refused.stream().anyMatch(Objects::nonNull)) {
+            List<Result> results = refused.stream()
+                .map(command -> command != null ? Result.error("not_allowed", command) : Result.skip()).toList();
+            return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
         }
         ScriptJob job = new ScriptJob(this, session, id, lines);
         if (job.hasAction()) {

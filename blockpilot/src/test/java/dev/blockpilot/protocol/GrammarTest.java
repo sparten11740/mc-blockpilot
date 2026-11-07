@@ -128,7 +128,7 @@ class GrammarTest {
     void helpPrintsTheCoreGrammarThenTheCommands() {
         CommandRegistry registry = new CommandRegistry();
         new Engine(registry, new FakeGame());
-        List<Row> rows = new Help(registry).answer("grammar").rows();
+        List<Row> rows = new Help(registry, namespace -> true).answer("grammar").rows();
         List<String> lines = rows.stream().map(row -> (String) row.fields().asMap().get("ebnf")).toList();
         List<String> core = Grammar.coreLines();
         assertEquals(core, lines.subList(0, core.size()));

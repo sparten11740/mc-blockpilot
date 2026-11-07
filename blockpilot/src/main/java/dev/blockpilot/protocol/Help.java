@@ -8,14 +8,17 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /** The in-band reference, generated from the registry so it can't drift from the commands themselves. */
 public final class Help {
     private static final String CONSTRUCT_GROUP = "meta";
     private final CommandRegistry registry;
+    private final Predicate<String> extensionAllowed;
 
-    public Help(CommandRegistry registry) {
+    public Help(CommandRegistry registry, Predicate<String> extensionAllowed) {
         this.registry = registry;
+        this.extensionAllowed = extensionAllowed;
     }
 
     public Result answer(String topic) {
@@ -77,7 +80,11 @@ public final class Help {
         List<Row> rows = new ArrayList<>();
         Grammar.coreLines().forEach(line -> rows.add(Row.of("core", new Fields().bare("ebnf", line))));
         rows.add(Row.of("commands", new Fields().bare("ebnf", Grammar.COMMANDS_COMMENT)));
+        // An extension agents may not use isn't part of their language.
         for (CommandRegistry.Entry entry : registry.all()) {
+            if (!extensionAllowed.test(entry.namespace())) {
+                continue;
+            }
             Grammar.command(entry).forEach(line -> rows.add(Row.of(entry.qualifiedName(), new Fields().bare("ebnf",
                 line))));
         }
@@ -104,8 +111,10 @@ public final class Help {
         for (String namespace : registry.namespaces()) {
             List<String> names = registry.namespace(namespace).stream().map(CommandRegistry.Entry::qualifiedName)
                 .toList();
-            rows.add(Row.of(namespace, new Fields().put("group", namespace, namespace + " (extension):")
-                .put("commands", names, String.join(" ", names))));
+            String kind = extensionAllowed.test(namespace) ? " (extension):"
+                : " (extension, not allowed: add it to allowedExtensions in config/blockpilot/config.json):";
+            rows.add(Row.of(namespace, new Fields().put("group", namespace, namespace + kind)
+                .put("commands", names, String.join(" ", names)).put("allowed", extensionAllowed.test(namespace), "")));
         }
         rows.add(Row.of("more", new Fields().bare("hint",
             "help <command|group|namespace:|errors|grammar>; scripts: cmd1; cmd2 (stops at the first err; ?cmd goes "

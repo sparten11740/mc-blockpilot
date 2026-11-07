@@ -738,6 +738,8 @@ class EngineTest {
             new BlockpilotApi.Registration("sable", "blockpilot", CommandSpec.query("info",
                 (context, args) -> Result.ok()))));
         Engine isolated = new Engine(registry, new FakeGame());
+        // Sable's own registration won, so it is another mod's command, which the config allows.
+        isolated.setAllowedExtensions(List.of("sable"));
         Session session = isolated.openSession();
         String reply = Formatter.text(isolated.submit(session, null, "sable:info; help").join());
         assertTrue(reply.startsWith("err ext_failed sable:info boom\nskip"), reply);

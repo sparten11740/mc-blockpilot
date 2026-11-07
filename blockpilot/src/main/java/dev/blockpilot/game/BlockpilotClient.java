@@ -138,6 +138,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
         engine.setPlayOnly(config.playOnly());
+        engine.setAllowedExtensions(config.allowedExtensions);
         PlayGuard.install(() -> config.playOnly());
         engine.startWatchdog();
         events = new Events(engine);
@@ -145,7 +146,13 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         LogCapture.setSink(engine::broadcast);
         GameCommands.registerAll(registry, this);
         SableSupport.start(registry);
-        registry.addExtensions(BlockpilotApi.freeze(engine::broadcast, trust.trust()::trusts));
+        if (ClientPlatform.developmentEnvironment()) {
+            // A development run's stand-in for another mod's command, for the check that allowedExtensions gates it.
+            BlockpilotApi.register("devcheck", "devcheck", CommandSpec.query("ping",
+                (context, args) -> Result.ok(new Fields().put("pong", true, "pong")))
+                .help("a development run's stand-in for another mod's command").example("devcheck:ping"));
+        }
+        registry.addExtensions(BlockpilotApi.freeze(engine::broadcastExtension, trust.trust()::trusts));
         HumanInput.setListener(this::onHumanInput);
         writeLauncher();
         try {
@@ -373,6 +380,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         config.agentCommands = read.agentCommands;
         trust.trust().set(read.trustedPlayers);
         engine.setPlayOnly(read.playOnly());
+        engine.setAllowedExtensions(read.allowedExtensions);
     }
 
     @Override

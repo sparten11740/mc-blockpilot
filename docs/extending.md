@@ -1,5 +1,11 @@
 # Adding your own commands
 
+A person lets Blockpilot use your commands and events: the namespace you register under has to be in
+`allowedExtensions` in `config/blockpilot/config.json` (`"allowedExtensions": ["mymod"]`), empty by default. Until it
+is, a call answers `err not_allowed mymod:<name>`, your events are dropped, and `help` lists the namespace as not
+allowed, naming the setting. Tell your users to add it, from Blockpilot 1.1.0 on. A change to the file applies within a
+second.
+
 Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile against
 the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.1.0")`, from mavenLocal as in
 [dev-environment.md](dev-environment.md)) and register them during mod loading, in a class only touched when Blockpilot

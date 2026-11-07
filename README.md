@@ -168,6 +168,7 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
   in that file only; everyone else's arrives as `withheld from=<name>`, on screen and in the logs too.
 - `agentCommands: "play"` in the same file keeps agents from slash commands, world files, recordings, mod configs,
   switching servers and quitting.
+- Other mods' commands and events reach agents only once their namespace is in `allowedExtensions` there.
 - Blockpilot can only limit what happens through the game. Keeping the agent off the computer it runs on is the job of
   the agent's own setup; [safety.md](docs/safety.md) shows one for Claude Code.
 

@@ -41,6 +41,21 @@ Development runs log in with offline accounts, so their servers are unverified. 
 `trust_unverified`. Only a development environment honours it (NeoForge and Fabric say whether they are one); a
 player's install and the vanilla targets ignore it.
 
+## Other mods' commands
+
+Commands that other mods register, and the events they send, reach agents only once their namespace is in
+`allowedExtensions`, empty by default:
+
+```json
+{
+  "allowedExtensions": ["mymod"]
+}
+```
+
+Until then a call answers `err not_allowed <namespace>:<name>` before any step runs, the mod's events are dropped, and
+`help` lists the namespace as not allowed. Blockpilot's own compat modules, such as `sable:`, need no entry. Like the
+other settings, it is set in the file only and applies within a second.
+
 ## Play-only agents
 
 ```json

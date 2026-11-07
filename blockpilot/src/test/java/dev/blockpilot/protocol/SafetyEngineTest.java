@@ -7,12 +7,17 @@ import dev.blockpilot.api.Action;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Event;
+import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.game.safety.SafetyCommands;
 import dev.blockpilot.game.safety.Trust;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +62,8 @@ class SafetyEngineTest {
         }));
         registry.addExtensions(List.of(new BlockpilotApi.Registration("mymod", "mymod",
             action("gear").freeze()), new BlockpilotApi.Registration("sable", "blockpilot",
-            action("tp").onServer().freeze())));
+            action("tp").onServer().freeze()), new BlockpilotApi.Registration("sable", "blockpilot",
+            CommandSpec.query("info", (context, args) -> Result.ok()).freeze())));
         engine = new Engine(registry, game);
     }
 
@@ -74,7 +80,11 @@ class SafetyEngineTest {
             game.clientTicks++;
             engine.tickClient();
         }
-        return Formatter.text(reply.join());
+        try {
+            return Formatter.text(reply.get(10, TimeUnit.SECONDS));
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            throw new AssertionError(script + " didn't answer", e);
+        }
     }
 
     @Test
@@ -142,7 +152,37 @@ class SafetyEngineTest {
     }
 
     @Test
+    void anExtensionThatIsntAllowedIsRefusedUntilItIs() {
+        assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
+        assertEquals(List.of(), ran);
+        engine.setAllowedExtensions(List.of("mymod"));
+        assertEquals("ok", run("mymod:gear"));
+    }
+
+    @Test
+    void blockpilotsOwnNamespacesNeedNoAllowing() {
+        assertEquals("ok", run("sable:info"));
+    }
+
+    @Test
+    void anExtensionThatIsntAllowedHasItsEventsDropped() {
+        Session session = engine.openSession();
+        engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
+        engine.broadcastExtension(Event.of("sable:assembled", new Fields()));
+        assertEquals("ok count=0\n! sable:assembled", Formatter.text(engine.submit(session, null, "trust").join()));
+    }
+
+    @Test
+    void helpMarksAnExtensionThatIsntAllowed() {
+        String help = run("help");
+        assertTrue(help.contains("mymod (extension, not allowed: add it to allowedExtensions"), help);
+        assertTrue(help.contains("sable (extension):"), help);
+        assertTrue(run("help grammar").contains("sable.tp-command") && !run("help grammar").contains("mymod.gear"));
+    }
+
+    @Test
     void playingAndExtensionsGoOn() {
+        engine.setAllowedExtensions(List.of("mymod"));
         engine.setPlayOnly(true);
         assertEquals("ok\nok", run("goto 0,64,0; mymod:gear"));
         assertEquals(List.of("goto", "gear"), ran);

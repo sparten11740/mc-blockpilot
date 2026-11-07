@@ -34,6 +34,8 @@ public final class Config {
     public List<String> trustedPlayers = new ArrayList<>();
     /** {@code all}, or {@code play} to hold agents to playing; any other value counts as {@code play}. */
     public String agentCommands = "all";
+    /** The namespaces of other mods' commands agents may use; Blockpilot's own need none. */
+    public List<String> allowedExtensions = new ArrayList<>();
 
     /**
      * Reads the file and writes it back with the defaults of missing keys. A file that is there but can't be read is
@@ -67,13 +69,18 @@ public final class Config {
         if (config == null) {
             config = new Config();
         }
-        // A trailing comma reads as a null name.
-        config.trustedPlayers = config.trustedPlayers == null ? new ArrayList<>() : config.trustedPlayers.stream()
-            .filter(name -> name != null && !name.isBlank()).collect(Collectors.toCollection(ArrayList::new));
+        config.trustedPlayers = names(config.trustedPlayers);
+        config.allowedExtensions = names(config.allowedExtensions);
         if (config.agentCommands == null) {
             config.agentCommands = "all";
         }
         return config;
+    }
+
+    /** A list from the file without the null a trailing comma reads as, or blanks. */
+    private static List<String> names(List<String> written) {
+        return written == null ? new ArrayList<>() : written.stream().filter(name -> name != null && !name.isBlank())
+            .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public boolean playOnly() {

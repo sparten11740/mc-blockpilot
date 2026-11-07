@@ -3,25 +3,31 @@ package dev.blockpilot.protocol;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * What a play-only agent may not run: the commands that reach beyond playing as a player (slash commands, the
- * integrated server, world files, mod configs, files written to disk, switching worlds or servers, quitting).
- * Extension commands are left alone, as the person who installed the mod chose them, unless they run on the
- * integrated server.
+ * The commands a script may not run, judged before any step does: another mod's commands until its namespace is in
+ * allowedExtensions, and for a play-only agent the commands that reach beyond playing as a player (slash commands,
+ * the integrated server, world files, mod configs, files written to disk, switching worlds or servers, quitting),
+ * extension commands that run on the integrated server among them.
  */
-final class PlayProfile {
+final class CommandGate {
     private static final Set<String> REFUSED = Set.of("cmd", "server", "nbt", "tick", "gametest", "snapshot",
         "config", "record", "perf", "load", "create", "delete", "join", "leave", "quit");
     /** How a refusal names a command whose first word alone doesn't say what it does. */
     private static final Map<String, String> SHOWN = Map.of("create", "create world", "delete", "delete world");
 
-    private PlayProfile() {
+    private final boolean playOnly;
+    private final Predicate<String> extensionAllowed;
+
+    CommandGate(boolean playOnly, Predicate<String> extensionAllowed) {
+        this.playOnly = playOnly;
+        this.extensionAllowed = extensionAllowed;
     }
 
     /** The first refused command in the step, nested ones included, as the refusal names it; null when none. */
-    static String refusal(Statement statement) {
+    String refusal(Statement statement) {
         return switch (statement) {
             case Statement.Call call -> refusal(call);
             case Statement.Assert check -> refusal(check.query());
@@ -34,18 +40,19 @@ final class PlayProfile {
         };
     }
 
-    private static String first(Stream<? extends Statement> statements) {
-        return statements.map(PlayProfile::refusal).filter(Objects::nonNull).findFirst().orElse(null);
+    private String first(Stream<? extends Statement> statements) {
+        return statements.map(this::refusal).filter(Objects::nonNull).findFirst().orElse(null);
     }
 
-    private static String refusal(Statement.Call call) {
+    private String refusal(Statement.Call call) {
         CommandRegistry.Entry entry = call.entry();
         String name = entry.spec().name();
         if (!entry.namespace().isEmpty()) {
             // On the integrated server an extension command reaches beyond the player, as server does.
-            return entry.spec().runsOnServer() ? entry.qualifiedName() : null;
+            boolean refused = !extensionAllowed.test(entry.namespace()) || playOnly && entry.spec().runsOnServer();
+            return refused ? entry.qualifiedName() : null;
         }
-        if (!REFUSED.contains(name)) {
+        if (!playOnly || !REFUSED.contains(name)) {
             return null;
         }
         // Reading how a capture goes writes nothing.
