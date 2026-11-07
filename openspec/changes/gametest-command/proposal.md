@@ -10,15 +10,16 @@ read from the log.
 
 ## What Changes
 
-- `gametest run <test|namespace:*>` runs the selected GameTests on the
-  integrated server, where the game or its loader has them enabled, and
-  answers with a row per test, passed or failed with its message.
-- Where GameTests aren't enabled, it fails with `err unsupported` saying
-  what enables them on that loader.
-- Which versions it covers is settled by a first spike: where each version
-  and loader reports a test's result and message, and whether that is
-  reachable without a mixin; versions without such a hook answer `err
-  unsupported`.
+- `gametest run <selector>` runs the registered GameTests whose ids match
+  the selector, such as `mymod:*`, on the integrated server, and answers
+  with a row per test, passed or failed with its message, on all 11
+  targets: the 9 of 26.x and the 2 of 1.21.1.
+- A selector that matches nothing fails with `err no_test`; NeoForge 1.21.1
+  without GameTests enabled fails with `err unsupported` saying what
+  enables them.
+- The smoke check runs tests Blockpilot brings itself, with no test mod: a
+  data pack on 26.x, and on 1.21.1 two tests in a source set only the dev
+  runs include.
 - The help, `docs/commands.md`, the README and the CHANGELOG describe it.
 
 ## Capabilities
@@ -32,8 +33,9 @@ None.
 
 ## Impact
 
-- `game/GameTests.java`, new, and one adapter per version family over that
-  version's GameTest runner.
-- A dev-only GameTest fixture, one per loader that can register tests, in a
-  source set kept out of the published jars.
-- `tools/smoke_test.py`, docs as above.
+- `game/GameTests.java`, new, and one adapter each for 1.21.1 and 26.x over
+  that version's public GameTest classes, with no mixin.
+- A 26.x data pack with two block-based tests for the smoke check, and for
+  1.21.1 a dev-only source set with two tests, kept out of the published
+  jars.
+- `err no_test` in the error table; `tools/smoke_test.py`, docs as above.
