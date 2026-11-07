@@ -1,5 +1,6 @@
 package dev.blockpilot.protocol;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,6 +64,26 @@ class ConfigReloadTest {
         write("{\"trustedPlayers\": [\"Steve\"]}");
         reload.check();
         assertEquals(List.of("Steve"), applied.get(0).trustedPlayers);
+    }
+
+    @Test
+    void aTrailingCommaReloadsWithoutTheNullName() throws Exception {
+        ConfigReload reload = reload("{}");
+        write("{\"trustedPlayers\": [\"Steve\",]}");
+        reload.check();
+        assertEquals(List.of("Steve"), applied.get(0).trustedPlayers);
+    }
+
+    @Test
+    void aFailingApplyStaysInsideTheReload() throws Exception {
+        Path file = directory.resolve("config.json");
+        Files.writeString(file, "{}");
+        ConfigReload reload = new ConfigReload(file, read -> {
+            throw new IllegalStateException("broken apply");
+        });
+        Files.writeString(file, "{\"trustedPlayers\": [\"Steve\"]}");
+        assertDoesNotThrow(reload::check);
+        assertDoesNotThrow(reload::check);
     }
 
     @Test

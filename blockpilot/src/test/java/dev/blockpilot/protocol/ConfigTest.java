@@ -48,6 +48,26 @@ class ConfigTest {
     }
 
     @Test
+    void aBrokenFileFailsClosedAndIsLeftAlone() throws Exception {
+        Path file = directory.resolve("config.json");
+        String broken = "{\"agentCommands\": \"play\", \"trustedPlayers\": [\"Steve\"";
+        Files.writeString(file, broken);
+        Config config = Config.load(file);
+        assertTrue(config.playOnly());
+        assertEquals(List.of(), config.trustedPlayers);
+        assertEquals(broken, Files.readString(file));
+    }
+
+    @Test
+    void aTrailingCommaOrANullNameIsDropped() throws Exception {
+        Path file = directory.resolve("config.json");
+        Files.writeString(file, "{\"trustedPlayers\": [\"Steve\",]}");
+        assertEquals(List.of("Steve"), Config.load(file).trustedPlayers);
+        Files.writeString(file, "{\"trustedPlayers\": [null, \" \"]}");
+        assertEquals(List.of(), Config.load(file).trustedPlayers);
+    }
+
+    @Test
     void anUnknownCommandProfileHoldsAgentsToPlaying() throws Exception {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{\"agentCommands\": \"everything\", \"trustedPlayers\": null}");
