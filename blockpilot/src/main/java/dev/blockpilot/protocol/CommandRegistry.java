@@ -21,6 +21,9 @@ public final class CommandRegistry {
     }
 
     private final Map<String, Entry> commands = new LinkedHashMap<>();
+    /** The registrant of Blockpilot's own commands, compat modules' included. */
+    static final String BUILT_IN = "blockpilot";
+
     private final Map<String, List<Entry>> namespaces = new TreeMap<>();
     private final Map<String, String> disabled = new ConcurrentHashMap<>();
 
@@ -96,6 +99,12 @@ public final class CommandRegistry {
 
     public List<Entry> namespace(String namespace) {
         return disabled.containsKey(namespace) ? List.of() : namespaces.getOrDefault(namespace, List.of());
+    }
+
+    /** Whether Blockpilot itself registered the namespace's commands, as its compat modules do, so they need no allowing. */
+    public boolean builtIn(String namespace) {
+        return namespace.isEmpty() || namespaces.getOrDefault(namespace, List.of()).stream()
+            .anyMatch(entry -> entry.registrant().equals(BUILT_IN));
     }
 
     public Collection<String> namespaces() {

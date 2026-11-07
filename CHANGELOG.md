@@ -12,6 +12,10 @@ through it. `blockpilot-api` becomes 2.1.0, an addition, so integrations built a
   doesn't check accounts nobody is trusted. The list is set in the file only and applies within a second; `trust`
   shows it, and `BlockpilotApi.isTrusted` tells extensions. Single-player play and tests are unaffected
   ([safety.md](docs/safety.md)).
+- **BREAKING, other mods' commands:** commands and events that other mods register reach agents only once their
+  namespace is in `allowedExtensions` in `config/blockpilot/config.json`, empty by default; until then a call answers
+  `err not_allowed <namespace>:<name>`, events are dropped and `help` names the setting. Blockpilot's own `sable:`
+  commands need no entry. Integrations should tell their users to add their namespace.
 - **Play-only agents:** `agentCommands: "play"` refuses `cmd`, `server`, world files, recordings, captures, mod
   configs, switching worlds, quitting and server-side extension commands with `err not_allowed`, holds back slash
   commands an agent types or clicks in chat, keeps its input to gameplay screens and refuses clicks on links.

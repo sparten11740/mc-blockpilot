@@ -79,7 +79,9 @@ class ExtensionApiTest {
         CommandRegistry registry = new CommandRegistry();
         FakeGame game = new FakeGame();
         Engine engine = new Engine(registry, game);
-        List<BlockpilotApi.Registration> registrations = BlockpilotApi.freeze(engine::broadcast);
+        // As allowedExtensions in the config lists them.
+        engine.setAllowedExtensions(List.of("sample", "mymod", "test", "fixture"));
+        List<BlockpilotApi.Registration> registrations = BlockpilotApi.freeze(engine::broadcastExtension);
         registry.addExtensions(registrations);
 
         // Registering after loading finished is refused.

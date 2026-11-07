@@ -46,9 +46,9 @@ for it, as screenshots and the log reach agents.
 ### Requirement: Trust is set in the config file only
 The trusted players list SHALL be set only in
 `config/blockpilot/config.json`. No command, in the game or from an agent,
-SHALL change `trustedPlayers` or `agentCommands`, and Blockpilot SHALL NOT
-change them: at start it SHALL write back only what it read, adding the
-defaults of missing keys.
+SHALL change `trustedPlayers`, `agentCommands` or `allowedExtensions`, and
+Blockpilot SHALL NOT change them: at start it SHALL write back only what it
+read, adding the defaults of missing keys.
 
 #### Scenario: An agent tries to trust someone
 - **WHEN** an agent runs `trust add Mallory`
@@ -61,9 +61,10 @@ defaults of missing keys.
   not trusted
 
 ### Requirement: Settings take effect without a restart
-A change to `trustedPlayers` or `agentCommands` in the config file SHALL
-take effect within a second, without a restart. A file that can't be read
-SHALL leave the last good settings in force and be logged once. A file that
+A change to `trustedPlayers`, `agentCommands` or `allowedExtensions` in the
+config file SHALL take effect within a second, without a restart. A file
+that can't be read SHALL leave the last good settings in force and be logged
+once. A file that
 can't be read at start SHALL hold agents to `play` and trust nobody, and be
 left as it is.
 
@@ -145,8 +146,8 @@ before. The default, `all`, SHALL refuse nothing.
 ### Requirement: Extension commands for play-only agents
 With `agentCommands` set to `play`, an extension command that runs on the
 integrated server SHALL be refused like `server`, before any step, with
-`err not_allowed <namespace>:<name>`. Other extension commands SHALL work
-as before, as the person who installed the mod chose them.
+`err not_allowed <namespace>:<name>`. Other extension commands that
+`allowedExtensions` allows SHALL work as before.
 
 #### Scenario: An extension command on the integrated server
 - **WHEN** `agentCommands` is `play` and an agent runs `sable:tp here
