@@ -3,13 +3,13 @@
 ## MODIFIED Requirements
 
 ### Requirement: Extensions are used only when allowed
-With `agentCommands` set to `play`, an extension's commands SHALL be used
-only while its namespace is in `allowedExtensions` in Blockpilot's config
-file, empty by default and reloaded like the other safety settings;
-namespaces Blockpilot registers itself need none. A call SHALL fail before
-any step with `err not_allowed <namespace>:<name>`, and `help` SHALL list
-the namespace marked as not allowed, naming the setting. Under `all` every
-extension's commands SHALL be used, and events SHALL always be delivered.
+With `agentCommands` set to `play`, an extension's commands SHALL be used only
+while its namespace is in `allowedExtensions` in the config file, empty by
+default and reloaded like the other settings; namespaces Blockpilot registers
+itself need none. A call SHALL fail before any step with `err not_allowed
+<namespace>:<name>`, and `help` SHALL list the namespace marked as not allowed,
+naming the setting. Under `all` every extension's commands SHALL be used, and
+events SHALL always be delivered.
 
 #### Scenario: Calling a command that isn't allowed
 - **WHEN** `agentCommands` is `play`, `mymod` registered `mymod:gear`,
