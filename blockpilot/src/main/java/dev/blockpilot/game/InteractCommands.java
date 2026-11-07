@@ -92,8 +92,8 @@ final class InteractCommands {
             .help("digs the block at <pos> (in reach), what the crosshair hits (no target), or walks to and digs "
                 + "the n nearest <block|#tag>, also with states (oak_log[axis=x]); picks the best tool. A block the "
                 + "player can't break (bedrock outside creative, adventure mode) fails at once with err unbreakable; "
-                + "by type such blocks are passed over. A block at <pos> behind another fails with err out_of_reach "
-                + "naming what the crosshair hits")
+                + "by type such blocks are passed over, as is one still out of sight after walking closer. A block at "
+                + "<pos> behind another fails with err out_of_reach naming what the crosshair hits")
             .example("mine #logs x6"));
         registry.register(CommandSpec.action("place", this::place).needsWorld().group("interact")
             .arg("item", ArgType.ID).arg("pos", ArgType.POSITION)
@@ -447,6 +447,8 @@ final class InteractCommands {
 
         /** How near, in blocks, a walk into reach goes. */
         private static final double REACH_WALK = 3;
+        /** How near a walk closer goes: beside the block, diagonals included, with nothing left in between. */
+        private static final double CLOSER_WALK = 1.5;
 
         private final int session;
         private final Targets targets;
@@ -457,6 +459,9 @@ final class InteractCommands {
         private Supplier<Vec3> aim;
         private BlockState original;
         private Action walking;
+        /** A walk closer to a block in reach that the crosshair can't hit, tried once per block before passing it. */
+        private Action closer;
+        private boolean triedCloser;
         /** The pathfinder that walked into reach when it isn't the built-in one, for by= in the reply; else null. */
         private String walkedBy;
         private int mined;
@@ -484,6 +489,7 @@ final class InteractCommands {
                 walking = null;
                 blockedTicks = 0;
                 attacking = false;
+                triedCloser = false;
             }
             BlockState state = minecraft().level.getBlockState(current);
             if (state != original && !state.is(original.getBlock()) || state.isAir()) {
@@ -504,6 +510,21 @@ final class InteractCommands {
                     throw new CommandException("no_block", Rel.of(current) + " is air");
                 }
                 aimFor(state);
+            }
+            if (closer != null) {
+                Result step;
+                try {
+                    step = closer.tick();
+                } catch (CommandException e) {
+                    step = e.toResult();
+                }
+                if (step == null) {
+                    return null;
+                }
+                // There or not, aim and choose the tool again; a pathfinder that digs may have opened the way.
+                closer = null;
+                blockedTicks = 0;
+                digTicks = 0;
             }
             Vec3 center = aim.get();
             boolean inReach = center.distanceTo(player().getEyePosition()) <= player().blockInteractionRange() - 0.5;
@@ -547,6 +568,12 @@ final class InteractCommands {
                         throw new CommandException("out_of_reach", Rel.of(current) + (blocker == null
                             ? " is out of sight; the crosshair hits nothing" : " is behind " + blocker));
                     }
+                    if (!triedCloser) {
+                        triedCloser = true;
+                        blockedTicks = 0;
+                        closer = walkTo(current, CLOSER_WALK);
+                        return null;
+                    }
                     current = null;
                 }
                 return null;
@@ -575,6 +602,10 @@ final class InteractCommands {
             if (walking != null) {
                 walking.cancel();
                 walking = null;
+            }
+            if (closer != null) {
+                closer.cancel();
+                closer = null;
             }
         }
 

@@ -990,6 +990,11 @@ def main():
         # Regression: mine aimed at the middle of the carpet's cell, passed over it and hit the ground behind.
         ("mine a thin block", "server as=player setblock ~ ~ ~2 minecraft:white_carpet; mine ~0,0,2; block ~0,0,2",
          [r"mine 1/1 white_carpet", r"ok air"]),
+        # Without Baritone, the walk closer to a block out of sight finds no path, and the block is passed over.
+        ("mine by type passes over a block sealed in stone",
+         "server as=player fill ~2 ~ ~-1 ~4 ~2 ~1 minecraft:stone; "
+         "server as=player setblock ~3 ~1 ~ minecraft:gold_block; ?mine gold_block; "
+         "server as=player fill ~2 ~ ~-1 ~4 ~2 ~1 minecraft:air", [r"err no_block gold_block"], True),
         ("find by state", "server as=player setblock ~1 ~ ~-2 minecraft:oak_log[axis=y]; "
                           "server as=player setblock ~2 ~ ~-2 minecraft:oak_log[axis=x]; find oak_log[axis=x] 4 1; "
                           "server as=player fill ~1 ~ ~-2 ~2 ~ ~-2 minecraft:air", [r"^  oak_log ~2,0,-2$"]),
