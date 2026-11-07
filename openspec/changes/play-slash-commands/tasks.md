@@ -7,8 +7,8 @@
 
 ## 2. Other mods only under play (extension-api)
 
-- [ ] 2.1 Make `extensionAllowed` answer true under `all`, `eventAllowed` true in both policies, and drop the engine's own-namespace list (D2); verify with unit tests that events always pass and calls are refused only under `play`
-- [ ] 2.2 Say so in docs/extending.md (and that extensions filter words through `isTrusted`), docs/safety.md, the README's Security section and the CHANGELOG's 1.1.1 section; verify the docs agree with the spec
+- [x] 2.1 Make `extensionAllowed` answer true under `all`, `eventAllowed` true in both policies, and drop the engine's own-namespace list (D2); verify with unit tests that events always pass and calls are refused only under `play`
+- [x] 2.2 Say so in docs/extending.md (and that extensions filter words through `isTrusted`), docs/safety.md, the README's Security section and the CHANGELOG's 1.1.1 section; verify the docs agree with the spec
 
 ## 3. Integration checks
 

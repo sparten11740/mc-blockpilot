@@ -75,7 +75,6 @@ class SafetyEngineTest {
             new BlockpilotApi.Registration("claimed", "blockpilot", action("grab")),
             new BlockpilotApi.Registration("sable", "sable", action("pull"))));
         engine = new Engine(registry, game);
-        engine.setOwnEventNamespaces(List.of("sable"));
         engine.setSafetyPolicy(safety::get);
     }
 
@@ -185,7 +184,15 @@ class SafetyEngineTest {
     }
 
     @Test
+    void underAllEveryExtensionRuns() {
+        assertEquals("ok\nok\nok", run("mymod:gear; claimed:grab; sable:pull"));
+        assertEquals(List.of("gear", "grab", "pull"), ran);
+    }
+
+    @Test
     void anExtensionThatIsntAllowedIsRefusedUntilItIs() {
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
         assertEquals(List.of(), ran);
         allowed = Set.of("mymod");
@@ -195,30 +202,42 @@ class SafetyEngineTest {
 
     @Test
     void blockpilotsOwnNamespacesNeedNoAllowing() {
+        playOnly = true;
+        apply();
         assertEquals("ok", run("sable:info"));
     }
 
     @Test
     void claimingToBeBlockpilotThroughTheApiAllowsNothing() {
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed claimed:grab", run("claimed:grab"));
     }
 
     @Test
     void anotherModsCommandBesideBuiltInOnesIsRefused() {
+        playOnly = true;
+        apply();
         assertEquals("err not_allowed sable:pull", run("sable:pull"));
         assertEquals(List.of(), ran);
     }
 
     @Test
-    void anExtensionThatIsntAllowedHasItsEventsDropped() {
+    void anExtensionThatIsntAllowedHasItsEventsDelivered() {
+        playOnly = true;
+        apply();
         Session session = engine.openSession();
         engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
         engine.broadcastExtension(Event.of("sable:assembled", new Fields()));
-        assertEquals("ok count=0\n! sable:assembled", Formatter.text(engine.submit(session, null, "trust").join()));
+        assertEquals("ok count=0\n! mymod:assembled\n! sable:assembled",
+            Formatter.text(engine.submit(session, null, "trust").join()));
     }
 
     @Test
-    void helpMarksAnExtensionThatIsntAllowed() {
+    void helpMarksAnExtensionThatIsntAllowedOnlyUnderPlay() {
+        assertTrue(!run("help").contains("not allowed"), run("help"));
+        playOnly = true;
+        apply();
         String help = run("help");
         assertTrue(help.contains("mymod (extension, not allowed: add it to allowedExtensions"), help);
         assertTrue(help.contains("claimed (extension, not allowed"), help);
@@ -236,6 +255,7 @@ class SafetyEngineTest {
         engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
         assertEquals("ok count=0 dangerously_allow_all\n! mymod:assembled",
             Formatter.text(engine.submit(session, null, "trust").join()));
+        playOnly = true;
         apply();
         assertEquals("err not_allowed mymod:gear", run("mymod:gear"));
     }

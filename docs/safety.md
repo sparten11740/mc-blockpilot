@@ -43,7 +43,7 @@ player's install and the vanilla targets ignore it.
 
 ## Other mods' commands
 
-Commands that other mods register, and the events they send, reach agents only once their namespace is in
+Under `agentCommands` `play` (below), commands that other mods register reach agents only once their namespace is in
 `allowedExtensions`, empty by default:
 
 ```json
@@ -52,12 +52,13 @@ Commands that other mods register, and the events they send, reach agents only o
 }
 ```
 
-Until then a call answers `err not_allowed <namespace>:<name>` before any step runs, the mod's events are dropped, and
-`help` lists the namespace as not allowed. Blockpilot's own compat modules, such as its `sable:` commands, need no
-entry; another mod's commands in the same namespace still do. Like the other settings, it is set in the file only and
-applies within a second.
+Until then a call answers `err not_allowed <namespace>:<name>` before any step runs, and `help` lists the namespace as
+not allowed. Blockpilot's own compat modules, such as its `sable:` commands, need no entry; another mod's commands in
+the same namespace still do. Under `all`, the default, every mod's commands are used. Events always reach agents: a mod
+that turns what players say into events passes only trusted players' words, through `BlockpilotApi.isTrusted`. Like
+the other settings, the list is set in the file only and applies within a second.
 
-The allow-list decides which other mods' commands and events agents use. It is no sandbox against a malicious mod,
+The allow-list decides which other mods' commands a play-only agent uses. It is no sandbox against a malicious mod,
 which runs with the game's full rights anyway, and an event isn't proven to come from the mod its namespace names:
 install only mods you trust.
 
@@ -74,7 +75,7 @@ With `play`, agents may only play. A script with any of these fails before any s
 `create world`, `delete world`, `join`, `leave` and `quit`. A `cmd` fails the same way, as `err not_allowed cmd
 <root>`, unless its root is in `playSlashCommands` (below). A slash command an agent types into the chat screen or
 clicks in a chat message isn't sent either unless its root is listed, and the command that sent it fails with `err
-not_allowed cmd <root>`. Extension commands still work, as the person who installed the mod chose them, except those
+not_allowed cmd <root>`. Extension commands work once `allowedExtensions` lists their namespace (above), except those
 that run on the integrated server, which are refused like `server` as `err not_allowed <namespace>:<name>`.
 
 Blockpilot's input (`click`, `type`, `key`, `mouse`, `scroll`, `drag`, `cursor`) reaches only gameplay screens: the
@@ -116,14 +117,14 @@ applies within a second.
 ```
 
 **This turns every safety check on this page off.** Every player's chat reaches agents with its text, also on servers
-that don't check accounts, and `BlockpilotApi.isTrusted` says yes to everyone; every mod's commands and events are used,
-whatever `allowedExtensions` says; and `agentCommands` is ignored as if it were `all`, so no command, screen or link is
-refused and every slash command goes out, whatever `playSlashCommands` says. It is fine when nobody but you can reach
-the agent: testing a mod alone, in single-player, or on a world only your own clients join. Never leave it on while the
-agent plays with other people. Like the other settings it is set in the file only, applies within a second and counts as
-false in a file Blockpilot can't read. While it is on, Blockpilot logs a warning at start and on each change of the
-file, `trust` reports `dangerously_allow_all`, and the agent indicator on screen says "safety off" (hidden while
-recording, like the rest of it).
+that don't check accounts, and `BlockpilotApi.isTrusted` says yes to everyone; every mod's commands are used, whatever
+`allowedExtensions` says; and `agentCommands` is ignored as if it were `all`, so no command, screen or link is refused
+and every slash command goes out, whatever `playSlashCommands` says. It is fine when nobody but you can reach the agent:
+testing a mod alone, in single-player, or on a world only your own clients join. Never leave it on while the agent plays
+with other people. Like the other settings it is set in the file only, applies within a second and counts as false in a
+file Blockpilot can't read. While it is on, Blockpilot logs a warning at start and on each change of the file, `trust`
+reports `dangerously_allow_all`, and the agent indicator on screen says "safety off" (hidden while recording, like the
+rest of it).
 
 ## Text from players is untrusted input
 

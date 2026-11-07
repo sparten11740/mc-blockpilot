@@ -14,7 +14,6 @@ public sealed interface SafetyPolicy permits ConfiguredPolicy, AllowAllPolicy {
 
     boolean extensionAllowed(CommandRegistry.Entry entry);
 
-    /** Whether an extension's event may reach agents, besides those of Blockpilot's own compat namespaces. */
     boolean eventAllowed(String namespace);
 
     /** Whether the agent may send a slash command with this root, by cmd or typed or clicked; see rootOf. */

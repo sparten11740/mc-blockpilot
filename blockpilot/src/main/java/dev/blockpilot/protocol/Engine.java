@@ -12,12 +12,10 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -59,8 +57,6 @@ public final class Engine {
     private final Parser parser;
     /** Every safety decision; the client swaps the policy whole when the config file changes. */
     private volatile Supplier<SafetyPolicy> safety = () -> ConfiguredPolicy.DEFAULT;
-    /** The namespaces Blockpilot's own compat modules emit events under; events carry no other proof of origin. */
-    private volatile Set<String> ownEventNamespaces = Set.of();
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -81,11 +77,7 @@ public final class Engine {
         safety = policy;
     }
 
-    public void setOwnEventNamespaces(Collection<String> namespaces) {
-        ownEventNamespaces = Set.copyOf(namespaces);
-    }
-
-    /** Whether agents may use the command: Blockpilot's own, or another mod's whose namespace is allowed. */
+    /** Whether agents may use the command: any under all; under play Blockpilot's own or an allowed namespace's. */
     boolean usable(CommandRegistry.Entry entry) {
         return safety.get().extensionAllowed(entry);
     }
@@ -94,7 +86,7 @@ public final class Engine {
     public void broadcastExtension(Event event) {
         String name = event.name();
         String namespace = name.substring(0, Math.max(name.indexOf(':'), 0));
-        if (ownEventNamespaces.contains(namespace) || safety.get().eventAllowed(namespace)) {
+        if (safety.get().eventAllowed(namespace)) {
             broadcast(event);
         }
     }

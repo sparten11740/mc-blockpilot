@@ -6,8 +6,8 @@ import java.util.UUID;
 
 /**
  * The safety the config file sets: trusted players by name ignoring case, never on an unverified server unless a
- * development run says so; other mods' commands and events by namespace; and the play profile, under which slash
- * commands need their root allowed.
+ * development run says so; and the play profile, under which other mods' commands need their namespace allowed and
+ * slash commands their root.
  */
 public record ConfiguredPolicy(List<String> trustedNames, Set<String> allowedExtensions, boolean playOnly,
     boolean trustUnverified, List<String> playSlashCommands) implements SafetyPolicy {
@@ -32,12 +32,13 @@ public record ConfiguredPolicy(List<String> trustedNames, Set<String> allowedExt
 
     @Override
     public boolean extensionAllowed(CommandRegistry.Entry entry) {
-        return entry.builtIn() || allowedExtensions.contains(entry.namespace());
+        return !playOnly || entry.builtIn() || allowedExtensions.contains(entry.namespace());
     }
 
+    /** Always: an extension that turns players' words into events filters them through isTrusted. */
     @Override
     public boolean eventAllowed(String namespace) {
-        return allowedExtensions.contains(namespace);
+        return true;
     }
 
     @Override

@@ -205,10 +205,10 @@ With `agentCommands: "play"` in `config/blockpilot/config.json`, agents may only
 `cmd`, typed into the chat screen or clicked in chat, goes out only if its root (the first word without `/` or
 `minecraft:`, ignoring case) is in `playSlashCommands`, empty by default; else it fails with `err not_allowed cmd
 <root>`. **Never list `execute` or `function`**, which run any other command, and back the world up before a session
-that lists `fill` or other commands that change it. Extension commands that run on the integrated server are refused
-too. Input reaches only gameplay screens (the world, container screens, chat, signs, books), else `err not_allowed
-screen`, and a click on a link fails with `err not_allowed link`. A change to the settings applies within a second
-([safety.md](safety.md)).
+that lists `fill` or other commands that change it. Another mod's commands need their namespace in `allowedExtensions`,
+and those that run on the integrated server are refused. Input reaches only gameplay screens (the world, container
+screens, chat, signs, books), else `err not_allowed screen`, and a click on a link fails with `err not_allowed link`. A
+change to the settings applies within a second ([safety.md](safety.md)).
 
 ## session
 
