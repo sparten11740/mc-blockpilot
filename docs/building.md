@@ -7,7 +7,10 @@
 Gradle runs on JDK 25 and fetches the JDK each build needs. Every jar lands in `build/libs/`, tagged with the Minecraft
 version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0+26.1.2-fabric.jar`.
 `./gradlew :blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a dev client; a
-`-vanilla` node starts the plain client with the freshly built agent jar.
+`-vanilla` node starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a NeoForge or
+Fabric dev client with Baritone: it fetches the build that node's `gradle.properties` names (`baritone_version`) from
+cabaletta's GitHub releases and checks it against `baritone_sha1`, the SHA-1 in that release's `checksums.txt`. It
+goes on the dev client's runtime classpath only, never into a jar.
 
 The mod is one source tree, built with [Stonecutter](https://stonecutter.kikugie.dev/) once per Minecraft version and
 loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilot/versions/` with its own
