@@ -34,7 +34,7 @@ public final class Config {
     public List<String> trustedPlayers = new ArrayList<>();
     /** {@code all}, or {@code play} to hold agents to playing; any other value counts as {@code play}. */
     public String agentCommands = "all";
-    /** The namespaces of other mods' commands agents may use; Blockpilot's own need none. */
+    /** The namespaces of other mods' commands a play-only agent may use; Blockpilot's own need none. */
     public List<String> allowedExtensions = new ArrayList<>();
     /** The slash command roots a play-only agent may send, such as fill; matched ignoring case. */
     public List<String> playSlashCommands = new ArrayList<>();

@@ -15,6 +15,9 @@
   clicked, when its root is in `playSlashCommands` in `config/blockpilot/config.json`, empty by default, such as
   `["fill"]` for building sessions; any other is refused as `err not_allowed cmd <root>`, naming the root. Never list
   `execute` or `function`, which run any other command ([safety.md](docs/safety.md)).
+- **Other mods' commands:** 1.1.0's `allowedExtensions` now applies only under `agentCommands` `play`; under `all`, the
+  default, every mod's commands are used again. Events from every mod always reach agents; an extension that turns
+  players' words into events filters them through `BlockpilotApi.isTrusted` ([extending.md](docs/extending.md)).
 
 ## 1.1.0 (2026-11-07)
 

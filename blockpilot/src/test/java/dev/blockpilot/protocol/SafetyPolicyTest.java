@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Result;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -13,6 +15,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class SafetyPolicyTest {
+    private static final CommandRegistry.Entry GEAR = new CommandRegistry.Entry("mymod:gear", "mymod", "mymod",
+        CommandSpec.action("gear", (context, args) -> () -> Result.ok()), false);
+
     private static ConfiguredPolicy policy(boolean playOnly, Set<String> allowed, List<String> slashCommands) {
         return new ConfiguredPolicy(List.of(), allowed, playOnly, false, slashCommands);
     }
@@ -35,6 +40,21 @@ class SafetyPolicyTest {
         assertFalse(play.slashCommandAllowed(""));
         assertTrue(policy(false, Set.of(), List.of()).slashCommandAllowed("op"));
         assertTrue(AllowAllPolicy.INSTANCE.slashCommandAllowed("op"));
+    }
+
+    @Test
+    void theAllowListAppliesOnlyUnderPlay() {
+        assertTrue(policy(false, Set.of(), List.of()).extensionAllowed(GEAR));
+        assertFalse(policy(true, Set.of(), List.of()).extensionAllowed(GEAR));
+        assertTrue(policy(true, Set.of("mymod"), List.of()).extensionAllowed(GEAR));
+        assertTrue(AllowAllPolicy.INSTANCE.extensionAllowed(GEAR));
+    }
+
+    @Test
+    void eventsAlwaysReachAgents() {
+        assertTrue(policy(false, Set.of(), List.of()).eventAllowed("mymod"));
+        assertTrue(policy(true, Set.of(), List.of()).eventAllowed("mymod"));
+        assertTrue(AllowAllPolicy.INSTANCE.eventAllowed("mymod"));
     }
 
     @Test

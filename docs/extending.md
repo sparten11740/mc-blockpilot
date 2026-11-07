@@ -1,10 +1,10 @@
 # Adding your own commands
 
-A person lets Blockpilot use your commands and events: the namespace you register under has to be in
-`allowedExtensions` in `config/blockpilot/config.json` (`"allowedExtensions": ["mymod"]`), empty by default. Until it
-is, a call answers `err not_allowed mymod:<name>`, your events are dropped, and `help` lists the namespace as not
-allowed, naming the setting. Tell your users to add it, from Blockpilot 1.1.0 on. A change to the file applies within a
-second.
+A person who holds agents to playing (`"agentCommands": "play"`) lets Blockpilot use your commands: the namespace you
+register under has to be in `allowedExtensions` in `config/blockpilot/config.json` (`"allowedExtensions": ["mymod"]`),
+empty by default. Until it is, a call answers `err not_allowed mymod:<name>` and `help` lists the namespace as not
+allowed, naming the setting; tell those users to add it. Under `all`, the default, your commands work as they are, and
+your events always reach agents. A change to the file applies within a second.
 
 Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile against
 the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.1.0")`, from mavenLocal as in
@@ -84,10 +84,11 @@ arrives in the reply as an event named after the action's `label()`, which an en
 ending with nothing to report answers `Result.skip()`, which leaves none. An ending that hasn't answered after 60 s is
 cancelled and answers `err timeout`, so a longer cleanup doesn't belong there. `atEnd` is new in blockpilot-api 2.1.0.
 
-An extension that turns players' words into agent input, such as speech, should pass on only those of players
-Blockpilot trusts: `BlockpilotApi.isTrusted(uuid)` answers as Blockpilot filters chat, true for the players on
-`trustedPlayers` in its config and the agent's own player, false on a server that doesn't verify accounts and while
-Blockpilot isn't running. Extensions can read it but not change it. `isTrusted` is new in blockpilot-api 2.1.0.
+Your events reach agents whatever the config says, so an extension that turns players' words into agent input, such as
+speech, must pass on only those of players Blockpilot trusts: `BlockpilotApi.isTrusted(uuid)` answers as Blockpilot
+filters chat, true for the players on `trustedPlayers` in its config and the agent's own player, false on a server that
+doesn't verify accounts and while Blockpilot isn't running. Extensions can read it but not change it. `isTrusted` is new
+in blockpilot-api 2.1.0.
 
 Extensions can emit events too: `BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id, "uuid=" + id))`
 reaches every session as `! mymod:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of `blockpilot-api`, bumps its

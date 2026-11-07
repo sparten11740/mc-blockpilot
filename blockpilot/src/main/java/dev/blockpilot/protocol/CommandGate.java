@@ -6,10 +6,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * The commands a script may not run, judged before any step does: another mod's commands until its namespace is in
- * allowedExtensions, and for a play-only agent slash commands whose root isn't in playSlashCommands and the commands
- * that reach beyond playing as a player (the integrated server, world files, mod configs, files written to disk,
- * switching worlds or servers, quitting), extension commands that run on the integrated server among them.
+ * The commands a play-only agent's script may not run, judged before any step does: another mod's commands until its
+ * namespace is in allowedExtensions, slash commands whose root isn't in playSlashCommands, and the commands that reach
+ * beyond playing as a player (the integrated server, world files, mod configs, files written to disk, switching
+ * worlds or servers, quitting), extension commands that run on the integrated server among them.
  */
 final class CommandGate {
     private static final Set<String> REFUSED = Set.of("server", "nbt", "tick", "gametest", "snapshot",
