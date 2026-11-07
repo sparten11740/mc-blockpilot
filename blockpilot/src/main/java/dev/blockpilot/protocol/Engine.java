@@ -144,8 +144,7 @@ public final class Engine {
                 ? Result.error("syntax", line.error()) : Result.skip()).toList();
             return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
         }
-        SafetyPolicy policy = safety.get();
-        CommandGate gate = new CommandGate(policy.playOnly(), policy::extensionAllowed);
+        CommandGate gate = new CommandGate(safety.get());
         List<String> refused = lines.stream()
             .map(line -> line.statement() == null ? null : gate.refusal(line.statement())).toList();
         if (refused.stream().anyMatch(Objects::nonNull)) {

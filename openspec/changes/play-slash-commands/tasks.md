@@ -2,8 +2,8 @@
 
 ## 1. Slash commands by root (agent-safety)
 
-- [ ] 1.1 Add `playSlashCommands` to `Config` (cleaned like the other lists), `SafetyPolicy.rootOf` and `slashCommandAllowed` to both policies, the per-root `cmd` check in `CommandGate` and the per-root send hooks in `PlayGuard` (D1); verify with unit tests for the root parsing (`/fill`, `minecraft:fill`, `FILL`, empty), each policy and the gate in both profiles
-- [ ] 1.2 Document `playSlashCommands` in docs/safety.md and docs/commands.md, warning in bold never to list `execute` or `function` and suggesting a backup before building with `fill`; verify the names used exist
+- [x] 1.1 Add `playSlashCommands` to `Config` (cleaned like the other lists), `SafetyPolicy.rootOf` and `slashCommandAllowed` to both policies, the per-root `cmd` check in `CommandGate` and the per-root send hooks in `PlayGuard` (D1); verify with unit tests for the root parsing (`/fill`, `minecraft:fill`, `FILL`, empty), each policy and the gate in both profiles
+- [x] 1.2 Document `playSlashCommands` in docs/safety.md and docs/commands.md, warning in bold never to list `execute` or `function` and suggesting a backup before building with `fill`; verify the names used exist
 
 ## 2. Other mods only under play (extension-api)
 

@@ -82,7 +82,7 @@ class ExtensionApiTest {
         Engine engine = new Engine(registry, game);
         // As allowedExtensions in the config lists them.
         engine.setSafetyPolicy(() -> new ConfiguredPolicy(List.of(), Set.of("sample", "mymod", "test", "fixture"), false,
-            false));
+            false, List.of()));
         List<BlockpilotApi.Registration> registrations = BlockpilotApi.freeze(engine::broadcastExtension);
         registry.addExtensions(registrations);
 

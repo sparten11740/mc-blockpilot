@@ -17,7 +17,7 @@ class SafetyCommandsTest {
     void listsTheTrustedPlayersOnlineOrOffline() {
         Trust trust = new Trust();
         trust.update(UUID.randomUUID(), false, Map.of(UUID.randomUUID(), "steve"));
-        ConfiguredPolicy policy = new ConfiguredPolicy(List.of("Steve", "Alex"), Set.of(), false, false);
+        ConfiguredPolicy policy = new ConfiguredPolicy(List.of("Steve", "Alex"), Set.of(), false, false, List.of());
         Result result = new SafetyCommands(() -> policy, trust, false).trust();
         assertEquals(2, result.fields().get("count"));
         assertEquals(List.of("Steve online", "Alex offline"), result.rows().stream().map(Row::text).toList());

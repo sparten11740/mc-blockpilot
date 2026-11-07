@@ -65,6 +65,8 @@ class ConfigTest {
         assertEquals(List.of("Steve"), Config.load(file).trustedPlayers);
         Files.writeString(file, "{\"trustedPlayers\": [null, \" \"]}");
         assertEquals(List.of(), Config.load(file).trustedPlayers);
+        Files.writeString(file, "{\"playSlashCommands\": [null, \" \", \"fill\"]}");
+        assertEquals(List.of("fill"), Config.load(file).playSlashCommands);
     }
 
     @Test

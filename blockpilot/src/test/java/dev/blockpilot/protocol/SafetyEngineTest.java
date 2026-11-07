@@ -30,6 +30,7 @@ class SafetyEngineTest {
     private final AtomicReference<SafetyPolicy> safety = new AtomicReference<>(ConfiguredPolicy.DEFAULT);
     private Set<String> allowed = Set.of();
     private boolean playOnly;
+    private List<String> slashCommands = List.of();
     private Engine engine;
 
     @BeforeEach
@@ -80,7 +81,7 @@ class SafetyEngineTest {
 
     /** The settings this test has set, as one policy the way the client swaps it in. */
     private void apply() {
-        safety.set(new ConfiguredPolicy(List.of(), allowed, playOnly, false));
+        safety.set(new ConfiguredPolicy(List.of(), allowed, playOnly, false, slashCommands));
     }
 
     private CommandSpec action(String name) {
@@ -119,7 +120,7 @@ class SafetyEngineTest {
     void aPlayOnlyScriptWithARefusedCommandRunsNoStep() {
         playOnly = true;
         apply();
-        assertEquals("skip\nerr not_allowed cmd", run("jump; cmd say hi"));
+        assertEquals("skip\nerr not_allowed cmd say", run("jump; cmd say hi"));
         assertEquals("err not_allowed server", run("server time query gametime"));
         assertEquals(List.of(), ran);
     }
@@ -128,8 +129,19 @@ class SafetyEngineTest {
     void aRefusedCommandInsideIfIsRefused() {
         playOnly = true;
         apply();
-        assertEquals("err not_allowed cmd", run("if status ok then cmd say hi"));
+        assertEquals("err not_allowed cmd say", run("if status ok then cmd say hi"));
         assertEquals(List.of(), ran);
+    }
+
+    @Test
+    void aPlayOnlyAgentSendsTheSlashCommandsListedForIt() {
+        playOnly = true;
+        slashCommands = List.of("Fill");
+        apply();
+        assertEquals("ok", run("cmd /minecraft:FILL ~ ~ ~ ~ ~ ~ stone"));
+        assertEquals("err not_allowed cmd op", run("cmd op Mallory"));
+        assertEquals("err not_allowed cmd execute", run("cmd execute run fill ~ ~ ~ ~ ~ ~ stone"));
+        assertEquals(List.of("cmd"), ran);
     }
 
     @Test
