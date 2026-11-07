@@ -1254,6 +1254,7 @@
          <ul>
             <li><a href="#config-command" title="config-command">config-command</a></li>
             <li><a href="#create-command" title="create-command">create-command</a></li>
+            <li><a href="#gametest-command" title="gametest-command">gametest-command</a></li>
             <li><a href="#help-command" title="help-command">help-command</a></li>
             <li><a href="#join-command" title="join-command">join-command</a></li>
             <li><a href="#key-command" title="key-command">key-command</a></li>
@@ -1705,6 +1706,7 @@
             <li><a href="#equip-option" title="equip-option">equip-option</a></li>
             <li><a href="#face-option" title="face-option">face-option</a></li>
             <li><a href="#fly-option" title="fly-option">fly-option</a></li>
+            <li><a href="#gametest-option" title="gametest-option">gametest-option</a></li>
             <li><a href="#goto-option" title="goto-option">goto-option</a></li>
             <li><a href="#join-option" title="join-option">join-option</a></li>
             <li><a href="#jump-option" title="jump-option">jump-option</a></li>
@@ -1788,6 +1790,7 @@
             <li><a href="#equip-option" title="equip-option">equip-option</a></li>
             <li><a href="#face-option" title="face-option">face-option</a></li>
             <li><a href="#fly-option" title="fly-option">fly-option</a></li>
+            <li><a href="#gametest-option" title="gametest-option">gametest-option</a></li>
             <li><a href="#goto-option" title="goto-option">goto-option</a></li>
             <li><a href="#join-option" title="join-option">join-option</a></li>
             <li><a href="#jump-option" title="jump-option">jump-option</a></li>
@@ -4297,6 +4300,42 @@
          <polygon points="263 17 255 13 255 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#tick-option" title="tick-option">tick-option</a></div>
+               <div>         ::= 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="gametest-command">gametest-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="273" height="37">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="82" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">gametest</text>
+         <rect x="133" y="3" width="42" height="32" rx="10"></rect>
+         <rect x="131" y="1" width="42" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="141" y="21">run</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#word" xlink:title="word">
+            <rect x="195" y="3" width="50" height="32"></rect>
+            <rect x="193" y="1" width="50" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="203" y="21">word</text></a><path class="line" d="m17 17 h2 m0 0 h10 m82 0 h10 m0 0 h10 m42 0 h10 m0 0 h10 m50 0 h10 m3 0 h-3"></path>
+         <polygon points="263 17 271 13 271 21"></polygon>
+         <polygon points="263 17 255 13 255 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#gametest-command" title="gametest-command">gametest-command</a></div>
+               <div>         ::= 'gametest' 'run' <a href="#word" title="word">word</a></div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="gametest-option">gametest-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="273" height="81">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="82" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="153" y="3" width="72" height="32"></rect>
+            <rect x="151" y="1" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="161" y="21">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="153" y="47" width="72" height="32"></rect>
+            <rect x="151" y="45" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="161" y="65">seconds</text></a><path class="line" d="m17 17 h2 m0 0 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m23 -44 h-3"></path>
+         <polygon points="263 17 271 13 271 21"></polygon>
+         <polygon points="263 17 255 13 255 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#gametest-option" title="gametest-option">gametest-option</a></div>
                <div>         ::= 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="screenshot-command">screenshot-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="393" height="69">

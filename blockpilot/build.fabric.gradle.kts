@@ -89,6 +89,16 @@ loom {
             }
         }
     }
+    // Blockpilot's own GameTests (see common.gradle.kts) join the mod in the dev runs.
+    sourceSets.findByName("gameTests")?.let { gameTests ->
+        mods {
+            register(modId) {
+                sourceSet(sourceSets.main.get())
+                sourceSet(gameTests)
+            }
+        }
+        runs.named("client") { source(gameTests) }
+    }
 }
 
 val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata") {

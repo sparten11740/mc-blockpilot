@@ -74,12 +74,15 @@ neoForge {
             listOf("blockpilot.autojoin", "blockpilot.autocreate", "blockpilot.sable.version").forEach { key ->
                 providers.gradleProperty(key).orNull?.let { systemProperty(key, it) }
             }
+            // NeoForge runs GameTests only in development with this on, for gametest run and its smoke check.
+            systemProperty("neoforge.enableGameTest", "true")
         }
     }
 
     mods {
         register(modId) {
             sourceSet(sourceSets.main.get())
+            sourceSets.findByName("gameTests")?.let { sourceSet(it) }
         }
     }
 }

@@ -22,11 +22,13 @@ tools/test_targets.py runs this on every target.
 """
 import argparse
 import glob
+import gzip
 import json
 import math
 import os
 import re
 import shutil
+import struct
 import subprocess
 import sys
 import threading
@@ -382,6 +384,103 @@ def check_functions(game_dir, world):
     expected = [r"^ok success=true\n  Running function smoke:place$", r"^ok stone$", r"^ok result=7 success=true$",
                 r"^err command_failed .*smoke:missing",
                 r"^err command_failed Unknown block type 'minecraft:not_a_block'", r"^  .*<--\[HERE\]$"]
+    missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
+    return f"missing {missing}: {output.strip()[:600]}" if missing else None
+
+
+class NbtByte(int):
+    """An int written as an NBT byte, not an int."""
+
+
+def nbt(value):
+    """The tag id and payload of a value: an int as Int, an NbtByte, a str, a list of one kind, a dict as Compound."""
+    if isinstance(value, NbtByte):
+        return 1, struct.pack(">b", value)
+    if isinstance(value, int):
+        return 3, struct.pack(">i", value)
+    if isinstance(value, str):
+        data = value.encode("utf-8")
+        return 8, struct.pack(">H", len(data)) + data
+    if isinstance(value, list):
+        items = [nbt(item) for item in value]
+        return 9, struct.pack(">bi", items[0][0] if items else 0, len(items)) + b"".join(body for _, body in items)
+    entries = [(key, *nbt(item)) for key, item in value.items()]
+    return 10, b"".join(struct.pack(">b", kind) + nbt(key)[1] + body for key, kind, body in entries) + b"\x00"
+
+
+def write_structure(path, data_version, size, blocks):
+    """A structure template, gzipped NBT: blocks as (x, y, z, block id, its states, its block entity's data)."""
+    palette = []
+    placed = []
+    for x, y, z, block, states, data in blocks:
+        state = {"Name": block, "Properties": states}
+        if state not in palette:
+            palette.append(state)
+        placed.append({"pos": [x, y, z], "state": palette.index(state), "nbt": data})
+    _, body = nbt({"DataVersion": data_version, "size": list(size), "palette": palette, "blocks": placed,
+                   "entities": []})
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with gzip.open(path, "wb") as template:
+        template.write(struct.pack(">bH", 10, 0) + body)
+
+
+# The oldest data version of each GameTest framework, which the game upgrades from: 26.1.2's and 1.21.1's.
+TEST_DATA_VERSION = {(26, 1): 4790, (1, 21): 3955}
+# The file create world leaves in a save folder to mark it a test world.
+TEST_MARKER = "blockpilot-test.json"
+
+
+def check_gametests(game_dir, world):
+    """gametest run answers a row for a test that passes and one that fails on purpose, and err no_test for a selector
+    matching none: on 26.x the block-based tests of a data pack, on 1.21.1 Blockpilot's own dev tests. On 26.x the data
+    pack makes the game ask about experimental settings when the world loads: join world answers for a test world and
+    leaves the question on screen for any other."""
+    save = os.path.join(game_dir, "saves", world)
+    if game_version(game_dir) >= (26, 1):
+        pack = os.path.join(save, "datapacks", "gametests")
+        os.makedirs(pack, exist_ok=True)
+        with open(os.path.join(pack, "pack.mcmeta"), "w", encoding="utf-8") as mcmeta:
+            json.dump({"pack": {"description": "Blockpilot smoke GameTests", "pack_format": 48}}, mcmeta)
+
+        def test_block(x, mode, message=""):
+            return (x, 0, 0, "minecraft:test_block", {"mode": mode},
+                    {"id": "minecraft:test_block", "mode": mode, "message": message, "powered": NbtByte(0)})
+        # The start block powers the block beside it when the test starts: accept passes, fail fails with its
+        # message, and the accept block out of its reach keeps the test from failing as having none.
+        for name, blocks in (("passes", [test_block(0, "start"), test_block(1, "accept")]),
+                             ("fails", [test_block(0, "start"), test_block(1, "fail", "fails on purpose"),
+                                        test_block(3, "accept")])):
+            write_structure(os.path.join(pack, "data", "blockpilot_smoke", "structure", f"{name}.nbt"),
+                            TEST_DATA_VERSION[(26, 1)], (max(block[0] for block in blocks) + 1, 1, 1), blocks)
+            instance = os.path.join(pack, "data", "blockpilot_smoke", "test_instance", f"{name}.json")
+            os.makedirs(os.path.dirname(instance), exist_ok=True)
+            with open(instance, "w", encoding="utf-8") as test:
+                json.dump({"type": "minecraft:block_based", "environment": "minecraft:default",
+                           "structure": f"blockpilot_smoke:{name}", "max_ticks": 40}, test)
+        # Test instances load with the world, so after the reload has taken the pack on, the world is joined again.
+        # Without its marker first: the world could be a player's own, so the question stays on screen, and Escape
+        # cancels it. That comes before a test world's join answers it, which NeoForge remembers for the world.
+        run(game_dir, "server reload; wait 1s; leave")
+        marker = os.path.join(save, TEST_MARKER)
+        os.rename(marker, marker + ".away")
+        try:
+            _, output = run(game_dir, f"?join world {world}; screen; key escape")
+        finally:
+            os.rename(marker + ".away", marker)
+        if not re.search(r"^err join_failed the game asks whether to back this world up", output, re.MULTILINE) \
+                or "ok backup_confirm" not in output:
+            return f"another world's question wasn't left on screen: {output.strip()[:400]}"
+        _, output = run(game_dir, f"join world {world}")
+        if f"ok joined {world} experimental=true" not in output:
+            return f"didn't join the test world past the experimental-settings question: {output.strip()[-300:]}"
+        selector, passed, failed = "blockpilot_smoke:*", "blockpilot_smoke:passes", "blockpilot_smoke:fails"
+    else:
+        write_structure(os.path.join(save, "generated", "blockpilot", "structures", "smoke_empty.nbt"),
+                        TEST_DATA_VERSION[(1, 21)], (1, 1, 1), [])
+        selector, passed, failed = "blockpilotsmoketests.*", "blockpilotsmoketests.passes", "blockpilotsmoketests.fails"
+    _, output = run(game_dir, f"{LEVEL}; gametest run {selector}; ?gametest run nothing_here:*; server test clearall")
+    expected = [r"^ok passed=1 failed=1$", rf"^  {re.escape(passed)} passed$",
+                rf"^  {re.escape(failed)} failed .*fails on purpose", r"^err no_test nothing_here:\*$"]
     missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
     return f"missing {missing}: {output.strip()[:600]}" if missing else None
 
@@ -1171,6 +1270,7 @@ def main():
         ("grammar file", lambda: check_grammar_file(args.game_dir)),
         ("mine by type moves on from a block that changed", lambda: check_mine_moves_on(args.game_dir)),
         ("server function answers as the game sees it", lambda: check_functions(args.game_dir, world)),
+        ("gametest run reports each test", lambda: check_gametests(args.game_dir, world)),
         ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
         ("server steps run back to back", lambda: check_server_steps(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),

@@ -1,5 +1,6 @@
 package dev.blockpilot.game;
 
+import dev.blockpilot.game.gametest.GameTestCommands;
 import dev.blockpilot.game.load.LoadCommands;
 import dev.blockpilot.game.log.LogCommands;
 import dev.blockpilot.game.observe.ObservationCommands;
@@ -26,6 +27,7 @@ final class GameCommands {
         new TestWorlds().register(registry);
         new Snapshots().register(registry);
         new ServerCommands().register(registry);
+        new GameTestCommands().register(registry);
         new ObservationCommands().register(registry);
         new OptionCommands().register(registry);
         new ConfigCommands().register(registry);
