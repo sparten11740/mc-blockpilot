@@ -50,4 +50,6 @@ the test world (on the first start, once the game has written the launcher). In 
 through Gradle: `./gradlew :blockpilot:1.21.1-neoforge:runClient -Pblockpilot.autojoin=test
 -Pblockpilot.autocreate=flat` (or another node, such as `1.21.1-fabric` or `26.3-neoforge`).
 
+[testing.md](testing.md) has recipes for testing your mod this way, from a smoke test to CI.
+
 [Back to the README](../README.md)

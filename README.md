@@ -156,6 +156,7 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
 
 ## More
 
+- [Testing a mod](docs/testing.md): smoke tests, CI and how Blockpilot fits with Minecraft's GameTests
 - [Adding your own commands](docs/extending.md) from another mod
 - [Building and releasing](docs/building.md)
 - [Changelog](CHANGELOG.md)
