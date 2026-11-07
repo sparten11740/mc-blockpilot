@@ -243,13 +243,21 @@ public final class Engine {
             if (filter.test(job)) {
                 job.cancel(error);
                 queue.remove(job);
+                if (!job.completed()) {
+                    // Its endings still run, off the queue, so the scripts after it go on.
+                    free.add(job);
+                }
                 stopped++;
             }
         }
         for (ScriptJob job : free) {
             if (queries && filter.test(job)) {
+                // A job the first loop just moved here is cancelled again, which changes nothing; one running its
+                // endings stays until they have answered.
                 job.cancel(error);
-                free.remove(job);
+                if (job.completed()) {
+                    free.remove(job);
+                }
             }
         }
         return stopped;

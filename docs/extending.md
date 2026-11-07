@@ -72,6 +72,12 @@ A slot of type `ArgType.ENTITY` takes `e<id>` and, from Blockpilot 1.1.0, `@<nam
 engine looks the name up before the handler runs, so `args.entity(name)` always reads an id and a command needs no
 change to take names; an unknown name answers `err no_entity @<name>` without running it.
 
+A command can leave work for the end of its script: `context.atEnd(action)` runs the action when the script ends,
+however it ends (its last step, an error, `stop` or real input), on the client thread and before the reply. Its result
+arrives in the reply as an event named after the action's `label()`, which an ending should therefore give, and an
+ending with nothing to report answers `Result.skip()`, which leaves none. An ending that hasn't answered after 60 s is
+cancelled and answers `err timeout`, so a longer cleanup doesn't belong there. `atEnd` is new in blockpilot-api 2.1.0.
+
 Extensions can emit events too: `BlockpilotApi.emit("mymod", "assembled", new Fields().put("uuid", id, "uuid=" + id))`
 reaches every session as `! mymod:assembled uuid=…`. `BlockpilotApi.VERSION`, the version of `blockpilot-api`, bumps its
 minor version for additions and its major version for breaking changes; declare the range of Blockpilot versions your
