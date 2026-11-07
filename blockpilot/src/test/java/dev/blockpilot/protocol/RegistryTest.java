@@ -39,9 +39,9 @@ class RegistryTest {
         assertThrows(IllegalStateException.class, () -> new CommandRegistry().register(broken));
         CommandSpec look = CommandSpec.query("look", (context, args) -> Result.ok())
             .optionalArg("radius", ArgType.INT).example("look 12");
-        assertNull(CommandRegistry.exampleProblem(new CommandRegistry.Entry("look", "", "blockpilot", look)));
+        assertNull(CommandRegistry.exampleProblem(new CommandRegistry.Entry("look", "", "blockpilot", look, true)));
         assertEquals("col 1: an example starts with mod:look, not look",
-            CommandRegistry.exampleProblem(new CommandRegistry.Entry("mod:look", "mod", "mod", look)));
+            CommandRegistry.exampleProblem(new CommandRegistry.Entry("mod:look", "mod", "mod", look, false)));
     }
 
     @Test

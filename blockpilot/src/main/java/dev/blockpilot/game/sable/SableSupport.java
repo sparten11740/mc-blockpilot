@@ -67,7 +67,7 @@ public final class SableSupport {
             SubLevels compat = Class.forName(COMPAT).asSubclass(SubLevels.class)
                 .getConstructor(SableIntegration.class).newInstance(started);
             started.on(compat, version);
-            SableCommands.register();
+            registry.addBuiltIn(SableCommands.registrations());
             Blockpilot.LOGGER.info("Sable integration {}", started.status());
         } catch (LinkageError | ReflectiveOperationException | RuntimeException e) {
             Throwable cause = e instanceof InvocationTargetException thrown ? thrown.getCause() : e;

@@ -23,7 +23,7 @@ class GrammarTest {
     }
 
     private static List<String> productions(String qualifiedName, CommandSpec spec) {
-        return Grammar.command(new CommandRegistry.Entry(qualifiedName, "", "test", spec.freeze()));
+        return Grammar.command(new CommandRegistry.Entry(qualifiedName, "", "test", spec.freeze(), true));
     }
 
     @Test
@@ -128,7 +128,7 @@ class GrammarTest {
     void helpPrintsTheCoreGrammarThenTheCommands() {
         CommandRegistry registry = new CommandRegistry();
         new Engine(registry, new FakeGame());
-        List<Row> rows = new Help(registry, namespace -> true).answer("grammar").rows();
+        List<Row> rows = new Help(registry, entry -> true).answer("grammar").rows();
         List<String> lines = rows.stream().map(row -> (String) row.fields().asMap().get("ebnf")).toList();
         List<String> core = Grammar.coreLines();
         assertEquals(core, lines.subList(0, core.size()));

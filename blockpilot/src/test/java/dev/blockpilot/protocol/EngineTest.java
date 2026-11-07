@@ -750,7 +750,7 @@ class EngineTest {
     @Test
     void aCommandFailureEndsTheCommandWithItsError() {
         CommandRegistry registry = new CommandRegistry();
-        registry.addExtensions(List.of(new BlockpilotApi.Registration("sable", "blockpilot",
+        registry.addBuiltIn(List.of(new BlockpilotApi.Registration("sable", "blockpilot",
             CommandSpec.query("info", (context, args) -> {
                 throw new CommandFailure("sable", "info failed: java.lang.NoSuchMethodError: getName");
             }))));

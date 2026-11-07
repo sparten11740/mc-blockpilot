@@ -17,19 +17,17 @@ public final class CommandRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger("Blockpilot");
 
     /** A resolved command: the name it is called by and its spec. */
-    public record Entry(String qualifiedName, String namespace, String registrant, CommandSpec spec) {
+    /** {@code builtIn}: registered by Blockpilot itself, its compat modules included, rather than through the API. */
+    public record Entry(String qualifiedName, String namespace, String registrant, CommandSpec spec, boolean builtIn) {
     }
 
     private final Map<String, Entry> commands = new LinkedHashMap<>();
-    /** The registrant of Blockpilot's own commands, compat modules' included. */
-    static final String BUILT_IN = "blockpilot";
-
     private final Map<String, List<Entry>> namespaces = new TreeMap<>();
     private final Map<String, String> disabled = new ConcurrentHashMap<>();
 
     public void register(CommandSpec spec) {
         spec.freeze();
-        Entry entry = new Entry(spec.name(), "", "blockpilot", spec);
+        Entry entry = new Entry(spec.name(), "", "blockpilot", spec, true);
         String problem = exampleProblem(entry);
         if (problem != null) {
             throw new IllegalStateException("Example of built-in command " + spec.name() + " does not parse: "
@@ -58,7 +56,20 @@ public final class CommandRegistry {
      * one whose example doesn't parse.
      */
     public void addExtensions(Collection<BlockpilotApi.Registration> registrations) {
+        add(registrations, false);
+    }
+
+    /**
+     * Adds Blockpilot's own namespaced commands, as its compat modules make them: built in, so they need no allowing.
+     * Only Blockpilot's code reaches this; whatever comes through the API is an extension, whoever it names.
+     */
+    public void addBuiltIn(Collection<BlockpilotApi.Registration> registrations) {
+        add(registrations, true);
+    }
+
+    private void add(Collection<BlockpilotApi.Registration> registrations, boolean builtIn) {
         for (BlockpilotApi.Registration registration : registrations) {
+            registration.spec().freeze();
             String name = registration.qualifiedName();
             Entry existing = commands.get(name);
             if (existing != null) {
@@ -66,7 +77,8 @@ public final class CommandRegistry {
                     existing.registrant(), registration.registrant(), existing.registrant());
                 continue;
             }
-            Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec());
+            Entry entry = new Entry(name, registration.namespace(), registration.registrant(), registration.spec(),
+                builtIn);
             String problem = exampleProblem(entry);
             if (problem != null) {
                 LOGGER.error("Example of {} (from {}) does not parse, so the command is ignored: {}", name,
@@ -101,11 +113,6 @@ public final class CommandRegistry {
         return disabled.containsKey(namespace) ? List.of() : namespaces.getOrDefault(namespace, List.of());
     }
 
-    /** Whether Blockpilot itself registered the namespace's commands, as its compat modules do, so they need no allowing. */
-    public boolean builtIn(String namespace) {
-        return namespace.isEmpty() || namespaces.getOrDefault(namespace, List.of()).stream()
-            .anyMatch(entry -> entry.registrant().equals(BUILT_IN));
-    }
 
     public Collection<String> namespaces() {
         return namespaces.keySet().stream().filter(namespace -> !disabled.containsKey(namespace)).toList();

@@ -60,11 +60,16 @@ class SafetyEngineTest {
             Refusal.raise("not_allowed", "cmd");
             return () -> Result.ok();
         }));
-        registry.addExtensions(List.of(new BlockpilotApi.Registration("mymod", "mymod",
-            action("gear").freeze()), new BlockpilotApi.Registration("sable", "blockpilot",
-            action("tp").onServer().freeze()), new BlockpilotApi.Registration("sable", "blockpilot",
-            CommandSpec.query("info", (context, args) -> Result.ok()).freeze())));
+        // As the Sable compat module adds its commands: built in.
+        registry.addBuiltIn(List.of(new BlockpilotApi.Registration("sable", "blockpilot", action("tp").onServer()),
+            new BlockpilotApi.Registration("sable", "blockpilot",
+                CommandSpec.query("info", (context, args) -> Result.ok()))));
+        // Through the API, as other mods register, whatever registrant they name.
+        registry.addExtensions(List.of(new BlockpilotApi.Registration("mymod", "mymod", action("gear")),
+            new BlockpilotApi.Registration("claimed", "blockpilot", action("grab")),
+            new BlockpilotApi.Registration("sable", "sable", action("pull"))));
         engine = new Engine(registry, game);
+        engine.setOwnEventNamespaces(List.of("sable"));
     }
 
     private CommandSpec action(String name) {
@@ -165,6 +170,17 @@ class SafetyEngineTest {
     }
 
     @Test
+    void claimingToBeBlockpilotThroughTheApiAllowsNothing() {
+        assertEquals("err not_allowed claimed:grab", run("claimed:grab"));
+    }
+
+    @Test
+    void anotherModsCommandBesideBuiltInOnesIsRefused() {
+        assertEquals("err not_allowed sable:pull", run("sable:pull"));
+        assertEquals(List.of(), ran);
+    }
+
+    @Test
     void anExtensionThatIsntAllowedHasItsEventsDropped() {
         Session session = engine.openSession();
         engine.broadcastExtension(Event.of("mymod:assembled", new Fields()));
@@ -176,8 +192,10 @@ class SafetyEngineTest {
     void helpMarksAnExtensionThatIsntAllowed() {
         String help = run("help");
         assertTrue(help.contains("mymod (extension, not allowed: add it to allowedExtensions"), help);
-        assertTrue(help.contains("sable (extension):"), help);
-        assertTrue(run("help grammar").contains("sable.tp-command") && !run("help grammar").contains("mymod.gear"));
+        assertTrue(help.contains("claimed (extension, not allowed"), help);
+        String grammar = run("help grammar");
+        assertTrue(grammar.contains("sable.tp-command"), grammar);
+        assertTrue(!grammar.contains("sable.pull") && !grammar.contains("mymod.gear"), grammar);
     }
 
     @Test

@@ -48,6 +48,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -139,6 +140,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         engine = new Engine(registry, this);
         engine.setPlayOnly(config.playOnly());
         engine.setAllowedExtensions(config.allowedExtensions);
+        engine.setOwnEventNamespaces(Set.of(SableSupport.NAMESPACE));
         PlayGuard.install(() -> config.playOnly());
         engine.startWatchdog();
         events = new Events(engine);

@@ -60,6 +60,8 @@ public final class Engine {
     private volatile boolean playOnly;
     /** The namespaces of other mods' commands and events that agents may use (allowedExtensions). */
     private volatile Set<String> allowedExtensions = Set.of();
+    /** The namespaces Blockpilot's own compat modules emit events under; events carry no other proof of origin. */
+    private volatile Set<String> ownEventNamespaces = Set.of();
     private volatile long lastClientTick = System.nanoTime();
     /** Whether a Blockpilot step runs on the client thread, which may hold it on purpose (a world load). */
     private volatile boolean clientStepping;
@@ -67,7 +69,7 @@ public final class Engine {
     public Engine(CommandRegistry registry, GameBridge game) {
         this.registry = registry;
         this.game = game;
-        this.help = new Help(registry, this::extensionAllowed);
+        this.help = new Help(registry, this::usable);
         this.parser = new Parser(registry);
         registerBuiltIns();
     }
@@ -84,15 +86,20 @@ public final class Engine {
         allowedExtensions = Set.copyOf(namespaces);
     }
 
-    /** Whether agents may use the namespace's commands and get its events: Blockpilot's own, or allowed. */
-    public boolean extensionAllowed(String namespace) {
-        return registry.builtIn(namespace) || allowedExtensions.contains(namespace);
+    public void setOwnEventNamespaces(Collection<String> namespaces) {
+        ownEventNamespaces = Set.copyOf(namespaces);
     }
 
-    /** An extension's event: delivered like Blockpilot's own when its namespace is allowed, else dropped. */
+    /** Whether agents may use the command: Blockpilot's own, or another mod's whose namespace is allowed. */
+    boolean usable(CommandRegistry.Entry entry) {
+        return entry.builtIn() || allowedExtensions.contains(entry.namespace());
+    }
+
+    /** An extension's event: delivered when its namespace is allowed or one of Blockpilot's own, else dropped. */
     public void broadcastExtension(Event event) {
         String name = event.name();
-        if (extensionAllowed(name.substring(0, Math.max(name.indexOf(':'), 0)))) {
+        String namespace = name.substring(0, Math.max(name.indexOf(':'), 0));
+        if (ownEventNamespaces.contains(namespace) || allowedExtensions.contains(namespace)) {
             broadcast(event);
         }
     }
@@ -142,7 +149,7 @@ public final class Engine {
                 ? Result.error("syntax", line.error()) : Result.skip()).toList();
             return CompletableFuture.completedFuture(new Reply(id, results, session.drainEvents()));
         }
-        CommandGate gate = new CommandGate(playOnly, this::extensionAllowed);
+        CommandGate gate = new CommandGate(playOnly, this::usable);
         List<String> refused = lines.stream()
             .map(line -> line.statement() == null ? null : gate.refusal(line.statement())).toList();
         if (refused.stream().anyMatch(Objects::nonNull)) {

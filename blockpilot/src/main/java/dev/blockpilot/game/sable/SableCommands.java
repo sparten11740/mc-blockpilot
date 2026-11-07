@@ -70,8 +70,10 @@ final class SableCommands {
     private SableCommands() {
     }
 
-    static void register() {
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("list", SableCommands::list)
+    /** Built in: Blockpilot adds them to its registry itself, never through the API that other mods use. */
+    static List<BlockpilotApi.Registration> registrations() {
+        List<BlockpilotApi.Registration> registrations = new ArrayList<>();
+        registrations.add(builtIn(CommandSpec.query("list", SableCommands::list)
             .needsWorld().optionalArg("radius", ArgType.INT)
             .option("side", "server: the integrated server's sub-levels, also those the client has not received "
                 + "(cheats on)", Sides.NAMES)
@@ -81,8 +83,8 @@ final class SableCommands {
             .field("name", "its name, else the start of its UUID").field("id", "UUID").field("at", "world position")
             .field("dist", "blocks from the player").field("speed", "blocks per second")
             .field("size", "blocks along x, y and z of its plot bounds: the world bounds turned back into the plot, "
-                + "so larger while it is turned").example("sable:list 64"));
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("info", SableCommands::info)
+                + "so larger while it is turned").example("sable:list 64")));
+        registrations.add(builtIn(CommandSpec.query("info", SableCommands::info)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).optionalKeyword("brief", "brief")
             .option("side", "server: read the integrated server's copy, also of a sub-level the client has not "
                 + "received, with agl measured in the server's level (cheats on)", Sides.NAMES)
@@ -100,17 +102,17 @@ final class SableCommands {
             .field("box", "world bounds")
             .field("plot", "plot bounds: the world bounds turned back into the plot, so larger while it is turned")
             .field("rides", "the player stands on or rides it")
-            .example("sable:info here"));
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("world", SableCommands::world)
+            .example("sable:info here")));
+        registrations.add(builtIn(CommandSpec.query("world", SableCommands::world)
             .needsWorld().arg("pos", ArgType.POSITION)
             .help("where a point in a sub-level's plot is in the world now")
             .field("world", "world position").field("sub", "the sub-level whose plot holds the point")
-            .example("sable:world 20481032.5,129.5,20481033.5"));
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("plot", SableCommands::plot)
+            .example("sable:world 20481032.5,129.5,20481033.5")));
+        registrations.add(builtIn(CommandSpec.query("plot", SableCommands::plot)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD).arg("pos", ArgType.POSITION)
             .help("the point in a sub-level's plot that is at a world position now; " + REFERENCE)
-            .field("plot", "plot position").field("sub", "the sub-level").example("sable:plot here ~0,1,0"));
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.query("find", SableCommands::find)
+            .field("plot", "plot position").field("sub", "the sub-level").example("sable:plot here ~0,1,0")));
+        registrations.add(builtIn(CommandSpec.query("find", SableCommands::find)
             .needsWorld().arg("sub", ArgType.UUID, ArgType.WORD)
             .arg("what", ArgType.TAG, ArgType.PATTERN, ArgType.ID, ArgType.BLOCK_STATE)
             .optionalArg("limit", ArgType.INT)
@@ -127,8 +129,8 @@ final class SableCommands {
                 + REFERENCE)
             .field("block", "block id").field("at", "plot position").field("world", "world position")
             .field("count", "matches in all, when the limit left some out")
-            .example("sable:find here *door* 3"));
-        BlockpilotApi.register(SableSupport.NAMESPACE, REGISTRANT, CommandSpec.action("tp", SableCommands::teleport)
+            .example("sable:find here *door* 3")));
+        registrations.add(builtIn(CommandSpec.action("tp", SableCommands::teleport)
             .needsServer().form(form -> form.arg("pos", ArgType.POSITION))
             .form(form -> form.arg("sub", ArgType.UUID, ArgType.WORD).arg("what", ArgType.TAG, ArgType.PATTERN,
                 ArgType.ID, ArgType.BLOCK_STATE))
@@ -143,7 +145,12 @@ final class SableCommands {
             .field("sub", "the sub-level").field("dist", "blocks from the player's eyes to the block's centre")
             .field("hidden", "no free spot within reach has the block in sight")
             .field("block", "with <sub> <what>: the block boarded next to").field("target", "its plot position")
-            .example("sable:tp 20481032,129,20481033"));
+            .example("sable:tp 20481032,129,20481033")));
+        return registrations;
+    }
+
+    private static BlockpilotApi.Registration builtIn(CommandSpec spec) {
+        return new BlockpilotApi.Registration(SableSupport.NAMESPACE, REGISTRANT, spec);
     }
 
     private static Result list(CommandContext context, Args args) throws CommandException {
