@@ -305,7 +305,7 @@ public final class Engine {
     }
 
     Sampler sample(CommandContext context, Statement.Sample sample) {
-        return new Sampler(context, sample.queries(), sample.every().ticks(), sample.count(),
+        return new Sampler(context, sample.queries(), sample.every().ticks(), sample.count(), sample.fields(),
             sample.lead().runsOnServer());
     }
 
@@ -329,6 +329,8 @@ public final class Engine {
         private final List<Statement.Call> queries;
         private final int interval;
         private final int count;
+        /** The only fields the rows keep from a result; empty keeps them all. */
+        private final List<String> kept;
         private final boolean serverClock;
         private final List<Row> rows = new ArrayList<>();
         private int elapsed;
@@ -336,11 +338,13 @@ public final class Engine {
         /** Runs that read the server from the client while server load was set, which held the client. */
         private int heldRuns;
 
-        Sampler(CommandContext context, List<Statement.Call> queries, int interval, int count, boolean serverClock) {
+        Sampler(CommandContext context, List<Statement.Call> queries, int interval, int count, List<String> fields,
+            boolean serverClock) {
             this.context = context;
             this.queries = queries;
             this.interval = interval;
             this.count = count;
+            kept = fields;
             this.serverClock = serverClock;
         }
 
@@ -403,6 +407,10 @@ public final class Engine {
             }
         }
 
+        private boolean keeps(String field) {
+            return kept.isEmpty() || kept.contains(field);
+        }
+
         /**
          * The run's row for the query: the tick, on the client clock the client's own tick (the game time it reads can
          * repeat or skip), and the query's name when the sample has several.
@@ -418,8 +426,9 @@ public final class Engine {
             if (!result.isOk()) {
                 fields.put("err", result.code(), "err " + result.code());
             }
-            result.fields().list().forEach(field -> fields.put(field.name(), field.value(), field.text()));
-            if (result.rows() != null && result.fields().get("count") == null) {
+            result.fields().list().stream().filter(field -> keeps(field.name()))
+                .forEach(field -> fields.put(field.name(), field.value(), field.text()));
+            if (result.rows() != null && result.fields().get("count") == null && keeps("count")) {
                 fields.put("count", result.rows().size(), "count=" + result.rows().size());
             }
             return Row.of(String.valueOf(rows.size()), fields);

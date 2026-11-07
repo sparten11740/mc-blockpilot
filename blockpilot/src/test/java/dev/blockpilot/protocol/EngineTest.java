@@ -402,8 +402,8 @@ class EngineTest {
         tick(2);
         assertEquals("err syntax col 8: walk is not a read-only command", text(action));
         assertEquals("err syntax col 25: a sample is taken x1 to x1000 times, not x5000; sample <query> [and "
-            + "<query>…] every <duration> x<n> [clock=server|client] | sample <query> [and <query>…] every <duration> "
-            + "[x<n>] [clock=server|client] while <action|wait>", text(huge));
+            + "<query>…] every <duration> x<n> [clock=server|client] [fields=<name>,…] | sample <query> [and <query>…] "
+            + "every <duration> [x<n>] [clock=server|client] [fields=<name>,…] while <action|wait>", text(huge));
     }
 
     @Test

@@ -29,6 +29,8 @@ integrations built against 2.0.0 keep working.
   the reply carries the take's summary as `! record …`, so a failing step no longer leaves a recording running.
 - **Recording marks:** `record mark <label>` notes the video time and frame a script reached; `record stop` lists the
   marks, and `<name>.marks.json` keeps them beside the video.
+- **Fewer fields in a sample:** `sample … fields=a,b` keeps only those fields in each row, so a wide readout stays
+  readable.
 - **Server steps:** consecutive server steps run back to back on the server's ticks, so `settle=1t` spaces commands
   exactly one server tick apart and `settle=0t` runs them in one.
 - **Fixes:** `server function` of a function without `return` answers `ok`, not `err command_failed`. `wait <N>t`

@@ -51,10 +51,11 @@ final class Grammar {
         sample       ::= "sample" blank+ sample-query
                          ( blank+ "and" blank+ sample-query )*
                          blank+ "every" blank+ duration
-                         ( blank+ count ( blank+ clock )? ( blank+ beside )?
-                         | ( blank+ clock )? blank+ beside )
+                         ( blank+ count ( blank+ sample-option )* ( blank+ beside )?
+                         | ( blank+ sample-option )* blank+ beside )
         beside       ::= "while" blank+ ( wait | call )
         clock        ::= "clock=" ( "server" | "client" )
+        sample-option ::= clock | "fields=" name ( "," name )*
         assert       ::= "assert" blank+ query blank+ predicates
         if           ::= "if" blank+ query blank+ predicates blank+ "then" blank+
                          "?"? statement

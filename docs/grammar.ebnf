@@ -18,9 +18,10 @@ statement ::= wait | sample | assert | if | call
 construct ::= "wait" | "sample" | "assert" | "if"
 wait ::= "wait" blank+ ( duration | "idle" | query blank+ "until" blank+ predicates ( blank+ wait-option )* )
 wait-option ::= ( "stable=" | "every=" ) duration | "timeout=" ( duration | seconds ) | clock
-sample ::= "sample" blank+ sample-query ( blank+ "and" blank+ sample-query )* blank+ "every" blank+ duration ( blank+ count ( blank+ clock )? ( blank+ beside )? | ( blank+ clock )? blank+ beside )
+sample ::= "sample" blank+ sample-query ( blank+ "and" blank+ sample-query )* blank+ "every" blank+ duration ( blank+ count ( blank+ sample-option )* ( blank+ beside )? | ( blank+ sample-option )* blank+ beside )
 beside ::= "while" blank+ ( wait | call )
 clock ::= "clock=" ( "server" | "client" )
+sample-option ::= clock | "fields=" name ( "," name )*
 assert ::= "assert" blank+ query blank+ predicates
 if ::= "if" blank+ query blank+ predicates blank+ "then" blank+ "?"? statement
 query ::= ( command-name - construct ) ( blank+ ( token - stop ) )*

@@ -42,7 +42,8 @@ final class Parser {
     private static final Map<String, CommandSpec.Option> WAIT_OPTIONS = options(
         option("stable", List.of(), ArgType.DURATION), option("every", List.of(), ArgType.DURATION),
         CommandSpec.TIMEOUT, CLOCK);
-    private static final Map<String, CommandSpec.Option> SAMPLE_OPTIONS = options(CLOCK);
+    private static final Map<String, CommandSpec.Option> SAMPLE_OPTIONS = options(CLOCK,
+        option("fields", List.of(), ArgType.TEXT));
 
     private final CommandRegistry registry;
 
@@ -243,13 +244,29 @@ final class Parser {
             } else if (beside == end) {
                 throw expected("a count x<n> or while <action|wait>", end);
             }
-            Statement.Sample sample = new Statement.Sample(List.copyOf(queries), every, count, null);
-            checkClock(sample.lead(), options(beside, SAMPLE_OPTIONS));
+            Map<String, Lexer.Token> options = options(beside, SAMPLE_OPTIONS);
+            Statement.Sample sample = new Statement.Sample(List.copyOf(queries), every, count,
+                fields(options.get("fields")), null);
+            checkClock(sample.lead(), options);
             if (beside == end) {
                 return sample;
             }
             index++;
-            return new Statement.Sample(sample.queries(), every, count, beside(end));
+            return new Statement.Sample(sample.queries(), every, count, sample.fields(), beside(end));
+        }
+
+        /** {@code fields=a,b}: the field names, each as the grammar's {@code name}; none without the option. */
+        private List<String> fields(Lexer.Token token) throws SyntaxError {
+            if (token == null) {
+                return List.of();
+            }
+            List<String> names = List.of(value(token).split(",", -1));
+            for (String name : names) {
+                if (!Lexicon.isName(name)) {
+                    throw error(token.column(), "fields= takes field names separated by commas, not " + name);
+                }
+            }
+            return names;
         }
 
         /** The action or wait after {@code while}. */
@@ -456,7 +473,8 @@ final class Parser {
                         + String.join("=, ", allowed.keySet().stream().sorted().toList()) + "=)");
                 }
                 String value = token.text().substring(equals + 1);
-                if (option.value().match(value) == null) {
+                // A text value, as fields= takes, is any token; the construct checks it itself.
+                if (!option.value().isText() && option.value().match(value) == null) {
                     throw error(token.column(), name + "= takes " + option.expectation() + ", got " + value);
                 }
                 if (options.put(name, token) != null) {

@@ -24,8 +24,12 @@ sealed interface Statement {
     record WaitUntil(Call query, Condition condition, int stable, int every, Duration timeout) implements Statement {
     }
 
-    /** {@code during}: the action or wait sampled beside, or null; {@code count} caps the runs. */
-    record Sample(List<Call> queries, Duration every, int count, Statement during) implements Statement {
+    /**
+     * {@code during}: the action or wait sampled beside, or null; {@code count} caps the runs; {@code fields}: the
+     * only fields its rows keep, besides tick, query and err, all of them when empty.
+     */
+    record Sample(List<Call> queries, Duration every, int count, List<String> fields, Statement during)
+        implements Statement {
         /** The query whose side the sample runs on, gated as it starts: its first client-side one, else its first. */
         Call lead() {
             return queries.stream().filter(query -> !query.runsOnServer()).findFirst()

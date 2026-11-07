@@ -13,7 +13,8 @@ and the observed values when the predicates (as in `wait … until`) don't hold,
 <command>` runs the command only when they do. A predicate's value can name another field of the same result, as in
 `hp<$max_hp`. Every tick number in a reply (`tick query`, `sample` rows, waits, `sounds`, `messages` and their `since=`,
 which also takes a duration back from now such as `since=60t`) is the same clock: the integrated server's game time in
-singleplayer, else the client's. `help`, `help <command|group>` and `help errors` give the full reference.
+singleplayer, else the client's. `sample … fields=a,b` keeps only those fields in each row. `help`, `help
+<command|group>` and `help errors` give the full reference.
 
 The language has a grammar, written in EBNF in the `command-language` spec, and a recursive-descent parser that follows
 it; `help grammar` prints it, with one production per command generated from that command's declaration. A whole script
