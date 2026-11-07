@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -29,6 +30,12 @@ public final class Config {
     public int maxRows = 24;
     /** The ffmpeg {@code record} encodes with; empty: the first on the PATH or in the platform's usual folders. */
     public String ffmpeg = "";
+    /** Players whose chat reaches agents with its text, by name ignoring case; nobody else's does. */
+    public List<String> trustedPlayers = new ArrayList<>();
+    /** {@code all}, or {@code play} to hold agents to playing; any other value counts as {@code play}. */
+    public String agentCommands = "all";
+
+    private transient Path file;
 
     public static Config load(Path file) {
         Config config = new Config();
@@ -39,11 +46,29 @@ public final class Config {
                     config = read;
                 }
             }
+            if (config.trustedPlayers == null) {
+                config.trustedPlayers = new ArrayList<>();
+            }
+            if (config.agentCommands == null) {
+                config.agentCommands = "all";
+            }
             Files.createDirectories(file.getParent());
             Files.writeString(file, GSON.toJson(config), StandardCharsets.UTF_8);
         } catch (IOException | JsonParseException e) {
             LOGGER.warn("Could not read {}; using defaults", file, e);
         }
+        config.file = file;
         return config;
+    }
+
+    public boolean playOnly() {
+        return !agentCommands.equals("all");
+    }
+
+    /** Writes the config back through a temporary file, so a crash can't leave half of it. */
+    public void save() throws IOException {
+        Path temporary = file.resolveSibling(file.getFileName() + ".tmp");
+        Files.writeString(temporary, GSON.toJson(this), StandardCharsets.UTF_8);
+        Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 }

@@ -1,10 +1,12 @@
 package dev.blockpilot.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,5 +38,31 @@ class ConfigTest {
         Path file = directory.resolve("config.json");
         Files.writeString(file, "{ not json");
         assertEquals(25599, Config.load(file).port);
+    }
+
+    @Test
+    void trustsNobodyAndAllowsEveryCommandByDefault() {
+        Config config = Config.load(directory.resolve("config.json"));
+        assertEquals(List.of(), config.trustedPlayers);
+        assertFalse(config.playOnly());
+    }
+
+    @Test
+    void savesTheTrustedPlayers() throws Exception {
+        Path file = directory.resolve("config.json");
+        Config config = Config.load(file);
+        config.trustedPlayers.add("Steve");
+        config.save();
+        assertEquals(List.of("Steve"), Config.load(file).trustedPlayers);
+        assertFalse(Files.exists(directory.resolve("config.json.tmp")));
+    }
+
+    @Test
+    void anUnknownCommandProfileHoldsAgentsToPlaying() throws Exception {
+        Path file = directory.resolve("config.json");
+        Files.writeString(file, "{\"agentCommands\": \"everything\", \"trustedPlayers\": null}");
+        Config config = Config.load(file);
+        assertTrue(config.playOnly());
+        assertEquals(List.of(), config.trustedPlayers);
     }
 }
