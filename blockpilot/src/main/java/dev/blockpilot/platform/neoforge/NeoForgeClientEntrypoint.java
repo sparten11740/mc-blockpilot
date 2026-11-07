@@ -64,7 +64,8 @@ public final class NeoForgeClientEntrypoint {
         NeoForge.EVENT_BUS.addListener(RenderGuiEvent.Post.class,
             event -> ClientPlatform.hooks().onHudRender(event.getGuiGraphics()));
         NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class,
-            event -> ClientPlatform.hooks().onChatReceived(event.getMessage()));
+            event -> ClientPlatform.hooks().onChatReceived(event.getMessage(),
+                event.isSystem() ? null : event.getSender()));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class,
             event -> ClientPlatform.hooks().onScreenInit(event.getScreen()));
         NeoForge.EVENT_BUS.addListener(GameShuttingDownEvent.class, event -> ClientPlatform.hooks().onClientStopping());

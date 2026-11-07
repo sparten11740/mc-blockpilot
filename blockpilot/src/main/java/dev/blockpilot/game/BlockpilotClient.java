@@ -29,6 +29,7 @@ import dev.blockpilot.game.observe.Screenshots;
 import dev.blockpilot.game.perf.Perf;
 import dev.blockpilot.game.record.Recorder;
 import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.safety.TrustTracker;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Config;
@@ -45,6 +46,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import net.minecraft.client.KeyMapping;
@@ -81,6 +83,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile Endpoint endpoint;
     private volatile Path endpointFile;
     private volatile Events events;
+    private volatile TrustTracker trust;
     private volatile boolean enabled = true;
     private long ticks;
     private boolean autoJoined;
@@ -115,6 +118,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         return config;
     }
 
+    public TrustTracker trust() {
+        return trust;
+    }
+
     KeyMapping toggleKey() {
         return toggleKey;
     }
@@ -123,6 +130,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     public void onLoadComplete() {
         Path directory = ClientPlatform.configDir().resolve(Blockpilot.MOD_ID);
         config = Config.load(directory.resolve("config.json"));
+        trust = new TrustTracker(config);
         CommandRegistry registry = new CommandRegistry();
         engine = new Engine(registry, this);
         engine.startWatchdog();
@@ -232,6 +240,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
         restoreOnWorldExit();
+        trust.tick();
         Perf.clientTick();
         if (++ticks % 200 == 0) {
             // A loader or mod may reload the logging setup, which drops our appender.
@@ -350,11 +359,12 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
-    public void onChatReceived(Component message) {
+    public void onChatReceived(Component message, UUID sender) {
         chatSinceTick.incrementAndGet();
-        Observations.message("chat", message);
+        Component judged = trust.judge(message, sender);
+        Observations.message("chat", judged);
         if (events != null) {
-            events.chat(message);
+            events.chat(judged);
         }
     }
 

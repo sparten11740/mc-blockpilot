@@ -36,10 +36,11 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         HudRenderCallback.EVENT.register((graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
         //?}
         ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
-            ClientPlatform.hooks().onChatReceived(message));
+            ClientPlatform.hooks().onChatReceived(message,
+                signedMessage != null ? signedMessage.sender() : null));
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             if (!overlay) {
-                ClientPlatform.hooks().onChatReceived(message);
+                ClientPlatform.hooks().onChatReceived(message, null);
             }
         });
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> ClientPlatform.hooks().onScreenInit(screen));
