@@ -172,8 +172,6 @@ https://github.com/user-attachments/assets/cfaabba8-f8eb-48d2-9dc7-678127e7bf45
 - Blockpilot can only limit what happens through the game. Keeping the agent off the computer it runs on is the job of
   the agent's own setup; [safety.md](docs/safety.md) shows one for Claude Code.
 
-##
-
 ## License
 
 Apache-2.0 or MIT, at your option; see [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT). Neither
