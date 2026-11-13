@@ -2,6 +2,11 @@
 
 ## 1.1.1 (unreleased)
 
+- **Minecraft 1.20.1, on Fabric and Forge:** two new jars, for Fabric 1.20.1 with Fabric API 0.92 and Fabric Loader
+  0.15 or newer, and for Forge 47.1 or newer, which NeoForge 47.1 loads too; both run on Java 17. Every command answers
+  as on 1.21.1. `tick freeze`, `step` and `rate` run on Blockpilot's own port of the tick rate manager, which 1.20.1
+  lacks, and a function without `return` answers with the number of commands it ran, as 1.20.1's game counts it
+  ([commands.md](docs/commands.md)). The extension API jar now targets Java 17 too.
 - **Fixes:** `place` takes the first neighbour of the cell whose face it can see, in the same order as before (below,
   above, north, south, west, east), so it fills a hole two blocks ahead from the hole's far side and places above the
   eyes beside a block, where it failed with `err out_of_reach` because the first neighbour's face was hidden. Wherever

@@ -38,7 +38,7 @@ and there a name proves nothing. Don't trust names on such a server.
 
 Development runs log in with offline accounts, so their servers are unverified. Launched with
 `-Pblockpilot.trustUnverified`, a development client applies the list there all the same, and `trust` reports
-`trust_unverified`. Only a development environment honours it (NeoForge and Fabric say whether they are one); a
+`trust_unverified`. Only a development environment honours it (each mod loader says whether it is one); a
 player's install and the vanilla targets ignore it.
 
 ## Other mods' commands

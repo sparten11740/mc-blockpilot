@@ -244,18 +244,20 @@ change to the settings applies within a second ([safety.md](safety.md)).
   them one server tick apart and `settle=0t` runs them in one. A failing command, a failing `execute if` test among
   them, is `err command_failed` with its `result`, which `?server …` lets the script carry on past. A command that
   reports no result, such as a function without `return`, is `ok success=true` without `result`, unless it sent a
-  failure. A `;` inside the command, as in an NBT int array, is written `\;` so it doesn't end the step:
-  `server data modify storage test:x ids set value [I\;1,2]`.
+  failure. On 1.20.1 the game gives a function the number of commands it ran as its result. A `;` inside the command, as
+  in an NBT int array, is written `\;` so it doesn't end the step: `server data modify storage test:x ids set value
+  [I\;1,2]`.
 - `nbt <pos|e<id>|uuid> [path=]`: the server-side data of a block entity or entity, SNBT in text and JSON in json.
-- `tick freeze|unfreeze|step <n>|rate <tps>|query`.
+- `tick freeze|unfreeze|step <n>|rate <tps>|query`. 1.20.1 has no tick rate manager, which came with `/tick` in 1.20.3,
+  so there Blockpilot runs its own port of it, which skips and times the same things; the client follows its rate too.
 - `gametest run <selector>`: runs the game's own GameTests whose ids match the selector, `*` for any run of characters:
   `namespace:path` on 26.x, from data packs and mods (`gametest run mymod:*`), and `class.method` in lower case on
-  1.21.1, registered by mods (`gametest run mymod.*`). The tests build their structures beside the player, as `/test
-  run` does, and `server test clearall` removes them. It answers once every test has ended, `passed=` and `failed=` with
-  a row per test, `passed`, or `failed` and its message; `err no_test` when nothing matches. NeoForge runs GameTests
-  only in a development environment started with `-Dneoforge.enableGameTest=true` (Blockpilot's dev runs set it), and
-  answers `err unsupported` without it. A data pack's tests load with the world, so after adding one, join the world
-  again.
+  1.20.1 and 1.21.1, registered by mods (`gametest run mymod.*`). The tests build their structures beside the player, as
+  `/test run` does, and `server test clearall` removes them. It answers once every test has ended, `passed=` and
+  `failed=` with a row per test, `passed`, or `failed` and its message; `err no_test` when nothing matches. NeoForge
+  runs GameTests only in a development environment started with `-Dneoforge.enableGameTest=true` (Blockpilot's dev runs
+  set it), and answers `err unsupported` without it; Forge the same, with `-Dforge.enableGameTest=true`. A data pack's
+  tests load with the world, so after adding one, join the world again.
 - `block`, `blocks` and `find … side=server` read the integrated server's copy.
 
 The `integrated` commands, `snapshot` and `side=server` reads need a singleplayer world with commands allowed (cheats
@@ -277,7 +279,7 @@ needs full isolation.
     past the first 65,536 a capture sees count as `block_change_positions_untracked`);
   - FPS and 1% low, time per block-entity and entity type, per renderer, per particle type with live counts and the
     mod and class that spawned them, or for those the server sent `server` and, in singleplayer, the mod and class that
-    sent them, and per render stage on NeoForge;
+    sent them, and per render stage on NeoForge and Forge;
   - network, counting the packets inside bundles by their own type too;
   - the chunks loaded in the world and in sub-level plots and, with Sable, the sub-levels loaded, in a `loaded` row.
 
