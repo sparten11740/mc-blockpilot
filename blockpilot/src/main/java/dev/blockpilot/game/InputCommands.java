@@ -412,7 +412,8 @@ final class InputCommands {
 
     /** Lets go of the keys in reverse order, so modifiers held first go up last. */
     private static void release(List<InputConstants.Key> keys) {
-        for (InputConstants.Key key : keys.reversed()) {
+        for (int index = keys.size() - 1; index >= 0; index--) {
+            InputConstants.Key key = keys.get(index);
             if (key.getType() == InputConstants.Type.MOUSE) {
                 InputState.releaseButton(key.getValue());
             } else {

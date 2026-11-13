@@ -18,6 +18,16 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+// The 1.20.1 nodes ship classes for the Java 17 that 1.20.1 is played with. Their unit tests and the API fixture don't
+// ship, and need Java 21: the tests use record patterns, and the fixture's API 2.0.0 jar is built for Java 21.
+if (property("java_version").toString().toInt() < 21) {
+    val toolchains = the<JavaToolchainService>()
+    val java21 = toolchains.compilerFor { languageVersion = JavaLanguageVersion.of(21) }
+    tasks.named<JavaCompile>("compileTestJava") { javaCompiler = java21 }
+    tasks.matching { it.name == "compileApiFixtureJava" }.configureEach { (this as JavaCompile).javaCompiler = java21 }
+    tasks.named<Test>("test") { javaLauncher = toolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) } }
+}
+
 // Both licenses, named so they can't clash with another jar's.
 tasks.named<Jar>("jar") {
     from(rootProject.files("LICENSE-APACHE", "LICENSE-MIT")) { rename { "${it}_$modId" } }

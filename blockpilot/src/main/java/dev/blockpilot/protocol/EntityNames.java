@@ -33,7 +33,7 @@ final class EntityNames {
                 resolved.add(resolve(value, game, ids));
             }
             // Every argument has a value, and the accessors read its first.
-            arguments.put(name, resolved.getFirst());
+            arguments.put(name, resolved.get(0));
             values.put(name, resolved);
         }
         Map<String, Args.Value> options = new LinkedHashMap<>();

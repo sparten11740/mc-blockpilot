@@ -31,31 +31,44 @@ final class ConfigValues {
             }
             return items;
         }
-        return switch (defaultValue) {
-            case Boolean ignored -> switch (text) {
+        if (defaultValue instanceof Boolean) {
+            return switch (text) {
                 case "true", "on" -> true;
                 case "false", "off" -> false;
                 default -> null;
             };
-            case Integer ignored -> number(text, Integer::valueOf);
-            case Long ignored -> number(text, Long::valueOf);
-            case Double ignored -> finite(number(text, Double::valueOf));
-            case Float ignored -> finite(number(text, Float::valueOf));
-            case Enum<?> constant -> Arrays.stream(constant.getDeclaringClass().getEnumConstants())
+        }
+        if (defaultValue instanceof Integer) {
+            return number(text, Integer::valueOf);
+        }
+        if (defaultValue instanceof Long) {
+            return number(text, Long::valueOf);
+        }
+        if (defaultValue instanceof Double) {
+            return finite(number(text, Double::valueOf));
+        }
+        if (defaultValue instanceof Float) {
+            return finite(number(text, Float::valueOf));
+        }
+        if (defaultValue instanceof Enum<?> constant) {
+            return Arrays.stream(constant.getDeclaringClass().getEnumConstants())
                 .filter(each -> each.name().equalsIgnoreCase(text)).findFirst().orElse(null);
-            case String ignored -> text;
-            default -> null;
-        };
+        }
+        return defaultValue instanceof String ? text : null;
     }
 
     /** The value as the file writes it: enum names, lists separated by commas. */
     static String text(Object value) {
-        return switch (value) {
-            case null -> "none";
-            case Enum<?> constant -> constant.name();
-            case List<?> list -> list.stream().map(ConfigValues::text).collect(Collectors.joining(","));
-            default -> String.valueOf(value);
-        };
+        if (value == null) {
+            return "none";
+        }
+        if (value instanceof Enum<?> constant) {
+            return constant.name();
+        }
+        if (value instanceof List<?> list) {
+            return list.stream().map(ConfigValues::text).collect(Collectors.joining(","));
+        }
+        return String.valueOf(value);
     }
 
     /** What the key takes: {@code true|false}, a range like {@code 0..64}, the names the mod accepts, a kind. */
@@ -65,17 +78,23 @@ final class ConfigValues {
             return "items separated by commas, each " + (sample == null ? "text" : takes(sample, null, null, null,
                 each -> true));
         }
-        return switch (defaultValue) {
-            case Boolean ignored -> "true|false";
-            case Number ignored when min != null && max != null -> text(min) + ".." + text(max);
-            case Integer ignored -> "a whole number";
-            case Long ignored -> "a whole number";
-            case Number ignored -> "a number";
-            case Enum<?> constant -> Arrays.stream(constant.getDeclaringClass().getEnumConstants())
+        if (defaultValue instanceof Boolean) {
+            return "true|false";
+        }
+        if (defaultValue instanceof Number) {
+            if (min != null && max != null) {
+                return text(min) + ".." + text(max);
+            }
+            return defaultValue instanceof Integer || defaultValue instanceof Long ? "a whole number" : "a number";
+        }
+        if (defaultValue instanceof Enum<?> constant) {
+            return Arrays.stream(constant.getDeclaringClass().getEnumConstants())
                 .filter(accepts).map(Enum::name).collect(Collectors.joining("|"));
-            case String ignored -> "text";
-            default -> "a " + defaultValue.getClass().getSimpleName() + ", which can't be written as text";
-        };
+        }
+        if (defaultValue instanceof String) {
+            return "text";
+        }
+        return "a " + defaultValue.getClass().getSimpleName() + ", which can't be written as text";
     }
 
     private static Object sample(List<?> list, Object current) {

@@ -26,16 +26,22 @@ final class CommandGate {
 
     /** The first refused command in the step, nested ones included, as the refusal names it; null when none. */
     String refusal(Statement statement) {
-        return switch (statement) {
-            case Statement.Call call -> refusal(call);
-            case Statement.Assert check -> refusal(check.query());
-            case Statement.If check -> first(Stream.of(check.query(), check.then()));
-            case Statement.WaitUntil wait -> refusal(wait.query());
-            case Statement.Sample sample -> first(Stream.concat(sample.queries().stream(),
-                Stream.ofNullable(sample.during())));
-            case Statement.WaitTicks wait -> null;
-            case Statement.WaitIdle wait -> null;
-        };
+        if (statement instanceof Statement.Call call) {
+            return refusal(call);
+        }
+        if (statement instanceof Statement.Assert check) {
+            return refusal(check.query());
+        }
+        if (statement instanceof Statement.If check) {
+            return first(Stream.of(check.query(), check.then()));
+        }
+        if (statement instanceof Statement.WaitUntil wait) {
+            return refusal(wait.query());
+        }
+        if (statement instanceof Statement.Sample sample) {
+            return first(Stream.concat(sample.queries().stream(), Stream.ofNullable(sample.during())));
+        }
+        return null;
     }
 
     private String first(Stream<? extends Statement> statements) {

@@ -237,12 +237,13 @@ public final class ConfigCommands {
 
     /** JSON keeps switches and numbers as they are; names and lists of them as text. */
     private static Object json(Object value) {
-        return switch (value) {
-            case null -> null;
-            case Enum<?> constant -> constant.name();
-            case List<?> list -> list.stream().map(ConfigCommands::json).toList();
-            default -> value;
-        };
+        if (value instanceof Enum<?> constant) {
+            return constant.name();
+        }
+        if (value instanceof List<?> list) {
+            return list.stream().map(ConfigCommands::json).toList();
+        }
+        return value;
     }
 
     private static synchronized void remember(Original original) {
