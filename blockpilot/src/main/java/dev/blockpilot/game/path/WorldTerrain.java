@@ -36,7 +36,12 @@ public final class WorldTerrain implements Terrain {
     @Override
     public boolean passable(int x, int y, int z) {
         BlockState state = state(x, y, z);
+        //? if >=1.21 {
         return state.isPathfindable(PathComputationType.LAND) && !state.getFluidState().is(FluidTags.LAVA);
+        //?} else {
+        /*return state.isPathfindable(level, cursor, PathComputationType.LAND)
+            && !state.getFluidState().is(FluidTags.LAVA);
+        *///?}
     }
 
     @Override

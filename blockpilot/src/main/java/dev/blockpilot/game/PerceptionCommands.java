@@ -201,7 +201,11 @@ final class PerceptionCommands {
         }
         List<String> effects = new ArrayList<>();
         for (MobEffectInstance effect : player.getActiveEffects()) {
+            //? if >=1.21 {
             effect.getEffect().unwrapKey().ifPresent(key ->
+            //?} else {
+            /*BuiltInRegistries.MOB_EFFECT.getResourceKey(effect.getEffect()).ifPresent(key ->
+            *///?}
                 effects.add(Ids.of(key.location()) + (effect.getAmplifier() + 1)));
         }
         if (!effects.isEmpty()) {

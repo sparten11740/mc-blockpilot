@@ -2,6 +2,10 @@ package dev.blockpilot.game.observe;
 
 import dev.blockpilot.game.observe.CameraPath.Vec;
 import net.minecraft.world.entity.Entity;
+//? if <1.21 {
+/*import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+*///?}
 import net.minecraft.world.phys.Vec3;
 
 /** {@code camera follow}: the camera kept at an offset from an entity, read where each frame draws it. */
@@ -19,13 +23,13 @@ final class CameraFollow {
      */
     static CameraControl.Placement placement(Entity entity, Vec offset, boolean turning, CameraControl.Point target) {
         CameraPath.Heading heading = new CameraPath.Heading(LAG_TICKS);
-        Vec now = turning ? CameraPath.aroundVertical(offset, -entity.getPreciseBodyRotation(1)) : offset;
+        Vec now = turning ? CameraPath.aroundVertical(offset, -bodyRotation(entity, 1)) : offset;
         CameraControl.Point position = CameraControl.held(partialTick -> {
             if (entity.isRemoved()) {
                 return null;
             }
             Vec world = turning ? CameraPath.aroundVertical(offset, -heading.at(CameraControl.ticks()
-                + CameraControl.realPartialTick(), entity.getPreciseBodyRotation(partialTick))) : offset;
+                + CameraControl.realPartialTick(), bodyRotation(entity, partialTick))) : offset;
             return entity.getPosition(partialTick).add(world.x(), world.y(), world.z());
         }, entity.position().add(now.x(), now.y(), now.z()));
         return new CameraControl.Placement(position, CameraControl.held(target, target.at(1)));
@@ -35,6 +39,16 @@ final class CameraFollow {
     static Vec offsetOf(Entity entity, Vec3 point, boolean turning) {
         Vec3 delta = point.subtract(entity.position());
         Vec world = new Vec(delta.x, delta.y, delta.z);
-        return turning ? CameraPath.aroundVertical(world, entity.getPreciseBodyRotation(1)) : world;
+        return turning ? CameraPath.aroundVertical(world, bodyRotation(entity, 1)) : world;
+    }
+
+    /** The way the entity's body faces, between its last two ticks. */
+    private static float bodyRotation(Entity entity, float partialTick) {
+        //? if >=1.21 {
+        return entity.getPreciseBodyRotation(partialTick);
+        //?} else {
+        /*return entity instanceof LivingEntity living ? Mth.lerp(partialTick, living.yBodyRotO, living.yBodyRot)
+            : Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
+        *///?}
     }
 }

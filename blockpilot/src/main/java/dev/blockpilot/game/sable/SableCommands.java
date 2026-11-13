@@ -495,8 +495,13 @@ final class SableCommands {
      * The centre of the shape, not of the block: a lever's shape ends below the block's centre.
      */
     private static boolean sees(Level level, Vec3 eyes, BlockPos target) {
+        //? if >=1.21 {
         BlockHitResult hit = level.clip(new ClipContext(eyes, Shapes.centre(level, target), ClipContext.Block.OUTLINE,
             ClipContext.Fluid.NONE, CollisionContext.empty()));
+        //?} else {
+        /*BlockHitResult hit = level.clip(new ClipContext(eyes, Shapes.centre(level, target), ClipContext.Block.OUTLINE,
+            ClipContext.Fluid.NONE, null));
+        *///?}
         return hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(target);
     }
 

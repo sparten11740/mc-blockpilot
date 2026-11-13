@@ -80,7 +80,7 @@ final class ContainerCommands {
             @Override
             public Result tick() throws CommandException {
                 Vec3 center = Vec3.atCenterOf(pos);
-                if (step == 0 && center.distanceTo(player().getEyePosition()) > player().blockInteractionRange() - 0.5) {
+                if (step == 0 && center.distanceTo(player().getEyePosition()) > PlayerActions.blockReach() - 0.5) {
                     if (walking == null) {
                         walking = new Navigator(session, () -> Vec3.atBottomCenterOf(pos), 3);
                     }

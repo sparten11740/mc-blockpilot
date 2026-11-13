@@ -140,7 +140,11 @@ final class SessionCommands {
                 throw new CommandException("join_failed", "no save folder " + name + "; see worlds");
             }
             ServerCommands.freezeOnStart(args.hasOption("tick") ? name : null);
+            //? if >=1.21 {
             minecraft().createWorldOpenFlows().openWorld(name, () -> ClientScreens.open(new TitleScreen()));
+            //?} else {
+            /*minecraft().createWorldOpenFlows().loadLevel(new TitleScreen(), name);
+            *///?}
         } else {
             String address = name;
             ServerList list = new ServerList(minecraft());
@@ -151,11 +155,19 @@ final class SessionCommands {
                 data = list.get(index);
                 address = data.ip;
             }
+            //? if >=1.21 {
             if (data == null) {
                 data = new ServerData(address, address, ServerData.Type.OTHER);
             }
             ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft(),
                 ServerAddress.parseString(address), data, false, null);
+            //?} else {
+            /*if (data == null) {
+                data = new ServerData(address, address, false);
+            }
+            ConnectScreen.startConnecting(new JoinMultiplayerScreen(new TitleScreen()), minecraft(),
+                ServerAddress.parseString(address), data, false);
+            *///?}
         }
         return new Joined(name, world ? new ExperimentalWorlds(TestWorlds.isTestWorld(name)) : null);
     }
@@ -243,13 +255,19 @@ final class SessionCommands {
         } else {
             minecraft.disconnectWithProgressScreen();
         }
-        *///?} else {
+        *///?} else if >=1.21 {
         if (local) {
             minecraft.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
         } else {
             minecraft.disconnect();
         }
-        //?}
+        //?} else {
+        /*if (local) {
+            minecraft.clearLevel(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        } else {
+            minecraft.clearLevel();
+        }
+        *///?}
         ClientScreens.open(new TitleScreen());
     }
 

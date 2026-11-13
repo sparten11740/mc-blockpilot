@@ -45,11 +45,15 @@ public abstract class ConnectionMixin {
     /*@Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",
         at = @At("HEAD"))
     private void blockpilot$sent(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo info) {
-    *///?} else {
+    *///?} else if >=1.21 {
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;Z)V",
         at = @At("HEAD"))
     private void blockpilot$sent(Packet<?> packet, PacketSendListener listener, boolean flush, CallbackInfo info) {
-    //?}
+    //?} else {
+    /*@Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;)V",
+        at = @At("HEAD"))
+    private void blockpilot$sent(Packet<?> packet, PacketSendListener listener, CallbackInfo info) {
+    *///?}
         if (Perf.active && getReceiving() == PacketFlow.CLIENTBOUND) {
             Perf.packet(false, PacketNames.of(packet));
         }

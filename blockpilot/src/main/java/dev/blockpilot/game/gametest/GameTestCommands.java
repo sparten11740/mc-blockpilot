@@ -11,6 +11,9 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
+//? if <1.21 {
+/*import java.util.Collection;
+*///?}
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -56,7 +59,11 @@ public final class GameTestCommands {
     private static final class Run implements Action, GameTestListener {
         private final int count;
         private final Map<String, Fields> ended = new TreeMap<>();
+        //? if >=1.21 {
         private GameTestRunner runner;
+        //?} else {
+        /*private Collection<GameTestInfo> runner;
+        *///?}
 
         Run(int count) {
             this.count = count;
@@ -71,6 +78,7 @@ public final class GameTestCommands {
         public void testStructureLoaded(GameTestInfo info) {
         }
 
+        //? if >=1.21 {
         @Override
         public void testPassed(GameTestInfo info, GameTestRunner runner) {
             end(GameTests.id(info), "passed", null);
@@ -85,6 +93,17 @@ public final class GameTestCommands {
         public void testAddedForRerun(GameTestInfo original, GameTestInfo copy, GameTestRunner runner) {
             // Runs without retries never rerun a test.
         }
+        //?} else {
+        /*@Override
+        public void testPassed(GameTestInfo info) {
+            end(GameTests.id(info), "passed", null);
+        }
+
+        @Override
+        public void testFailed(GameTestInfo info) {
+            end(GameTests.id(info), "failed", GameTests.message(info));
+        }
+        *///?}
 
         @Override
         public Result tick() {
@@ -99,7 +118,11 @@ public final class GameTestCommands {
         @Override
         public void cancel() {
             if (runner != null) {
+                //? if >=1.21 {
                 runner.stop();
+                //?} else {
+                /*GameTests.stop();
+                *///?}
             }
         }
 

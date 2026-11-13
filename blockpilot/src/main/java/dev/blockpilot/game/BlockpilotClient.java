@@ -97,6 +97,8 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private volatile boolean enabled = true;
     private long ticks;
     private boolean autoJoined;
+    /** The world to join once the game has loaded its resources; null for none. */
+    private String pendingJoin;
     private boolean wasInWorld;
     /** Ticks until the game closes after {@code quit}, or -1. */
     private int closeIn = -1;
@@ -254,6 +256,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onClientTickEnd() {
+        if (pendingJoin != null && ClientScreens.overlay() == null) {
+            joinOnLaunch(pendingJoin);
+            pendingJoin = null;
+        }
         if (engine == null) {
             return;
         }
@@ -435,7 +441,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     /**
      * {@code -Dblockpilot.autojoin=<world>} joins that world once the title screen (or the first-launch onboarding
-     * screen) shows; with {@code -Dblockpilot.autocreate=flat|void|normal} a missing world is created first.
+     * screen) shows and the game has loaded its resources, on the next client tick without the loading overlay: on
+     * 1.20.1 the title screen comes up under it, before the shaders have loaded. With
+     * {@code -Dblockpilot.autocreate=flat|void|normal} a missing world is created first.
      */
     private void autoJoin(Screen screen) {
         String world = System.getProperty("blockpilot.autojoin");
@@ -444,6 +452,10 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             return;
         }
         autoJoined = true;
+        pendingJoin = world;
+    }
+
+    private void joinOnLaunch(String world) {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.options.onboardAccessibility = false;
         minecraft.options.save();
@@ -451,7 +463,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         minecraft.execute(() -> {
             try {
                 if (TestWorlds.exists(world)) {
+                    //? if >=1.21 {
                     minecraft.createWorldOpenFlows().openWorld(world, () -> ClientScreens.open(new TitleScreen()));
+                    //?} else {
+                    /*minecraft.createWorldOpenFlows().loadLevel(new TitleScreen(), world);
+                    *///?}
                 } else if (preset != null) {
                     TestWorlds.create(world, preset);
                 } else {
@@ -546,7 +562,11 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     @Override
     public boolean serverPaused() {
         var server = Minecraft.getInstance().getSingleplayerServer();
+        //? if >=1.21 {
         return server != null && server.isPaused();
+        //?} else {
+        /*return server != null && Minecraft.getInstance().isPaused();
+        *///?}
     }
 
     @Override

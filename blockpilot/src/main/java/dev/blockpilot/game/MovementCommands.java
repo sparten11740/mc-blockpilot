@@ -129,7 +129,7 @@ final class MovementCommands {
             }
             Fields fields = hit();
             if ("nothing".equals(fields.get("aim"))) {
-                double reach = entity ? player().entityInteractionRange() : player().blockInteractionRange();
+                double reach = entity ? PlayerActions.entityReach() : PlayerActions.blockReach();
                 fields.put("dist", Numbers.round(player().getEyePosition().distanceTo(point)))
                     .put("reach", Numbers.round(reach));
             }

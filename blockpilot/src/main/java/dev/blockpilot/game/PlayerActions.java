@@ -60,6 +60,24 @@ final class PlayerActions {
         return minecraft().player;
     }
 
+    /** How far the player reaches blocks: its attribute, or on 1.20.1 the game mode's pick range. */
+    static double blockReach() {
+        //? if >=1.21 {
+        return player().blockInteractionRange();
+        //?} else {
+        /*return minecraft().gameMode.getPickRange();
+        *///?}
+    }
+
+    /** How far the player reaches entities: its attribute, or on 1.20.1 the 3 blocks, 6 in creative, the pick uses. */
+    static double entityReach() {
+        //? if >=1.21 {
+        return player().entityInteractionRange();
+        //?} else {
+        /*return minecraft().gameMode.hasFarPickRange() ? 6 : 3;
+        *///?}
+    }
+
     /**
      * Closes an open screen (container, inventory, menu) the way Esc would, so world actions and inventory clicks
      * reach the world and the player's own inventory instead of a screen left open by an earlier command.
@@ -136,7 +154,7 @@ final class PlayerActions {
         if (toward.lengthSqr() == 0) {
             return false;
         }
-        Vec3 end = eyes.add(toward.normalize().scale(player.blockInteractionRange()));
+        Vec3 end = eyes.add(toward.normalize().scale(blockReach()));
         BlockHitResult hit = level.clip(new ClipContext(eyes, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE,
             player));
         return hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(block) && hit.getDirection() == face;

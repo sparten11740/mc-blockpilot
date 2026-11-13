@@ -32,7 +32,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerTickRateManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 //? if >=26.1 {
@@ -76,7 +75,8 @@ final class ServerCommands {
                 + "<command>); a command that fails, an execute if test that doesn't pass among them, answers err "
                 + "command_failed with its message and result, which ends the script unless the step starts with ? "
                 + "(?server execute if block ~ ~-1 ~ minecraft:stone); a command that reports no result, such as a "
-                + "function without return, answers ok success=true without result unless it sent a failure; a ; "
+                + "function without return, answers ok success=true without result unless it sent a failure (on "
+                + "1.20.1 the game gives a function the number of commands it ran as its result); a ; "
                 + "inside the command, as in an NBT int array, is written \\; so it doesn't end the step (server data "
                 + "modify storage test:x ids set value [I\\;1,2])")
             .field("result", "the command's return value, left out when it reports none")
@@ -189,7 +189,11 @@ final class ServerCommands {
                 Component.literal("Blockpilot"), server, null);
             //?}
         }
+        //? if >=1.21 {
         source = source.withCallback((ok, result) -> {
+        //?} else {
+        /*source = source.withCallback((ran, ok, result) -> {
+        *///?}
             reported[0] = true;
             success[0] = ok;
             value[0] = result;
@@ -287,39 +291,41 @@ final class ServerCommands {
     }
 
     private static Fields tickState() {
-        ServerTickRateManager ticks = server().tickRateManager();
+        MinecraftServer server = server();
+        boolean frozen = ServerTicking.frozen(server);
+        float rate = ServerTicking.rate(server);
         return new Fields().put("tick", gameTime(), "tick=" + gameTime())
-            .put("frozen", ticks.isFrozen(), "frozen=" + ticks.isFrozen())
-            .put("rate", (double) ticks.tickrate(), "rate=" + Numbers.format(ticks.tickrate()));
+            .put("frozen", frozen, "frozen=" + frozen)
+            .put("rate", (double) rate, "rate=" + Numbers.format(rate));
     }
 
     private Action tick(CommandContext context, Args args) throws CommandException {
-        ServerTickRateManager ticks = server().tickRateManager();
+        MinecraftServer server = server();
         switch (args.word("op")) {
             case "freeze" -> {
-                ticks.setFrozen(true);
+                ServerTicking.freeze(server, true);
                 changedTicking = true;
             }
-            case "unfreeze" -> ticks.setFrozen(false);
+            case "unfreeze" -> ServerTicking.freeze(server, false);
             case "rate" -> {
                 double rate = args.number("tps", 20);
                 if (rate < 1 || rate > 10000) {
                     throw new CommandException("syntax", "tick rate 1-10000");
                 }
-                ticks.setTickRate((float) rate);
+                ServerTicking.rate(server, (float) rate);
                 changedTicking = true;
             }
             case "step" -> {
-                if (!ticks.isFrozen()) {
+                if (!ServerTicking.frozen(server)) {
                     throw new CommandException("not_frozen", "tick freeze first");
                 }
                 int steps = args.integer("ticks", 1);
                 long target = gameTime() + steps;
-                ticks.stepGameIfPaused(steps);
+                ServerTicking.step(server, steps);
                 return new Action() {
                     @Override
                     public Result tick() {
-                        return gameTime() >= target && !ticks.isSteppingForward() ? Result.ok(tickState()) : null;
+                        return gameTime() >= target && !ServerTicking.stepping(server) ? Result.ok(tickState()) : null;
                     }
 
                     @Override
@@ -341,7 +347,7 @@ final class ServerCommands {
 
     static void onServerStarted(MinecraftServer server) {
         if (Snapshots.folderOf(server).equals(freezeOnStart)) {
-            server.tickRateManager().setFrozen(true);
+            ServerTicking.freeze(server, true);
             changedTicking = true;
         }
         freezeOnStart = null;
@@ -350,8 +356,8 @@ final class ServerCommands {
     /** Undoes freezing and rate changes Blockpilot made, so a world is never saved frozen because of it. */
     static void onServerStopping(MinecraftServer server) {
         if (changedTicking) {
-            server.tickRateManager().setFrozen(false);
-            server.tickRateManager().setTickRate(20);
+            ServerTicking.freeze(server, false);
+            ServerTicking.rate(server, 20);
             changedTicking = false;
         }
     }

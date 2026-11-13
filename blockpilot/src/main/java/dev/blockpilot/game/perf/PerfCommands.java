@@ -247,7 +247,11 @@ public final class PerfCommands {
                         // A plot's chunk, counted below.
                         continue;
                     }
+                    //? if >=1.21 {
                     if (holder.getLatestChunk() instanceof LevelChunk) {
+                    //?} else {
+                    /*if (holder.getLastAvailable() instanceof LevelChunk) {
+                    *///?}
                         worldChunks++;
                     }
                     countBlockEntities(holder.getTickingChunk(), blockEntities);

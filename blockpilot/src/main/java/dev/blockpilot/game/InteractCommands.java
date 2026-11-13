@@ -3,8 +3,10 @@ package dev.blockpilot.game;
 import static dev.blockpilot.game.PlayerActions.PLOT_AIM_HELP;
 import static dev.blockpilot.game.PlayerActions.WITHIN_BLOCK;
 import static dev.blockpilot.game.PlayerActions.WITHIN_BLOCK_HELP;
+import static dev.blockpilot.game.PlayerActions.blockReach;
 import static dev.blockpilot.game.PlayerActions.click;
 import static dev.blockpilot.game.PlayerActions.closeScreen;
+import static dev.blockpilot.game.PlayerActions.entityReach;
 import static dev.blockpilot.game.PlayerActions.hit;
 import static dev.blockpilot.game.PlayerActions.lookAt;
 import static dev.blockpilot.game.PlayerActions.minecraft;
@@ -357,7 +359,7 @@ final class InteractCommands {
                     throw new CommandException("out_of_reach", "e" + current.getId() + " fled");
                 }
                 lookAt(current.getBoundingBox().getCenter());
-                boolean inReach = player().distanceTo(current) < player().entityInteractionRange() - 0.3;
+                boolean inReach = player().distanceTo(current) < entityReach() - 0.3;
                 if (inReach) {
                     InputState.release(options().keyUp);
                 } else {
@@ -398,7 +400,7 @@ final class InteractCommands {
         if (args.type("target") == ArgType.POSITION) {
             BlockPos pos = Rel.block(context.resolve(args.position("target")));
             Vec3 center = seen(minecraft().level, Shapes.centre(minecraft().level, pos)).get();
-            if (center.distanceTo(player().getEyePosition()) > player().blockInteractionRange()) {
+            if (center.distanceTo(player().getEyePosition()) > blockReach()) {
                 throw new CommandException("out_of_reach", Rel.of(pos).toString());
             }
             return new Dig(session, () -> pos, 1, false, null);
@@ -533,7 +535,7 @@ final class InteractCommands {
                 digTicks = 0;
             }
             Vec3 center = aim.get();
-            boolean inReach = center.distanceTo(player().getEyePosition()) <= player().blockInteractionRange() - 0.5;
+            boolean inReach = center.distanceTo(player().getEyePosition()) <= blockReach() - 0.5;
             if (!inReach) {
                 if (!walk) {
                     throw new CommandException("out_of_reach", Rel.of(current).toString());
