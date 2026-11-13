@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.1 (unreleased)
+## 1.2.0 (2026-11-13)
 
 - **Minecraft 1.20.1, on Fabric and Forge:** two new jars, for Fabric 1.20.1 with Fabric API 0.92 and Fabric Loader
   0.15 or newer, and for Forge 47.1 or newer, which NeoForge 47.1 loads too; both run on Java 17. Every command answers
