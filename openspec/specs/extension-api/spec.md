@@ -97,8 +97,8 @@ SHALL keep working without Blockpilot.
 
 #### Scenario: One API jar for all targets
 - **WHEN** a mod compiles against the published `blockpilot-api` artifact
-- **THEN** the same compiled integration works with the 1.21.1, 26.1, 26.2 and
-  26.3 Blockpilot jars, on NeoForge and on Fabric
+- **THEN** the same compiled integration works with the 1.20.1, 1.21.1, 26.1,
+  26.2 and 26.3 Blockpilot jars, on NeoForge, Forge and Fabric
 
 ### Requirement: Server-thread extension handlers
 An extension command SHALL be able to declare that it runs on the integrated

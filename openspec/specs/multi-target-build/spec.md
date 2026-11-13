@@ -10,14 +10,15 @@ and new targets can be added without forking the code.
 
 ### Requirement: One jar per target from one source tree
 The build SHALL produce one mod jar for each configured `<minecraft>-<loader>`
-target from a single shared source tree. The targets are `1.21.1-neoforge`,
-`1.21.1-fabric`, `26.1-neoforge`, `26.1-fabric`, `26.1-vanilla`,
-`26.2-neoforge`, `26.2-fabric`, `26.2-vanilla`, `26.3-neoforge`, `26.3-fabric`
-and `26.3-vanilla`. The `-vanilla` targets run without a mod loader.
+target from a single shared source tree. The targets are `1.20.1-fabric`,
+`1.20.1-forge`, `1.21.1-neoforge`, `1.21.1-fabric`, `26.1-neoforge`,
+`26.1-fabric`, `26.1-vanilla`, `26.2-neoforge`, `26.2-fabric`, `26.2-vanilla`,
+`26.3-neoforge`, `26.3-fabric` and `26.3-vanilla`. The `-vanilla` targets run
+without a mod loader.
 
 #### Scenario: Full build produces every target
 - **WHEN** a developer runs the root build task
-- **THEN** a jar is produced for each of the eleven targets
+- **THEN** a jar is produced for each of the thirteen targets
 - **AND** each jar's file name includes the mod version, the Minecraft version
   and the loader (e.g. `blockpilot-0.1.0+26.1.2-fabric.jar`,
   `blockpilot-0.1.0+26.3-vanilla.jar`)
@@ -26,6 +27,15 @@ and `26.3-vanilla`. The `-vanilla` targets run without a mod loader.
 - **WHEN** the `1.21.1-fabric` jar is installed in a Fabric 1.21.1 client
 - **THEN** the mod loads and opens its agent endpoint
 - **AND** the jar contains no NeoForge-specific classes
+
+#### Scenario: 1.20.1 jar on 1.20.1
+- **WHEN** the `1.20.1-fabric` jar is installed in a Fabric 1.20.1 client with
+  Fabric API, or the `1.20.1-forge` jar in a Forge 47 client, each on Java 17
+- **THEN** the mod loads and opens its agent endpoint
+
+#### Scenario: Forge jar on NeoForge 47.1
+- **WHEN** the `1.20.1-forge` jar is installed in a NeoForge 47.1 client
+- **THEN** the mod loads and opens its agent endpoint
 
 #### Scenario: 26.1 jar on 26.1
 - **WHEN** the `26.1-neoforge` jar is installed in a NeoForge 26.1.2 client,
@@ -90,6 +100,12 @@ names, which are the running game's and are documented in `docs/commands.md`.
 - **THEN** every step passes on both, and the JSON replies have the same
   fields
 
+#### Scenario: Same reply on 1.20.1
+- **WHEN** the smoke test runs against the `1.20.1-fabric` jar and the
+  `1.21.1-fabric` jar, or the `1.20.1-forge` jar and the `1.21.1-neoforge` jar
+- **THEN** every step passes on both, and the JSON replies have the same
+  fields
+
 #### Scenario: Same reply on 26.2 and 26.3
 - **WHEN** the smoke test runs against a 26.1 jar and a 26.2 or 26.3 jar of the
   same loader
@@ -129,6 +145,11 @@ instead, with the mod version and the Minecraft version it runs on.
 - **WHEN** the 1.21.1 jar is installed on a different Minecraft version
 - **THEN** the loader refuses to load it and reports the version mismatch
 
+#### Scenario: Forge metadata
+- **WHEN** the `1.20.1-forge` jar is read
+- **THEN** it has a `META-INF/mods.toml` naming Minecraft 1.20.1, Forge
+  `[47.1,)` and the loader version `[47,)`, and a mixin refmap
+
 #### Scenario: Vanilla jar as an agent
 - **WHEN** a vanilla jar's manifest is read
 - **THEN** it names the agent's entry class, the mod version and the Minecraft
@@ -143,7 +164,7 @@ assertion.
 #### Scenario: Every target passes
 - **WHEN** a developer runs the script with no arguments and every assertion
   holds
-- **THEN** it reports each of the eleven targets as passed and exits with 0
+- **THEN** it reports each of the thirteen targets as passed and exits with 0
 
 #### Scenario: An assertion fails
 - **WHEN** an assertion fails on `26.3-fabric`
@@ -179,7 +200,8 @@ assertion.
 #### Scenario: Reply fields differ between targets
 - **WHEN** a query's JSON reply has different fields on two targets of the same
   loader, tested in this run or saved from an earlier one, where the vanilla
-  targets count as Fabric, whose replies they share
+  targets count as Fabric, whose replies they share, and the Forge target as
+  NeoForge
 - **THEN** the script reports the query and both targets, and exits non-zero
 
 ### Requirement: The script asserts effects, not only replies
@@ -207,3 +229,17 @@ can't run on a target SHALL be reported as skipped with the reason, not passed.
   run, as when a port breaks audio capture and the game answers
   `err unsupported`
 - **THEN** the target that skipped it fails, naming the assertion and the reason
+
+### Requirement: Shared code runs on Java 17
+Code that every target compiles, and the extension API jar, SHALL use only the
+Java 17 language and class library, so the 1.20.1 jars run on the Java 17 that
+1.20.1 is played with. Each target still builds with its own Java version.
+
+#### Scenario: A Java 21 call in shared code
+- **WHEN** shared code calls `List.getFirst()`, which Java 17 lacks
+- **THEN** the `1.20.1-fabric` build fails, naming the call
+
+#### Scenario: API jar on Java 17
+- **WHEN** a 1.20.1 mod compiles against the `blockpilot-api` artifact with
+  Java 17
+- **THEN** it compiles and runs with the 1.20.1 Blockpilot jars
