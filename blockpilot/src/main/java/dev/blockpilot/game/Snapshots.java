@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import net.minecraft.client.Minecraft;
+//? if <1.21 {
+/*import net.minecraft.client.gui.screens.TitleScreen;
+*///?}
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -145,7 +148,11 @@ final class Snapshots {
             throw new CommandException("internal", (restore ? "restore" : "snapshot") + " failed: " + e.getMessage());
         }
         long bytes = size(restore ? save : snapshot);
+        //? if >=1.21 {
         Minecraft.getInstance().createWorldOpenFlows().openWorld(folder, () -> { });
+        //?} else {
+        /*Minecraft.getInstance().createWorldOpenFlows().loadLevel(new TitleScreen(), folder);
+        *///?}
         ExperimentalWorlds experimental = new ExperimentalWorlds(TestWorlds.isTestWorld(folder));
         return () -> {
             Minecraft minecraft = Minecraft.getInstance();

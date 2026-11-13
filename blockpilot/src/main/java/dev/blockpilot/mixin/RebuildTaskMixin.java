@@ -8,7 +8,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Counts chunk section rebuilds (re-meshing) during a performance capture. */
+// 1.20.1's task by its own name in a condition: a rule for it would overlap 26.2's rename of RebuildTask, and Stonecutter
+// applies one of two rules that overlap.
+//? if >=1.21 {
 @Mixin(targets = "net.minecraft.client.renderer.chunk.SectionRenderDispatcher$RenderSection$RebuildTask")
+//?} else {
+/*@Mixin(targets = "net.minecraft.client.renderer.chunk.ChunkRenderDispatcher$RenderChunk$RebuildTask")
+*///?}
 public abstract class RebuildTaskMixin {
     @Inject(method = "doTask", at = @At("HEAD"))
     private void blockpilot$rebuilt(SectionBufferBuilderPack buffers, CallbackInfoReturnable<?> info) {

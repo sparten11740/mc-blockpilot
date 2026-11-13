@@ -66,6 +66,9 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         *///?} else {
         ServerChunkEvents.CHUNK_LOAD.register((level, chunk) -> ClientPlatform.hooks().onServerChunkLoaded());
         //?}
+        //? if >=1.21 {
         ServerChunkEvents.CHUNK_GENERATE.register((level, chunk) -> ClientPlatform.hooks().onServerChunkGenerated());
+        //?}
+        // Fabric API 0.92 for 1.20.1 has no generate event; NewChunkMixin reports new chunks there.
     }
 }

@@ -9,6 +9,9 @@ import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
+//? if <1.21 {
+/*import net.minecraft.util.Mth;
+*///?}
 //? if <26.1 {
 import net.minecraft.world.entity.Entity;
 //?} else {
@@ -26,11 +29,26 @@ abstract class AwayChunkMapMixin {
             ? AwayCamera.presenceSection(player) : SectionPos.of(entity);
     }
 
+    //? if >=1.21 {
     @Redirect(method = "updateChunkTracking", at = @At(value = "INVOKE",
         target = "Lnet/minecraft/server/level/ServerPlayer;chunkPosition()Lnet/minecraft/world/level/ChunkPos;"))
     private ChunkPos blockpilot$awayChunk(ServerPlayer player) {
         return AwayCamera.awayFrom(player) ? AwayCamera.presenceChunk(player) : player.chunkPosition();
     }
+    //?} else {
+    /*// 1.20.1 picks the chunks a player sees around the block the player stands on.
+    @Redirect(method = {"updatePlayerStatus", "move"}, at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/server/level/ServerPlayer;getBlockX()I"))
+    private int blockpilot$awayX(ServerPlayer player) {
+        return AwayCamera.awayFrom(player) ? Mth.floor(AwayCamera.presence(player).x) : player.getBlockX();
+    }
+
+    @Redirect(method = {"updatePlayerStatus", "move"}, at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/server/level/ServerPlayer;getBlockZ()I"))
+    private int blockpilot$awayZ(ServerPlayer player) {
+        return AwayCamera.awayFrom(player) ? Mth.floor(AwayCamera.presence(player).z) : player.getBlockZ();
+    }
+    *///?}
 
     //? if <26.1 {
     @Redirect(method = "playerIsCloseEnoughForSpawning", at = @At(value = "INVOKE",

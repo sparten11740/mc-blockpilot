@@ -94,9 +94,11 @@ public final class CameraControl {
     static float realPartialTick() {
         //? if >=26.1 {
         /*return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        *///?} else {
+        *///?} else if >=1.21 {
         return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
-        //?}
+        //?} else {
+        /*return Minecraft.getInstance().getFrameTime();
+        *///?}
     }
 
     /** A camera fixed where the last frame drew it, looking as it did then; null without a frame from a placed one. */
@@ -243,10 +245,15 @@ public final class CameraControl {
      * so the view matrix, particles and frustum all see it.
      */
     public static void roll(Quaternionf rotation) {
-        double roll = placement == null ? 0 : lens().roll();
+        double roll = placedRoll();
         if (roll != 0) {
             rotation.rotateZ((float) Math.toRadians(-roll));
         }
+    }
+
+    /** A placed camera's roll in degrees, 0 for none. */
+    public static double placedRoll() {
+        return placement == null ? 0 : lens().roll();
     }
 
     /** The lens in use with the values given, null keeping its own, for a camera placed at once; null for none. */

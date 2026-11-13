@@ -72,12 +72,12 @@ dependencies {
     apiFixture.compileOnlyConfigurationName("dev.blockpilot:blockpilot-api:2.0.0")
     "testRuntimeOnly"(apiFixture.output)
 }
-// Blockpilot's own GameTests on 1.21.1, where tests are code (26.x takes the smoke check's data pack instead). The
-// builds add them to the mod in the dev runs only, so the published jar never has them.
+// Blockpilot's own GameTests on 1.20.1 and 1.21.1, where tests are code (26.x takes the smoke check's data pack
+// instead). The builds add them to the mod in the dev runs only, so the published jar never has them. Left at its
+// default directory, the set goes through Stonecutter like src/main.
 if (property("version_sources").toString() == "1.21.1") {
     val main = the<SourceSetContainer>()["main"]
     val gameTests = the<SourceSetContainer>().create("gameTests") {
-        java.setSrcDirs(listOf(treeDir.resolve("src/gameTests/java")))
         resources.setSrcDirs(listOf<File>())
         compileClasspath += main.output + main.compileClasspath
         runtimeClasspath += output + main.output + main.runtimeClasspath

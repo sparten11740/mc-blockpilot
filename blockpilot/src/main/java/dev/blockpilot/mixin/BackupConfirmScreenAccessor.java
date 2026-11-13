@@ -6,6 +6,10 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(BackupConfirmScreen.class)
 public interface BackupConfirmScreenAccessor {
+    //? if >=1.21 {
     @Accessor("onProceed")
+    //?} else {
+    /*@Accessor("listener")
+    *///?}
     BackupConfirmScreen.Listener blockpilot$onProceed();
 }

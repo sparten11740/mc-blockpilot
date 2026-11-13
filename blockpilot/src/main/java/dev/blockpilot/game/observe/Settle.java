@@ -8,9 +8,17 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.protocol.Engine;
 import java.util.function.Supplier;
 import net.minecraft.client.Minecraft;
+//? if >=1.21 {
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+//?} else {
+/*import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+*///?}
 import net.minecraft.core.SectionPos;
+//? if >=1.21 {
 import net.minecraft.server.level.ChunkTrackingView;
+//?} else {
+/*import net.minecraft.server.level.ChunkMap;
+*///?}
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -43,7 +51,11 @@ final class Settle implements Action, Engine.SelfTimed {
     public Result tick() {
         ticks++;
         var renderer = Minecraft.getInstance().levelRenderer;
+        //? if >=1.21 {
         SectionRenderDispatcher dispatcher = renderer.getSectionRenderDispatcher();
+        //?} else {
+        /*ChunkRenderDispatcher dispatcher = renderer.getChunkRenderDispatcher();
+        *///?}
         if (Minecraft.getInstance().level == null || dispatcher == null) {
             return Result.ok(answer.get());
         }
@@ -89,8 +101,12 @@ final class Settle implements Action, Engine.SelfTimed {
         int missing = 0;
         for (int x = centerX - distance; x <= centerX + distance; x++) {
             for (int z = centerZ - distance; z <= centerZ + distance; z++) {
-                if (ChunkTrackingView.isInViewDistance(centerX, centerZ, distance, x, z)
-                    && minecraft.level.getChunkSource().getChunkNow(x, z) == null) {
+                //? if >=1.21 {
+                boolean inView = ChunkTrackingView.isInViewDistance(centerX, centerZ, distance, x, z);
+                //?} else {
+                /*boolean inView = ChunkMap.isChunkInRange(x, z, centerX, centerZ, distance);
+                *///?}
+                if (inView && minecraft.level.getChunkSource().getChunkNow(x, z) == null) {
                     missing++;
                 }
             }

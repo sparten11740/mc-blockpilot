@@ -149,7 +149,11 @@ final class TestWorlds {
                 return flat.replaceOverworldGenerator(registries, new FlatLevelSource(voidSettings));
             }
             return flat;
+        //? if >=1.21 {
         }, new TitleScreen());
+        //?} else {
+        /*});
+        *///?}
         try {
             Files.createDirectories(folder);
             Files.writeString(folder.resolve(MARKER), "{\"created\":\"" + Instant.now() + "\",\"by\":\""

@@ -9,6 +9,10 @@ import net.minecraft.network.PacketDecoder;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import org.spongepowered.asm.mixin.Mixin;
+//? if <1.21 {
+/*import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Shadow;
+*///?}
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,6 +21,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Bytes per packet type received over a real network connection, during a performance capture. */
 @Mixin(PacketDecoder.class)
 public abstract class PacketDecoderMixin {
+    //? if <1.21 {
+    /*@Shadow
+    @Final
+    private PacketFlow flow;
+
+    *///?}
     @Unique
     private int blockpilot$readable;
 
@@ -28,7 +38,12 @@ public abstract class PacketDecoderMixin {
     @Inject(method = "decode", at = @At("RETURN"))
     private void blockpilot$decoded(ChannelHandlerContext context, ByteBuf in, List<Object> out, CallbackInfo info) {
         if (Perf.active && !out.isEmpty() && out.get(out.size() - 1) instanceof Packet<?> packet) {
-            Perf.packetBytes(packet.type().flow() == PacketFlow.CLIENTBOUND, PacketNames.of(packet),
+            //? if >=1.21 {
+            boolean clientbound = packet.type().flow() == PacketFlow.CLIENTBOUND;
+            //?} else {
+            /*boolean clientbound = flow == PacketFlow.CLIENTBOUND;
+            *///?}
+            Perf.packetBytes(clientbound, PacketNames.of(packet),
                 blockpilot$readable - in.readableBytes());
         }
     }

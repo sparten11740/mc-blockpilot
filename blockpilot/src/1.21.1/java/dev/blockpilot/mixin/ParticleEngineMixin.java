@@ -55,12 +55,21 @@ public abstract class ParticleEngineMixin {
 
     /**
      * Only the call site knows which particle renders, so the call is wrapped (which composes with other mods). The
-     * loop is in vanilla's render and in the overload NeoForge adds; each loader has the call in one of them.
+     * loop is in vanilla's render and in the overload NeoForge, or on 1.20.1 Forge, adds; each loader has the call in
+     * one of them.
      */
     @WrapOperation(method = {
+        //? if >=1.21 {
         "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V",
         "render(Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F"
             + "Lnet/minecraft/client/renderer/culling/Frustum;Ljava/util/function/Predicate;)V"},
+        //?} else {
+        /*"render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;"
+            + "Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V",
+        "render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;"
+            + "Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F"
+            + "Lnet/minecraft/client/renderer/culling/Frustum;)V"},
+        *///?}
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/Particle;"
             + "render(Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/client/Camera;F)V"))
     private void blockpilot$render(Particle particle, VertexConsumer consumer, Camera camera, float partialTick,

@@ -25,7 +25,12 @@ public final class BlockpilotSmokeTests {
     }
 
     private static TestFunction test(String name, Consumer<GameTestHelper> body) {
+        //? if >=1.21 {
         return new TestFunction("defaultBatch", "blockpilotsmoketests." + name, TEMPLATE, Rotation.NONE, MAX_TICKS, 0L,
             true, false, 1, 1, false, body);
+        //?} else {
+        /*return new TestFunction("defaultBatch", "blockpilotsmoketests." + name, TEMPLATE, Rotation.NONE, MAX_TICKS, 0L,
+            true, 1, 1, body);
+        *///?}
     }
 }

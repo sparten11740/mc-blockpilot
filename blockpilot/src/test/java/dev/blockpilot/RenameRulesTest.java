@@ -19,7 +19,9 @@ class RenameRulesTest {
     private static final String TEXT = "\"((?:[^\"\\\\]|\\\\.)*)\"";
     private static final Pattern RULE =
         Pattern.compile("rename\\(\\s*" + TEXT + ",\\s*" + TEXT + ",\\s*" + TEXT + "\\s*\\)");
-    private static final Pattern CALL = Pattern.compile("^\\s*rename\\(", Pattern.MULTILINE);
+    /** 1.20.1's names, which apply below 1.21. */
+    private static final Pattern OLDER = Pattern.compile("older\\(\\s*" + TEXT + ",\\s*" + TEXT + "\\s*\\)");
+    private static final Pattern CALL = Pattern.compile("^\\s*(rename|older)\\(", Pattern.MULTILINE);
     private static final Pattern ACTIVE_NODE = Pattern.compile("^stonecutter active \"([^\"]+)\"", Pattern.MULTILINE);
     private static final Pattern CHECKED_IN_NODE = Pattern.compile("vcsVersion = \"([^\"]+)\"");
 
@@ -46,6 +48,10 @@ class RenameRulesTest {
         Matcher rule = RULE.matcher(script);
         while (rule.find()) {
             rules.add(new Rule(rule.group(1), unescaped(rule.group(2)), unescaped(rule.group(3))));
+        }
+        Matcher older = OLDER.matcher(script);
+        while (older.find()) {
+            rules.add(new Rule("<1.21", unescaped(older.group(1)), unescaped(older.group(2))));
         }
         // A rule written in a form the pattern misses would otherwise go unchecked, and the test would still pass.
         assertEquals(CALL.matcher(script).results().count(), rules.size(), "rules this test could not read");

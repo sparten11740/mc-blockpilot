@@ -9,7 +9,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+//? if >=1.21 {
 import net.minecraft.world.item.crafting.RecipeHolder;
+//?}
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
@@ -22,8 +24,13 @@ final class CraftingRecipes {
         Minecraft minecraft = Minecraft.getInstance();
         var level = minecraft.level;
         List<CraftingCandidate> candidates = new ArrayList<>();
+        //? if >=1.21 {
         for (RecipeHolder<CraftingRecipe> holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
             CraftingRecipe recipe = holder.value();
+        //?} else {
+        /*for (CraftingRecipe holder : level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING)) {
+            CraftingRecipe recipe = holder;
+        *///?}
             ItemStack result = recipe.getResultItem(level.registryAccess());
             if (!result.is(item)) {
                 continue;

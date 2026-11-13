@@ -22,6 +22,7 @@ stonecutter {
             version("$minecraft-$loader", minecraft).buildscript = "build.$loader.gradle.kts"
         }
 
+        target("1.20.1", "fabric")
         target("1.21.1", "neoforge", "fabric")
         target("26.1", "neoforge", "fabric", "vanilla")
         target("26.2", "neoforge", "fabric", "vanilla")

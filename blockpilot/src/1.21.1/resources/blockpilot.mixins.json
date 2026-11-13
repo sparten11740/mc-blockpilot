@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "dev.blockpilot.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
   "client": [
     "AbstractContainerScreenAccessor",
     "AbstractSoundInstanceAccessor",
@@ -24,6 +24,10 @@
     "EntityRenderDispatcherMixin",
     "EntityTickMixin",
     "FrameMixin",
+    "FrozenBlockEntitiesMixin",
+    "FrozenDespawnMixin",
+    "FrozenLevelMixin",
+    "FrozenSpawnMixin",
     "GameRendererMixin",
     "GuiMixin",
     "InputConstantsMixin",
@@ -36,6 +40,7 @@
     "MinecraftMixin",
     "MinecraftServerMixin",
     "MouseHandlerMixin",
+    "NewChunkMixin",
     "PacketDecoderMixin",
     "PacketEncoderMixin",
     "ParticleEngineAccessor",
@@ -52,7 +57,9 @@
     "SlashCommandMixin",
     "SoundEngineAccessor",
     "SoundEngineMixin",
-    "SoundManagerAccessor"
+    "SoundManagerAccessor",
+    "TickRateClientMixin",
+    "TickRateServerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

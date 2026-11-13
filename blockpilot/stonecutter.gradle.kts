@@ -9,13 +9,27 @@ stonecutter parameters {
     // `//? if fabric`, `//? if neoforge` and `//? if vanilla` in the sources, from the loader half of the node's name.
     constants.match(current.project.substringAfterLast('-'), "fabric", "neoforge", "vanilla")
 
-    // Plain renames, swapped in for the versions that have them; src/main keeps the names of the version it is checked
-    // in for (vcsVersion in settings.gradle.kts), src/1.21.1, src/26.1 and src/vanilla those of the oldest version they
-    // serve. Rules run over all of them and switching the active version swaps them back, so each new text must not
-    // appear in code the versions share, or in src/1.21.1. Changes beyond a rename go in `//? if` blocks instead. Each
-    // rule names the earliest release known to have the new name; only those from 26.1 on have been built against.
+    // Plain renames, swapped in for the versions that have them; src/main and src/1.21.1 keep the names of the version
+    // they are checked in for (vcsVersion in settings.gradle.kts), src/26.1 and src/vanilla those of the oldest version
+    // they serve. Rules run over all of them and switching the active version swaps them back, so each new text must
+    // not appear in code the versions share, or in src/1.21.1. Changes beyond a rename go in `//? if` blocks instead.
+    // Each rule names the earliest release known to have the new name; only those from 26.1 on have been built against.
+    // Two rules mustn't match overlapping text, such as a "$RenderSection$" beside "RenderSection$RebuildTask":
+    // Stonecutter applies only one of them, and the other version keeps the old name; a `//? if` does it instead.
     fun rename(since: String, from: String, to: String) =
         replacements.string(current.parsed >= since) { replace(from, to) }
+    // 1.20.1's names for what 1.21.1 calls otherwise. No release between them is built, so these, like the `//? if
+    // >=1.21` blocks for 1.20.1, name 1.21 rather than the release that renamed each.
+    fun older(from: String, to: String) = replacements.string(current.parsed < "1.21") { replace(from, to) }
+
+    older("GenericMessageScreen", "GenericDirtMessageScreen")
+    older("isSameItemSameComponents(", "isSameItemSameTags(")
+    older("server.getTickTimesNanos()", "server.tickTimes")
+    older("data.isAllowCommands()", "data.getAllowCommands()")
+    older("save.hasCommands()", "save.hasCheats()")
+    older("saveWithFullMetadata(level.registryAccess())", "saveWithFullMetadata()")
+    older("SectionBufferBuilderPack", "ChunkBufferBuilderPack")
+    older("countRenderedSections()", "countRenderedChunks()")
 
     rename("1.21.2", ".registryOrThrow(", ".lookupOrThrow(")
     rename("1.21.2", ".getHolderOrThrow(", ".getOrThrow(")

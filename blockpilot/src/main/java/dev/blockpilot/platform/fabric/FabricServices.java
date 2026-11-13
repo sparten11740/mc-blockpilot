@@ -13,10 +13,16 @@ import java.util.Set;
 //? if >=26.1 {
 /*import net.fabricmc.fabric.api.client.creativetab.v1.FabricCreativeModeInventoryScreen;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-*///?} else {
+*///?} else if >=1.21 {
 import net.fabricmc.fabric.api.client.itemgroup.v1.FabricCreativeInventoryScreen;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-//?}
+//?} else {
+/*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.impl.client.itemgroup.CreativeGuiExtensions;
+import net.fabricmc.fabric.impl.client.itemgroup.FabricCreativeGuiComponents;
+import net.fabricmc.fabric.impl.itemgroup.FabricItemGroup;
+import net.minecraft.world.item.CreativeModeTabs;
+*///?}
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModOrigin;
@@ -111,9 +117,14 @@ final class FabricServices implements ClientPlatform.Services {
         //? if >=26.1 {
         /*FabricCreativeModeInventoryScreen pages = (FabricCreativeModeInventoryScreen) screen;
         return pages.getTabsOnPage(pages.getCurrentPage());
-        *///?} else {
+        *///?} else if >=1.21 {
         FabricCreativeInventoryScreen pages = (FabricCreativeInventoryScreen) screen;
         return pages.getItemGroupsOnPage(pages.getCurrentPage());
-        //?}
+        //?} else {
+        /*// Fabric API 0.92 keeps the pages in its implementation: the tabs on every page, and each other tab's page.
+        int page = ((CreativeGuiExtensions) screen).fabric_currentPage();
+        return CreativeModeTabs.tabs().stream().filter(tab -> FabricCreativeGuiComponents.COMMON_GROUPS.contains(tab)
+            || ((FabricItemGroup) tab).getPage() == page).toList();
+        *///?}
     }
 }

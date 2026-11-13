@@ -223,7 +223,11 @@ final class Screens {
         for (int index = 0; index < list.children().size(); index++) {
             int top = geometry.blockpilot$rowTop(index);
             int height = geometry.blockpilot$rowBottom(index) - top;
+            //? if >=1.21 {
             if (top < list.getY() || top + height > list.getBottom()) {
+            //?} else {
+            /*if (top < geometry.blockpilot$top() || top + height > geometry.blockpilot$bottom()) {
+            *///?}
                 continue;
             }
             GuiEventListener entry = list.children().get(index);
