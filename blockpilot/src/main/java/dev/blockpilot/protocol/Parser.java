@@ -563,10 +563,13 @@ final class Parser {
             void elements(List<Form.Element> parts, boolean textAfter) throws Mismatch {
                 for (int part = 0; part < parts.size(); part++) {
                     boolean textMayFollow = textMayStart(parts, part, textAfter);
-                    switch (parts.get(part)) {
-                        case Slot slot when slot.isText() -> freeText(slot);
-                        case Slot slot -> slot(slot, textMayFollow);
-                        case Form.Group group -> group(group, textMayFollow, textMayStart(parts, part + 1, textAfter));
+                    Form.Element element = parts.get(part);
+                    if (element instanceof Form.Group group) {
+                        group(group, textMayFollow, textMayStart(parts, part + 1, textAfter));
+                    } else if (((Slot) element).isText()) {
+                        freeText((Slot) element);
+                    } else {
+                        slot((Slot) element, textMayFollow);
                     }
                 }
             }

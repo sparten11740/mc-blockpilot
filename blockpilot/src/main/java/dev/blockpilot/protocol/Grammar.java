@@ -201,10 +201,12 @@ final class Grammar {
     private static String items(List<Form.Element> elements) {
         List<String> items = new ArrayList<>();
         for (Form.Element element : elements) {
-            items.add(switch (element) {
-                case Slot slot -> value(slot) + (slot.optional() ? "?" : "");
-                case Form.Group group -> "( " + items(group.elements()) + " )" + (group.repeats() ? "*" : "?");
-            });
+            if (element instanceof Form.Group group) {
+                items.add("( " + items(group.elements()) + " )" + (group.repeats() ? "*" : "?"));
+            } else {
+                Slot slot = (Slot) element;
+                items.add(value(slot) + (slot.optional() ? "?" : ""));
+            }
         }
         return String.join(" ", items);
     }

@@ -147,13 +147,13 @@ public final class Form {
 
     private static void checkNames(List<Element> parts, Set<String> names) {
         for (Element part : parts) {
-            switch (part) {
-                case Slot slot -> {
-                    if (!names.add(slot.name())) {
-                        throw new IllegalArgumentException("two slots are named " + slot.name());
-                    }
+            if (part instanceof Group group) {
+                checkNames(group.elements(), names);
+            } else {
+                String name = ((Slot) part).name();
+                if (!names.add(name)) {
+                    throw new IllegalArgumentException("two slots are named " + name);
                 }
-                case Group group -> checkNames(group.elements(), names);
             }
         }
     }
@@ -198,10 +198,7 @@ public final class Form {
     }
 
     private static Slot lead(Element part) {
-        return switch (part) {
-            case Slot slot -> slot;
-            case Group group -> group.first();
-        };
+        return part instanceof Group group ? group.first() : (Slot) part;
     }
 
     private static boolean isOptional(Element part) {
@@ -219,10 +216,11 @@ public final class Form {
             if (!out.isEmpty()) {
                 out.append(' ');
             }
-            out.append(switch (element) {
-                case Slot slot -> slot.usage();
-                case Group group -> "[" + usage(group.elements()) + "]" + (group.repeats() ? "…" : "");
-            });
+            if (element instanceof Group group) {
+                out.append('[').append(usage(group.elements())).append(']').append(group.repeats() ? "…" : "");
+            } else {
+                out.append(((Slot) element).usage());
+            }
         }
         return out.toString();
     }

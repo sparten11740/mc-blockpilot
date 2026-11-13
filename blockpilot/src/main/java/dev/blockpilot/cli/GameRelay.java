@@ -96,7 +96,7 @@ final class GameRelay implements AutoCloseable {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        session.http().shutdownNow();
+        shutdown(session.http(), true);
         session = null;
     }
 
@@ -111,7 +111,7 @@ final class GameRelay implements AutoCloseable {
             return session;
         }
         if (session != null) {
-            session.http().shutdown();
+            shutdown(session.http(), false);
             session = null;
         }
         HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1)
@@ -137,7 +137,7 @@ final class GameRelay implements AutoCloseable {
             return session;
         } catch (IOException e) {
             session = null;
-            http.shutdownNow();
+            shutdown(http, true);
             throw new Unreachable("its endpoint did not answer: " + e.getMessage());
         }
     }
@@ -145,7 +145,19 @@ final class GameRelay implements AutoCloseable {
     private synchronized void drop(Session failed) {
         if (session == failed) {
             session = null;
-            failed.http().shutdown();
+            shutdown(failed.http(), false);
+        }
+    }
+
+    /**
+     * Closes the client's connections now, rather than when it is collected. Java 21 added {@code shutdown} and
+     * {@code shutdownNow}; on Java 17, which the 1.20.1 jars also run on, the client has neither and is left to that.
+     */
+    private static void shutdown(HttpClient http, boolean now) {
+        try {
+            HttpClient.class.getMethod(now ? "shutdownNow" : "shutdown").invoke(http);
+        } catch (ReflectiveOperationException e) {
+            // Java 17.
         }
     }
 

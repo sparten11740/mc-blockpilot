@@ -29,6 +29,8 @@ dependencies {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
+    // Mods on Minecraft 1.20.1, which is played on Java 17, compile against it too.
+    options.release = 17
 }
 
 tasks.jar {

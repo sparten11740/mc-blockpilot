@@ -275,17 +275,24 @@ final class ScriptJob implements CommandContext {
     }
 
     private static Placement placement(Statement statement) {
-        return switch (statement) {
-            case Statement.Call call -> new Placement(call.entry().spec(),
-                call.entry().spec().kind() == CommandSpec.Kind.ACTION, affinity(call));
-            case Statement.Assert check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
-            case Statement.If check -> new Placement(check.query().entry().spec(), false, affinity(check.query()));
-            case Statement.WaitUntil wait -> new Placement(wait.query().entry().spec(), true, Affinity.CLIENT);
-            case Statement.Sample sample -> sample.during() == null
+        if (statement instanceof Statement.Call call) {
+            return new Placement(call.entry().spec(), call.entry().spec().kind() == CommandSpec.Kind.ACTION,
+                affinity(call));
+        }
+        if (statement instanceof Statement.Assert check) {
+            return new Placement(check.query().entry().spec(), false, affinity(check.query()));
+        }
+        if (statement instanceof Statement.If check) {
+            return new Placement(check.query().entry().spec(), false, affinity(check.query()));
+        }
+        if (statement instanceof Statement.WaitUntil wait) {
+            return new Placement(wait.query().entry().spec(), true, Affinity.CLIENT);
+        }
+        if (statement instanceof Statement.Sample sample) {
+            return sample.during() == null
                 ? new Placement(sample.lead().entry().spec(), true, Affinity.CLIENT) : placement(sample.during());
-            case Statement.WaitTicks wait -> new Placement(null, true, Affinity.CLIENT);
-            case Statement.WaitIdle wait -> new Placement(null, true, Affinity.CLIENT);
-        };
+        }
+        return new Placement(null, true, Affinity.CLIENT);
     }
 
     private static Affinity affinity(Statement.Call call) {
@@ -293,15 +300,16 @@ final class ScriptJob implements CommandContext {
     }
 
     private static String name(Statement statement) {
-        return switch (statement) {
-            case Statement.Call call -> call.entry().qualifiedName();
-            case Statement.WaitTicks wait -> "wait";
-            case Statement.WaitIdle wait -> "wait";
-            case Statement.WaitUntil wait -> "wait";
-            case Statement.Sample sample -> "sample";
-            case Statement.Assert check -> "assert";
-            case Statement.If check -> "if";
-        };
+        if (statement instanceof Statement.Call call) {
+            return call.entry().qualifiedName();
+        }
+        if (statement instanceof Statement.Sample) {
+            return "sample";
+        }
+        if (statement instanceof Statement.Assert) {
+            return "assert";
+        }
+        return statement instanceof Statement.If ? "if" : "wait";
     }
 
     private String gate(Placement placement) {
@@ -310,14 +318,20 @@ final class ScriptJob implements CommandContext {
     }
 
     private void run(Statement statement) throws CommandException {
-        switch (statement) {
-            case Statement.Call call -> runCall(call);
-            case Statement.Assert check -> finish(assertion(check.condition(), check.query(), query(check.query())));
-            case Statement.If check -> conditional(check);
-            case Statement.WaitTicks wait -> start(engine.waitTicks(wait), "wait", null, null);
-            case Statement.WaitIdle wait -> start(() -> Result.ok(), "wait", null, null);
-            case Statement.WaitUntil wait -> start(engine.waitUntil(this, wait), "wait", null, null);
-            case Statement.Sample sample -> sample(sample);
+        if (statement instanceof Statement.Call call) {
+            runCall(call);
+        } else if (statement instanceof Statement.Assert check) {
+            finish(assertion(check.condition(), check.query(), query(check.query())));
+        } else if (statement instanceof Statement.If check) {
+            conditional(check);
+        } else if (statement instanceof Statement.WaitTicks wait) {
+            start(engine.waitTicks(wait), "wait", null, null);
+        } else if (statement instanceof Statement.WaitIdle) {
+            start(() -> Result.ok(), "wait", null, null);
+        } else if (statement instanceof Statement.WaitUntil wait) {
+            start(engine.waitUntil(this, wait), "wait", null, null);
+        } else if (statement instanceof Statement.Sample sample) {
+            sample(sample);
         }
     }
 
@@ -550,10 +564,9 @@ final class ScriptJob implements CommandContext {
 
     /** An action, or an if whose statement is one, so the script queues like other scripts with actions. */
     private static boolean isAction(Statement statement) {
-        return switch (statement) {
-            case Statement.If check -> isAction(check.then());
-            case Statement.Assert check -> false;
-            default -> placement(statement).action();
-        };
+        if (statement instanceof Statement.If check) {
+            return isAction(check.then());
+        }
+        return !(statement instanceof Statement.Assert) && placement(statement).action();
     }
 }

@@ -59,6 +59,6 @@ final class FrameSlots {
 
     /** The first slot starting at or after a time, which is also how many slots start before it. */
     static long firstSlotFrom(long nanos, int fps) {
-        return Math.ceilDiv(Math.max(0, nanos) * fps, NANOS);
+        return (Math.max(0, nanos) * fps + NANOS - 1) / NANOS;
     }
 }
