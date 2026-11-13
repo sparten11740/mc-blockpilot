@@ -33,7 +33,8 @@ compiled.
 
 **Non-Goals:**
 - A 1.20.1 vanilla agent, Sable on 1.20.1, Forge after 1.20.1.
-- Baritone in 1.20.1 dev runs, unless its release drops in like on 1.21.1.
+- Baritone in 1.20.1 dev runs: neither 1.20.1 node names a Baritone build, so
+  `--baritone` skips them.
 - A release or version bump.
 
 ## Decisions
@@ -62,17 +63,20 @@ inline `//? if` conditions where 1.20.1 differs, as `src/26.1/` serves every
 26.x release. Shared code takes conditions and rename rules too.
 
 - **Backward renames:** rename rules so far apply from a version on; 1.20.1's
-  older names get rules that apply before a version (`current.parsed <`), with
-  the same rule that a new text must not appear in shared code.
+  older names get `older(...)` rules that apply before 1.21, with the same rule
+  that a new text must not appear in shared code.
+- **One boundary:** no release between 1.20.1 and 1.21.1 is built, so every
+  1.20.1 difference is `//? if >=1.21` (or `<1.21`), rather than the release
+  that changed each API.
 - *Alternative:* a copy as `src/1.20.1/`. Rejected: most of the tree's 17
   files differ by a line or two, and a fix would have to land twice.
 
 ### D3. Tick control ported for 1.20.1
 
-`ServerCommands` reaches ticking through a small facade with inline
-conditions: from 1.20.3 it calls the server's `tickRateManager()`, and on
-1.20.1 Blockpilot's own port in the 1.21.1 tree. The port behaves like the
-manager it stands in for:
+`ServerCommands` reaches ticking through a small facade, `ServerTicking`,
+with inline conditions: from 1.21 on it calls the server's
+`tickRateManager()`, and on 1.20.1 Blockpilot's own port, whose mixins are in
+the 1.21.1 tree. The port behaves like the manager it stands in for:
 
 - **Frozen:** the level skips weather, game time, block and fluid ticks, block
   entities, raids and block events, and ticks only players and what they ride;
@@ -83,9 +87,11 @@ manager it stands in for:
   `1000 / rate` ms, carrying the remainder over so that the average holds for
   rates that aren't a whole number of milliseconds. Above 1000 ticks a second
   some ticks get 0 ms, so the server runs as fast as it can, as 1.20.3 does.
+- **Client:** 1.20.3's client ticks at its integrated server's rate, so slow
+  motion slows it too; on 1.20.1 a mixin sets the client timer from the port.
 - **Leave:** undone on server stop like the manager's settings today.
 - The injectors sit in mixin classes both versions load, behind `//? if
-  <1.20.3`, so the mixin config stays one file.
+  <1.21`, and empty on later versions, so the mixin config stays one file.
 
 ### D4. Version-specific readings
 
@@ -98,19 +104,37 @@ manager it stands in for:
   `set_entity_motion`), which matches the ids 1.20.5 gave most of them.
 - **GameTests:** 1.20.1's runner takes test functions and a corner directly;
   its listener has three callbacks, so the adapter in the tree fills the rest.
+- **Packet ids:** a table generated from 1.20.1's `ConnectionProtocol`, built
+  from class literals: Fabric's production game runs with intermediary class
+  names, so names can't be read off the classes at run time.
+- **New chunks:** Fabric API 0.92 has no generate event, so a mixin on the
+  constructor that makes a full chunk from a proto chunk reports them, for
+  both 1.20.1 loaders.
+- **Camera:** 1.20.1 turns the view by yaw and pitch, not the camera's
+  rotation, so a placed camera's roll goes into the pose, and the frame's
+  camera is recorded after the level renders, as the HUD that does it later
+  isn't drawn while hidden.
 
 ### D5. Forge as a fourth loader
 
 - **Build:** `build.forge.gradle.kts` with ModDevGradle's `legacyforge` plugin
-  (2.0.148, as for NeoForge), Forge 47.4. The production jar is `reobfJar`'s
-  output, sent to the root `build/libs`. A Mixin annotation processor writes
-  the refmap Forge needs at run time.
+  (2.0.148, as for NeoForge), compiled and run against Forge 47.1.3, the one
+  NeoForge 47.1 split from, so the jar uses nothing either lacks. The
+  production jar is `reobfJar`'s output, sent to the root `build/libs`. A Mixin
+  annotation processor writes the refmap Forge needs at run time, and the
+  manifest lists the mixin configs, where Forge 1.20.1 looks for them.
+- **Refmap:** a mixin with two targets can't map a method both name, as their
+  intermediate names differ, so the entity tick timing is a mixin per level.
+- **MixinExtras:** Forge 47 doesn't bundle it, so the jar nests it, and Forge
+  loads the newest copy any mod brings.
+- **Access:** Forge reads an access transformer, kept beside the access
+  widener, for the type the widener opens on Fabric.
 - **Metadata:** `META-INF/mods.toml` from a template, `pack_format` 15,
   `loaderVersion` `[47,)` and the `forge` dependency `[47.1,)`.
 - **NeoForge 47.1:** it loads Forge 1.20.1 mods, but not Forge 47.3's
   constructor injection, so the mod's constructor takes no arguments and uses
   `FMLJavaModLoadingContext.get()`. Tried once on NeoForge 47.1.106, not a
-  gate.
+  gate: `-Pblockpilot.neoforge=47.1.106` runs the node on it.
 - **Code:** `dev.blockpilot.platform.forge`, a port of the NeoForge entry point
   and services to Forge's events, and `//? if forge` where shared code names a
   loader. Every other build excludes the package.
