@@ -4,46 +4,55 @@
 ./gradlew build
 ```
 
-Gradle runs on JDK 25 and fetches the JDK each build needs. Every jar lands in `build/libs/`, tagged with the Minecraft
-version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0+26.1.2-fabric.jar`.
-`./gradlew :blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a dev client; a
-`-vanilla` node starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a NeoForge or
-Fabric dev client with Baritone: it fetches the build that node's `gradle.properties` names (`baritone_version`) from
-cabaletta's GitHub releases and checks it against `baritone_sha1`, the SHA-1 in that release's `checksums.txt`. It
-goes on the dev client's runtime classpath only, never into a jar. NeoForge dev clients start with
-`-Dneoforge.enableGameTest=true`, which `gametest run` needs there, and the 1.21.1 dev clients include
+Gradle runs on JDK 25 and fetches the JDK each build needs: 17 for 1.20.1, 21 for 1.21.1 and 25 for 26.x. Every jar
+lands in `build/libs/`, tagged with the Minecraft version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or
+`blockpilot-1.0.0+26.1.2-fabric.jar`. The Forge jar there is the one remapped to the game's intermediate names, which
+Forge 1.20.1 runs mods with; the development jar stays in the node's `build/devlibs/`. `./gradlew
+:blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a dev client; a `-vanilla` node
+starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a NeoForge or Fabric dev client
+with Baritone: it fetches the build that node's `gradle.properties` names (`baritone_version`) from cabaletta's GitHub
+releases and checks it against `baritone_sha1`, the SHA-1 in that release's `checksums.txt`. It goes on the dev client's
+runtime classpath only, never into a jar. NeoForge and Forge dev clients start with `-Dneoforge.enableGameTest=true` or
+`-Dforge.enableGameTest=true`, which `gametest run` needs there, and the 1.20.1 and 1.21.1 dev clients include
 `src/gameTests/`, two GameTests of Blockpilot's own (one fails on purpose) that the smoke test runs; the published jars
 leave them out.
 
 The mod is one source tree, built with [Stonecutter](https://stonecutter.kikugie.dev/) once per Minecraft version and
 loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilot/versions/` with its own
-`gradle.properties`. Loader-specific code lives in `dev.blockpilot.platform.neoforge` and `.fabric` and only goes into
-that loader's jar; the rest reaches the loader through `ClientPlatform`. A `-vanilla` node builds a Java agent for the
-plain client instead of a loader's jar: its `dev.blockpilot.platform.vanilla` (the agent, its Mixin service and the
-mixins that stand in for a loader's events) lives in `src/vanilla/`, written against 26.x directly. `dev.blockpilot.api`
-and `dev.blockpilot.protocol` are free of Minecraft classes (enforced by a test); `dev.blockpilot.cli`, the launcher's
-client, and `dev.blockpilot.wire`, what it shares with the game, need only the JDK. `dev.blockpilot.game` holds the
-commands, which use its subpackages, which use `game.common` (enforced by a test too). The sources are checked in for
-`1.21.1-neoforge`. Code that differs between builds is marked with Stonecutter comments such as `//? if neoforge {` or
-`//? if >=26.1 {`, and plain renames (`ResourceLocation` to `Identifier`, …) are rules in
-`blockpilot/stonecutter.gradle.kts`. What differs most between versions lives in `src/1.21.1/` and `src/26.1/`: mixins
-too different for a condition or two, and a few classes with the same name and methods in each (`CraftingRecipes`,
-`FrameCapture`). Mixins that work on every version are in `src/main/`, and each tree's `blockpilot.mixins.json` lists
-both kinds. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through Stonecutter too, so the same
-comments and rules work in them, but they aren't on every node, so switching the active node leaves them as checked in,
-for their oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in an IDE too: build it by its
-Gradle path, with another node active.
+`gradle.properties`. Loader-specific code lives in `dev.blockpilot.platform.neoforge`, `.forge` and `.fabric` and only
+goes into that loader's jar; the rest reaches the loader through `ClientPlatform`. Forge is built for 1.20.1 alone, with
+ModDevGradle's plugin for the Forge before NeoForge, and its jar carries MixinExtras, which Forge 47 lacks. A `-vanilla`
+node builds a Java agent for the plain client instead of a loader's jar: its `dev.blockpilot.platform.vanilla` (the
+agent, its Mixin service and the mixins that stand in for a loader's events) lives in `src/vanilla/`, written against
+26.x directly. `dev.blockpilot.api` and `dev.blockpilot.protocol` are free of Minecraft classes (enforced by a test);
+`dev.blockpilot.cli`, the launcher's client, and `dev.blockpilot.wire`, what it shares with the game, need only the JDK.
+`dev.blockpilot.game` holds the commands, which use its subpackages, which use `game.common` (enforced by a test too).
+The sources are checked in for `1.21.1-neoforge`. Code that differs between builds is marked with Stonecutter comments
+such as `//? if neoforge {` or `//? if >=26.1 {`, and plain renames (`ResourceLocation` to `Identifier`, …) are rules in
+`blockpilot/stonecutter.gradle.kts`, with `older(...)` rules for 1.20.1's older names. What differs most between
+versions lives in `src/1.21.1/` and `src/26.1/`: mixins too different for a condition or two, and a few classes with the
+same name and methods in each (`CraftingRecipes`, `FrameCapture`). Mixins that work on every version are in `src/main/`,
+and each tree's `blockpilot.mixins.json` lists both kinds. `src/1.21.1/` serves 1.20.1 too, through `//? if >=1.21`
+blocks, and holds what only 1.20.1 needs: its port of the tick rate manager, which arrived in 1.20.3, and its packet
+ids. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through Stonecutter too, so the same comments
+and rules work in them, but they aren't on every node, so switching the active node leaves them as checked in, for their
+oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in an IDE too: build it by its Gradle path,
+with another node active.
 
 To add a target: add it with `target(...)` in `settings.gradle.kts`, create
-`blockpilot/versions/<minecraft>-{neoforge,fabric,vanilla}/gradle.properties`, with `version_sources` naming the tree it
-builds from, and add rename rules and `//? if` blocks for what changed, as was done for 26.2 and 26.3. A difference goes
-in the class that already holds its kind where there is one: `ClientScreens` for the open screen, `WindowSystem` for
-GLFW or SDL, `Gpu` for the GPU API. Copy a tree only when a range of versions has diverged too far for that, as 26.1 did
-from 1.21.1. A rename rule's new text must not already appear in the shared sources: switching versions applies the
-rules backwards, which would rename that text too. `RenameRulesTest` checks this, and that every rule has a use, while
-the checked-in node is the active one. Set `sable_companion_version` only for versions Sable publishes its companion API
-for. In `.github/workflows/release.yml`, add a row for each loader jar to upload, or that jar never reaches CurseForge;
-`tools/test_targets.py` refuses to start without it.
+`blockpilot/versions/<minecraft>-{neoforge,forge,fabric,vanilla}/gradle.properties`, with `version_sources` naming the
+tree it builds from, and add rename rules and `//? if` blocks for what changed, as was done for 26.2 and 26.3. A
+difference goes in the class that already holds its kind where there is one: `ClientScreens` for the open screen,
+`WindowSystem` for GLFW or SDL, `Gpu` for the GPU API. Copy a tree only when a range of versions has diverged too far
+for that, as 26.1 did from 1.21.1. A rename rule's new text must not already appear in the shared sources: switching
+versions applies the rules backwards, which would rename that text too. `RenameRulesTest` checks this, and that every
+rule has a use, while the checked-in node is the active one. Set `sable_companion_version` only for versions Sable
+publishes its companion API for. In `.github/workflows/release.yml`, add a row for each loader jar to upload, or that
+jar never reaches CurseForge; `tools/test_targets.py` refuses to start without it.
+
+Code every target compiles, and the API jar, keeps to Java 17's language and library, as 1.20.1 is played on Java 17:
+no `switch` patterns, no `List.getFirst()`. The 1.20.1 nodes compile it with Java 17, so such code fails their build;
+their unit tests, which don't ship, compile and run on Java 21.
 
 Measured on a dev client: `status` round trip over the line protocol about 15-30 ms.
 
@@ -60,7 +69,8 @@ One target at a time, this builds it with its unit tests, checks its jar, starts
 `tools/smoke_test.py` in text and JSON mode and then `tools/security_smoke_test.py`, and closes the client. `--suite
 smoke` or `--suite security` runs only one of the two (the default is `all`). It ends with a table of the targets and
 exits non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after
-it. JSON shapes must match those of the other targets of the loader, where the vanilla targets count as Fabric, as saved
+it. JSON shapes must match those of the other targets of the loader, where the vanilla targets count as Fabric and the
+Forge target as NeoForge, as saved
 in `build/test-targets/<target>/` along with the logs. All the targets take about 25 minutes. Leave the game windows
 alone meanwhile: real input takes control back from the test. Ctrl-C closes the client under way, and a target whose
 client is already running fails rather than start a second one. It runs on macOS and Linux; on Windows it can't yet stop

@@ -17,7 +17,7 @@ server in CI, the right tool for what the server decides: block entities, redsto
 A GameTest never sees the client: not a screen or its buttons, the HUD, key bindings, what a frame shows, a sound as the
 player hears it, a chat line as it is shown, the client's copy of a block, or frame times. Blockpilot plays a real
 client as a player does, with its mouse, keys, screens and camera, scripted from outside: a shell script, a CI job or
-an AI agent over MCP, with no test code in your mod, on NeoForge, Fabric and plain Minecraft alike. It reads the
+an AI agent over MCP, with no test code in your mod, on NeoForge, Forge, Fabric and plain Minecraft alike. It reads the
 integrated server too (`server`, `nbt`, `side=server`), so one script checks both sides. The price: it needs a client
 with a window, and a real client renders and ticks on its own time, so its tests are slower and less exact than a
 GameTest.
