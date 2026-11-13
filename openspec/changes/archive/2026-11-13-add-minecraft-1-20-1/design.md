@@ -28,8 +28,8 @@ compiled.
 - `1.20.1-fabric`, then `1.20.1-forge`, pass the smoke test with the JSON
   shapes of 1.21.1 on Fabric and NeoForge.
 - The eleven existing jars keep their behaviour.
-- Glowline's play tests run on 1.20.1: `block`, `place`, `use`, `camera`,
-  `screenshot`, `pixels`, `tick freeze` and `perf`.
+- What play tests lean on works on 1.20.1: `block`, `place`, `use`,
+  `camera`, `screenshot`, `pixels`, `tick freeze` and `perf`.
 
 **Non-Goals:**
 - A 1.20.1 vanilla agent, Sable on 1.20.1, Forge after 1.20.1.
