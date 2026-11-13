@@ -22,9 +22,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.Difficulty;
-//? if <26.1 {
+//? if <1.21.11 {
 import net.minecraft.world.level.GameRules;
-//?}
+//?} else if <26.1 {
+/*import net.minecraft.world.level.gamerules.GameRules;
+*///?}
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
@@ -130,6 +132,9 @@ final class TestWorlds {
         //? if >=26.1 {
         /*LevelSettings settings = new LevelSettings(name, mode,
             new LevelSettings.DifficultySettings(difficulty, false, false), true, WorldDataConfiguration.DEFAULT);
+        *///?} else if >=1.21.11 {
+        /*LevelSettings settings = new LevelSettings(name, mode, false, difficulty, true,
+            new GameRules(WorldDataConfiguration.DEFAULT.enabledFeatures()), WorldDataConfiguration.DEFAULT);
         *///?} else {
         LevelSettings settings = new LevelSettings(name, mode, false, difficulty, true, new GameRules(),
             WorldDataConfiguration.DEFAULT);

@@ -7,7 +7,7 @@ import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.mixin.AbstractContainerScreenAccessor;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import dev.blockpilot.mixin.AbstractWidgetAccessor;
 *///?}
 import dev.blockpilot.mixin.CreativeModeInventoryScreenAccessor;
@@ -35,7 +35,7 @@ import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
-//? if <26.1 {
+//? if <1.21.11 {
 import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 //?}
 import net.minecraft.client.gui.screens.Screen;
@@ -88,7 +88,7 @@ final class Screens {
         if (screen instanceof JoinMultiplayerScreen) {
             return "multiplayer";
         }
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*if (screen instanceof ConnectScreen || screen instanceof LevelLoadingScreen
             || screen instanceof GenericMessageScreen) {
         *///?} else {
@@ -258,7 +258,7 @@ final class Screens {
             if (!widget.active) {
                 fields.put("active", false, "inactive");
             }
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*boolean tooltip = ((AbstractWidgetAccessor) widget).blockpilot$tooltip().get() != null;
             *///?} else {
             boolean tooltip = widget.getTooltip() != null;

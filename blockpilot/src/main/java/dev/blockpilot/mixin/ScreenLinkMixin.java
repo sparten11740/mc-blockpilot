@@ -3,7 +3,7 @@ package dev.blockpilot.mixin;
 import dev.blockpilot.game.safety.PlayGuard;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.ClickEvent;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 *///?} else {
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
  */
 @Mixin(Screen.class)
 public abstract class ScreenLinkMixin {
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*@Inject(method = "defaultHandleClickEvent", at = @At("HEAD"), cancellable = true)
     private static void blockpilot$clicked(ClickEvent event, Minecraft minecraft, Screen screen, CallbackInfo info) {
         if ((event instanceof ClickEvent.OpenUrl || event instanceof ClickEvent.OpenFile

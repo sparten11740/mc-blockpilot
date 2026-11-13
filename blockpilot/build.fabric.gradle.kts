@@ -24,7 +24,21 @@ val mixinConfigs = listOf("$modId.mixins.json", "$modId-fabric.mixins.json").fil
     listOf("main", prop("version_sources")).any { treeDir.resolve("src/$it/resources/$config").exists() }
 }
 // Opens vanilla types NeoForge already makes public; one per version range, as the names differ between versions.
-val accessWidener = treeDir.resolve("src/${prop("version_sources")}/resources/$modId.accesswidener")
+// Its header names the namespace of its Mojang names: official where the game ships with them (26.x), named where Loom
+// maps the game to them. src/26.1 serves 1.21.11 too, so the build gives a copy the header of the node's own kind;
+// Loom reads it while it sets the game up, before any task runs.
+val accessWidenerHeader = "accessWidener v2 " + if (loomx.isUnobfuscated) "official" else "named"
+val accessWidener = treeDir.resolve("src/${prop("version_sources")}/resources/$modId.accesswidener").let { source ->
+    val text = if (source.exists()) source.readText() else null
+    if (text == null || text.startsWith(accessWidenerHeader)) {
+        source
+    } else {
+        layout.buildDirectory.file("generated/accessWidener/$modId.accesswidener").get().asFile.also {
+            it.parentFile.mkdirs()
+            it.writeText(text.replaceFirst(Regex("^accessWidener v2 \\w+"), accessWidenerHeader))
+        }
+    }
+}
 
 apply(from = treeDir.resolve("common.gradle.kts"))
 
@@ -133,6 +147,10 @@ sourceSets.main {
 
 tasks.processResources {
     exclude("$modId-neoforge.mixins.json")
+    // The jar's copy, which Loom remaps with the jar, has the same header as the one the game was set up with.
+    filesMatching("$modId.accesswidener") {
+        filter { line -> if (line.startsWith("accessWidener v2 ")) accessWidenerHeader else line }
+    }
 }
 
 apply(from = treeDir.resolve("coverage.gradle.kts"))

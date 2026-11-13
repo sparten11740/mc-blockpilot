@@ -73,7 +73,7 @@ final class Settle implements Action, Engine.SelfTimed {
             return Result.ok(answer.get().put("settled", seconds, "settled=" + Numbers.format(seconds) + "s"));
         }
         if (ticks >= timeoutTicks) {
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*int pending = dispatcher.getCompileQueueSize();
             *///?} else {
             int pending = dispatcher.getToBatchCount() + dispatcher.getToUpload();

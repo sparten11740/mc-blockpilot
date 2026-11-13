@@ -34,7 +34,7 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.util.ProblemReporter;
@@ -52,7 +52,7 @@ import net.minecraft.world.phys.Vec3;
  */
 final class ServerCommands {
     private static final int MAX_NBT_CHARS = 8192;
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*private static final PermissionSet OWNER = LevelBasedPermissionSet.OWNER;
     *///?} else {
     private static final int OWNER = 4;
@@ -111,7 +111,7 @@ final class ServerCommands {
         if (player == null) {
             return server().overworld();
         }
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return player.level();
         *///?} else {
         return player.serverLevel();
@@ -228,7 +228,7 @@ final class ServerCommands {
             if (entity == null) {
                 throw new CommandException("no_entity", token);
             }
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING,
                 level.registryAccess());
             entity.saveWithoutId(output);

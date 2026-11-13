@@ -6,15 +6,16 @@ plugins {
 stonecutter active "1.21.1-neoforge"
 
 stonecutter parameters {
-    // `//? if fabric`, `//? if forge`, `//? if neoforge` and `//? if vanilla` in the sources, from the loader half of the
-    // node's name.
+    // `//? if fabric`, `//? if forge`, `//? if neoforge` and `//? if vanilla` in the sources, from the loader half of
+    // the node's name.
     constants.match(current.project.substringAfterLast('-'), "fabric", "forge", "neoforge", "vanilla")
 
     // Plain renames, swapped in for the versions that have them; src/main and src/1.21.1 keep the names of the version
     // they are checked in for (vcsVersion in settings.gradle.kts), src/26.1 and src/vanilla those of the oldest version
     // they serve. Rules run over all of them and switching the active version swaps them back, so each new text must
     // not appear in code the versions share, or in src/1.21.1. Changes beyond a rename go in `//? if` blocks instead.
-    // Each rule names the earliest release known to have the new name; only those from 26.1 on have been built against.
+    // Each rule names the earliest release known to have the new name; only those from 1.21.11 on have been built
+    // against.
     // Two rules mustn't match overlapping text, such as a "$RenderSection$" beside "RenderSection$RebuildTask":
     // Stonecutter applies only one of them, and the other version keeps the old name; a `//? if` does it instead.
     fun rename(since: String, from: String, to: String) =
@@ -45,15 +46,19 @@ stonecutter parameters {
     rename("1.21.11", "dimension().location()", "dimension().identifier()")
     rename("1.21.11", "key.location()", "key.identifier()")
     rename("1.21.11", "sound.getLocation()", "sound.getIdentifier()")
-    rename("26.1", "getCurrentVersion().getName()", "getCurrentVersion().name()")
-    rename("26.1", ".getSharedSpawnPos()", ".getRespawnData().pos()")
+    rename("1.21.11", "getCurrentVersion().getName()", "getCurrentVersion().name()")
+    rename("1.21.11", ".getSharedSpawnPos()", ".getRespawnData().pos()")
     rename("26.1", "level.getDayTime()", "level.getOverworldClockTime()")
-    rename("26.1", "getWindow().getWindow()", "getWindow().handle()")
+    // 26.1 moved the level's render states into a package of their own.
+    rename("26.1", "renderer.state.CameraRenderState;", "renderer.state.level.CameraRenderState;")
+    rename("26.1", "renderer.state.QuadParticleRenderState;", "renderer.state.level.QuadParticleRenderState;")
+    rename("26.1", "renderer/state/QuadParticleRenderState;", "renderer/state/level/QuadParticleRenderState;")
+    rename("1.21.11", "getWindow().getWindow()", "getWindow().handle()")
     rename("26.1", "graphics.drawString(", "graphics.text(")
-    rename("26.1", "camera.getYRot()", "camera.yRot()")
-    rename("26.1", "camera.getXRot()", "camera.xRot()")
-    rename("26.1", "camera.getPosition()", "camera.position()")
-    rename("26.1", ".getItem().canAttackBlock(", ".canDestroyBlock(")
+    rename("1.21.11", "camera.getYRot()", "camera.yRot()")
+    rename("1.21.11", "camera.getXRot()", "camera.xRot()")
+    rename("1.21.11", "camera.getPosition()", "camera.position()")
+    rename("1.21.11", ".getItem().canAttackBlock(", ".canDestroyBlock(")
     rename("26.1", ".handleInventoryMouseClick(", ".handleContainerInput(")
     rename("26.1", "ClickType", "ContainerInput")
     rename("26.1", "client.gui.GuiGraphics;", "client.gui.GuiGraphicsExtractor;")

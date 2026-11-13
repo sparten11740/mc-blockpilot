@@ -73,7 +73,7 @@ public final class TrustTracker {
         }
         Map<UUID, String> players = new HashMap<>();
         for (PlayerInfo info : connection.getOnlinePlayers()) {
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*players.put(info.getProfile().id(), info.getProfile().name());
             *///?} else {
             players.put(info.getProfile().getId(), info.getProfile().getName());

@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-//? if <26.1 {
+//? if <1.21.11 {
 import java.util.Comparator;
 import net.minecraft.server.level.TicketType;
 //?}
@@ -29,7 +29,7 @@ public final class AwayCamera {
     }
 
     private static final Map<UUID, Spot> SPOTS = new ConcurrentHashMap<>();
-    //? if <26.1 {
+    //? if <1.21.11 {
     /** Keeps the player's own chunk entity-ticking while its tickets follow the camera, so the server ticks it. */
     private static final TicketType<ChunkPos> PLAYER_TICKING = TicketType.create("blockpilot_away",
         Comparator.comparingLong(ChunkPos::toLong));
@@ -113,7 +113,7 @@ public final class AwayCamera {
                 return;
             }
             ServerLevel level = level(serverPlayer);
-            //? if <26.1 {
+            //? if <1.21.11 {
             ChunkPos own = serverPlayer.chunkPosition();
             if (away) {
                 level.getChunkSource().addRegionTicket(PLAYER_TICKING, own, 2, own);
@@ -161,7 +161,7 @@ public final class AwayCamera {
     }
 
     private static ServerLevel level(ServerPlayer player) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return player.level();
         *///?} else {
         return player.serverLevel();

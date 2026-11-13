@@ -17,7 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.server.permissions.Permissions;
 *///?}
 import net.minecraft.world.level.Level;
@@ -129,7 +129,7 @@ public final class Sides {
 
     /** Whether the player may use cheats (command level 2), which reads on the integrated server need. */
     public static boolean cheats(LocalPlayer player) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
         *///?} else {
         return player.hasPermissions(2);

@@ -63,7 +63,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
 import net.minecraft.server.MinecraftServer;
@@ -78,7 +78,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     /** The player's switch for agent control; agents can't press it (see InputCommands). */
     private final KeyMapping toggleKey = new KeyMapping("key.blockpilot.toggle", InputConstants.KEY_F8,
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*new KeyMapping.Category(ResourceLocation.fromNamespaceAndPath(Blockpilot.MOD_ID, Blockpilot.MOD_ID)));
         *///?} else {
         "key.categories.blockpilot");

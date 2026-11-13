@@ -29,7 +29,11 @@ public abstract class KeyboardHandlerMixin implements Injection.Keyboard {
 
     @Override
     public void blockpilot$charTyped(long window, int codePoint, int modifiers) {
-        charTyped(window, new CharacterEvent(codePoint));
+        //? if >=26.1 {
+        /*charTyped(window, new CharacterEvent(codePoint));
+        *///?} else {
+        charTyped(window, new CharacterEvent(codePoint, modifiers));
+        //?}
     }
 
     @Inject(method = "keyPress", at = @At("HEAD"))

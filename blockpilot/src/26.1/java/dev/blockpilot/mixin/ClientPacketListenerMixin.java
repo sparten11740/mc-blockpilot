@@ -44,7 +44,11 @@ public abstract class ClientPacketListenerMixin {
     @Inject(method = "handleSetEntityMotion",
         at = @At(value = "INVOKE", target = ON_CLIENT_THREAD, shift = At.Shift.AFTER))
     private void blockpilot$motion(ClientboundSetEntityMotionPacket packet, CallbackInfo info) {
-        EntityUpdates.CLIENT.count(packet.id(), Kind.MOTION);
+        //? if >=26.1 {
+        /*EntityUpdates.CLIENT.count(packet.id(), Kind.MOTION);
+        *///?} else {
+        EntityUpdates.CLIENT.count(packet.getId(), Kind.MOTION);
+        //?}
     }
 
     @Inject(method = "handleSetEntityData",

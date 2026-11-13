@@ -2,7 +2,7 @@ package dev.blockpilot.platform.neoforge;
 
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.KeyMapping;
@@ -34,7 +34,7 @@ public final class NeoForgeClientEntrypoint {
         Blockpilot.init();
 
         modEventBus.addListener(RegisterKeyMappingsEvent.class, event -> {
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*services.keyMappings().stream().map(KeyMapping::getCategory).distinct().forEach(event::registerCategory);
             *///?}
             services.keyMappings().forEach(event::register);
@@ -44,17 +44,27 @@ public final class NeoForgeClientEntrypoint {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> ClientPlatform.hooks().onClientTickEnd());
         // Between the first and the last listener of a stage run all its other handlers, which a capture times.
         //? if >=26.1 {
+        /*List<Class<? extends RenderLevelStageEvent>> stages = List.of(RenderLevelStageEvent.AfterSky.class,
+            RenderLevelStageEvent.AfterOpaqueBlocks.class, RenderLevelStageEvent.AfterOpaqueFeatures.class,
+            RenderLevelStageEvent.AfterTranslucentFeatures.class, RenderLevelStageEvent.AfterTranslucentBlocks.class,
+            RenderLevelStageEvent.AfterTranslucentParticles.class, RenderLevelStageEvent.AfterWeather.class,
+            RenderLevelStageEvent.AfterLevel.class);
+        *///?} else if >=1.21.11 {
+        /*List<Class<? extends RenderLevelStageEvent>> stages = List.of(RenderLevelStageEvent.AfterSky.class,
+            RenderLevelStageEvent.AfterOpaqueBlocks.class, RenderLevelStageEvent.AfterEntities.class,
+            RenderLevelStageEvent.AfterTranslucentBlocks.class, RenderLevelStageEvent.AfterTripwireBlocks.class,
+            RenderLevelStageEvent.AfterParticles.class, RenderLevelStageEvent.AfterWeather.class,
+            RenderLevelStageEvent.AfterLevel.class);
+        *///?}
+        //? if >=1.21.11 {
         /*// Each stage is its own event class here, named after the stage (AfterSky is after_sky).
-        List.of(RenderLevelStageEvent.AfterSky.class, RenderLevelStageEvent.AfterOpaqueBlocks.class,
-            RenderLevelStageEvent.AfterOpaqueFeatures.class, RenderLevelStageEvent.AfterTranslucentFeatures.class,
-            RenderLevelStageEvent.AfterTranslucentBlocks.class, RenderLevelStageEvent.AfterTranslucentParticles.class,
-            RenderLevelStageEvent.AfterWeather.class, RenderLevelStageEvent.AfterLevel.class).forEach(stage -> {
-                String name = stage.getSimpleName().replaceAll("(?<=[a-z])(?=[A-Z])", "_").toLowerCase(Locale.ROOT);
-                NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, stage,
-                    event -> ClientPlatform.hooks().onRenderStageStart());
-                NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, stage,
-                    event -> ClientPlatform.hooks().onRenderStageEnd(name));
-            });
+        stages.forEach(stage -> {
+            String name = stage.getSimpleName().replaceAll("(?<=[a-z])(?=[A-Z])", "_").toLowerCase(Locale.ROOT);
+            NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, stage,
+                event -> ClientPlatform.hooks().onRenderStageStart());
+            NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, stage,
+                event -> ClientPlatform.hooks().onRenderStageEnd(name));
+        });
         *///?} else {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, RenderLevelStageEvent.class,
             event -> ClientPlatform.hooks().onRenderStageStart());

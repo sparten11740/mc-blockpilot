@@ -53,7 +53,7 @@ final class ContainerCommands {
         registry.register(CommandSpec.action("craft", this::craft).needsWorld().group("inventory")
             .arg("item", ArgType.ID).optionalArg("count", ArgType.COUNT)
             .help("crafts with the recipe book: in the 2x2 grid when the recipe fits, else at an open or nearby "
-                //? if >=26.1 {
+                //? if >=1.21.11 {
                 /*+ "crafting table; x<n> items (default one craft). On a remote server only unlocked recipes are "
                 + "known")
                 *///?} else {

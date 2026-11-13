@@ -92,7 +92,7 @@ public final class CameraControl {
      * the world's ticks are frozen, so a camera move goes on through {@code tick freeze}.
      */
     static float realPartialTick() {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         *///?} else if >=1.21 {
         return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);

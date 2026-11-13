@@ -1,6 +1,8 @@
 package dev.blockpilot.mixin;
 
-import com.mojang.blaze3d.audio.DeviceList;
+//? if >=26.1 {
+/*import com.mojang.blaze3d.audio.DeviceList;
+*///?}
 import com.mojang.blaze3d.audio.Library;
 import dev.blockpilot.game.record.AudioCapture;
 import java.nio.IntBuffer;
@@ -24,8 +26,12 @@ public abstract class LibraryMixin {
     private long currentDevice;
 
     @Inject(method = "openDeviceOrFallback", at = @At("RETURN"), cancellable = true)
-    private static void blockpilot$device(String preferredDevice, String systemDefaultDevice,
+    //? if >=26.1 {
+    /*private static void blockpilot$device(String preferredDevice, String systemDefaultDevice,
         CallbackInfoReturnable<Long> info) {
+    *///?} else {
+    private static void blockpilot$device(String deviceSpecifier, CallbackInfoReturnable<Long> info) {
+    //?}
         info.setReturnValue(AudioCapture.device(info.getReturnValue()));
     }
 
@@ -37,8 +43,12 @@ public abstract class LibraryMixin {
     }
 
     @Inject(method = "init", at = @At("RETURN"))
-    private void blockpilot$started(String preferredDevice, DeviceList currentDevices, boolean useHrtf,
+    //? if >=26.1 {
+    /*private void blockpilot$started(String preferredDevice, DeviceList currentDevices, boolean useHrtf,
         CallbackInfo info) {
+    *///?} else {
+    private void blockpilot$started(String deviceSpecifier, boolean enableHrtf, CallbackInfo info) {
+    //?}
         AudioCapture.started(currentDevice);
     }
 
@@ -47,7 +57,11 @@ public abstract class LibraryMixin {
         AudioCapture.closing(currentDevice);
     }
 
-    @Inject(method = "currentDeviceName", at = @At("HEAD"), cancellable = true)
+    //? if >=26.1 {
+    /*@Inject(method = "currentDeviceName", at = @At("HEAD"), cancellable = true)
+    *///?} else {
+    @Inject(method = "getCurrentDeviceName", at = @At("HEAD"), cancellable = true)
+    //?}
     private void blockpilot$deviceName(CallbackInfoReturnable<String> info) {
         String name = AudioCapture.deviceName();
         if (name != null) {
