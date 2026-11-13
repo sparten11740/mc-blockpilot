@@ -301,12 +301,12 @@ def check_live_particles(game_dir):
 
 
 def check_render_stages(game_dir):
-    """A capture times the render stages on NeoForge, the only loader with events for them."""
+    """A capture times the render stages on NeoForge and Forge, the loaders with events for them."""
     with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as source:
         loader = json.load(source)["loader"]
     _, output = run(game_dir, "perf start stages; wait 5t; perf stop", as_json=True)
     stages = json.loads(output.splitlines()[0])["results"][-1]["summary"]["client"]["render_stages"]
-    return None if bool(stages) == (loader == "neoforge") else f"on {loader}: {stages}"
+    return None if bool(stages) == (loader in ("neoforge", "forge")) else f"on {loader}: {stages}"
 
 
 def check_stop_leaves_timed_running(game_dir, world):

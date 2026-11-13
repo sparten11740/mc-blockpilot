@@ -31,7 +31,7 @@ tasks.jar {
 
 sourceSets.main {
     // The other loader's half of the mod (its entry points, event wiring and mixins) is left out of this build.
-    java.exclude("dev/blockpilot/platform/fabric/**")
+    java.exclude("dev/blockpilot/platform/fabric/**", "dev/blockpilot/platform/forge/**")
     if (!withSable) {
         java.exclude("dev/blockpilot/compat/sable/**")
     }

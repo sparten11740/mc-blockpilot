@@ -93,7 +93,7 @@ public final class PerfCommands {
                 + "client FPS/1% low/frame times, block-entity and entity renderer time per type, particle tick and "
                 + "render time per type with live counts and the mod and class that spawned them on the client or "
                 + "sent them on the integrated server, "
-                + "render-level stage time (NeoForge), section rebuilds, "
+                + "render-level stage time (NeoForge and Forge), section rebuilds, "
                 + "heap/GC, packets per type; summary returned and saved to blockpilot/perf/<name>.json. With profile "
                 + "(integrated server), stack samples of the server thread while it ticks, about 20 a second, each "
                 + "counted toward the mod owning the innermost frame outside the JDK, Minecraft, the loaders and Mixin "
