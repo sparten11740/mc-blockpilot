@@ -1,6 +1,7 @@
 // Each subproject applies what it needs; the plugin versions are pinned once here.
 plugins {
     id("net.neoforged.moddev") version "2.0.148" apply false
+    id("net.neoforged.moddev.legacyforge") version "2.0.148" apply false
     // Fabric Loom comes in two variants: the remapping one for the obfuscated releases up to 1.21.x and the plain one
     // for 26.1 and newer, which ship unobfuscated. Loom back-compat applies the right one to each Fabric node.
     id("net.fabricmc.fabric-loom-remap") version "1.19.1" apply false

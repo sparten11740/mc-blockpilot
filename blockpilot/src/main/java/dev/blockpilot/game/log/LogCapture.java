@@ -16,7 +16,6 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.Property;
 
 /**
  * Keeps the game's recent log (INFO and above, from every thread and mod) in memory so agents can read it by
@@ -39,7 +38,8 @@ public final class LogCapture extends AbstractAppender {
     private static volatile Consumer<Event> sink = event -> { };
 
     private LogCapture() {
-        super(NAME, null, null, true, Property.EMPTY_ARRAY);
+        // The one constructor every log4j has, from the 2.8 that Forge 1.20.1 compiles against to the 2.2x of 26.x.
+        super(NAME, null, null, true);
     }
 
     /** Attaches the appender to the root logger; safe to call again after the logging setup was reloaded. */

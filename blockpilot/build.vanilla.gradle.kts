@@ -20,7 +20,8 @@ tasks.jar {
 
 sourceSets.main {
     // The loaders' halves of the mod, and the Sable integration, which needs a loader for Sable, are left out.
-    java.exclude("dev/blockpilot/platform/neoforge/**", "dev/blockpilot/platform/fabric/**", "dev/blockpilot/compat/sable/**")
+    java.exclude("dev/blockpilot/platform/neoforge/**", "dev/blockpilot/platform/fabric/**", "dev/blockpilot/platform/forge/**",
+        "dev/blockpilot/compat/sable/**")
 }
 // The version sources, and the vanilla platform, written against 26.x directly like them.
 apply(from = treeDir.resolve("version-sources.gradle.kts"))

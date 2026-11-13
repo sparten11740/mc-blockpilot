@@ -105,6 +105,7 @@ jobs:
       matrix:
         include:
           - { minecraft: 1.20.1, loader: fabric, loader-name: Fabric, java: 17, dependencies: 'fabric-api:required' }
+          - { minecraft: 1.20.1, loader: forge, loader-name: Forge, java: 17, dependencies: '' }
           - { minecraft: 1.21.1, loader: neoforge, loader-name: NeoForge, java: 21, dependencies: '' }
           - { minecraft: 1.21.1, loader: fabric, loader-name: Fabric, java: 21, dependencies: 'fabric-api:required' }
           - { minecraft: 26.1.2, loader: neoforge, loader-name: NeoForge, java: 25, dependencies: '' }

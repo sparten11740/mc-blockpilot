@@ -9,7 +9,7 @@ It refuses to start if blockpilot/versions or the release workflow's rows disagr
 One target at a time, from those in settings.gradle.kts: builds it with its unit tests, checks its jar, starts its dev
 client, runs tools/smoke_test.py in text and JSON mode, then tools/security_smoke_test.py, closes the client and checks
 it shut down. JSON shapes must match those saved from the other targets of its loader; the vanilla targets count as
-Fabric, whose replies they share. --suite smoke or --suite security runs only one of the two suites (default all).
+Fabric, whose replies they share, and the Forge target as NeoForge. --suite smoke or --suite security runs only one of the two suites (default all).
 
 --baritone starts each client with Baritone (-Pblockpilot.baritone, which fetches the build its gradle.properties
 names) and runs only the smoke test's check of walks through it, on the targets that have a Baritone build. It doesn't
@@ -39,8 +39,9 @@ import smoke_test
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 OUTPUT = os.path.join(ROOT, "build", "test-targets")
 GRADLE = os.path.join(ROOT, "gradlew")
-LOADERS = ("fabric", "neoforge", "vanilla")
-METADATA = {"fabric": "fabric.mod.json", "neoforge": "META-INF/neoforge.mods.toml"}
+LOADERS = ("fabric", "forge", "neoforge", "vanilla")
+METADATA = {"fabric": "fabric.mod.json", "forge": "META-INF/mods.toml", "neoforge": "META-INF/neoforge.mods.toml"}
+SHAPE_FAMILY = {"vanilla": "fabric", "forge": "neoforge"}
 START_SECONDS = 600
 STOP_SECONDS = 120
 TERM_SECONDS = 10
@@ -152,6 +153,14 @@ def check_jar(minecraft, loader, result):
             pinned = f'"minecraft": "{minecraft}"' if loader == "fabric" else f'versionRange="[{minecraft}]"'
             result.check("loader metadata pins the game version",
                          None if pinned in metadata else f"no {pinned} in {METADATA[loader]}")
+        if loader == "forge":
+            # Forge 1.20.1 runs mods with intermediate names: mixins need their refmap, and Forge finds the mixin
+            # configs only in the manifest.
+            manifest = jar.read("META-INF/MANIFEST.MF").decode()
+            wanted = [name for name in ("blockpilot.refmap.json",) if name not in names]
+            result.check("forge jar has its refmap and lists its mixins",
+                         f"missing {wanted}" if wanted else None if "MixinConfigs: blockpilot.mixins.json" in manifest
+                         else "no MixinConfigs in the manifest")
         # 26.3 has no GLFW at all, so a reference would fail when that class loads, not at build time.
         if tuple(int(part) for part in minecraft.split(".")) >= (26, 3):
             glfw = [name for name in names if name.endswith(".class") and b"org/lwjgl/glfw" in jar.read(name)]
@@ -375,7 +384,8 @@ def test_target(target, result, baritone, suite="all"):
 def compare_shapes(results):
     """Fails a target whose JSON shapes differ from those saved for another target of its loader."""
     saved = {target: os.path.join(OUTPUT, target, "shapes.txt") for target in configured_targets()}
-    family = {target: target.rsplit("-", 1)[1].replace("vanilla", "fabric") for target in saved}
+    # The vanilla targets answer as Fabric does, and Forge as NeoForge does.
+    family = {target: SHAPE_FAMILY.get(target.rsplit("-", 1)[1], target.rsplit("-", 1)[1]) for target in saved}
     for result in results:
         mine = saved[result.target]
         if not os.path.exists(mine):
