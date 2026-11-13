@@ -125,8 +125,14 @@ def check_grammar_file(game_dir):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "grammar.ebnf")
     with open(path, encoding="utf-8") as source:
         lines = set(source.read().splitlines())
+    # The file is Blockpilot's own grammar, its sable: commands included; another mod's commands, such as the test
+    # runs' devcheck:ping, have rules named <mod>.<command> for a mod the file doesn't know.
+    def namespace(rule):
+        named = re.match(r"([a-z0-9_-]+)\.", rule)
+        return named.group(1) if named else None
+    checked = {namespace(line) for line in lines}
     missing = [row["ebnf"] for row in json.loads(output.splitlines()[0])["results"][0]["rows"]
-               if row["ebnf"] not in lines]
+               if row["ebnf"] not in lines and namespace(row["ebnf"]) in checked]
     return f"not in docs/grammar.ebnf (rerun tools/grammar.py): {missing[:3]}" if missing else None
 
 
@@ -150,6 +156,18 @@ def game_version(game_dir):
     """The running game's version, as a tuple of numbers to compare."""
     with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as source:
         return tuple(int(part) for part in json.load(source)["minecraft"].split("."))
+
+
+# Names in the game's data that changed between versions, set from the running game's version as the test starts:
+# the short grass block (1.20.3 renamed it from grass) and an item stack's count (1.20.5 made it lowercase).
+GRASS = "short_grass"
+COUNT = "count"
+
+
+def use_names_of(version):
+    global GRASS, COUNT
+    GRASS = "short_grass" if version >= (1, 20, 3) else "grass"
+    COUNT = "count" if version >= (1, 20, 5) else "Count"
 
 
 def version_steps(version):
@@ -221,8 +239,9 @@ def check_mouse_on_slots(game_dir):
     # A 9x3 chest's window is 176x168 and centred; the middle of its first slot is 16,26 from the corner.
     x = (int(size.group(1)) - 176) // 2 + 16
     y = (int(size.group(2)) - 168) // 2 + 26
-    _, output = run(game_dir, f"click {x},{y} right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count")
-    if not re.search(r"^ok 8$", output, re.MULTILINE):
+    _, output = run(game_dir, f"click {x},{y} right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].{COUNT}")
+    # Before 1.20.5 the count is a byte, which nbt writes as 8b.
+    if not re.search(r"^ok 8b?$", output, re.MULTILINE):
         return f"a right click didn't take half the stack: {output.strip()}"
     # Without the modifier in the event, the click only picks the stack up, so it never reaches the player's slots.
     _, output = run(game_dir, f"key down left_shift; wait 2t; click {x + 18},{y}; wait 3t; key up left_shift; wait 2t; "
@@ -312,10 +331,10 @@ def check_stop_leaves_timed_running(game_dir, world):
 
 def check_mine_moves_on(game_dir):
     """Sand lands on the only target while the player walks to it, too far off to reach in time."""
-    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server setblock 0 -60 14 minecraft:short_grass; "
-                              "server setblock 0 -59 14 minecraft:sand; ?mine short_grass; wait 5t; status; wait 5t; "
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server setblock 0 -60 14 minecraft:{GRASS}; "
+                              f"server setblock 0 -59 14 minecraft:sand; ?mine {GRASS}; wait 5t; status; wait 5t; "
                               "status; server fill 0 -60 14 0 -59 14 minecraft:air")
-    if "err no_block short_grass" not in output:
+    if f"err no_block {GRASS}" not in output:
         return f"counted a block that changed by itself: {output.strip()[:300]}"
     positions = [float(north_south) for north_south in re.findall(r"^ok pos \S+,(\S+)", output, re.MULTILINE)]
     # A player who has stopped still slides a little; one still walking covers a block in these 5 ticks.
@@ -363,11 +382,13 @@ def check_functions(game_dir, world):
     """A function without return answers ok and one with it its value; an unknown one, and a command that can't be
     parsed, answer command_failed."""
     pack = os.path.join(game_dir, "saves", world, "datapacks", "smoke")
-    functions = os.path.join(pack, "data", "smoke", "function")
+    old = game_version(game_dir) < (1, 21)
+    # 1.21 named the folder in the singular.
+    functions = os.path.join(pack, "data", "smoke", "functions" if old else "function")
     os.makedirs(functions, exist_ok=True)
-    # 1.21.1's own format; 26.x reads a lone pack_format below its new scheme as an old pack and still loads it.
+    # 1.20.1's format, or 1.21.1's; 26.x reads a lone pack_format below its new scheme as an old pack and still loads it.
     with open(os.path.join(pack, "pack.mcmeta"), "w", encoding="utf-8") as mcmeta:
-        json.dump({"pack": {"description": "Blockpilot smoke test", "pack_format": 48}}, mcmeta)
+        json.dump({"pack": {"description": "Blockpilot smoke test", "pack_format": 15 if old else 48}}, mcmeta)
     for name, body in (("place", "setblock 0 -60 2 minecraft:stone"), ("seven", "return 7")):
         with open(os.path.join(functions, f"{name}.mcfunction"), "w", encoding="utf-8") as function:
             function.write(body + "\n")
@@ -381,7 +402,10 @@ def check_functions(game_dir, world):
     _, output = run(game_dir, f"{CLEAR}; server function smoke:place; block 0,-60,2 side=server; "
                               "server function smoke:seven; ?server function smoke:missing; "
                               "?server setblock 0 -60 0 minecraft:not_a_block; server setblock 0 -60 2 minecraft:air")
-    expected = [r"^ok success=true\n  Running function smoke:place$", r"^ok stone$", r"^ok result=7 success=true$",
+    # 1.20.1's game counts the commands a function ran as its result.
+    ran = r"^ok result=1 success=true\n  Executed 1 command\(s\) from function 'smoke:place'$" if old \
+        else r"^ok success=true\n  Running function smoke:place$"
+    expected = [ran, r"^ok stone$", r"^ok result=7 success=true$",
                 r"^err command_failed .*smoke:missing",
                 r"^err command_failed Unknown block type 'minecraft:not_a_block'", r"^  .*<--\[HERE\]$"]
     missing = [pattern for pattern in expected if not re.search(pattern, output, re.MULTILINE)]
@@ -424,8 +448,9 @@ def write_structure(path, data_version, size, blocks):
         template.write(struct.pack(">bH", 10, 0) + body)
 
 
-# The oldest data version of each GameTest framework, which the game upgrades from: 26.1.2's and 1.21.1's.
-TEST_DATA_VERSION = {(26, 1): 4790, (1, 21): 3955}
+# The data version of each GameTest framework's structures, which the game upgrades from: 26.1.2's, 1.21.1's and
+# 1.20.1's.
+TEST_DATA_VERSION = {(26, 1): 4790, (1, 21): 3955, (1, 20): 3465}
 # The file create world leaves in a save folder to mark it a test world.
 TEST_MARKER = "blockpilot-test.json"
 
@@ -476,7 +501,7 @@ def check_gametests(game_dir, world):
         selector, passed, failed = "blockpilot_smoke:*", "blockpilot_smoke:passes", "blockpilot_smoke:fails"
     else:
         write_structure(os.path.join(save, "generated", "blockpilot", "structures", "smoke_empty.nbt"),
-                        TEST_DATA_VERSION[(1, 21)], (1, 1, 1), [])
+                        TEST_DATA_VERSION[game_version(game_dir)[:2]], (1, 1, 1), [])
         selector, passed, failed = "blockpilotsmoketests.*", "blockpilotsmoketests.passes", "blockpilotsmoketests.fails"
     # Far from where the other checks look: clearing the tests' area leaves stone in its floor on 1.21.1.
     _, output = run(game_dir, f"server as=player tp @s 1000.5 -60 1000.5 0 0; wait 10t; gametest run {selector}; "
@@ -1074,7 +1099,7 @@ def write_shapes(game_dir, path):
     code, output = run(game_dir, f"{CLEAR}; {AIMED}; server as=player setblock ~ ~ ~2 minecraft:chest; "
                                  "server as=player summon minecraft:armor_stand ~2 ~ ~; "
                                  "server as=player summon minecraft:item ~-2 ~ ~ "
-                                 "{PickupDelay:32767,Item:{id:\"minecraft:stone\",count:1}}; wait 5t")
+                                 f"{{PickupDelay:32767,Item:{{id:\"minecraft:stone\",{COUNT}:1}}}}; wait 5t")
     if code != 0:
         print(f"FAIL json shapes: the scene for them failed: {output.strip()[:300]}")
         return 1
@@ -1107,6 +1132,7 @@ def main():
     parser.add_argument("--baritone", action="store_true",
                         help="Baritone is installed in this game: run only the check of walks through it")
     args = parser.parse_args()
+    use_names_of(game_version(args.game_dir))
     world = f"smoke-{int(time.time())}"
     give = "; ".join(f"server give @p minecraft:{item}" for item in
                      ["oak_log 4", "iron_sword", "shield", "iron_helmet", "cobblestone 16"])
@@ -1142,7 +1168,7 @@ def main():
         ("mine finds nothing in an empty cell", "?mine ~0,0,3", [r"err no_block ~0,0,3 is air"], True),
         # Regression: mine took a block something else changed as mined. Sand lands on the grass while it tries to aim.
         ("mine doesn't count a block that changed by itself",
-         "server as=player setblock ~ ~ ~2 minecraft:stone; server as=player setblock ~ ~ ~3 minecraft:short_grass; "
+         f"server as=player setblock ~ ~ ~2 minecraft:stone; server as=player setblock ~ ~ ~3 minecraft:{GRASS}; "
          "server as=player setblock ~ ~1 ~3 minecraft:sand; ?mine ~0,0,3; wait 15t; "
          "server as=player fill ~ ~ ~2 ~ ~1 ~3 minecraft:air",
          [r"err out_of_reach ~0,0,3 is behind stone ~0,0,2"], True),
@@ -1183,7 +1209,7 @@ def main():
         ("inventory moves", "offhand shield; equip iron_helmet; inv", [r"head:iron_helmet", r"offhand:shield"]),
         ("container transfer", "server as=player setblock ~3 ~ ~ minecraft:chest; open ~3,0,0; put cobblestone 5; "
                                "take cobblestone 2; close", [r"moved 5", r"moved 2"]),
-        ("server-side nbt", "nbt ~3,0,0 path=Items[0].count", [r"ok 3"]),
+        ("server-side nbt", f"nbt ~3,0,0 path=Items[0].{COUNT}", [r"ok 3"]),
         ("side=server read", "block ~3,0,0 side=server; find chest 8 side=server", [r"ok chest", r"chest ~3,0,0"]),
         ("attack", "server as=player summon minecraft:cow ~3 ~ ~2; wait 5t; attack cow", [r"killed 1"]),
         ("server runs at the player", "server as=player tp @s ~40 ~ ~; server setblock ~ ~-1 ~ minecraft:gold_block; "
@@ -1212,7 +1238,7 @@ def main():
          "server item replace entity @p hotbar.8 with minecraft:air; select 8; wait 3t; mouse click middle; wait 5t; "
          "inv full", [r"\*8:gold_block"]),
         ("click s<i> right takes half a stack",
-         f"{CHEST}; click s0 right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].count; close", [r"^ok 8$"]),
+         f"{CHEST}; click s0 right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].{COUNT}; close", [r"^ok 8b?$"]),
         ("typing and select-all", f"key t; wait 3t; key {SELECT_ALL}; key backspace; type hello; wait 2t; screen full; "
                                   f"key {SELECT_ALL}; wait 2t; type x; wait 2t; screen full; key {SELECT_ALL}; "
                                   "key backspace; close", [r'value="hello"', r'value="x"']),
