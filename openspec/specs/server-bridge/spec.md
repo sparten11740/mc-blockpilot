@@ -73,6 +73,13 @@ message. A command that reports a result SHALL be judged by it, as before.
 - **THEN** the result is `err command_failed` naming `test:missing`, and the
   later commands in the script are `skip`
 
+#### Scenario: A function on 1.20.1
+- **WHEN** an agent runs `server function test:place` on a 1.20.1 jar, for a
+  function without `return` that runs one command
+- **THEN** the result is `ok result=1 success=true` with the row `Executed 1
+  command(s) from function 'test:place'`, as 1.20.1's game counts the commands
+  a function ran as its result
+
 ### Requirement: Server command results wait for the client
 The `server` result SHALL arrive `settle` server ticks after the command ran
 (default `2t`), by which time the client has received the command's changes.
