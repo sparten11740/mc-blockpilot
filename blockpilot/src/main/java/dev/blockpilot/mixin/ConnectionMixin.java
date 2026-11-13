@@ -4,7 +4,7 @@ import dev.blockpilot.game.perf.PacketNames;
 import dev.blockpilot.game.perf.Perf;
 import io.netty.channel.ChannelHandlerContext;
 import net.minecraft.network.Connection;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import io.netty.channel.ChannelFutureListener;
 *///?} else {
 import net.minecraft.network.PacketSendListener;
@@ -41,7 +41,7 @@ public abstract class ConnectionMixin {
         }
     }
 
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*@Inject(method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/channel/ChannelFutureListener;Z)V",
         at = @At("HEAD"))
     private void blockpilot$sent(Packet<?> packet, ChannelFutureListener listener, boolean flush, CallbackInfo info) {

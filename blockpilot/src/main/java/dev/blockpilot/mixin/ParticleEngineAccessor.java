@@ -2,7 +2,7 @@ package dev.blockpilot.mixin;
 
 import java.util.Map;
 import net.minecraft.client.particle.ParticleEngine;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.particle.ParticleGroup;
 *///?} else {
 import java.util.Queue;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(ParticleEngine.class)
 public interface ParticleEngineAccessor {
     @Accessor("particles")
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*Map<ParticleRenderType, ParticleGroup<?>> blockpilot$particles();
     *///?} else {
     Map<ParticleRenderType, Queue<Particle>> blockpilot$particles();

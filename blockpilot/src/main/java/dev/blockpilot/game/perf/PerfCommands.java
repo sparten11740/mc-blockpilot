@@ -23,7 +23,7 @@ import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.mixin.ChunkMapAccessor;
 import dev.blockpilot.mixin.ParticleEngineAccessor;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import dev.blockpilot.mixin.ParticleGroupAccessor;
 *///?}
 import dev.blockpilot.platform.ClientPlatform;
@@ -48,7 +48,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.Particle;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.particle.ParticleGroup;
 *///?}
 import net.minecraft.core.BlockPos;
@@ -341,7 +341,7 @@ public final class PerfCommands {
     /** The particles alive now, per type; on the client thread. */
     private static Map<String, Integer> liveParticles() {
         Map<String, Integer> live = new HashMap<>();
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*for (ParticleGroup<?> group : ((ParticleEngineAccessor) Minecraft.getInstance().particleEngine)
             .blockpilot$particles().values()) {
             for (Particle particle : ((ParticleGroupAccessor) group).blockpilot$particles()) {

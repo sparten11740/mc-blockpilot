@@ -88,7 +88,7 @@ final class InventoryOps {
 
     /** The selected hotbar slot, 0-8. */
     static int selected(Inventory inventory) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return inventory.getSelectedSlot();
         *///?} else {
         return inventory.selected;
@@ -96,7 +96,7 @@ final class InventoryOps {
     }
 
     private static void selectHotbar(Inventory inventory, int slot) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*inventory.setSelectedSlot(slot);
         *///?} else {
         inventory.selected = slot;

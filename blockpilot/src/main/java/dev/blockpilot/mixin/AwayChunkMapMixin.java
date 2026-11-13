@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 //? if <1.21 {
 /*import net.minecraft.util.Mth;
 *///?}
-//? if <26.1 {
+//? if <1.21.11 {
 import net.minecraft.world.entity.Entity;
 //?} else {
 /*import net.minecraft.world.phys.Vec3;
@@ -50,7 +50,7 @@ abstract class AwayChunkMapMixin {
     }
     *///?}
 
-    //? if <26.1 {
+    //? if <1.21.11 {
     @Redirect(method = "playerIsCloseEnoughForSpawning", at = @At(value = "INVOKE",
         target = "Lnet/minecraft/server/level/ChunkMap;euclideanDistanceSquared(Lnet/minecraft/world/level/ChunkPos;"
             + "Lnet/minecraft/world/entity/Entity;)D"))

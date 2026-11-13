@@ -18,7 +18,7 @@ import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
 import net.minecraft.client.PrioritizeChunkUpdates;
 import net.minecraft.sounds.SoundSource;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.GraphicsPreset;
 import net.minecraft.server.level.ParticleStatus;
 *///?} else {
@@ -335,7 +335,7 @@ public final class ClientOptions {
 
     static {
         List<Setting> settings = List.of(
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*new Choice<>("graphicsPreset", Options::graphicsPreset, GraphicsPreset.class),
             new Toggle("cutoutLeaves", Options::cutoutLeaves),
             new Toggle("improvedTransparency", Options::improvedTransparency),

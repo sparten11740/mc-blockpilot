@@ -108,6 +108,8 @@ jobs:
           - { minecraft: 1.20.1, loader: forge, loader-name: Forge, java: 17, dependencies: '' }
           - { minecraft: 1.21.1, loader: neoforge, loader-name: NeoForge, java: 21, dependencies: '' }
           - { minecraft: 1.21.1, loader: fabric, loader-name: Fabric, java: 21, dependencies: 'fabric-api:required' }
+          - { minecraft: 1.21.11, loader: neoforge, loader-name: NeoForge, java: 21, dependencies: '' }
+          - { minecraft: 1.21.11, loader: fabric, loader-name: Fabric, java: 21, dependencies: 'fabric-api:required' }
           - { minecraft: 26.1.2, loader: neoforge, loader-name: NeoForge, java: 25, dependencies: '' }
           - { minecraft: 26.1.2, loader: fabric, loader-name: Fabric, java: 25, dependencies: 'fabric-api:required' }
           - { minecraft: '26.2', loader: neoforge, loader-name: NeoForge, java: 25, dependencies: '' }

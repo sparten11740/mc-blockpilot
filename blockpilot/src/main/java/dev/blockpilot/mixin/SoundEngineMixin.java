@@ -6,7 +6,7 @@ import net.minecraft.client.sounds.SoundEngine;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 *///?} else {
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class SoundEngineMixin {
     @Inject(method = "play", at = @At(value = "INVOKE",
         target = "Lnet/minecraft/client/resources/sounds/SoundInstance;getSound()Lnet/minecraft/client/resources/sounds/Sound;"))
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*private void blockpilot$played(SoundInstance sound, CallbackInfoReturnable<SoundEngine.PlayResult> info) {
     *///?} else {
     private void blockpilot$played(SoundInstance sound, CallbackInfo info) {

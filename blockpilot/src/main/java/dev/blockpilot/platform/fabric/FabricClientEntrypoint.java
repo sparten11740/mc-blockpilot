@@ -6,7 +6,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 *///?} else {
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -16,7 +16,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.network.chat.Component;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.resources.ResourceLocation;
 *///?}
 
@@ -30,7 +30,7 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> ClientPlatform.hooks().onLoadComplete());
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> ClientPlatform.hooks().onClientStopping());
         ClientTickEvents.END_CLIENT_TICK.register(client -> ClientPlatform.hooks().onClientTickEnd());
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*HudElementRegistry.addLast(ResourceLocation.fromNamespaceAndPath(Blockpilot.MOD_ID, "status"),
             (graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
         *///?} else {

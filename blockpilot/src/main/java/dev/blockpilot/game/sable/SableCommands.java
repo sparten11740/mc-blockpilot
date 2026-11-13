@@ -425,7 +425,7 @@ final class SableCommands {
         if (player == null) {
             throw new CommandException("not_in_world");
         }
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*ServerLevel level = player.level();
         *///?} else {
         ServerLevel level = player.serverLevel();
@@ -442,7 +442,7 @@ final class SableCommands {
                 + Rel.absolute(block));
         }
         Vec3 at = subLevels.toWorld(level, Vec3.atBottomCenterOf(spot.pos()));
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*player.teleportTo(level, at.x, at.y, at.z, Set.of(), player.getYRot(), player.getXRot(), false);
         *///?} else {
         player.teleportTo(level, at.x, at.y, at.z, player.getYRot(), player.getXRot());

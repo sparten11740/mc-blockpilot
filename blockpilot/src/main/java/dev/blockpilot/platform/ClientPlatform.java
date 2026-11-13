@@ -2,13 +2,13 @@ package dev.blockpilot.platform;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import java.util.HashSet;
 *///?}
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import java.util.Set;
 *///?}
 import java.util.UUID;
@@ -134,7 +134,7 @@ public final class ClientPlatform {
     }
 
     private static Services services;
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*private static final Set<KeyMapping.Category> CATEGORIES = new HashSet<>();
     *///?}
     /** {@link #modOf} per class name, "" for none; a class doesn't change mods. */
@@ -244,7 +244,7 @@ public final class ClientPlatform {
     }
 
     // Categories are registered objects from 26.1. A loader that leaves that to the mod calls this for each mapping.
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*public static void registerCategoryOf(KeyMapping mapping) {
         if (CATEGORIES.add(mapping.getCategory())) {
             KeyMapping.Category.register(mapping.getCategory().id());

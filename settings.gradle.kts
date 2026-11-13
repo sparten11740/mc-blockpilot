@@ -24,6 +24,7 @@ stonecutter {
 
         target("1.20.1", "fabric", "forge")
         target("1.21.1", "neoforge", "fabric")
+        target("1.21.11", "neoforge", "fabric")
         target("26.1", "neoforge", "fabric", "vanilla")
         target("26.2", "neoforge", "fabric", "vanilla")
         target("26.3", "neoforge", "fabric", "vanilla")

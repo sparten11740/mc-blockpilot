@@ -53,7 +53,7 @@ final class NeoForgeServices implements ClientPlatform.Services {
 
     @Override
     public boolean developmentEnvironment() {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return !FMLEnvironment.isProduction();
         *///?} else {
         return !FMLEnvironment.production;
@@ -71,7 +71,7 @@ final class NeoForgeServices implements ClientPlatform.Services {
         if (file == null) {
             return List.of();
         }
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return List.copyOf(file.getFile().getContents().getContentRoots());
         *///?} else {
         // This FML names only the primary path: the jar, or in a dev run the classes folder.
@@ -83,7 +83,7 @@ final class NeoForgeServices implements ClientPlatform.Services {
     public String modOf(String className) {
         String file = className.replace('.', '/') + ".class";
         for (IModFileInfo info : ModList.get().getModFiles()) {
-            //? if >=26.1 {
+            //? if >=1.21.11 {
             /*boolean holds = info.getFile().getContents().containsFile(file);
             *///?} else {
             boolean holds = Files.exists(info.getFile().findResource(file.split("/")));

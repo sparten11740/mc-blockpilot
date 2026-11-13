@@ -16,7 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(Minecraft.class)
 public abstract class MinecraftMixin {
-    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;pick(F)V"))
+    //? if >=26.1 {
+    /*@Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;pick(F)V"))
+    *///?} else {
+    @Inject(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;pick(F)V"))
+    //?}
     private void blockpilot$aimBeforePick(CallbackInfo info) {
         AimedClick.beforePick((Minecraft) (Object) this);
     }
@@ -33,10 +37,12 @@ public abstract class MinecraftMixin {
         }
     }
 
-    // The pause on lost focus asks the window itself, not isWindowActive.
+    //? if >=26.1 {
+    /*// The pause on lost focus asks the window itself, not isWindowActive, from 26.1 on.
     @ModifyExpressionValue(method = "pauseIfInactive",
         at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;isFocused()Z"))
     private boolean blockpilot$noPauseWhileActive(boolean focused) {
         return focused || Focus.keepActive();
     }
+    *///?}
 }

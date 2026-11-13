@@ -2,14 +2,14 @@ package dev.blockpilot.mixin;
 
 import dev.blockpilot.game.safety.PlayGuard;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.client.gui.screens.Screen;
 *///?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-//? if <26.1 {
+//? if <1.21.11 {
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 //?}
 
@@ -26,7 +26,7 @@ public abstract class SlashCommandMixin {
         }
     }
 
-    //? if >=26.1 {
+    //? if >=1.21.11 {
     /*@Inject(method = "sendUnattendedCommand", at = @At("HEAD"), cancellable = true)
     private void blockpilot$clicked(String command, Screen screen, CallbackInfo info) {
         if (PlayGuard.refuseCommand(command)) {

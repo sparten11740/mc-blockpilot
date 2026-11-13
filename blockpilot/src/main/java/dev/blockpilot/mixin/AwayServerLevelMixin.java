@@ -7,7 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.world.phys.Vec3;
 *///?}
 
@@ -22,7 +22,7 @@ abstract class AwayServerLevelMixin {
         return AwayCamera.presenceBlock(player);
     }
 
-    //? if <26.1 {
+    //? if <1.21.11 {
     @Redirect(method = "explode", at = @At(value = "INVOKE",
         target = "Lnet/minecraft/server/level/ServerPlayer;distanceToSqr(DDD)D"))
     private double blockpilot$awayExplosion(ServerPlayer player, double x, double y, double z) {
