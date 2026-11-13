@@ -172,7 +172,7 @@ def use_names_of(version):
 
 def version_steps(version):
     """The steps whose commands or answers depend on the game's version."""
-    if version >= (26, 1):
+    if version >= (1, 21, 11):
         graphics = "option graphicsPreset fast; option reset", [r"graphicsPreset fast was", r"restored graphicsPreset"]
     else:
         graphics = "option graphicsMode fast; option reset", [r"graphicsMode fast was", r"restored graphicsMode"]
@@ -181,8 +181,8 @@ def version_steps(version):
         function_key = "?key press f25", [r"^err syntax unknown key f25; closest: "], True
     else:
         function_key = "key press f25", [r"^ok"]
-    # The game polls for this key as it handles the drop key: Command on macOS before 26.1, else Control.
-    drop_all = "left_win" if sys.platform == "darwin" and version < (26, 1) else "left_control"
+    # The game polls for this key as it handles the drop key: Command on macOS before 1.21.11, else Control.
+    drop_all = "left_win" if sys.platform == "darwin" and version < (1, 21, 11) else "left_control"
     polled_key = (f"server item replace entity @p hotbar.6 with minecraft:cobblestone 16; select 6; wait 2t; "
                   f"key press key.drop; wait 5t; status; key down {drop_all}; wait 2t; key press key.drop; wait 5t; "
                   f"key up {drop_all}; status", [r"hand:cobblestone x15", r"!hand:cobblestone x15[\s\S]*\bhand:"])
@@ -386,7 +386,7 @@ def check_functions(game_dir, world):
     # 1.21 named the folder in the singular.
     functions = os.path.join(pack, "data", "smoke", "functions" if old else "function")
     os.makedirs(functions, exist_ok=True)
-    # 1.20.1's format, or 1.21.1's; 26.x reads a lone pack_format below its new scheme as an old pack and still loads it.
+    # 1.20.1's format, or 1.21.1's; 1.21.11 and 26.x read a lone pack_format below their new scheme as an old pack.
     with open(os.path.join(pack, "pack.mcmeta"), "w", encoding="utf-8") as mcmeta:
         json.dump({"pack": {"description": "Blockpilot smoke test", "pack_format": 15 if old else 48}}, mcmeta)
     for name, body in (("place", "setblock 0 -60 2 minecraft:stone"), ("seven", "return 7")):
@@ -448,20 +448,26 @@ def write_structure(path, data_version, size, blocks):
         template.write(struct.pack(">bH", 10, 0) + body)
 
 
-# The data version of each GameTest framework's structures, which the game upgrades from: 26.1.2's, 1.21.1's and
-# 1.20.1's.
-TEST_DATA_VERSION = {(26, 1): 4790, (1, 21): 3955, (1, 20): 3465}
+# The data version GameTest structures are written in, from each version on, which the game upgrades from: 1.20.1's,
+# 1.21.1's, 1.21.11's and 26.1.2's.
+TEST_DATA_VERSION = {(1, 20): 3465, (1, 21): 3955, (1, 21, 11): 4671, (26, 1): 4790}
+
+
+def test_data_version(version):
+    return TEST_DATA_VERSION[max(key for key in TEST_DATA_VERSION if key <= version)]
 # The file create world leaves in a save folder to mark it a test world.
 TEST_MARKER = "blockpilot-test.json"
 
 
 def check_gametests(game_dir, world):
     """gametest run answers a row for a test that passes and one that fails on purpose, and err no_test for a selector
-    matching none: on 26.x the block-based tests of a data pack, on 1.21.1 Blockpilot's own dev tests. On 26.x the data
+    matching none: from 1.21.11 the block-based tests of a data pack, before it Blockpilot's own dev tests. The data
     pack makes the game ask about experimental settings when the world loads: join world answers for a test world and
     leaves the question on screen for any other."""
     save = os.path.join(game_dir, "saves", world)
-    if game_version(game_dir) >= (26, 1):
+    version = game_version(game_dir)
+    # From 1.21.5 tests are data: on 1.21.11 and later a data pack's block-based tests.
+    if version >= (1, 21, 11):
         pack = os.path.join(save, "datapacks", "gametests")
         os.makedirs(pack, exist_ok=True)
         with open(os.path.join(pack, "pack.mcmeta"), "w", encoding="utf-8") as mcmeta:
@@ -476,7 +482,7 @@ def check_gametests(game_dir, world):
                              ("fails", [test_block(0, "start"), test_block(1, "fail", "fails on purpose"),
                                         test_block(3, "accept")])):
             write_structure(os.path.join(pack, "data", "blockpilot_smoke", "structure", f"{name}.nbt"),
-                            TEST_DATA_VERSION[(26, 1)], (max(block[0] for block in blocks) + 1, 1, 1), blocks)
+                            test_data_version(version), (max(block[0] for block in blocks) + 1, 1, 1), blocks)
             instance = os.path.join(pack, "data", "blockpilot_smoke", "test_instance", f"{name}.json")
             os.makedirs(os.path.dirname(instance), exist_ok=True)
             with open(instance, "w", encoding="utf-8") as test:
@@ -501,7 +507,7 @@ def check_gametests(game_dir, world):
         selector, passed, failed = "blockpilot_smoke:*", "blockpilot_smoke:passes", "blockpilot_smoke:fails"
     else:
         write_structure(os.path.join(save, "generated", "blockpilot", "structures", "smoke_empty.nbt"),
-                        TEST_DATA_VERSION[game_version(game_dir)[:2]], (1, 1, 1), [])
+                        test_data_version(version), (1, 1, 1), [])
         selector, passed, failed = "blockpilotsmoketests.*", "blockpilotsmoketests.passes", "blockpilotsmoketests.fails"
     # Far from where the other checks look: clearing the tests' area leaves stone in its floor on 1.21.1.
     _, output = run(game_dir, f"server as=player tp @s 1000.5 -60 1000.5 0 0; wait 10t; gametest run {selector}; "
@@ -836,7 +842,8 @@ def check_entity_names(game_dir):
     """@<name> takes the entity tagged or called so wherever e<id> is taken, on the client and on the server thread,
     the nearest of several to where the server takes the player to be, and fails when no entity has the name."""
     # A custom name is a text component: JSON inside an NBT string before 26.1, SNBT from then on.
-    daisy = "'\"Daisy\"'" if game_version(game_dir) < (26, 1) else '"Daisy"'
+    # 1.21.5 made names in entity data text components rather than JSON in a string.
+    daisy = "'\"Daisy\"'" if game_version(game_dir) < (1, 21, 11) else '"Daisy"'
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; ?server kill @e[type=minecraft:cow]; "
                               "server as=player summon minecraft:cow ~3 ~ ~4 {Tags:[\"star\"],NoAI:1b}; "
                               "server as=player summon minecraft:cow ~3 ~ ~40 {Tags:[\"star\"],NoAI:1b}; "
@@ -1238,7 +1245,8 @@ def main():
          "server item replace entity @p hotbar.8 with minecraft:air; select 8; wait 3t; mouse click middle; wait 5t; "
          "inv full", [r"\*8:gold_block"]),
         ("click s<i> right takes half a stack",
-         f"{CHEST}; click s0 right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].{COUNT}; close", [r"^ok 8b?$"]),
+         f"{CHEST}; click s0 right; wait 3t; click s1; wait 3t; nbt ~3,0,0 path=Items[1].{COUNT}; close",
+         [r"^ok 8b?$"]),
         ("typing and select-all", f"key t; wait 3t; key {SELECT_ALL}; key backspace; type hello; wait 2t; screen full; "
                                   f"key {SELECT_ALL}; wait 2t; type x; wait 2t; screen full; key {SELECT_ALL}; "
                                   "key backspace; close", [r'value="hello"', r'value="x"']),
