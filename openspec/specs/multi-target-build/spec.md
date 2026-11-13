@@ -11,14 +11,14 @@ and new targets can be added without forking the code.
 ### Requirement: One jar per target from one source tree
 The build SHALL produce one mod jar for each configured `<minecraft>-<loader>`
 target from a single shared source tree. The targets are `1.20.1-fabric`,
-`1.20.1-forge`, `1.21.1-neoforge`, `1.21.1-fabric`, `26.1-neoforge`,
-`26.1-fabric`, `26.1-vanilla`, `26.2-neoforge`, `26.2-fabric`, `26.2-vanilla`,
-`26.3-neoforge`, `26.3-fabric` and `26.3-vanilla`. The `-vanilla` targets run
-without a mod loader.
+`1.20.1-forge`, `1.21.1-neoforge`, `1.21.1-fabric`, `1.21.11-neoforge`,
+`1.21.11-fabric`, `26.1-neoforge`, `26.1-fabric`, `26.1-vanilla`,
+`26.2-neoforge`, `26.2-fabric`, `26.2-vanilla`, `26.3-neoforge`, `26.3-fabric`
+and `26.3-vanilla`. The `-vanilla` targets run without a mod loader.
 
 #### Scenario: Full build produces every target
 - **WHEN** a developer runs the root build task
-- **THEN** a jar is produced for each of the thirteen targets
+- **THEN** a jar is produced for each of the fifteen targets
 - **AND** each jar's file name includes the mod version, the Minecraft version
   and the loader (e.g. `blockpilot-0.1.0+26.1.2-fabric.jar`,
   `blockpilot-0.1.0+26.3-vanilla.jar`)
@@ -35,6 +35,12 @@ without a mod loader.
 
 #### Scenario: Forge jar on NeoForge 47.1
 - **WHEN** the `1.20.1-forge` jar is installed in a NeoForge 47.1 client
+- **THEN** the mod loads and opens its agent endpoint
+
+#### Scenario: 1.21.11 jar on 1.21.11
+- **WHEN** the `1.21.11-neoforge` jar is installed in a NeoForge 21.11
+  client, or the `1.21.11-fabric` jar in a Fabric 1.21.11 client with Fabric
+  API
 - **THEN** the mod loads and opens its agent endpoint
 
 #### Scenario: 26.1 jar on 26.1
@@ -106,6 +112,12 @@ names, which are the running game's and are documented in `docs/commands.md`.
 - **THEN** every step passes on both, and the JSON replies have the same
   fields
 
+#### Scenario: Same reply on 1.21.11
+- **WHEN** the smoke test runs against a 1.21.11 jar and a 26.1 jar of the
+  same loader
+- **THEN** every step passes on both, and the JSON replies have the same
+  fields
+
 #### Scenario: Same reply on 26.2 and 26.3
 - **WHEN** the smoke test runs against a 26.1 jar and a 26.2 or 26.3 jar of the
   same loader
@@ -164,7 +176,7 @@ assertion.
 #### Scenario: Every target passes
 - **WHEN** a developer runs the script with no arguments and every assertion
   holds
-- **THEN** it reports each of the thirteen targets as passed and exits with 0
+- **THEN** it reports each of the fifteen targets as passed and exits with 0
 
 #### Scenario: An assertion fails
 - **WHEN** an assertion fails on `26.3-fabric`
