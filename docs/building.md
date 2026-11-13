@@ -4,18 +4,18 @@
 ./gradlew build
 ```
 
-Gradle runs on JDK 25 and fetches the JDK each build needs: 17 for 1.20.1, 21 for 1.21.1 and 25 for 26.x. Every jar
-lands in `build/libs/`, tagged with the Minecraft version and loader, e.g. `blockpilot-1.0.0+1.21.1-neoforge.jar` or
-`blockpilot-1.0.0+26.1.2-fabric.jar`. The Forge jar there is the one remapped to the game's intermediate names, which
-Forge 1.20.1 runs mods with; the development jar stays in the node's `build/devlibs/`. `./gradlew
-:blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a dev client; a `-vanilla` node
-starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a NeoForge or Fabric dev client
-with Baritone: it fetches the build that node's `gradle.properties` names (`baritone_version`) from cabaletta's GitHub
-releases and checks it against `baritone_sha1`, the SHA-1 in that release's `checksums.txt`. It goes on the dev client's
-runtime classpath only, never into a jar. NeoForge and Forge dev clients start with `-Dneoforge.enableGameTest=true` or
-`-Dforge.enableGameTest=true`, which `gametest run` needs there, and the 1.20.1 and 1.21.1 dev clients include
-`src/gameTests/`, two GameTests of Blockpilot's own (one fails on purpose) that the smoke test runs; the published jars
-leave them out.
+Gradle runs on JDK 25 and fetches the JDK each build needs: 17 for 1.20.1, 21 for 1.21.1 and 1.21.11, and 25 for 26.x.
+Every jar lands in `build/libs/`, tagged with the Minecraft version and loader, e.g.
+`blockpilot-1.0.0+1.21.1-neoforge.jar` or `blockpilot-1.0.0+26.1.2-fabric.jar`. The Forge jar there is the one remapped
+to the game's intermediate names, which Forge 1.20.1 runs mods with; the development jar stays in the node's
+`build/devlibs/`. `./gradlew :blockpilot:1.21.1-neoforge:runClient` (or another `<minecraft>-<loader>` node) starts a
+dev client; a `-vanilla` node starts the plain client with the freshly built agent jar. `-Pblockpilot.baritone` starts a
+NeoForge or Fabric dev client with Baritone: it fetches the build that node's `gradle.properties` names
+(`baritone_version`) from cabaletta's GitHub releases and checks it against `baritone_sha1`, the SHA-1 in that release's
+`checksums.txt`. It goes on the dev client's runtime classpath only, never into a jar. NeoForge and Forge dev clients
+start with `-Dneoforge.enableGameTest=true` or `-Dforge.enableGameTest=true`, which `gametest run` needs there, and the
+1.20.1 and 1.21.1 dev clients include `src/gameTests/`, two GameTests of Blockpilot's own (one fails on purpose) that
+the smoke test runs; the published jars leave them out.
 
 The mod is one source tree, built with [Stonecutter](https://stonecutter.kikugie.dev/) once per Minecraft version and
 loader: each build is a subproject named `<minecraft>-<loader>` under `blockpilot/versions/` with its own
@@ -34,10 +34,12 @@ versions lives in `src/1.21.1/` and `src/26.1/`: mixins too different for a cond
 same name and methods in each (`CraftingRecipes`, `FrameCapture`). Mixins that work on every version are in `src/main/`,
 and each tree's `blockpilot.mixins.json` lists both kinds. `src/1.21.1/` serves 1.20.1 too, through `//? if >=1.21`
 blocks, and holds what only 1.20.1 needs: its port of the tick rate manager, which arrived in 1.20.3, and its packet
-ids. `src/26.1/` serves 26.1 and later. These trees and `src/vanilla/` go through Stonecutter too, so the same comments
-and rules work in them, but they aren't on every node, so switching the active node leaves them as checked in, for their
-oldest version. So a 26.2 or 26.3 node doesn't compile as the active node, in an IDE too: build it by its Gradle path,
-with another node active.
+ids. `src/26.1/` serves 1.21.11 and later, through `//? if >=26.1` blocks where 1.21.11 differs; 1.21.11 already has
+most of what came after 1.21.1, so a condition between the two names 1.21.11. Its access widener is written in 26.x's
+own names, and the Fabric build gives 1.21.11's copy the header of the names Loom maps the game to. These trees and
+`src/vanilla/` go through Stonecutter too, so the same comments and rules work in them, but they aren't on every node,
+so switching the active node leaves them as checked in, for their oldest version. So a 26.2 or 26.3 node doesn't compile
+as the active node, in an IDE too: build it by its Gradle path, with another node active.
 
 To add a target: add it with `target(...)` in `settings.gradle.kts`, create
 `blockpilot/versions/<minecraft>-{neoforge,forge,fabric,vanilla}/gradle.properties`, with `version_sources` naming the

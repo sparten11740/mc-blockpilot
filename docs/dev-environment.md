@@ -40,8 +40,8 @@ legacyForge {
 }
 ```
 
-Fabric Loom (from 26.1, whose Loom doesn't remap mods, `localRuntime` instead of `modLocalRuntime`; on 1.20.1 as on
-1.21.1):
+Fabric Loom (from 26.1, whose Loom doesn't remap mods, `localRuntime` instead of `modLocalRuntime`; on 1.20.1 and
+1.21.11 as on 1.21.1):
 
 ```kotlin
 dependencies {

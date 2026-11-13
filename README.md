@@ -4,7 +4,7 @@
 
 A client-side Minecraft mod that lets AI agents and scripts see and play the game through a fast, token-efficient local
 interface: to play, or to play-test a mod while you develop it. For Fabric and Forge on Minecraft 1.20.1, NeoForge and
-Fabric on 1.21.1, 26.1.2, 26.2 and 26.3, and for plain Minecraft 26.1.2, 26.2 and 26.3 without a mod loader.
+Fabric on 1.21.1, 1.21.11, 26.1.2, 26.2 and 26.3, and for plain Minecraft 26.1.2, 26.2 and 26.3 without a mod loader.
 
 ![A script chops a tree, crafts a crafting table and places it, with the replies below the game](docs/images/01-scripted-play.png)
 
