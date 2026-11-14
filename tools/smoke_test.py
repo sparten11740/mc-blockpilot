@@ -661,6 +661,25 @@ def yaw_toward(start, end):
     return math.degrees(math.atan2(end[2] - start[2], end[0] - start[0])) - 90
 
 
+def yaw_through(before, here, after):
+    """The game's yaw along a curve at here: the tangent there of the circle through the three points, horizontally,
+    or the chord from before to after when they lie in a line. Unlike the chord, it holds however unevenly the points
+    are spaced, as rows read from frames drawn late are."""
+    (ax, az), (bx, bz), (cx, cz) = ((point[0], point[2]) for point in (before, here, after))
+    chord = (cx - ax, cz - az)
+    determinant = 2 * (ax * (bz - cz) + bx * (cz - az) + cx * (az - bz))
+    if abs(determinant) < 1e-9 * (chord[0] ** 2 + chord[1] ** 2):
+        return yaw_toward(before, after)
+    centre_x = ((ax * ax + az * az) * (bz - cz) + (bx * bx + bz * bz) * (cz - az) + (cx * cx + cz * cz) * (az - bz)) \
+        / determinant
+    centre_z = ((ax * ax + az * az) * (cx - bx) + (bx * bx + bz * bz) * (ax - cx) + (cx * cx + cz * cz) * (bx - ax)) \
+        / determinant
+    tangent = (centre_z - bz, bx - centre_x)
+    if tangent[0] * chord[0] + tangent[1] * chord[1] < 0:
+        tangent = (-tangent[0], -tangent[1])
+    return yaw_toward((0, 0, 0), (tangent[0], 0, tangent[1]))
+
+
 def turned(first, second):
     """The difference between two yaws, in degrees, the short way round."""
     return abs((first - second + 180) % 360 - 180)
@@ -749,11 +768,11 @@ def check_camera_curve(game_dir):
 
 def check_camera_looks_ahead(game_dir):
     """look ahead faces the way the camera travels from a fifth of the way on, and keeps that way at the end. The way
-    through a row is the chord between the rows either side; the chord to the next row lags a curve's tangent."""
+    through a row is the curve's tangent at the row, from the rows either side (yaw_through)."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,2,0; sample status every 2t while camera move "
                               "~10,2,10 via ~10,2,0 look ahead over 40t; screenshot 64; status; camera reset")
     rows = camera_rows(output)
-    off = [round(turned(rows[index][2], yaw_toward(rows[index - 1][1], rows[index + 1][1])))
+    off = [round(turned(rows[index][2], yaw_through(rows[index - 1][1], rows[index][1], rows[index + 1][1])))
            for index in range(max(1, len(rows) // 5), len(rows) - 1)
            if math.dist(rows[index - 1][1], rows[index + 1][1]) > 0.05]
     final = re.findall(r"^ok pos .*\bcam:(-?[\d.]+)/", output, re.MULTILINE)
