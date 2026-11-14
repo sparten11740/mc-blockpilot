@@ -115,7 +115,7 @@ Mac's OpenGL 4.1. Otherwise Windows and Linux are left to what players report, u
 
 Set `mod_version` in `blockpilot/gradle.properties`, add a `## <version> (<date>)` section to `CHANGELOG.md`, commit,
 and push a tag `v<version>`. The `release` workflow checks that the tag matches `mod_version`, builds and tests every
-target, and uploads the eight loader jars to CurseForge with
+target, and uploads the twelve loader jars to CurseForge with
 [mod-publish-actions](https://github.com/sparten11740/mod-publish-actions); CurseForge has no loader for the vanilla
 agent. Once the uploads have gone through, it creates the GitHub release with the mod jars and the API jar. A version
 ending in `-alpha…` or `-beta…` goes out as that release type, anything else as a release. The upload jobs run in the
