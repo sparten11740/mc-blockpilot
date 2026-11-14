@@ -113,6 +113,13 @@ jobs:
           TARGETS: ${{ join(fromJSON(needs.targets.outputs.targets), ',') }}
         run: |
           mkdir -p build/test-targets artifacts
+          # download-artifact puts a lone artifact's files straight into its path, without the artifact's folder.
+          if [ -n "$(find artifacts -maxdepth 1 -type f -print -quit)" ]; then
+            lone=$(python3 -c 'import json; print(json.load(open("artifacts/results.json"))["target"])' 2>/dev/null \
+              || echo "$TARGETS")
+            mkdir -p "artifacts/game-tests-$lone"
+            find artifacts -maxdepth 1 -type f -exec mv {} "artifacts/game-tests-$lone/" \;
+          fi
           for artifact in artifacts/game-tests-*; do
             [ -d "$artifact" ] && mv "$artifact" "build/test-targets/${artifact#artifacts/game-tests-}"
           done
