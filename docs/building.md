@@ -88,9 +88,11 @@ lost ffmpeg would otherwise skip recording on all targets alike, which the compa
 
 In CI, `.github/workflows/game-tests.yml` runs the game tests on every push to main: each target in its own job on a
 Linux runner, under a virtual display with Mesa's software OpenGL and Vulkan, ffmpeg and OpenAL Soft's silent output,
-with `--strict-skips`. A last job combines the results, fails the run for any target that failed or left none, and shows
-the table in the run's summary; each target's logs are kept as the artifact `game-tests-<target>`. Run workflow on the
-game tests' Actions page runs it by hand for the targets you name. Releases don't wait for it.
+with `--strict-skips`. The clients draw four chunks far there, so that software rendering keeps up with the checks of
+camera moves; 26.3 finds no OpenGL visual under the virtual display and draws with Vulkan. A last job combines the
+results, fails the run for any target that failed or left none, and shows the table in the run's summary; each target's
+logs are kept as the artifact `game-tests-<target>`. Run workflow on the game tests' Actions page runs it by hand for
+the targets you name. Releases don't wait for it.
 
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
 the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
