@@ -697,13 +697,14 @@ def turned(first, second):
 
 def merge_late_frames(gaps, mean, tolerance):
     """Rows read the camera from the last frame drawn; a frame drawn late makes one gap short and the next long, which
-    together are two ordinary gaps. Merges such pairs into the two halves of their sum: a gap short by more than the
-    tolerance, then a long one, the two within the tolerance of two ordinary gaps, or within twice it after a frame so
-    late that both are 30% off. The slower the game draws, as in software, the more often a frame is late."""
+    together are two ordinary gaps. Merges such pairs into the two halves of their sum: a short gap, then a long one,
+    either off by more than the tolerance, the two within the tolerance of two ordinary gaps, or within twice it after
+    a frame so late that both are 30% off. The slower the game draws, as in software, the more often a frame is late."""
     out, index = [], 0
     while index < len(gaps):
         pair = gaps[index:index + 2]
-        if len(pair) == 2 and pair[0] < (1 - tolerance) * mean and pair[1] > mean:
+        if len(pair) == 2 and pair[0] < mean < pair[1] \
+                and (pair[0] < (1 - tolerance) * mean or pair[1] > (1 + tolerance) * mean):
             very_late = pair[0] < 0.7 * mean and pair[1] > 1.3 * mean
             if abs(sum(pair) - 2 * mean) <= (2 if very_late else 1) * tolerance * mean:
                 out += [sum(pair) / 2] * 2
