@@ -14,7 +14,7 @@
 - [x] 2.4 Fix the race the CI runs found between `close` on the game menu and a server step right after it (D8), with a smoke check of `close` and a server step in one script; verify the check fails on a dev client built from 1.3.0 and passes with the fix
 - [x] 2.5 Verify every target passes in two CI runs in a row, recording with sound included, and that the run keeps each target's logs
 - [x] 2.6 Verify the failure path on a throwaway commit pushed to the branch that breaks one assertion on `1.20.1-forge` only: the check fails, the summary names the target and the assertion, the other targets pass; drop the commit
-- [ ] 2.7 Remove the branch trigger and merge to main (pushing main needs Jan's go-ahead); verify the push runs every target and `release.yml` is unchanged, and that a by-hand run for `26.3-fabric` runs only that target
+- [x] 2.7 Remove the branch trigger and merge to main (pushing main needs Jan's go-ahead); verify the push runs every target and `release.yml` is unchanged, and that a by-hand run for `26.3-fabric` runs only that target
 
 ## Workflow follow-up
 
