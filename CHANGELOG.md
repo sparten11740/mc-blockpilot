@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.1 (unreleased)
+## 1.3.1 (2026-11-14)
 
 - **Fixes:** the game starts beside Sodium on 1.20.1 and 1.21.1, and beside Embeddium on 1.20.1 Forge, where it stopped
   at load as both replace a method of the game's world renderer that Blockpilot hooks. Beside them, `perf` counts their
