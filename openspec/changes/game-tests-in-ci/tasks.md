@@ -2,7 +2,7 @@
 
 ## 1. Test script (multi-target-build)
 
-- [ ] 1.1 Write `build/test-targets/<target>/results.json` for each target (held, failed and skipped assertions with reasons) and add `--combine`, which reads the results of every configured target or those `--targets` names, fails a target without results as missing, runs the shape and skip comparisons and prints the table (D2); verify by hand on results from a local run of `1.21.1-neoforge` and `26.3-fabric`: combining both passes, a shape line edited in one fails naming the query and both targets, a skip edited into one fails that target, and a deleted results file fails as missing
+- [x] 1.1 Write `build/test-targets/<target>/results.json` for each target (held, failed and skipped assertions with reasons) and add `--combine`, which reads the results of every configured target or those `--targets` names, fails a target without results as missing, runs the shape and skip comparisons and prints the table (D2); verify by hand on results from a local run of `1.21.1-neoforge` and `26.3-fabric`: combining both passes, a shape line edited in one fails naming the query and both targets, a skip edited into one fails that target, and a deleted results file fails as missing
 - [ ] 1.2 Add `--strict-skips`, failing a target for a skipped assertion other than the Baritone and two-client ones (D3); verify on `1.21.1-neoforge` with ffmpeg hidden from the PATH that recording is skipped without the flag and fails the target with it
 - [ ] 1.3 Describe `--combine` and `--strict-skips` in the script's docstring and docs/building.md
 

@@ -2,21 +2,26 @@
 """Tests Blockpilot on every target, or the ones named, end to end.
 
     python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--suite smoke|security|all] [--baritone]
-        [--list]
+        [--combine] [--list]
 
 It refuses to start if blockpilot/versions or the release workflow's rows disagree with settings.gradle.kts.
 
 One target at a time, from those in settings.gradle.kts: builds it with its unit tests, checks its jar, starts its dev
 client, runs tools/smoke_test.py in text and JSON mode, then tools/security_smoke_test.py, closes the client and checks
 it shut down. JSON shapes must match those saved from the other targets of its loader; the vanilla targets count as
-Fabric, whose replies they share, and the Forge target as NeoForge. --suite smoke or --suite security runs only one of the two suites (default all).
+Fabric, whose replies they share, and the Forge target as NeoForge. --suite smoke or --suite security runs only one of
+the two suites (default all).
+
+Each target's results go to build/test-targets/<target>/results.json once it is done. --combine starts no client: it
+reads the results saved there, from this machine or copied from others, fails a target without any as unfinished, and
+compares shapes and skips across the targets as one run would. CI runs one target per machine and combines them so.
 
 --baritone starts each client with Baritone (-Pblockpilot.baritone, which fetches the build its gradle.properties
 names) and runs only the smoke test's check of walks through it, on the targets that have a Baritone build. It doesn't
 check that the client closes, as on 26.x Baritone keeps it from closing by itself.
 
 Ends with a table of the targets and exits non-zero if any assertion failed, naming the target and the assertion. A
-failure doesn't stop the targets after it. Logs and shapes are in build/test-targets/<target>/.
+failure doesn't stop the targets after it. Logs, shapes and results are in build/test-targets/<target>/.
 
 A full run takes about 25 minutes. Leave the game windows alone meanwhile: real input takes control back from the test.
 Only the client this script started is ever stopped, though a client still loading has no endpoint to be seen by, so
@@ -48,6 +53,7 @@ TERM_SECONDS = 10
 # A smoke test takes a minute or two; a hung client would otherwise cost three minutes for each of its many steps.
 SMOKE_SECONDS = 600
 STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+RESULTS = "results.json"
 
 
 class Result:
@@ -412,6 +418,34 @@ def compare_skips(results):
                 result.check(f"{name} runs here too", f"it ran on {ran_on[0]}, but here: {reason}")
 
 
+def results_path(target):
+    return os.path.join(OUTPUT, target, RESULTS)
+
+
+def save_results(result):
+    with open(results_path(result.target), "w", encoding="utf-8") as output:
+        json.dump({"target": result.target, "held": result.held,
+                   "failed": [{"name": name, "problem": problem} for name, problem in result.problems],
+                   "skipped": [{"name": name, "reason": reason} for name, reason in result.skipped]}, output, indent=1)
+
+
+def load_results(target):
+    """A target's saved results; a target without them fails, as its run never finished."""
+    result = Result(target)
+    path = results_path(target)
+    try:
+        with open(path, encoding="utf-8") as source:
+            saved = json.load(source)
+        result.held = list(saved["held"])
+        result.problems = [(failed["name"], failed["problem"]) for failed in saved["failed"]]
+        result.skipped = [(skipped["name"], skipped["reason"]) for skipped in saved["skipped"]]
+    except FileNotFoundError:
+        result.check("results saved", f"no {os.path.relpath(path, ROOT)}: its run didn't finish")
+    except (ValueError, KeyError, TypeError) as error:
+        result.check("results saved", f"{os.path.relpath(path, ROOT)} is unreadable: {error!r}"[:400])
+    return result
+
+
 def report(results):
     width = max(len(result.target) for result in results)
     print(f"\n{'target':{width}}  result  assertions")
@@ -441,6 +475,8 @@ def main():
     parser.add_argument("--suite", choices=["smoke", "security", "all"], default="all",
                         help="run only the smoke test or only the security checks (default: both)")
     parser.add_argument("--list", action="store_true", help="print the targets and exit")
+    parser.add_argument("--combine", action="store_true",
+                        help="start no client: report on the results saved in build/test-targets/, as one run would")
     args = parser.parse_args()
     configured = configured_targets()
     problems = target_list_problems(configured)
@@ -453,6 +489,10 @@ def main():
     unknown = [target for target in chosen if target not in configured]
     if unknown:
         parser.error(f"unknown targets {unknown}; these exist: {' '.join(configured)}")
+    if args.combine:
+        if args.baritone:
+            parser.error("--combine starts no client, so it takes no --baritone")
+        return finish([load_results(target) for target in chosen])
     if args.baritone:
         without = [target for target in chosen if not has_baritone(target)]
         if args.targets and without:
@@ -469,11 +509,16 @@ def main():
         for target in chosen:
             print(f"testing {target}", flush=True)
             result = Result(target)
+            os.makedirs(os.path.join(OUTPUT, target), exist_ok=True)
+            # An earlier run's results would stand in for this one's if this one never finished.
+            if os.path.exists(results_path(target)):
+                os.remove(results_path(target))
             try:
                 test_target(target, result, args.baritone, args.suite)
             except Exception as error:
                 # A surprise in one target, such as a corrupt jar, mustn't lose the results of the others.
                 result.check("the test itself", repr(error)[:400])
+            save_results(result)
             results.append(result)
             print(f"  {'FAIL' if result.problems else 'pass'} {result.summary()}", flush=True)
     except KeyboardInterrupt:
@@ -481,6 +526,11 @@ def main():
         if results:
             report(results)
         return 130
+    return finish(results)
+
+
+def finish(results):
+    """Applies the checks across targets, prints the table and returns the exit code."""
     compare_shapes(results)
     compare_skips(results)
     report(results)

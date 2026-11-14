@@ -72,14 +72,17 @@ One target at a time, this builds it with its unit tests, checks its jar, starts
 smoke` or `--suite security` runs only one of the two (the default is `all`). It ends with a table of the targets and
 exits non-zero if any assertion failed, naming the target and the assertion; a failure doesn't stop the targets after
 it. JSON shapes must match those of the other targets of the loader, where the vanilla targets count as Fabric and the
-Forge target as NeoForge, as saved
-in `build/test-targets/<target>/` along with the logs. All the targets take about 25 minutes. Leave the game windows
-alone meanwhile: real input takes control back from the test. Ctrl-C closes the client under way, and a target whose
-client is already running fails rather than start a second one. It runs on macOS and Linux; on Windows it can't yet stop
-a client, so it refuses to start.
+Forge target as NeoForge, as saved in `build/test-targets/<target>/` along with the logs and each target's
+`results.json`. All the targets take about 25 minutes. Leave the game windows alone meanwhile: real input takes control
+back from the test. Ctrl-C closes the client under way, and a target whose client is already running fails rather than
+start a second one. It runs on macOS and Linux; on Windows it can't yet stop a client, so it refuses to start.
 
 With `--baritone`, each client starts with Baritone and the smoke test runs only its check that `goto` and `mine` walk
 through it, as the other steps expect the built-in pathfinder; without a list, on every target with a Baritone build.
+
+`--combine` starts no client: it reads the `results.json` files in `build/test-targets/`, from this machine or copied
+from others, fails a target that has none as unfinished, and compares shapes and skips across the targets as one run
+would; CI tests each target on its own machine and combines them so.
 
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
 the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
