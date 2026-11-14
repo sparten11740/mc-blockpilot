@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0 (unreleased)
+## 1.3.0 (2026-11-14)
 
 - **Minecraft 1.21.11, on Fabric and NeoForge:** two new jars, for Fabric 1.21.11 with Fabric API 0.141 and Fabric
   Loader 0.17.3 or newer, and for NeoForge 21.11, on Java 21. Every command answers as on 1.21.1 and 26.1.
