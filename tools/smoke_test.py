@@ -1012,9 +1012,10 @@ def check_camera_orbit(game_dir):
 def check_camera_lens(game_dir):
     """A narrow field of view fills the frame with a far block, a roll puts the sky to one side, a move glides the field
     of view, a placement keeps it, and a value out of range is refused before anything changes."""
-    # A red block 20 blocks in front of the camera, looked at through its centre.
+    # A red block 20 blocks in front of the camera, looked at through its centre, once its section is drawn again: a
+    # game drawn slowly, as in CI, may still show it unlit five ticks after it was set.
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; server as=player setblock ~5 ~1 ~5 "
-                              "minecraft:red_concrete; wait 5t; camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5; wait 3t; "
+                              "minecraft:red_concrete; settle; camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5; wait 3t; "
                               "pixels wide=0.48,0.48,0.52,0.52; camera at ~5.5,1.5,-14.5 look ~5.5,1.5,5.5 fov=10; "
                               "wait 3t; pixels narrow=0.48,0.48,0.52,0.52; "
                               "camera at ~0,2,0 look ~0,2,10 fov=70 roll=90; wait 3t; "
