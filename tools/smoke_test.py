@@ -666,18 +666,22 @@ def turned(first, second):
     return abs((first - second + 180) % 360 - 180)
 
 
-def merge_late_frames(gaps, mean):
+def merge_late_frames(gaps, mean, tolerance):
     """Rows read the camera from the last frame drawn; a frame drawn late makes one gap short and the next long, which
-    together are two ordinary gaps. Merges such pairs into the two halves of their sum."""
+    together are two ordinary gaps. Merges such pairs into the two halves of their sum: a gap short by more than the
+    tolerance, then a long one, the two within the tolerance of two ordinary gaps, or within twice it after a frame so
+    late that both are 30% off. The slower the game draws, as in software, the more often a frame is late."""
     out, index = [], 0
     while index < len(gaps):
-        if index + 1 < len(gaps) and gaps[index] < 0.7 * mean and gaps[index + 1] > 1.3 * mean \
-                and abs(gaps[index] + gaps[index + 1] - 2 * mean) <= 0.3 * mean:
-            out += [(gaps[index] + gaps[index + 1]) / 2] * 2
-            index += 2
-        else:
-            out.append(gaps[index])
-            index += 1
+        pair = gaps[index:index + 2]
+        if len(pair) == 2 and pair[0] < (1 - tolerance) * mean and pair[1] > mean:
+            very_late = pair[0] < 0.7 * mean and pair[1] > 1.3 * mean
+            if abs(sum(pair) - 2 * mean) <= (2 if very_late else 1) * tolerance * mean:
+                out += [sum(pair) / 2] * 2
+                index += 2
+                continue
+        out.append(gaps[index])
+        index += 1
     return out
 
 
@@ -732,12 +736,13 @@ def check_camera_curve(game_dir):
     points = [row[1] for row in camera_rows(output)]
     gaps = [math.dist(first, second) for first, second in zip(points, points[1:])]
     mean = sum(gaps) / len(gaps) if gaps else 0
+    even = 0.15
     # A last row from a late frame has no row after it to count with; a slow stretch anywhere else still fails.
-    if len(gaps) > 2 and gaps[-1] < 0.7 * mean:
+    if len(gaps) > 2 and gaps[-1] < (1 - even) * mean:
         gaps = gaps[:-1]
         mean = sum(gaps) / len(gaps)
-    gaps = merge_late_frames(gaps, mean)
-    if not gaps or any(abs(gap - mean) > 0.15 * mean for gap in gaps):
+    gaps = merge_late_frames(gaps, mean, even)
+    if not gaps or any(abs(gap - mean) > even * mean for gap in gaps):
         return f"gaps between rows {[round(gap, 2) for gap in gaps]}"
     return None
 
