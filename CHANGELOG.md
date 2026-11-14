@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 (unreleased)
+
+- **Fixes:** a server step right after `close` on the game menu, in the same script or a request sent at once, runs as
+  soon as the server takes the unpause at its next tick, where it failed with `err paused`.
+
 ## 1.3.0 (2026-11-14)
 
 - **Minecraft 1.21.11, on Fabric and NeoForge:** two new jars, for Fabric 1.21.11 with Fabric API 0.141 and Fabric
