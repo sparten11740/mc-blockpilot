@@ -57,6 +57,7 @@
     "ServerChunkCacheMixin",
     "ServerLevelMixin",
     "SlashCommandMixin",
+    "SodiumMeshingTaskMixin",
     "SoundEngineAccessor",
     "SoundEngineMixin",
     "SoundManagerAccessor"
