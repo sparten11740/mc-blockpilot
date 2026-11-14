@@ -780,13 +780,14 @@ def check_camera_move_background(game_dir):
 
 
 def check_camera_move_recording(game_dir, world):
-    """A move recorded at 60 fps is in a new place in nearly every frame, where camera at once a tick repeats them:
-    consecutive frames' ground, with the clouds off, barely differs only where the camera stood still."""
+    """A move recorded at 30 fps is in a new place in nearly every frame, where camera at once a tick repeats a third
+    of them: consecutive frames' ground, with the clouds off, barely differs only where the camera stood still. 30 fps,
+    not more, so that a game drawn in software keeps up."""
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise Skipped("ffmpeg isn't installed")
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option enableVsync off; option renderClouds off; camera at ~0,2,0; "
-                              f"record start {world}-move width=256 fps=60 audio=off; "
+                              f"record start {world}-move width=256 fps=30 audio=off; "
                               "camera move ~10,2,10 via ~10,2,0 look ahead over 2s; record stop; camera reset; "
                               "option reset")
     reason = unsupported_reason(output, False)
