@@ -86,6 +86,12 @@ would; CI tests each target on its own machine and combines them so. `--strict-s
 it skipped, unless only a Baritone or two-client run would run it: on a machine that should lack nothing, as in CI, a
 lost ffmpeg would otherwise skip recording on all targets alike, which the comparison of skips can't see.
 
+In CI, `.github/workflows/game-tests.yml` runs the game tests on every push to main: each target in its own job on a
+Linux runner, under a virtual display with Mesa's software OpenGL and Vulkan, ffmpeg and OpenAL Soft's silent output,
+with `--strict-skips`. A last job combines the results, fails the run for any target that failed or left none, and shows
+the table in the run's summary; each target's logs are kept as the artifact `game-tests-<target>`. Run workflow on the
+game tests' Actions page runs it by hand for the targets you name. Releases don't wait for it.
+
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
 the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
 game polls, that frames and videos are upright, the HUD, and perf timings. Recording needs ffmpeg, and recording with
