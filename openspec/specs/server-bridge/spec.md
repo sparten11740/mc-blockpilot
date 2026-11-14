@@ -154,6 +154,12 @@ cancelled on the server thread.
 - **THEN** the first result is `err paused`, and the `click` runs and closes
   the menu
 
+#### Scenario: Server command right after the menu closes
+- **WHEN** the game menu is open in singleplayer and an agent runs
+  `close; server time query gametime`
+- **THEN** the `server` step waits for the server's next tick, which takes the
+  unpause, and runs, rather than failing with `err paused`
+
 ### Requirement: Server commands run from the player
 Without `as=player`, `server` SHALL run the command as the server's own
 source, positioned at the player with the player's rotation and in the
