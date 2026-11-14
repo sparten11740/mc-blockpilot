@@ -2,8 +2,7 @@ name: game tests
 
 on:
   push:
-    # game-tests-in-ci only while the workflow is brought up; it goes before the merge.
-    branches: [main, game-tests-in-ci]
+    branches: [main]
   workflow_dispatch:
     inputs:
       targets:
