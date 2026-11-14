@@ -24,8 +24,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Records each frame's camera, so {@code pixels} can find world positions in the frame it reads. While a camera is
  * away from the player, the sections drawn centre on it: 1.21.1 centres them on the player, which 26.x doesn't.
+ *
+ * <p>Renderers such as Sodium overwrite {@code setupRender} with their own, which centres on the camera already. Mixin
+ * refuses to inject into a method another mixin overwrote at the same or a higher priority, so this one sits above the
+ * default 1000, and its redirects may find nothing to redirect there.
  */
-@Mixin(LevelRenderer.class)
+@Mixin(value = LevelRenderer.class, priority = 1100)
 public abstract class LevelRendererMixin {
     //? if >=1.21 {
     @Inject(method = "renderLevel", at = @At("HEAD"))
@@ -45,19 +49,19 @@ public abstract class LevelRendererMixin {
     *///?}
 
     @Redirect(method = "setupRender", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/client/player/LocalPlayer;getX()D"))
+        target = "Lnet/minecraft/client/player/LocalPlayer;getX()D"), require = 0)
     private double blockpilot$centreX(LocalPlayer player) {
         return AwayCamera.active() ? camera().x : player.getX();
     }
 
     @Redirect(method = "setupRender", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/client/player/LocalPlayer;getY()D"))
+        target = "Lnet/minecraft/client/player/LocalPlayer;getY()D"), require = 0)
     private double blockpilot$centreY(LocalPlayer player) {
         return AwayCamera.active() ? camera().y : player.getY();
     }
 
     @Redirect(method = "setupRender", at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/client/player/LocalPlayer;getZ()D"))
+        target = "Lnet/minecraft/client/player/LocalPlayer;getZ()D"), require = 0)
     private double blockpilot$centreZ(LocalPlayer player) {
         return AwayCamera.active() ? camera().z : player.getZ();
     }

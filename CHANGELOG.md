@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1 (unreleased)
+
+- **Fixes:** the game starts beside Sodium on 1.20.1 and 1.21.1, and beside Embeddium on 1.20.1 Forge, where it stopped
+  at load as both replace a method of the game's world renderer that Blockpilot hooks. Beside them, `perf` counts their
+  section rebuilds, and a camera placed `away` draws the world around it as without them.
+
 ## 1.3.0 (2026-11-14)
 
 - **Minecraft 1.21.11, on Fabric and NeoForge:** two new jars, for Fabric 1.21.11 with Fabric API 0.141 and Fabric

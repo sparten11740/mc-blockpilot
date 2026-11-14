@@ -11,9 +11,9 @@ Fabric on 1.21.1, 1.21.11, 26.1.2, 26.2 and 26.3, and for plain Minecraft 26.1.2
 ## Install
 
 Put the jar for your loader and Minecraft version from the [releases](../../releases) into the game's `mods` folder
-(Fabric also needs Fabric API) and start the game. The 1.20.1 Forge jar also runs on NeoForge 47.1. Blockpilot listens
-on `127.0.0.1` only, behind a token it creates. For a mod's dev environment, see
-[docs/dev-environment.md](docs/dev-environment.md).
+(Fabric also needs Fabric API) and start the game. The 1.20.1 Forge jar also runs on NeoForge 47.1. Blockpilot runs
+beside Sodium, and beside Embeddium on 1.20.1 Forge. It listens on `127.0.0.1` only, behind a token it creates. For a
+mod's dev environment, see [docs/dev-environment.md](docs/dev-environment.md).
 
 Without a mod loader, on Minecraft 26.1.2, 26.2 or 26.3: keep that version's vanilla jar in a folder whose path has no
 spaces, add an installation of that version in the Minecraft Launcher (or, where it offers that version, a vanilla
