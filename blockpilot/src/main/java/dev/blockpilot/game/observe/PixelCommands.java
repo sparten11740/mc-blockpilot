@@ -35,9 +35,10 @@ public final class PixelCommands {
             .help("measures parts of the last rendered frame (GUI included unless hidden): [name=]x0,y0,x1,y1 in "
                 + "frame fractions from the top left, or [name=]@<pos>, the square around a world position reaching "
                 + "r=<blocks> to each side (default 0.5); unnamed ones are r0, r1, …, and with none all and centre. "
-                + "Each gives <name>.r .g .b .luma (means), .max and .p90 (luma), 0-255; err offscreen <name> when a "
-                + "position is behind the camera or out of the frame. A frame rendered from a placed camera (camera "
-                + "at) adds camera <x,y,z>, so no region may be named camera")
+                + "Each gives a field <name> holding r g b luma (means), max and p90 (luma), 0-255, nested in JSON as "
+                + "{\"<name>\":{\"r\":…}} and read in tests as <name>.r; err offscreen <name> when a position is "
+                + "behind the camera or out of the frame. A frame rendered from a placed camera (camera at) adds "
+                + "camera <x,y,z>, so no region may be named camera")
             .field("camera", "the placed camera's absolute position, when the frame was rendered from it")
             .example("pixels sky=0.4,0.05,0.6,0.15 @~0,0,4 r=1"));
     }
