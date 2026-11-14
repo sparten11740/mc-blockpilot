@@ -4,6 +4,8 @@
 
 - **Minecraft 1.21.11, on Fabric and NeoForge:** two new jars, for Fabric 1.21.11 with Fabric API 0.141 and Fabric
   Loader 0.17.3 or newer, and for NeoForge 21.11, on Java 21. Every command answers as on 1.21.1 and 26.1.
+- **Fixes:** `help pixels` says that JSON nests each region's values under its name, as `{"sky":{"r":…}}`, which
+  tests read as `sky.r`; it read as if the reply held flat keys such as `sky.r`.
 
 ## 1.2.0 (2026-11-13)
 

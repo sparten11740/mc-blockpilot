@@ -87,7 +87,8 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
 - `particles [since=]`: particles spawned per type over a window.
 - `option [<name> [<value>]]`, `option reset`: client options (see below).
 - `pixels [[name=]x0,y0,x1,y1|[name=]@<pos>]… [r=]`: mean rgb and luma, max and p90 luma of parts of the last frame,
-  with `camera <x,y,z>` when a placed camera rendered it.
+  with `camera <x,y,z>` when a placed camera rendered it. JSON nests each part's values under its name, as
+  `{"sky":{"r":…,"luma":…}}`, which tests read as `sky.r`.
 - `record start [name] [width=] [fps=] [hud=off] [audio=off]`, `record stop`, `record status`, `record mark <label>`,
   `record <duration> [name] …`, `record script [name] …`: a video of the game with its sound; `record script` ends the
   take with its script, however it ends, and the reply carries its summary as `! record …`; `record mark` notes the
