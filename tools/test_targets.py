@@ -2,7 +2,7 @@
 """Tests Blockpilot on every target, or the ones named, end to end.
 
     python3 tools/test_targets.py [--targets 26.3-fabric,26.2-neoforge] [--suite smoke|security|all] [--baritone]
-        [--combine] [--list]
+        [--strict-skips] [--combine] [--list]
 
 It refuses to start if blockpilot/versions or the release workflow's rows disagree with settings.gradle.kts.
 
@@ -15,6 +15,9 @@ the two suites (default all).
 Each target's results go to build/test-targets/<target>/results.json once it is done. --combine starts no client: it
 reads the results saved there, from this machine or copied from others, fails a target without any as unfinished, and
 compares shapes and skips across the targets as one run would. CI runs one target per machine and combines them so.
+
+--strict-skips fails a target for each assertion it skipped, unless only a Baritone or two-client run would run it: for
+a machine that should lack nothing, such as CI, where a lost ffmpeg would otherwise skip recording on all targets alike.
 
 --baritone starts each client with Baritone (-Pblockpilot.baritone, which fetches the build its gradle.properties
 names) and runs only the smoke test's check of walks through it, on the targets that have a Baritone build. It doesn't
@@ -54,6 +57,8 @@ TERM_SECONDS = 10
 SMOKE_SECONDS = 600
 STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 RESULTS = "results.json"
+# Skips that only another kind of run lifts: Baritone's walks, and the checks that need a second client.
+OTHER_RUNS = re.compile(r"--baritone|--clients 2|two-client test runs")
 
 
 class Result:
@@ -418,6 +423,14 @@ def compare_skips(results):
                 result.check(f"{name} runs here too", f"it ran on {ran_on[0]}, but here: {reason}")
 
 
+def fail_skips(result):
+    """Fails each skip that this kind of run could have lifted, for a machine that should lack nothing."""
+    failed = {name for name, _ in result.problems}
+    for name, reason in result.skipped:
+        if not OTHER_RUNS.search(reason) and name not in failed:
+            result.check(name, f"skipped, which --strict-skips fails: {reason}")
+
+
 def results_path(target):
     return os.path.join(OUTPUT, target, RESULTS)
 
@@ -477,6 +490,8 @@ def main():
     parser.add_argument("--list", action="store_true", help="print the targets and exit")
     parser.add_argument("--combine", action="store_true",
                         help="start no client: report on the results saved in build/test-targets/, as one run would")
+    parser.add_argument("--strict-skips", action="store_true",
+                        help="fail a target for each skip but those only a Baritone or two-client run lifts")
     args = parser.parse_args()
     configured = configured_targets()
     problems = target_list_problems(configured)
@@ -492,7 +507,11 @@ def main():
     if args.combine:
         if args.baritone:
             parser.error("--combine starts no client, so it takes no --baritone")
-        return finish([load_results(target) for target in chosen])
+        results = [load_results(target) for target in chosen]
+        if args.strict_skips:
+            for result in results:
+                fail_skips(result)
+        return finish(results)
     if args.baritone:
         without = [target for target in chosen if not has_baritone(target)]
         if args.targets and without:
@@ -518,6 +537,8 @@ def main():
             except Exception as error:
                 # A surprise in one target, such as a corrupt jar, mustn't lose the results of the others.
                 result.check("the test itself", repr(error)[:400])
+            if args.strict_skips:
+                fail_skips(result)
             save_results(result)
             results.append(result)
             print(f"  {'FAIL' if result.problems else 'pass'} {result.summary()}", flush=True)

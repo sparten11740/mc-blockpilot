@@ -82,7 +82,9 @@ through it, as the other steps expect the built-in pathfinder; without a list, o
 
 `--combine` starts no client: it reads the `results.json` files in `build/test-targets/`, from this machine or copied
 from others, fails a target that has none as unfinished, and compares shapes and skips across the targets as one run
-would; CI tests each target on its own machine and combines them so.
+would; CI tests each target on its own machine and combines them so. `--strict-skips` fails a target for each assertion
+it skipped, unless only a Baritone or two-client run would run it: on a machine that should lack nothing, as in CI, a
+lost ffmpeg would otherwise skip recording on all targets alike, which the comparison of skips can't see.
 
 `tools/smoke_test.py --game-dir <run dir>` tests a game already running. Besides replies, it checks what commands do in
 the game: what each mouse button does to a block and a slot, the camera, the cursor, typing and select-all, a key the
