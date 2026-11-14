@@ -89,6 +89,17 @@ If 26.x fails on lavapipe, the workflow writes `preferredGraphicsBackend:
 task finds out which is needed; either way the choice lives in the workflow,
 not in the mod.
 
+Found on the first run: no fallback is needed. 1.20.1 to 26.2 draw with
+OpenGL on llvmpipe. 26.3 tries OpenGL first, gets no matching GLX visual from
+Xvfb ("Couldn't find matching GLX visual") and falls back to Vulkan on
+lavapipe by itself, which works.
+
+The first run also showed the frame rate D7 is about: 17 to 45 frames a
+second at the default render distance, the 26.x clients slowest. The
+workflow therefore seeds each run folder's `options.txt` with
+`renderDistance:4`; the flat test world stays in view, and none of the
+checks depends on chunks farther away.
+
 Alternatives: a GPU runner (paid, and not needed for correctness); PulseAudio
 with a null sink (another daemon to start, where OpenAL Soft's own backend
 suffices). If the null backend turns out to lack something the engine needs,
