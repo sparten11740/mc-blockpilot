@@ -51,6 +51,11 @@ state and submitting it, and counts as one call.
 - **THEN** its type appears with about 3 ms per frame and one call per block
   entity and frame
 
+#### Scenario: Rebuilds beside Sodium
+- **WHEN** a capture runs beside Sodium or Embeddium while chunk sections
+  rebuild
+- **THEN** the summary counts their rebuilds, as it counts the game's own
+
 ### Requirement: Particle metrics
 For particles the summary SHALL include the live count per type when the
 capture stops and the tick and render time per type. The type is the particle
