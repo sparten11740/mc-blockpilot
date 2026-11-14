@@ -4,7 +4,9 @@
 
 - **Fixes:** the game starts beside Sodium on 1.20.1 and 1.21.1, and beside Embeddium on 1.20.1 Forge, where it stopped
   at load as both replace a method of the game's world renderer that Blockpilot hooks. Beside them, `perf` counts their
-  section rebuilds, and a camera placed `away` draws the world around it as without them.
+  section rebuilds, and a camera placed `away` draws the world around it as without them. A server step right after
+  `close` on the game menu, in the same script or a request sent at once, runs as soon as the server takes the unpause
+  at its next tick, where it failed with `err paused`.
 
 ## 1.3.0 (2026-11-14)
 
