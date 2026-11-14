@@ -959,7 +959,8 @@ def check_camera_orbit(game_dir):
     cameras, walkers = camera_positions(moving), entity_positions(moving)
     if len(cameras) != 4 or len(walkers) != 2 \
             or abs(across(cameras[1], walkers[1]) - across(cameras[0], walkers[0])) > 0.3:
-        problems.append(f"the orbit didn't go along with the walker: cameras {cameras[:2]}, walkers {walkers}")
+        problems.append(f"the orbit didn't go along with the walker: cameras {cameras[:2]}, walkers {walkers}: "
+                        f"{moving.strip()[:700]}")
     elif cameras[2] != cameras[3] or len(re.findall(r"^ok camera ", moving, re.MULTILINE)) != 3:
         problems.append(f"the orbit didn't hold when its walker went: {cameras[2:]}")
     _, away = run(game_dir, "camera at 1000,-58,0 look 1000,-60,5 away; camera orbit 1000,-60,5 by 180 over 40t; "
