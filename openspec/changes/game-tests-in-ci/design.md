@@ -139,6 +139,17 @@ down, and assertions that still fail in CI get bounds derived from the
 measured frame rate or tick count instead of fixed per-second numbers, so
 they check the same thing on a GPU.
 
+### D8: A server step right after the pause screen closes waits
+
+Found by a CI run: `close` shuts the game menu at once, but the integrated
+server takes the client's pause only at its next tick, so a server step right
+after it read the server as paused and failed with `err paused`. On a Mac the
+next request usually comes a few frames later; in CI, frames are slow enough
+that it didn't. The server now counts as paused only while the open screen or
+overlay still pauses singleplayer, as the game works it out at its next frame;
+otherwise the step waits for that tick. A smoke check runs `close` and a
+server step in one script, which failed every time before.
+
 ## Risks / Trade-offs
 
 - [Linux-only failures nobody has seen, as the script has only run on

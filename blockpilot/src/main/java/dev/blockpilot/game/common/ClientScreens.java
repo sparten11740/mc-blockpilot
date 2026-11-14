@@ -32,4 +32,15 @@ public final class ClientScreens {
         return Minecraft.getInstance().getOverlay();
         //?}
     }
+
+    /** Whether the open screen or overlay pauses singleplayer, as the game works it out at its next frame. */
+    public static boolean pausing() {
+        //? if >=26.2 {
+        /*return Minecraft.getInstance().gui.isPausing();
+        *///?} else {
+        Screen screen = current();
+        Overlay overlay = overlay();
+        return screen != null && screen.isPauseScreen() || overlay != null && overlay.isPauseScreen();
+        //?}
+    }
 }

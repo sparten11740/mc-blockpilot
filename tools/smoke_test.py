@@ -265,6 +265,16 @@ def check_cursor_moves(game_dir):
     return None if re.search(r"\bcursor (39|40),(29|30)\b", output) else f"not at 40,30: {output.strip()}"
 
 
+def check_server_after_pause(game_dir):
+    """Behind the game menu a server step fails at once with err paused; right after close, in the same script, one
+    waits for the server to take the unpause, which it does at its next tick, and runs."""
+    _, output = run(game_dir, "key escape; wait 5t; ?server time query gametime; close; server time query gametime")
+    results = [line for line in output.splitlines() if re.match(r"(ok|err)\b", line)]
+    if len(results) != 5 or not results[2].startswith("err paused") or not results[4].startswith("ok "):
+        return f"not err paused behind the menu and ok after close: {output.strip()[:500]}"
+    return None
+
+
 def check_frame_upright(game_dir):
     """The frame `pixels` reads has the sky at the top, in the sky's colour."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; option hud off; wait 3t; pixels top=0,0,1,0.2 bottom=0,0.8,1,1; "
@@ -1380,6 +1390,7 @@ def main():
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),
         ("mouse move turns the camera", lambda: check_camera_turns(args.game_dir)),
         ("mouse move moves the cursor in a screen", lambda: check_cursor_moves(args.game_dir)),
+        ("a server step right after the game menu closes runs", lambda: check_server_after_pause(args.game_dir)),
         ("frames are upright", lambda: check_frame_upright(args.game_dir)),
         ("pixels finds a world position", lambda: check_world_position_in_frame(args.game_dir)),
         ("hud off hides the hud", lambda: check_hud_hides(args.game_dir)),

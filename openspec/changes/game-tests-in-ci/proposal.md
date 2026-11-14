@@ -46,6 +46,9 @@ None.
 ### Modified Capabilities
 - `multi-target-build`: the game tests run in CI on every push to main, and
   results saved on several machines combine into one report.
+- `server-bridge`: a server step right after the game menu closes waits for
+  the server to take the unpause instead of failing with `err paused`, a race
+  the first CI runs found.
 
 ## Impact
 
@@ -58,5 +61,5 @@ None.
   push to main; free for a public repository. Caches of Minecraft's assets
   and the loaders' runtimes keep downloads down, within GitHub's 10 GB cache
   limit as far as it goes.
-- **Mod code:** none expected; a fix found by the first CI runs, if any, goes
-  in its own commit.
+- **Mod code:** one fix found by the first CI runs, in its own commit: the
+  server's pause is read only while a pause screen is still open.

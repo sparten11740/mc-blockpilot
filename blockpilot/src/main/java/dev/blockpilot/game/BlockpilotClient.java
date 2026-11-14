@@ -563,10 +563,13 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     public boolean serverPaused() {
         var server = Minecraft.getInstance().getSingleplayerServer();
         //? if >=1.21 {
-        return server != null && server.isPaused();
+        boolean paused = server != null && server.isPaused();
         //?} else {
-        /*return server != null && Minecraft.getInstance().isPaused();
+        /*boolean paused = server != null && Minecraft.getInstance().isPaused();
         *///?}
+        // The pause follows the screen only at the next frame and server tick, so right after the pause screen closes
+        // it still reads paused; then a step waits for that tick rather than fail.
+        return paused && ClientScreens.pausing();
     }
 
     @Override
