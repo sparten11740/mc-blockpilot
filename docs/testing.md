@@ -167,8 +167,8 @@ for dir in ../mymod-1.21.1/run ../mymod-26.3/run; do
 done
 ```
 
-The commands are the same on every target, NeoForge, Fabric and plain Minecraft from 1.21.1 to 26.3, so one script
-tests them all; `--game-dir <dir>` points a launcher at another game. Key names are the running game's.
+The commands are the same on every target, Forge, NeoForge, Fabric and plain Minecraft from 1.20.1 to 26.3, so one
+script tests them all; `--game-dir <dir>` points a launcher at another game. Key names are the running game's.
 
 ## An agent as a tester
 
