@@ -70,6 +70,22 @@ Everything that counts ticks slows with the game: entities, particles, a camera 
 and shows 2 s of the game. In practice sounds play at their normal speed, so record without them and add them in the
 edit.
 
+Testing a visual effect, an explosion, a lamp or a spinning part, works best with captures that compare from run to run.
+Fix the camera with `camera at … look …`, so every run sees the same frame; slow the game with `tick rate 5` for frames
+between the ticks; take clean frames, `option hud clean` or `hud=clean` on `screenshot` and `record`, so no HUD, no
+other mod's overlay and none of the player's effects get in; and put the scene back between runs with `snapshot save`
+and `snapshot restore`. Start the capture on the effect itself rather than after counted ticks: `wait sounds
+match=mymod:* since=1t until count>0` answers as its sound starts. Then judge the motion from a burst sheet, a video or
+numbers: `screenshot burst=12 every=2t sheet hud=clean` takes each drawn frame once, `flicker 2s lamp=@~0,1,3 r=0.4`
+gives a part's brightness in every frame and its rhythm in hertz, which tells a lamp strobing at 10 Hz from one that
+fades, and `particles since=40t match=mymod:*` counts what the effect spawned.
+
+```sh
+"<game dir>/blockpilot/blockpilot" "snapshot restore before; camera at ~6,3,6 look ~0,1,0; option hud clean; tick rate 5; \
+  use ~0,0,2; wait sounds match=mymod:* since=1t until count>0; screenshot burst=12 every=2t sheet; flicker 2s \
+  lamp=@~0,1,3 r=0.4; tick rate 20; option reset"
+```
+
 A project gallery takes images, not videos; an animated GIF cut from a recording shows there. GIFs grow fast, so keep it
 to a few seconds and a small size (with libwebp in ffmpeg, `showcase.webp` instead makes a smaller animated WebP):
 

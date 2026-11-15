@@ -71,7 +71,8 @@ final class ServerCommands {
                 + "one server tick apart", ArgType.DURATION, ArgType.SECONDS)
             .help("runs a command on the integrated server (op level) and returns its result value, success and "
                 + "every feedback line; it runs as the server, at the player's position, rotation and dimension, so "
-                + "~ and @p count from the player; options go before the command (server as=player settle=0t "
+                + "~ and @p count from the player, while @s is the server unless as=player runs it as the player; "
+                + "options go before the command (server as=player settle=0t "
                 + "<command>); a command that fails, an execute if test that doesn't pass among them, answers err "
                 + "command_failed with its message and result, which ends the script unless the step starts with ? "
                 + "(?server execute if block ~ ~-1 ~ minecraft:stone); a command that reports no result, such as a "

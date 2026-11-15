@@ -27,10 +27,15 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
 
 ## observe
 
-- `screenshot [width] [burst=n every=Nt [sheet]] [crop=x0,y0,x1,y1] [hud=off]`: saves the last rendered frame as PNG and
-  answers its path with `t<tick>`, the tick it was captured on. Width is up to 1280 and the frame's or crop's own, with
-  `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A frame rendered from a placed
-  camera carries `camera <x,y,z>`.
+- `screenshot [width] [burst=n every=Nt [sheet]] [crop=x0,y0,x1,y1] [hud=off|clean]`: saves the last rendered frame as
+  PNG and answers its path with `t<tick>`, the tick it was captured on. Width is up to 1280 and the frame's or crop's
+  own, with `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A burst takes each
+  frame the game draws once: a capture that falls due before a new frame was drawn waits for the next, and each frame
+  carries `drawn=<client tick>`, the client tick and the fraction of the next it was drawn at, and `late=<n>t` when it
+  came that much after its time, as when the game catches up after a stall; a sheet's labels add the drawn time, `#3
+  t1234 c812.4`. `hud=clean` hides, besides the HUD, the layers and overlays other mods draw in it and the player's
+  night vision, blindness, darkness and nausea, and keeps the field of view still, so frames compare across runs. A
+  frame rendered from a placed camera carries `camera <x,y,z>`.
 - `camera at <pos> [look <pos|e<id>|sub:<ref>>] [clear] [away]` / `camera move <pos> [via <pos>]… [look
   <pos|e<id>|sub:<ref>|ahead>] [around sub:<ref>] over <duration> [ease=] [background]` / `camera follow
   <entity|sub:<ref>> [at <~dx,dy,dz>] [turning]` / `camera orbit <pos|entity|sub:<ref>> [by <degrees>] over <duration>
@@ -96,16 +101,23 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   run it.
 - `messages [since=] [kind=] [match=]`: chat, action bar, titles and subtitles; `match=*engaged*` matches the whole
   text in any case.
-- `particles [since=]`: particles spawned per type over a window.
+- `particles [since=] [match=]`: particles spawned per type over a window; `match=flame` or `match=mymod:*` keeps the
+  matching types, and `total` counts only them.
 - `option [<name> [<value>]]`, `option reset`: client options (see below).
 - `pixels [[name=]x0,y0,x1,y1|[name=]@<pos>]… [r=]`: mean rgb and luma, max and p90 luma of parts of the last frame,
   with `camera <x,y,z>` when a placed camera rendered it. JSON nests each part's values under its name, as
   `{"sky":{"r":…,"luma":…}}`, which tests read as `sky.r`.
-- `record start [name] [width=] [fps=] [hud=off] [audio=off]`, `record stop`, `record status`, `record mark <label>`,
-  `record <duration> [name] …`, `record script [name] …`: a video of the game with its sound; `record script` ends the
-  take with its script, however it ends, and the reply carries its summary as `! record …`; `record mark` notes the
-  video time and frame the script reached it at, `record stop` lists the marks and `<name>.marks.json` keeps them beside
-  the video; see [recording.md](recording.md).
+- `flicker <duration> [[name=]x0,y0,x1,y1|[name=]@<pos>]… [r=]`: the mean luma of the parts, taken as `pixels` takes
+  them, in every frame drawn over the duration (2t to 10s), and for each part its mean, `min` and `max` and its
+  strongest rhythm, `flicker=<hz>` in cycles per game second with `period=<ticks>t` and `amplitude=<luma>`, or
+  `flicker=none` when it changes by less than 1; `fps=` is the frames per game second, and half of it the fastest rhythm
+  it can tell. A row per frame gives `drawn=<client tick>` and each part's luma. Game seconds count 20 ticks, so under
+  `tick rate 5` a flicker reads as fast as it is, with four times the frames per cycle.
+- `record start [name] [width=] [fps=] [hud=off|clean] [audio=off]`, `record stop`, `record status`, `record mark
+  <label>`, `record <duration> [name] …`, `record script [name] …`: a video of the game with its sound; `record script`
+  ends the take with its script, however it ends, and the reply carries its summary as `! record …`; `record mark` notes
+  the video time and frame the script reached it at, `record stop` lists the marks and `<name>.marks.json` keeps them
+  beside the video; see [recording.md](recording.md).
 - `log [level=] [since=] [grep=] [logger=] [limit=]`, `log mark`, `log detail <seq>`: the game log.
 
 `sounds` and `messages` add `from=<tick>`, where their log begins, when it dropped some of the asked window. `sounds`,

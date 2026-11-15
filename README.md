@@ -120,15 +120,16 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | | `nbt` | The data of a block entity or entity |
 | | `tick` | Freeze, step or change the game's tick rate |
 | | `gametest` | Run the game's own GameTests and report each one |
-| observe | `screenshot` | Save frames, bursts and contact sheets |
-| | `camera` | Render from a placed camera: glide, follow, orbit, zoom and tilt |
+| observe | `screenshot` | Save frames, bursts and contact sheets, clean of HUD, overlays and effects |
+| | `camera` | Render from a placed camera: glide, follow, orbit, zoom and tilt, play a shot list, follow a Sable ship |
 | | `settle` | Wait until the chunks in view have loaded |
 | | `sounds` | The sounds that started or play now |
 | | `sound` | Play a sound on this client, at a position or as an interface sound |
 | | `messages` | Chat, action bar and title messages |
-| | `particles` | The particles spawned |
+| | `particles` | The particles spawned, by type or pattern |
 | | `option` | Change video and sound options for a while |
 | | `pixels` | Measure the colour of parts of the frame |
+| | `flicker` | The brightness of parts of every frame over a time, and how fast they flicker |
 | | `record` | Record an MP4 with sound ([docs/recording.md](docs/recording.md)) |
 | | `log` | The game log |
 | performance | `perf` | Capture server, client and network performance |

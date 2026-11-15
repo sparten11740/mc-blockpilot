@@ -14,6 +14,18 @@
   script goes on, each a `camera at`, `move`, `orbit` or `follow` without `camera`, with its own `ease=` and `fov=`, or
   `hold <duration>`; `camera wait` answers at the end, and `record script` with `camera wait` at its end films it whole
   ([commands.md](docs/commands.md), [recording.md](docs/recording.md)).
+- **Flicker:** `flicker <duration> <parts>…` reads the brightness of parts of every frame drawn over the duration, as
+  `pixels` takes the parts, and gives each part's strongest rhythm, `flicker=<hz>` with its period and amplitude, or
+  `flicker=none`, so a strobing lamp or a pulsing fireball is measured, not judged by eye
+  ([commands.md](docs/commands.md)).
+- **Clean frames:** `option hud clean`, and `hud=clean` on `screenshot` and `record`, hide the whole HUD pass, with the
+  layers and overlays other mods draw in it, the player's night vision, blindness, darkness and nausea, and the field of
+  view effects, so captures compare from run to run. docs/recording.md has a recipe for testing visual effects.
+- **Particles by type:** `particles match=flame` or `match=mymod:*` keeps the matching types, as `sounds match=` does.
+- **Fixes:** `screenshot burst` captures each frame the game draws once, where after a stall it gave the same frame
+  several times; each frame carries `drawn=`, when it was drawn, and `late=` when it came after its time. On Windows,
+  Git Bash runs a plain `blockpilot` launcher written beside `blockpilot.cmd`, which cmd.exe couldn't run from Git Bash
+  in a folder with a space. `help server` says `@s` is the server unless `as=player`.
 
 ## 1.3.1 (2026-11-14)
 

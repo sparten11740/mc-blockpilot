@@ -1234,6 +1234,7 @@
             <li><a href="#cmd-command" title="cmd-command">cmd-command</a></li>
             <li><a href="#config-command" title="config-command">config-command</a></li>
             <li><a href="#delete-command" title="delete-command">delete-command</a></li>
+            <li><a href="#flicker-command" title="flicker-command">flicker-command</a></li>
             <li><a href="#join-command" title="join-command">join-command</a></li>
             <li><a href="#pixels-command" title="pixels-command">pixels-command</a></li>
             <li><a href="#server-command" title="server-command">server-command</a></li>
@@ -1757,6 +1758,8 @@
             <li><a href="#drop-option" title="drop-option">drop-option</a></li>
             <li><a href="#equip-option" title="equip-option">equip-option</a></li>
             <li><a href="#face-option" title="face-option">face-option</a></li>
+            <li><a href="#flicker-command" title="flicker-command">flicker-command</a></li>
+            <li><a href="#flicker-option" title="flicker-option">flicker-option</a></li>
             <li><a href="#fly-option" title="fly-option">fly-option</a></li>
             <li><a href="#gametest-option" title="gametest-option">gametest-option</a></li>
             <li><a href="#goto-option" title="goto-option">goto-option</a></li>
@@ -1841,6 +1844,7 @@
             <li><a href="#duration" title="duration">duration</a></li>
             <li><a href="#equip-option" title="equip-option">equip-option</a></li>
             <li><a href="#face-option" title="face-option">face-option</a></li>
+            <li><a href="#flicker-option" title="flicker-option">flicker-option</a></li>
             <li><a href="#fly-option" title="fly-option">fly-option</a></li>
             <li><a href="#gametest-option" title="gametest-option">gametest-option</a></li>
             <li><a href="#goto-option" title="goto-option">goto-option</a></li>
@@ -1910,6 +1914,7 @@
             <li><a href="#find-command" title="find-command">find-command</a></li>
             <li><a href="#mine-command" title="mine-command">mine-command</a></li>
             <li><a href="#offhand-command" title="offhand-command">offhand-command</a></li>
+            <li><a href="#particles-option" title="particles-option">particles-option</a></li>
             <li><a href="#place-command" title="place-command">place-command</a></li>
             <li><a href="#put-command" title="put-command">put-command</a></li>
             <li><a href="#sable.find-command" title="sable.find-command">sable.find-command</a></li>
@@ -2080,6 +2085,7 @@
             <li><a href="#config-option" title="config-option">config-option</a></li>
             <li><a href="#find-command" title="find-command">find-command</a></li>
             <li><a href="#mine-command" title="mine-command">mine-command</a></li>
+            <li><a href="#particles-option" title="particles-option">particles-option</a></li>
             <li><a href="#sable.find-command" title="sable.find-command">sable.find-command</a></li>
             <li><a href="#sable.tp-command" title="sable.tp-command">sable.tp-command</a></li>
             <li><a href="#sounds-option" title="sounds-option">sounds-option</a></li>
@@ -4408,7 +4414,7 @@
                <div><a href="#screenshot-command" title="screenshot-command">screenshot-command</a></div>
                <div>         ::= 'screenshot' <a href="#integer" title="integer">integer</a>? 'sheet'?</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="screenshot-option">screenshot-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="301">
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="screenshot-option">screenshot-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="345">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
          <rect x="51" y="3" width="66" height="32" rx="10"></rect>
@@ -4430,27 +4436,30 @@
          <rect x="147" y="135" width="38" height="32" rx="10"></rect>
          <rect x="145" y="133" width="38" height="32" class="terminal" rx="10"></rect>
          <text class="terminal" x="155" y="153">off</text>
-         <rect x="51" y="179" width="60" height="32" rx="10"></rect>
-         <rect x="49" y="177" width="60" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="59" y="197">crop=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#option-value" xlink:title="option-value">
-            <rect x="131" y="179" width="100" height="32"></rect>
-            <rect x="129" y="177" width="100" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="139" y="197">option-value</text></a><rect x="51" y="223" width="82" height="32" rx="10"></rect>
-         <rect x="49" y="221" width="82" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="59" y="241">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
-            <rect x="173" y="223" width="72" height="32"></rect>
-            <rect x="171" y="221" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="181" y="241">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+         <rect x="147" y="179" width="56" height="32" rx="10"></rect>
+         <rect x="145" y="177" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="155" y="197">clean</text>
+         <rect x="51" y="223" width="60" height="32" rx="10"></rect>
+         <rect x="49" y="221" width="60" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="241">crop=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#option-value" xlink:title="option-value">
+            <rect x="131" y="223" width="100" height="32"></rect>
+            <rect x="129" y="221" width="100" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="139" y="241">option-value</text></a><rect x="51" y="267" width="82" height="32" rx="10"></rect>
+         <rect x="49" y="265" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="285">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
             <rect x="173" y="267" width="72" height="32"></rect>
             <rect x="171" y="265" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="181" y="285">seconds</text></a><path class="line" d="m17 17 h2 m20 0 h10 m66 0 h10 m0 0 h10 m64 0 h10 m0 0 h64 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m68 0 h10 m0 0 h10 m72 0 h10 m0 0 h54 m-244 -10 v20 m254 0 v-20 m-254 20 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m56 0 h10 m20 0 h10 m36 0 h10 m0 0 h2 m-78 0 h20 m58 0 h20 m-98 0 q10 0 10 10 m78 0 q0 -10 10 -10 m-88 10 v24 m78 0 v-24 m-78 24 q0 10 10 10 m58 0 q10 0 10 -10 m-68 10 h10 m38 0 h10 m20 -44 h60 m-244 -10 v20 m254 0 v-20 m-254 20 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m60 0 h10 m0 0 h10 m100 0 h10 m0 0 h34 m-244 -10 v20 m254 0 v-20 m-254 20 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -264 h-3"></path>
+            <text class="nonterminal" x="181" y="285">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="173" y="311" width="72" height="32"></rect>
+            <rect x="171" y="309" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="329">seconds</text></a><path class="line" d="m17 17 h2 m20 0 h10 m66 0 h10 m0 0 h10 m64 0 h10 m0 0 h64 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m68 0 h10 m0 0 h10 m72 0 h10 m0 0 h54 m-244 -10 v20 m254 0 v-20 m-254 20 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m56 0 h10 m20 0 h10 m36 0 h10 m0 0 h20 m-96 0 h20 m76 0 h20 m-116 0 q10 0 10 10 m96 0 q0 -10 10 -10 m-106 10 v24 m96 0 v-24 m-96 24 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m38 0 h10 m0 0 h18 m-86 -10 v20 m96 0 v-20 m-96 20 v24 m96 0 v-24 m-96 24 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m56 0 h10 m20 -88 h42 m-244 -10 v20 m254 0 v-20 m-254 20 v112 m254 0 v-112 m-254 112 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m60 0 h10 m0 0 h10 m100 0 h10 m0 0 h34 m-244 -10 v20 m254 0 v-20 m-254 20 v24 m254 0 v-24 m-254 24 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -308 h-3"></path>
          <polygon points="303 17 311 13 311 21"></polygon>
          <polygon points="303 17 295 13 295 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#screenshot-option" title="screenshot-option">screenshot-option</a></div>
                <div>         ::= 'burst=' <a href="#integer" title="integer">integer</a></div>
                <div>           | 'every=' <a href="#duration" title="duration">duration</a></div>
-               <div>           | 'hud=' ( 'on' | 'off' )</div>
+               <div>           | 'hud=' ( 'on' | 'off' | 'clean' )</div>
                <div>           | 'crop=' <a href="#option-value" title="option-value">option-value</a></div>
                <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
@@ -4818,23 +4827,32 @@
                <div><a href="#particles-command" title="particles-command">particles-command</a></div>
                <div>         ::= 'particles'</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="particles-option">particles-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="255" height="81">
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="particles-option">particles-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="297" height="169">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
-         <rect x="31" y="3" width="64" height="32" rx="10"></rect>
-         <rect x="29" y="1" width="64" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="39" y="21">since=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#integer" xlink:title="integer">
-            <rect x="135" y="3" width="64" height="32"></rect>
-            <rect x="133" y="1" width="64" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="143" y="21">integer</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
-            <rect x="135" y="47" width="72" height="32"></rect>
-            <rect x="133" y="45" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="143" y="65">duration</text></a><path class="line" d="m17 17 h2 m0 0 h10 m64 0 h10 m20 0 h10 m64 0 h10 m0 0 h8 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m23 -44 h-3"></path>
-         <polygon points="245 17 253 13 253 21"></polygon>
-         <polygon points="245 17 237 13 237 21"></polygon></svg><p>
+         <rect x="51" y="3" width="64" height="32" rx="10"></rect>
+         <rect x="49" y="1" width="64" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="21">since=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#integer" xlink:title="integer">
+            <rect x="155" y="3" width="64" height="32"></rect>
+            <rect x="153" y="1" width="64" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="163" y="21">integer</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="155" y="47" width="72" height="32"></rect>
+            <rect x="153" y="45" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="163" y="65">duration</text></a><rect x="51" y="91" width="72" height="32" rx="10"></rect>
+         <rect x="49" y="89" width="72" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="109">match=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#pattern" xlink:title="pattern">
+            <rect x="163" y="91" width="66" height="32"></rect>
+            <rect x="161" y="89" width="66" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="171" y="109">pattern</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#id" xlink:title="id">
+            <rect x="163" y="135" width="30" height="32"></rect>
+            <rect x="161" y="133" width="30" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="171" y="153">id</text></a><path class="line" d="m17 17 h2 m20 0 h10 m64 0 h10 m20 0 h10 m64 0 h10 m0 0 h8 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m20 -44 h2 m-238 0 h20 m218 0 h20 m-258 0 q10 0 10 10 m238 0 q0 -10 10 -10 m-248 10 v68 m238 0 v-68 m-238 68 q0 10 10 10 m218 0 q10 0 10 -10 m-228 10 h10 m72 0 h10 m20 0 h10 m66 0 h10 m-106 0 h20 m86 0 h20 m-126 0 q10 0 10 10 m106 0 q0 -10 10 -10 m-116 10 v24 m106 0 v-24 m-106 24 q0 10 10 10 m86 0 q10 0 10 -10 m-96 10 h10 m30 0 h10 m0 0 h36 m43 -132 h-3"></path>
+         <polygon points="287 17 295 13 295 21"></polygon>
+         <polygon points="287 17 279 13 279 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#particles-option" title="particles-option">particles-option</a></div>
-               <div>         ::= 'since=' ( <a href="#integer" title="integer">integer</a> | <a href="#duration" title="duration">duration</a> )</div></code></div>
+               <div>         ::= 'since=' ( <a href="#integer" title="integer">integer</a> | <a href="#duration" title="duration">duration</a> )</div>
+               <div>           | 'match=' ( <a href="#pattern" title="pattern">pattern</a> | <a href="#id" title="id">id</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="option-command">option-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="341" height="145">
          <polygon points="9 17 1 13 1 21"></polygon>
@@ -4933,6 +4951,42 @@
                <div><a href="#config-option" title="config-option">config-option</a></div>
                <div>         ::= 'match=' <a href="#pattern" title="pattern">pattern</a></div>
                <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="flicker-command">flicker-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="317" height="69">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="62" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="62" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">flicker</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="113" y="3" width="72" height="32"></rect>
+            <rect x="111" y="1" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="121" y="21">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#text" xlink:title="text">
+            <rect x="225" y="35" width="44" height="32"></rect>
+            <rect x="223" y="33" width="44" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="233" y="53">text</text></a><path class="line" d="m17 17 h2 m0 0 h10 m62 0 h10 m0 0 h10 m72 0 h10 m20 0 h10 m0 0 h54 m-84 0 h20 m64 0 h20 m-104 0 q10 0 10 10 m84 0 q0 -10 10 -10 m-94 10 v12 m84 0 v-12 m-84 12 q0 10 10 10 m64 0 q10 0 10 -10 m-74 10 h10 m44 0 h10 m23 -32 h-3"></path>
+         <polygon points="307 17 315 13 315 21"></polygon>
+         <polygon points="307 17 299 13 299 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#flicker-command" title="flicker-command">flicker-command</a></div>
+               <div>         ::= 'flicker' <a href="#duration" title="duration">duration</a> <a href="#text" title="text">text</a>?</div></code></div>
+      </p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="flicker-option">flicker-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="273" height="81">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="82" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="153" y="3" width="72" height="32"></rect>
+            <rect x="151" y="1" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="161" y="21">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="153" y="47" width="72" height="32"></rect>
+            <rect x="151" y="45" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="161" y="65">seconds</text></a><path class="line" d="m17 17 h2 m0 0 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m23 -44 h-3"></path>
+         <polygon points="263 17 271 13 271 21"></polygon>
+         <polygon points="263 17 255 13 255 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#flicker-option" title="flicker-option">flicker-option</a></div>
+               <div>         ::= 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="pixels-command">pixels-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="223" height="69">
          <polygon points="9 17 1 13 1 21"></polygon>
@@ -5037,7 +5091,7 @@
                <div><a href="#record-command" title="record-command">record-command</a></div>
                <div>         ::= 'record' ( ( 'start' | 'script' | <a href="#duration" title="duration">duration</a> ) <a href="#word" title="word">word</a>? | 'stop' | 'status' | 'mark' <a href="#word" title="word">word</a> )</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="record-option">record-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="257">
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="record-option">record-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="389">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
          <rect x="71" y="3" width="68" height="32" rx="10"></rect>
@@ -5048,33 +5102,43 @@
          <text class="terminal" x="79" y="65">fps=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#integer" xlink:title="integer">
             <rect x="179" y="3" width="64" height="32"></rect>
             <rect x="177" y="1" width="64" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="187" y="21">integer</text></a><rect x="71" y="91" width="56" height="32" rx="10"></rect>
-         <rect x="69" y="89" width="56" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="79" y="109">hud=</text>
-         <rect x="71" y="135" width="68" height="32" rx="10"></rect>
-         <rect x="69" y="133" width="68" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="79" y="153">audio=</text>
-         <rect x="199" y="91" width="36" height="32" rx="10"></rect>
-         <rect x="197" y="89" width="36" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="207" y="109">on</text>
-         <rect x="199" y="135" width="38" height="32" rx="10"></rect>
-         <rect x="197" y="133" width="38" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="207" y="153">off</text>
-         <rect x="51" y="179" width="82" height="32" rx="10"></rect>
-         <rect x="49" y="177" width="82" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="59" y="197">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
-            <rect x="173" y="179" width="72" height="32"></rect>
-            <rect x="171" y="177" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="181" y="197">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
-            <rect x="173" y="223" width="72" height="32"></rect>
-            <rect x="171" y="221" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="181" y="241">seconds</text></a><path class="line" d="m17 17 h2 m40 0 h10 m68 0 h10 m-108 0 h20 m88 0 h20 m-128 0 q10 0 10 10 m108 0 q0 -10 10 -10 m-118 10 v24 m108 0 v-24 m-108 24 q0 10 10 10 m88 0 q10 0 10 -10 m-98 10 h10 m50 0 h10 m0 0 h18 m20 -44 h10 m64 0 h10 m0 0 h22 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-224 10 h10 m56 0 h10 m0 0 h12 m-108 0 h20 m88 0 h20 m-128 0 q10 0 10 10 m108 0 q0 -10 10 -10 m-118 10 v24 m108 0 v-24 m-108 24 q0 10 10 10 m88 0 q10 0 10 -10 m-98 10 h10 m68 0 h10 m40 -44 h10 m36 0 h10 m0 0 h2 m-78 0 h20 m58 0 h20 m-98 0 q10 0 10 10 m78 0 q0 -10 10 -10 m-88 10 v24 m78 0 v-24 m-78 24 q0 10 10 10 m58 0 q10 0 10 -10 m-68 10 h10 m38 0 h10 m20 -44 h8 m-244 -10 v20 m254 0 v-20 m-254 20 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -220 h-3"></path>
+            <text class="nonterminal" x="187" y="21">integer</text></a><rect x="51" y="91" width="56" height="32" rx="10"></rect>
+         <rect x="49" y="89" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="109">hud=</text>
+         <rect x="147" y="91" width="36" height="32" rx="10"></rect>
+         <rect x="145" y="89" width="36" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="155" y="109">on</text>
+         <rect x="147" y="135" width="38" height="32" rx="10"></rect>
+         <rect x="145" y="133" width="38" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="155" y="153">off</text>
+         <rect x="147" y="179" width="56" height="32" rx="10"></rect>
+         <rect x="145" y="177" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="155" y="197">clean</text>
+         <rect x="51" y="223" width="68" height="32" rx="10"></rect>
+         <rect x="49" y="221" width="68" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="241">audio=</text>
+         <rect x="159" y="223" width="36" height="32" rx="10"></rect>
+         <rect x="157" y="221" width="36" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="167" y="241">on</text>
+         <rect x="159" y="267" width="38" height="32" rx="10"></rect>
+         <rect x="157" y="265" width="38" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="167" y="285">off</text>
+         <rect x="51" y="311" width="82" height="32" rx="10"></rect>
+         <rect x="49" y="309" width="82" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="59" y="329">timeout=</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="173" y="311" width="72" height="32"></rect>
+            <rect x="171" y="309" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="329">duration</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#seconds" xlink:title="seconds">
+            <rect x="173" y="355" width="72" height="32"></rect>
+            <rect x="171" y="353" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="181" y="373">seconds</text></a><path class="line" d="m17 17 h2 m40 0 h10 m68 0 h10 m-108 0 h20 m88 0 h20 m-128 0 q10 0 10 10 m108 0 q0 -10 10 -10 m-118 10 v24 m108 0 v-24 m-108 24 q0 10 10 10 m88 0 q10 0 10 -10 m-98 10 h10 m50 0 h10 m0 0 h18 m20 -44 h10 m64 0 h10 m0 0 h22 m-254 0 h20 m234 0 h20 m-274 0 q10 0 10 10 m254 0 q0 -10 10 -10 m-264 10 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m56 0 h10 m20 0 h10 m36 0 h10 m0 0 h20 m-96 0 h20 m76 0 h20 m-116 0 q10 0 10 10 m96 0 q0 -10 10 -10 m-106 10 v24 m96 0 v-24 m-96 24 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m38 0 h10 m0 0 h18 m-86 -10 v20 m96 0 v-20 m-96 20 v24 m96 0 v-24 m-96 24 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m56 0 h10 m20 -88 h42 m-244 -10 v20 m254 0 v-20 m-254 20 v112 m254 0 v-112 m-254 112 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m68 0 h10 m20 0 h10 m36 0 h10 m0 0 h2 m-78 0 h20 m58 0 h20 m-98 0 q10 0 10 10 m78 0 q0 -10 10 -10 m-88 10 v24 m78 0 v-24 m-78 24 q0 10 10 10 m58 0 q10 0 10 -10 m-68 10 h10 m38 0 h10 m20 -44 h48 m-244 -10 v20 m254 0 v-20 m-254 20 v68 m254 0 v-68 m-254 68 q0 10 10 10 m234 0 q10 0 10 -10 m-244 10 h10 m82 0 h10 m20 0 h10 m72 0 h10 m-112 0 h20 m92 0 h20 m-132 0 q10 0 10 10 m112 0 q0 -10 10 -10 m-122 10 v24 m112 0 v-24 m-112 24 q0 10 10 10 m92 0 q10 0 10 -10 m-102 10 h10 m72 0 h10 m43 -352 h-3"></path>
          <polygon points="303 17 311 13 311 21"></polygon>
          <polygon points="303 17 295 13 295 21"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#record-option" title="record-option">record-option</a></div>
                <div>         ::= ( 'width=' | 'fps=' ) <a href="#integer" title="integer">integer</a></div>
-               <div>           | ( 'hud=' | 'audio=' ) ( 'on' | 'off' )</div>
+               <div>           | 'hud=' ( 'on' | 'off' | 'clean' )</div>
+               <div>           | 'audio=' ( 'on' | 'off' )</div>
                <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="load-command">load-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="353" height="201">
