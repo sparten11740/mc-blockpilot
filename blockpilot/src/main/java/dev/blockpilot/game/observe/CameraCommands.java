@@ -51,18 +51,20 @@ final class CameraCommands {
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
-                .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, ArgType.ENTITY))
+                .optional(look -> look.keyword("look", "look")
+                    .arg("target", ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL))
                 .optionalKeyword("clear", "clear").optionalKeyword("away", "away"))
             .form(form -> form.keyword("op", "move").arg("pos", ArgType.POSITION)
                 .repeated(MAX_VIA, via -> via.keyword("through", "via").arg("via", ArgType.POSITION))
                 .optional(look -> look.keyword("look", "look")
-                    .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY))
+                    .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL))
+                .optional(around -> around.keyword("around", "around").arg("frame", ArgType.SUB_LEVEL))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
-            .form(form -> form.keyword("op", "follow").arg("subject", ArgType.ENTITY)
+            .form(form -> form.keyword("op", "follow").arg("subject", ArgType.ENTITY, ArgType.SUB_LEVEL)
                 .optional(at -> at.keyword("offsetting", "at").arg("offset", ArgType.POSITION))
                 .optionalKeyword("turning", "turning"))
-            .form(form -> form.keyword("op", "orbit").arg("centre", ArgType.POSITION, ArgType.ENTITY)
+            .form(form -> form.keyword("op", "orbit").arg("centre", ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL)
                 .optional(by -> by.keyword("by", "by").arg("degrees", ArgType.NUMBER))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
@@ -73,12 +75,14 @@ final class CameraCommands {
                 + "to 180 degrees, a positive roll leaning it to its right; kept until camera reset", ArgType.NUMBER)
             .option("ease", "camera move and orbit: how the speed changes along the way; linear (the default) keeps "
                 + "it, in starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
-            .help("camera at <pos> [look <pos|e<id>>] [clear]: renders from that point (the player stays visible); "
+            .help("camera at <pos> [look <pos|e<id>|sub:<ref>>] [clear]: renders from that point (the player stays "
+                + "visible); "
                 + "an entity look target is read where the entity is drawn each frame; "
                 + "clear: when the point is in a block with a collision shape, moves the camera toward the look point "
                 + "(the player's eyes without look), a quarter block at a time, at most 8 blocks and never past it, to "
                 + "the first point clear of such blocks; "
-                + "camera move <pos> [via <pos>]… [look <pos|e<id>|ahead>] over <duration> [ease=]: glides the camera "
+                + "camera move <pos> [via <pos>]… [look <pos|e<id>|sub:<ref>|ahead>] [around sub:<ref>] over "
+                + "<duration> [ease=]: glides the camera "
                 + "from where it is drawn now (a placed camera, or the player's eyes) to the point over the duration, "
                 + "placed anew in every rendered frame, then leaves it placed there and answers as camera at does; "
                 + "through via points (up to 32) in order on one smooth curve with no corner at any, at a constant "
@@ -91,14 +95,16 @@ final class CameraCommands {
                 + "on (server steps, sound, other actions), until a camera at, camera move or camera reset replaces "
                 + "it; camera wait answers once a move in the background has ended, as camera at would there, and at "
                 + "once with nothing moving; "
-                + "camera follow <entity> [at <~dx,dy,dz>] [turning]: keeps the camera at that offset from the "
+                + "camera follow <entity|sub:<ref>> [at <~dx,dy,dz>] [turning]: keeps the camera at that offset from "
+                + "the "
                 + "entity's feet in every frame, looking at it as camera at … look does, until the next camera "
                 + "command (stop and real input leave it); without at, the offset the camera has now, so a shot "
                 + "framed with camera at … look carries on as the entity walks; with turning, the offset is in the "
                 + "entity's frame as Minecraft's ^ coordinates (x to its left, z the way it faces) and turns with it, "
                 + "catching up with a quick turn over a second or two; a removed entity leaves the camera where it "
                 + "was last drawn; "
-                + "camera orbit <pos|entity> [by <degrees>] over <duration> [background] [ease=]: circles the camera "
+                + "camera orbit <pos|entity|sub:<ref>> [by <degrees>] over <duration> [background] [ease=]: circles "
+                + "the camera "
                 + "round the centre (an entity followed as it moves) from where it is drawn now, keeping its distance "
                 + "across and height and looking at the centre, a full turn without by, a positive angle to the "
                 + "camera's right as it faces the centre; timed as camera move is (background, camera wait, stop), "
@@ -107,7 +113,12 @@ final class CameraCommands {
                 + "move and orbit glide to them along the way, a value left out stays, and camera reset returns to "
                 + "the player's view; status names the field of view as cam_fov and the roll in cam:; "
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
-                + "sub-level each frame; status names a placed camera's position as camera <x,y,z>; "
+                + "sub-level each frame, and sub:<uuid|name|here> names a sub-level by its origin, drawn each frame: "
+                + "as follow's subject (the offset in the world's axes, so the camera keeps its side as the "
+                + "sub-level turns; turning is for entities), as orbit's centre, as a look target, and with "
+                + "move … around sub:<ref> the move's ~ points, via points and look are offsets in the world's "
+                + "axes from that origin in each frame, so a path keeps its shape round a flying sub-level; status "
+                + "names a placed camera's position as camera <x,y,z>; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
                 + "around the player, so a camera beyond the render distance shows sky, unless placed with away: in "
                 + "singleplayer with commands allowed, camera at … away has the integrated server treat the camera as "
@@ -228,8 +239,32 @@ final class CameraCommands {
         if (args.type(name) == ArgType.ENTITY) {
             return aimAt(entity(args, name, level));
         }
+        if (args.type(name) == ArgType.SUB_LEVEL) {
+            return subLevel(args, name, level);
+        }
         Position look = context.resolve(args.position(name));
         return CameraControl.drawn(level, new Vec3(look.x(), look.y(), look.z()));
+    }
+
+    /** The origin of the sub-level a {@code sub:<ref>} slot names, where each frame draws it. */
+    private static CameraControl.Point subLevel(Args args, String name, Level level) throws CommandException {
+        if (SableSupport.subLevels() == SubLevels.NONE) {
+            throw new CommandException("unsupported", args.word(name) + " needs Sable");
+        }
+        return CameraControl.subLevelOrigin(level, SableSupport.resolve(args.word(name).substring("sub:".length())));
+    }
+
+    /**
+     * A point of a path: around a sub-level, a relative one is an offset in the world's axes from its origin, in each
+     * frame; else as {@link #point} has it.
+     */
+    private static CameraControl.Point pathPoint(CommandContext context, Level level, Position asked,
+        CameraControl.Point frame) throws CommandException {
+        if (frame != null && asked.relative()) {
+            return partialTick -> frame.at(partialTick).add(asked.x(), asked.y(), asked.z());
+        }
+        Position point = context.resolve(asked);
+        return CameraControl.drawn(level, new Vec3(point.x(), point.y(), point.z()));
     }
 
     private static Entity entity(Args args, String name, Level level) throws CommandException {
@@ -300,46 +335,60 @@ final class CameraCommands {
         Level level = Minecraft.getInstance().level;
         var player = Minecraft.getInstance().player;
         CameraControl.Placement before = CameraControl.placement();
+        CameraControl.Point frame = args.has("frame") ? subLevel(args, "frame", level) : null;
         List<CameraControl.Point> points = new ArrayList<>();
         points.add(before != null ? before.position() : player::getEyePosition);
         for (Position via : args.positions("via")) {
-            Position point = context.resolve(via);
-            points.add(CameraControl.drawn(level, new Vec3(point.x(), point.y(), point.z())));
+            points.add(pathPoint(context, level, via, frame));
         }
-        Position end = context.resolve(args.position("pos"));
-        Vec3 endPoint = new Vec3(end.x(), end.y(), end.z());
-        points.add(CameraControl.drawn(level, endPoint));
+        CameraControl.Point end = pathPoint(context, level, args.position("pos"), frame);
+        points.add(end);
         CameraMove.Look look = CameraMove.Look.KEEP;
         CameraControl.Point target = null;
         if (args.has("target")) {
             boolean ahead = args.type("target") == ArgType.KEYWORD;
             look = ahead ? CameraMove.Look.AHEAD : CameraMove.Look.TARGET;
-            target = ahead ? null : point(context, args, "target", level);
+            target = ahead ? null : args.type("target") == ArgType.POSITION && frame != null
+                ? pathPoint(context, level, args.position("target"), frame) : point(context, args, "target", level);
         }
+        // Around a sub-level the end moves with it, so the answer reads where the camera then rests.
+        Vec3 endPoint = frame == null ? end.at(1) : null;
         return start(new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
-            duration, ease, args.has("background"), fov(args), roll(args), placed -> answer(level, endPoint, placed)),
-            duration);
+            duration, ease, args.has("background"), fov(args), roll(args),
+            placed -> endPoint == null ? answer(level, placed) : answer(level, endPoint, placed)), duration);
     }
 
     private Action follow(CommandContext context, Args args) throws CommandException {
         Level level = Minecraft.getInstance().level;
-        Entity entity = entity(args, "subject", level);
         boolean turning = args.has("turning");
-        Vec offset;
-        if (args.has("offset")) {
-            Position at = args.position("offset");
-            if (!at.relative()) {
-                throw new CommandException("syntax", "follow at takes an offset ~dx,dy,dz from the entity, not "
-                    + args.word("offset"));
+        CameraControl.Placement placement;
+        if (args.type("subject") == ArgType.SUB_LEVEL) {
+            if (turning) {
+                throw new CommandException("syntax", "turning is for an entity: a sub-level is followed in the "
+                    + "world's axes, and a camera at a plot position turns with it");
             }
-            offset = new Vec(at.x(), at.y(), at.z());
+            CameraControl.Point origin = subLevel(args, "subject", level);
+            Vec3 delta = drawnNow().subtract(origin.at(1));
+            Vec offset = args.has("offset") ? offset(args) : new Vec(delta.x, delta.y, delta.z);
+            placement = CameraFollow.placement(origin, offset);
         } else {
-            offset = CameraFollow.offsetOf(entity, drawnNow(), turning);
+            Entity entity = entity(args, "subject", level);
+            Vec offset = args.has("offset") ? offset(args) : CameraFollow.offsetOf(entity, drawnNow(), turning);
+            placement = CameraFollow.placement(entity, offset, turning, aimAt(entity));
         }
-        CameraControl.Placement placement = CameraFollow.placement(entity, offset, turning, aimAt(entity))
-            .withLens(CameraControl.lensWith(fov(args), roll(args)));
+        placement = placement.withLens(CameraControl.lensWith(fov(args), roll(args)));
         CameraControl.place(placement);
         return answer(level, placement);
+    }
+
+    /** follow's at: an offset ~dx,dy,dz from what it follows. */
+    private static Vec offset(Args args) throws CommandException {
+        Position at = args.position("offset");
+        if (!at.relative()) {
+            throw new CommandException("syntax", "follow at takes an offset ~dx,dy,dz from what it follows, not "
+                + args.word("offset"));
+        }
+        return new Vec(at.x(), at.y(), at.z());
     }
 
     private Action orbit(CommandContext context, Args args) throws CommandException {

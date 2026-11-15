@@ -35,6 +35,16 @@ final class CameraFollow {
         return new CameraControl.Placement(position, CameraControl.held(target, target.at(1)));
     }
 
+    /** The placement at an offset in the world's axes from a moving point, such as a sub-level's origin, looking at it. */
+    static CameraControl.Placement placement(CameraControl.Point origin, Vec offset) {
+        Vec3 start = origin.at(1);
+        CameraControl.Point position = CameraControl.held(partialTick -> {
+            Vec3 at = origin.at(partialTick);
+            return at == null ? null : at.add(offset.x(), offset.y(), offset.z());
+        }, start.add(offset.x(), offset.y(), offset.z()));
+        return new CameraControl.Placement(position, CameraControl.held(origin, start));
+    }
+
     /** The offset a point has from the entity's feet: the world's, or with {@code turning} in the entity's frame. */
     static Vec offsetOf(Entity entity, Vec3 point, boolean turning) {
         Vec3 delta = point.subtract(entity.position());

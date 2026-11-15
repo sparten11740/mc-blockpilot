@@ -8,6 +8,7 @@ import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
@@ -516,11 +517,19 @@ final class SableCommands {
 
     /** {@link #resolve(Args, String)} against that level; {@code here} reads the client, so only on its thread. */
     private static SubLevels.Info resolve(Level level, Args args, String name) throws CommandException {
+        return resolve(level, args.word(name));
+    }
+
+    /** The sub-level a reference as written names, as for {@link #resolve(Args, String)}; on the client's thread. */
+    static SubLevels.Info resolve(String reference) throws CommandException {
+        return resolve(Minecraft.getInstance().level, reference);
+    }
+
+    private static SubLevels.Info resolve(Level level, String word) throws CommandException {
         Minecraft minecraft = Minecraft.getInstance();
         SubLevels subLevels = SableSupport.subLevels();
-        String word = args.word(name);
-        if (args.type(name) == ArgType.UUID) {
-            SubLevels.Info info = subLevels.info(level, args.uuid(name));
+        if (Lexicon.isUuid(word)) {
+            SubLevels.Info info = subLevels.info(level, UUID.fromString(word));
             if (info == null) {
                 throw new CommandException("no_sublevel", word);
             }

@@ -1,9 +1,11 @@
 package dev.blockpilot.game.observe;
 
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
+import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandFailure;
 import java.util.function.Supplier;
@@ -138,6 +140,18 @@ public final class CameraControl {
             }
             return last[0];
         };
+    }
+
+    /**
+     * Where the client draws the sub-level's origin, the position its pose gives it, in each frame; where it was last
+     * drawn once it is gone.
+     */
+    static Point subLevelOrigin(Level level, SubLevels.Info info) throws CommandException {
+        Vec3 plot = SableSupport.subLevels().toPlot(level, info.id(), info.position());
+        if (plot == null) {
+            throw new CommandException("no_sublevel", info.id().toString());
+        }
+        return drawn(level, plot);
     }
 
     /** The camera's rotation as the game last rendered it, including mod camera shake and roll. */

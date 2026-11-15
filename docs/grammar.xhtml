@@ -1402,6 +1402,57 @@
          <ul>
             <li><a href="#entity" title="entity">entity</a></li>
          </ul>
+      </p><br /><p style="font-size: 14px; font-weight:bold"><a name="sub-level">sub-level:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="227" height="37">
+         <polygon points="9 17 1 13 1 21"></polygon>
+         <polygon points="17 17 9 13 9 21"></polygon>
+         <rect x="31" y="3" width="48" height="32" rx="10"></rect>
+         <rect x="29" y="1" width="48" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="39" y="21">sub:</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level-ref" xlink:title="sub-level-ref">
+            <rect x="99" y="3" width="100" height="32"></rect>
+            <rect x="97" y="1" width="100" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="107" y="21">sub-level-ref</text></a><path class="line" d="m17 17 h2 m0 0 h10 m48 0 h10 m0 0 h10 m100 0 h10 m3 0 h-3"></path>
+         <polygon points="217 17 225 13 225 21"></polygon>
+         <polygon points="217 17 209 13 209 21"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#sub-level" title="sub-level">sub-level</a></div>
+               <div>         ::= 'sub:' <a href="#sub-level-ref" title="sub-level-ref">sub-level-ref</a></div></code></div>
+      </p>
+      <p>referenced by:
+         <ul>
+            <li><a href="#camera-command" title="camera-command">camera-command</a></li>
+         </ul>
+      </p><br /><p style="font-size: 14px; font-weight:bold"><a name="sub-level-ref">sub-level-ref:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="201" height="273">
+         <polygon points="9 33 1 29 1 37"></polygon>
+         <polygon points="17 33 9 29 9 37"></polygon>
+         <polygon points="71 35 78 19 124 19 131 35 124 51 78 51"></polygon>
+         <polygon points="69 33 76 17 122 17 129 33 122 49 76 49" class="regexp"></polygon>
+         <text class="regexp" x="84" y="37">[a-z]</text>
+         <polygon points="71 79 78 63 126 63 133 79 126 95 78 95"></polygon>
+         <polygon points="69 77 76 61 124 61 131 77 124 93 76 93" class="regexp"></polygon>
+         <text class="regexp" x="84" y="81">[A-Z]</text>
+         <polygon points="71 123 78 107 126 107 133 123 126 139 78 139"></polygon>
+         <polygon points="69 121 76 105 124 105 131 121 124 137 76 137" class="regexp"></polygon>
+         <text class="regexp" x="84" y="125">[0-9]</text>
+         <rect x="71" y="151" width="28" height="32" rx="10"></rect>
+         <rect x="69" y="149" width="28" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="79" y="169">_</text>
+         <rect x="71" y="195" width="24" height="32" rx="10"></rect>
+         <rect x="69" y="193" width="24" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="79" y="213">.</text>
+         <rect x="71" y="239" width="26" height="32" rx="10"></rect>
+         <rect x="69" y="237" width="26" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="79" y="257">-</text>
+         <path class="line" d="m17 33 h2 m40 0 h10 m60 0 h10 m0 0 h2 m-102 0 h20 m82 0 h20 m-122 0 q10 0 10 10 m102 0 q0 -10 10 -10 m-112 10 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m62 0 h10 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m62 0 h10 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m28 0 h10 m0 0 h34 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m24 0 h10 m0 0 h38 m-92 -10 v20 m102 0 v-20 m-102 20 v24 m102 0 v-24 m-102 24 q0 10 10 10 m82 0 q10 0 10 -10 m-92 10 h10 m26 0 h10 m0 0 h36 m-122 -220 l20 0 m-1 0 q-9 0 -9 -10 l0 -12 q0 -10 10 -10 m122 32 l20 0 m-20 0 q10 0 10 -10 l0 -12 q0 -10 -10 -10 m-122 0 h10 m0 0 h112 m23 32 h-3"></path>
+         <polygon points="191 33 199 29 199 37"></polygon>
+         <polygon points="191 33 183 29 183 37"></polygon></svg><p>
+         <div class="ebnf"><code>
+               <div><a href="#sub-level-ref" title="sub-level-ref">sub-level-ref</a></div>
+               <div>         ::= [a-zA-Z0-9_.#x2D]+</div></code></div>
+      </p>
+      <p>referenced by:
+         <ul>
+            <li><a href="#sub-level" title="sub-level">sub-level</a></li>
+         </ul>
       </p><br /><p style="font-size: 14px; font-weight:bold"><a name="widget">widget:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="165" height="37">
          <polygon points="9 17 1 13 1 21"></polygon>
          <polygon points="17 17 9 13 9 21"></polygon>
@@ -4402,99 +4453,116 @@
                <div>           | 'crop=' <a href="#option-value" title="option-value">option-value</a></div>
                <div>           | 'timeout=' ( <a href="#duration" title="duration">duration</a> | <a href="#seconds" title="seconds">seconds</a> )</div></code></div>
       </p>
-      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-command">camera-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="973" height="617">
-         <polygon points="9 17 1 13 1 21"></polygon>
-         <polygon points="17 17 9 13 9 21"></polygon>
-         <rect x="31" y="3" width="70" height="32" rx="10"></rect>
-         <rect x="29" y="1" width="70" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="39" y="21">camera</text>
-         <rect x="141" y="3" width="32" height="32" rx="10"></rect>
-         <rect x="139" y="1" width="32" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="21">at</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="193" y="3" width="70" height="32"></rect>
-            <rect x="191" y="1" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="201" y="21">position</text></a><rect x="303" y="35" width="48" height="32" rx="10"></rect>
-         <rect x="301" y="33" width="48" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="311" y="53">look</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="391" y="35" width="70" height="32"></rect>
-            <rect x="389" y="33" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="399" y="53">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
-            <rect x="391" y="79" width="56" height="32"></rect>
-            <rect x="389" y="77" width="56" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="399" y="97">entity</text></a><rect x="541" y="35" width="52" height="32" rx="10"></rect>
-         <rect x="539" y="33" width="52" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="549" y="53">clear</text>
-         <rect x="653" y="35" width="56" height="32" rx="10"></rect>
-         <rect x="651" y="33" width="56" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="661" y="53">away</text>
-         <rect x="161" y="167" width="56" height="32" rx="10"></rect>
-         <rect x="159" y="165" width="56" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="169" y="185">move</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="257" y="167" width="70" height="32"></rect>
-            <rect x="255" y="165" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="265" y="185">position</text></a><rect x="257" y="123" width="40" height="32" rx="10"></rect>
-         <rect x="255" y="121" width="40" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="265" y="141">via</text>
-         <rect x="387" y="199" width="48" height="32" rx="10"></rect>
-         <rect x="385" y="197" width="48" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="395" y="217">look</text>
-         <rect x="475" y="199" width="60" height="32" rx="10"></rect>
-         <rect x="473" y="197" width="60" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="483" y="217">ahead</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="475" y="243" width="70" height="32"></rect>
-            <rect x="473" y="241" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="483" y="261">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
-            <rect x="475" y="287" width="56" height="32"></rect>
-            <rect x="473" y="285" width="56" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="483" y="305">entity</text></a><rect x="161" y="331" width="52" height="32" rx="10"></rect>
-         <rect x="159" y="329" width="52" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="169" y="349">orbit</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="253" y="331" width="70" height="32"></rect>
-            <rect x="251" y="329" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="261" y="349">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
-            <rect x="253" y="375" width="56" height="32"></rect>
-            <rect x="251" y="373" width="56" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="261" y="393">entity</text></a><rect x="383" y="363" width="36" height="32" rx="10"></rect>
-         <rect x="381" y="361" width="36" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="391" y="381">by</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#number" xlink:title="number">
-            <rect x="439" y="363" width="68" height="32"></rect>
-            <rect x="437" y="361" width="68" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="447" y="381">number</text></a><rect x="625" y="167" width="50" height="32" rx="10"></rect>
-         <rect x="623" y="165" width="50" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="633" y="185">over</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
-            <rect x="695" y="167" width="72" height="32"></rect>
-            <rect x="693" y="165" width="72" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="703" y="185">duration</text></a><rect x="807" y="199" width="98" height="32" rx="10"></rect>
-         <rect x="805" y="197" width="98" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="815" y="217">background</text>
-         <rect x="141" y="419" width="62" height="32" rx="10"></rect>
-         <rect x="139" y="417" width="62" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="437">follow</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
-            <rect x="223" y="419" width="56" height="32"></rect>
-            <rect x="221" y="417" width="56" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="231" y="437">entity</text></a><rect x="319" y="451" width="32" height="32" rx="10"></rect>
-         <rect x="317" y="449" width="32" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="327" y="469">at</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
-            <rect x="371" y="451" width="70" height="32"></rect>
-            <rect x="369" y="449" width="70" height="32" class="nonterminal"></rect>
-            <text class="nonterminal" x="379" y="469">position</text></a><rect x="501" y="451" width="68" height="32" rx="10"></rect>
-         <rect x="499" y="449" width="68" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="509" y="469">turning</text>
-         <rect x="141" y="495" width="54" height="32" rx="10"></rect>
-         <rect x="139" y="493" width="54" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="513">reset</text>
-         <rect x="141" y="539" width="38" height="32" rx="10"></rect>
-         <rect x="139" y="537" width="38" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="557">off</text>
-         <rect x="141" y="583" width="50" height="32" rx="10"></rect>
-         <rect x="139" y="581" width="50" height="32" class="terminal" rx="10"></rect>
-         <text class="terminal" x="149" y="601">wait</text>
-         <path class="line" d="m17 17 h2 m0 0 h10 m70 0 h10 m20 0 h10 m32 0 h10 m0 0 h10 m70 0 h10 m20 0 h10 m0 0 h188 m-218 0 h20 m198 0 h20 m-238 0 q10 0 10 10 m218 0 q0 -10 10 -10 m-228 10 v12 m218 0 v-12 m-218 12 q0 10 10 10 m198 0 q10 0 10 -10 m-208 10 h10 m48 0 h10 m20 0 h10 m70 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m60 -76 h10 m0 0 h62 m-92 0 h20 m72 0 h20 m-112 0 q10 0 10 10 m92 0 q0 -10 10 -10 m-102 10 v12 m92 0 v-12 m-92 12 q0 10 10 10 m72 0 q10 0 10 -10 m-82 10 h10 m52 0 h10 m40 -32 h10 m0 0 h66 m-96 0 h20 m76 0 h20 m-116 0 q10 0 10 10 m96 0 q0 -10 10 -10 m-106 10 v12 m96 0 v-12 m-96 12 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m56 0 h10 m20 -32 h196 m-824 0 h20 m804 0 h20 m-844 0 q10 0 10 10 m824 0 q0 -10 10 -10 m-834 10 v144 m824 0 v-144 m-824 144 q0 10 10 10 m804 0 q10 0 10 -10 m-794 10 h10 m56 0 h10 m20 0 h10 m70 0 h10 m-110 0 l20 0 m-1 0 q-9 0 -9 -10 l0 -24 q0 -10 10 -10 m90 44 l20 0 m-20 0 q10 0 10 -10 l0 -24 q0 -10 -10 -10 m-90 0 h10 m40 0 h10 m0 0 h30 m40 44 h10 m0 0 h188 m-218 0 h20 m198 0 h20 m-238 0 q10 0 10 10 m218 0 q0 -10 10 -10 m-228 10 v12 m218 0 v-12 m-218 12 q0 10 10 10 m198 0 q10 0 10 -10 m-208 10 h10 m48 0 h10 m20 0 h10 m60 0 h10 m0 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m70 0 h10 m-100 -10 v20 m110 0 v-20 m-110 20 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m-424 -120 h20 m444 0 h20 m-484 0 q10 0 10 10 m464 0 q0 -10 10 -10 m-474 10 v144 m464 0 v-144 m-464 144 q0 10 10 10 m444 0 q10 0 10 -10 m-454 10 h10 m52 0 h10 m20 0 h10 m70 0 h10 m-110 0 h20 m90 0 h20 m-130 0 q10 0 10 10 m110 0 q0 -10 10 -10 m-120 10 v24 m110 0 v-24 m-110 24 q0 10 10 10 m90 0 q10 0 10 -10 m-100 10 h10 m56 0 h10 m0 0 h14 m40 -44 h10 m0 0 h134 m-164 0 h20 m144 0 h20 m-184 0 q10 0 10 10 m164 0 q0 -10 10 -10 m-174 10 v12 m164 0 v-12 m-164 12 q0 10 10 10 m144 0 q10 0 10 -10 m-154 10 h10 m36 0 h10 m0 0 h10 m68 0 h10 m20 -32 h58 m20 -164 h10 m50 0 h10 m0 0 h10 m72 0 h10 m20 0 h10 m0 0 h108 m-138 0 h20 m118 0 h20 m-158 0 q10 0 10 10 m138 0 q0 -10 10 -10 m-148 10 v12 m138 0 v-12 m-138 12 q0 10 10 10 m118 0 q10 0 10 -10 m-128 10 h10 m98 0 h10 m-794 -42 v20 m824 0 v-20 m-824 20 v232 m824 0 v-232 m-824 232 q0 10 10 10 m804 0 q10 0 10 -10 m-814 10 h10 m62 0 h10 m0 0 h10 m56 0 h10 m20 0 h10 m0 0 h132 m-162 0 h20 m142 0 h20 m-182 0 q10 0 10 10 m162 0 q0 -10 10 -10 m-172 10 v12 m162 0 v-12 m-162 12 q0 10 10 10 m142 0 q10 0 10 -10 m-152 10 h10 m32 0 h10 m0 0 h10 m70 0 h10 m40 -32 h10 m0 0 h78 m-108 0 h20 m88 0 h20 m-128 0 q10 0 10 10 m108 0 q0 -10 10 -10 m-118 10 v12 m108 0 v-12 m-108 12 q0 10 10 10 m88 0 q10 0 10 -10 m-98 10 h10 m68 0 h10 m20 -32 h336 m-814 -10 v20 m824 0 v-20 m-824 20 v56 m824 0 v-56 m-824 56 q0 10 10 10 m804 0 q10 0 10 -10 m-814 10 h10 m54 0 h10 m0 0 h730 m-814 -10 v20 m824 0 v-20 m-824 20 v24 m824 0 v-24 m-824 24 q0 10 10 10 m804 0 q10 0 10 -10 m-814 10 h10 m38 0 h10 m0 0 h746 m-814 -10 v20 m824 0 v-20 m-824 20 v24 m824 0 v-24 m-824 24 q0 10 10 10 m804 0 q10 0 10 -10 m-814 10 h10 m50 0 h10 m0 0 h734 m23 -580 h-3"></path>
-         <polygon points="963 17 971 13 971 21"></polygon>
-         <polygon points="963 17 955 13 955 21"></polygon></svg><p>
+      <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-command">camera-command:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="1111" height="827">
+         <polygon points="11 17 3 13 3 21"></polygon>
+         <polygon points="19 17 11 13 11 21"></polygon>
+         <rect x="33" y="3" width="70" height="32" rx="10"></rect>
+         <rect x="31" y="1" width="70" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="41" y="21">camera</text>
+         <rect x="45" y="69" width="32" height="32" rx="10"></rect>
+         <rect x="43" y="67" width="32" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="53" y="87">at</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="97" y="69" width="70" height="32"></rect>
+            <rect x="95" y="67" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="105" y="87">position</text></a><rect x="207" y="101" width="48" height="32" rx="10"></rect>
+         <rect x="205" y="99" width="48" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="215" y="119">look</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="295" y="101" width="70" height="32"></rect>
+            <rect x="293" y="99" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="303" y="119">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
+            <rect x="295" y="145" width="56" height="32"></rect>
+            <rect x="293" y="143" width="56" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="303" y="163">entity</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level" xlink:title="sub-level">
+            <rect x="295" y="189" width="78" height="32"></rect>
+            <rect x="293" y="187" width="78" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="303" y="207">sub-level</text></a><rect x="453" y="101" width="52" height="32" rx="10"></rect>
+         <rect x="451" y="99" width="52" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="461" y="119">clear</text>
+         <rect x="565" y="101" width="56" height="32" rx="10"></rect>
+         <rect x="563" y="99" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="573" y="119">away</text>
+         <rect x="65" y="277" width="56" height="32" rx="10"></rect>
+         <rect x="63" y="275" width="56" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="73" y="295">move</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="161" y="277" width="70" height="32"></rect>
+            <rect x="159" y="275" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="169" y="295">position</text></a><rect x="161" y="233" width="40" height="32" rx="10"></rect>
+         <rect x="159" y="231" width="40" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="169" y="251">via</text>
+         <rect x="291" y="309" width="48" height="32" rx="10"></rect>
+         <rect x="289" y="307" width="48" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="299" y="327">look</text>
+         <rect x="379" y="309" width="60" height="32" rx="10"></rect>
+         <rect x="377" y="307" width="60" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="387" y="327">ahead</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="379" y="353" width="70" height="32"></rect>
+            <rect x="377" y="351" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="387" y="371">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
+            <rect x="379" y="397" width="56" height="32"></rect>
+            <rect x="377" y="395" width="56" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="387" y="415">entity</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level" xlink:title="sub-level">
+            <rect x="379" y="441" width="78" height="32"></rect>
+            <rect x="377" y="439" width="78" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="387" y="459">sub-level</text></a><rect x="537" y="309" width="68" height="32" rx="10"></rect>
+         <rect x="535" y="307" width="68" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="545" y="327">around</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level" xlink:title="sub-level">
+            <rect x="625" y="309" width="78" height="32"></rect>
+            <rect x="623" y="307" width="78" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="633" y="327">sub-level</text></a><rect x="65" y="485" width="52" height="32" rx="10"></rect>
+         <rect x="63" y="483" width="52" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="73" y="503">orbit</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="157" y="485" width="70" height="32"></rect>
+            <rect x="155" y="483" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="165" y="503">position</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
+            <rect x="157" y="529" width="56" height="32"></rect>
+            <rect x="155" y="527" width="56" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="165" y="547">entity</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level" xlink:title="sub-level">
+            <rect x="157" y="573" width="78" height="32"></rect>
+            <rect x="155" y="571" width="78" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="165" y="591">sub-level</text></a><rect x="295" y="517" width="36" height="32" rx="10"></rect>
+         <rect x="293" y="515" width="36" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="303" y="535">by</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#number" xlink:title="number">
+            <rect x="351" y="517" width="68" height="32"></rect>
+            <rect x="349" y="515" width="68" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="359" y="535">number</text></a><rect x="763" y="277" width="50" height="32" rx="10"></rect>
+         <rect x="761" y="275" width="50" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="771" y="295">over</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#duration" xlink:title="duration">
+            <rect x="833" y="277" width="72" height="32"></rect>
+            <rect x="831" y="275" width="72" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="841" y="295">duration</text></a><rect x="945" y="309" width="98" height="32" rx="10"></rect>
+         <rect x="943" y="307" width="98" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="953" y="327">background</text>
+         <rect x="45" y="617" width="62" height="32" rx="10"></rect>
+         <rect x="43" y="615" width="62" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="53" y="635">follow</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#entity" xlink:title="entity">
+            <rect x="147" y="617" width="56" height="32"></rect>
+            <rect x="145" y="615" width="56" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="155" y="635">entity</text></a><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#sub-level" xlink:title="sub-level">
+            <rect x="147" y="661" width="78" height="32"></rect>
+            <rect x="145" y="659" width="78" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="155" y="679">sub-level</text></a><rect x="285" y="649" width="32" height="32" rx="10"></rect>
+         <rect x="283" y="647" width="32" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="293" y="667">at</text><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#position" xlink:title="position">
+            <rect x="337" y="649" width="70" height="32"></rect>
+            <rect x="335" y="647" width="70" height="32" class="nonterminal"></rect>
+            <text class="nonterminal" x="345" y="667">position</text></a><rect x="467" y="649" width="68" height="32" rx="10"></rect>
+         <rect x="465" y="647" width="68" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="475" y="667">turning</text>
+         <rect x="45" y="705" width="54" height="32" rx="10"></rect>
+         <rect x="43" y="703" width="54" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="53" y="723">reset</text>
+         <rect x="45" y="749" width="38" height="32" rx="10"></rect>
+         <rect x="43" y="747" width="38" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="53" y="767">off</text>
+         <rect x="45" y="793" width="50" height="32" rx="10"></rect>
+         <rect x="43" y="791" width="50" height="32" class="terminal" rx="10"></rect>
+         <text class="terminal" x="53" y="811">wait</text>
+         <path class="line" d="m19 17 h2 m0 0 h10 m70 0 h10 m2 0 l2 0 m2 0 l2 0 m2 0 l2 0 m-122 66 l2 0 m2 0 l2 0 m2 0 l2 0 m22 0 h10 m32 0 h10 m0 0 h10 m70 0 h10 m20 0 h10 m0 0 h196 m-226 0 h20 m206 0 h20 m-246 0 q10 0 10 10 m226 0 q0 -10 10 -10 m-236 10 v12 m226 0 v-12 m-226 12 q0 10 10 10 m206 0 q10 0 10 -10 m-216 10 h10 m48 0 h10 m20 0 h10 m70 0 h10 m0 0 h8 m-118 0 h20 m98 0 h20 m-138 0 q10 0 10 10 m118 0 q0 -10 10 -10 m-128 10 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m56 0 h10 m0 0 h22 m-108 -10 v20 m118 0 v-20 m-118 20 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m78 0 h10 m60 -120 h10 m0 0 h62 m-92 0 h20 m72 0 h20 m-112 0 q10 0 10 10 m92 0 q0 -10 10 -10 m-102 10 v12 m92 0 v-12 m-92 12 q0 10 10 10 m72 0 q10 0 10 -10 m-82 10 h10 m52 0 h10 m40 -32 h10 m0 0 h66 m-96 0 h20 m76 0 h20 m-116 0 q10 0 10 10 m96 0 q0 -10 10 -10 m-106 10 v12 m96 0 v-12 m-96 12 q0 10 10 10 m76 0 q10 0 10 -10 m-86 10 h10 m56 0 h10 m20 -32 h422 m-1058 0 h20 m1038 0 h20 m-1078 0 q10 0 10 10 m1058 0 q0 -10 10 -10 m-1068 10 v188 m1058 0 v-188 m-1058 188 q0 10 10 10 m1038 0 q10 0 10 -10 m-1028 10 h10 m56 0 h10 m20 0 h10 m70 0 h10 m-110 0 l20 0 m-1 0 q-9 0 -9 -10 l0 -24 q0 -10 10 -10 m90 44 l20 0 m-20 0 q10 0 10 -10 l0 -24 q0 -10 -10 -10 m-90 0 h10 m40 0 h10 m0 0 h30 m40 44 h10 m0 0 h196 m-226 0 h20 m206 0 h20 m-246 0 q10 0 10 10 m226 0 q0 -10 10 -10 m-236 10 v12 m226 0 v-12 m-226 12 q0 10 10 10 m206 0 q10 0 10 -10 m-216 10 h10 m48 0 h10 m20 0 h10 m60 0 h10 m0 0 h18 m-118 0 h20 m98 0 h20 m-138 0 q10 0 10 10 m118 0 q0 -10 10 -10 m-128 10 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m70 0 h10 m0 0 h8 m-108 -10 v20 m118 0 v-20 m-118 20 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m56 0 h10 m0 0 h22 m-108 -10 v20 m118 0 v-20 m-118 20 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m78 0 h10 m60 -164 h10 m0 0 h176 m-206 0 h20 m186 0 h20 m-226 0 q10 0 10 10 m206 0 q0 -10 10 -10 m-216 10 v12 m206 0 v-12 m-206 12 q0 10 10 10 m186 0 q10 0 10 -10 m-196 10 h10 m68 0 h10 m0 0 h10 m78 0 h10 m-678 -32 h20 m678 0 h20 m-718 0 q10 0 10 10 m698 0 q0 -10 10 -10 m-708 10 v188 m698 0 v-188 m-698 188 q0 10 10 10 m678 0 q10 0 10 -10 m-688 10 h10 m52 0 h10 m20 0 h10 m70 0 h10 m0 0 h8 m-118 0 h20 m98 0 h20 m-138 0 q10 0 10 10 m118 0 q0 -10 10 -10 m-128 10 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m56 0 h10 m0 0 h22 m-108 -10 v20 m118 0 v-20 m-118 20 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m78 0 h10 m40 -88 h10 m0 0 h134 m-164 0 h20 m144 0 h20 m-184 0 q10 0 10 10 m164 0 q0 -10 10 -10 m-174 10 v12 m164 0 v-12 m-164 12 q0 10 10 10 m144 0 q10 0 10 -10 m-154 10 h10 m36 0 h10 m0 0 h10 m68 0 h10 m20 -32 h284 m20 -208 h10 m50 0 h10 m0 0 h10 m72 0 h10 m20 0 h10 m0 0 h108 m-138 0 h20 m118 0 h20 m-158 0 q10 0 10 10 m138 0 q0 -10 10 -10 m-148 10 v12 m138 0 v-12 m-138 12 q0 10 10 10 m118 0 q10 0 10 -10 m-128 10 h10 m98 0 h10 m-1028 -42 v20 m1058 0 v-20 m-1058 20 v320 m1058 0 v-320 m-1058 320 q0 10 10 10 m1038 0 q10 0 10 -10 m-1048 10 h10 m62 0 h10 m20 0 h10 m56 0 h10 m0 0 h22 m-118 0 h20 m98 0 h20 m-138 0 q10 0 10 10 m118 0 q0 -10 10 -10 m-128 10 v24 m118 0 v-24 m-118 24 q0 10 10 10 m98 0 q10 0 10 -10 m-108 10 h10 m78 0 h10 m40 -44 h10 m0 0 h132 m-162 0 h20 m142 0 h20 m-182 0 q10 0 10 10 m162 0 q0 -10 10 -10 m-172 10 v12 m162 0 v-12 m-162 12 q0 10 10 10 m142 0 q10 0 10 -10 m-152 10 h10 m32 0 h10 m0 0 h10 m70 0 h10 m40 -32 h10 m0 0 h78 m-108 0 h20 m88 0 h20 m-128 0 q10 0 10 10 m108 0 q0 -10 10 -10 m-118 10 v12 m108 0 v-12 m-108 12 q0 10 10 10 m88 0 q10 0 10 -10 m-98 10 h10 m68 0 h10 m20 -32 h508 m-1048 -10 v20 m1058 0 v-20 m-1058 20 v68 m1058 0 v-68 m-1058 68 q0 10 10 10 m1038 0 q10 0 10 -10 m-1048 10 h10 m54 0 h10 m0 0 h964 m-1048 -10 v20 m1058 0 v-20 m-1058 20 v24 m1058 0 v-24 m-1058 24 q0 10 10 10 m1038 0 q10 0 10 -10 m-1048 10 h10 m38 0 h10 m0 0 h980 m-1048 -10 v20 m1058 0 v-20 m-1058 20 v24 m1058 0 v-24 m-1058 24 q0 10 10 10 m1038 0 q10 0 10 -10 m-1048 10 h10 m50 0 h10 m0 0 h968 m23 -724 h-3"></path>
+         <polygon points="1101 83 1109 79 1109 87"></polygon>
+         <polygon points="1101 83 1093 79 1093 87"></polygon></svg><p>
          <div class="ebnf"><code>
                <div><a href="#camera-command" title="camera-command">camera-command</a></div>
-               <div>         ::= 'camera' ( 'at' <a href="#position" title="position">position</a> ( 'look' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) )? 'clear'? 'away'? | ( 'move' <a href="#position" title="position">position</a> ( 'via' <a href="#position" title="position">position</a> )* ( 'look' ( 'ahead' | <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) )? | 'orbit' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> ) ( 'by' <a href="#number" title="number">number</a> )? ) 'over' <a href="#duration" title="duration">duration</a> 'background'? | 'follow' <a href="#entity" title="entity">entity</a> ( 'at' <a href="#position" title="position">position</a> )? 'turning'? | 'reset' | 'off' | 'wait' )</div></code></div>
+               <div>         ::= 'camera' ( 'at' <a href="#position" title="position">position</a> ( 'look' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> | <a href="#sub-level" title="sub-level">sub-level</a> ) )? 'clear'? 'away'? | ( 'move' <a href="#position" title="position">position</a> ( 'via' <a href="#position" title="position">position</a> )* ( 'look' ( 'ahead' | <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> | <a href="#sub-level" title="sub-level">sub-level</a> ) )? ( 'around' <a href="#sub-level" title="sub-level">sub-level</a> )? | 'orbit' ( <a href="#position" title="position">position</a> | <a href="#entity" title="entity">entity</a> | <a href="#sub-level" title="sub-level">sub-level</a> ) ( 'by' <a href="#number" title="number">number</a> )? ) 'over' <a href="#duration" title="duration">duration</a> 'background'? | 'follow' ( <a href="#entity" title="entity">entity</a> | <a href="#sub-level" title="sub-level">sub-level</a> ) ( 'at' <a href="#position" title="position">position</a> )? 'turning'? | 'reset' | 'off' | 'wait' )</div></code></div>
       </p>
       <p>no references</p><br /><p style="font-size: 14px; font-weight:bold"><a name="camera-option">camera-option:</a></p><svg xmlns="http://www.w3.org/2000/svg" width="313" height="345">
          <polygon points="9 17 1 13 1 21"></polygon>

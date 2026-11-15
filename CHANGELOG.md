@@ -5,6 +5,11 @@
 - **Sub-levels round a camera away:** with Sable, a camera placed with `away` shows the sub-levels within Sable's
   tracking range of the camera, also one the server had unloaded while nobody was near, so a ship can be filmed from
   anywhere while the player stands elsewhere ([sable.md](docs/sable.md)).
+- **A camera on a sub-level's origin:** with Sable, `sub:<uuid|name|here>` names a sub-level for the camera.
+  `camera follow sub:ship at ~0,8,-20` keeps that offset in the world's axes as it flies and turns, `camera orbit
+  sub:ship` circles it, `look sub:ship` aims at it, and `camera move … around sub:ship` takes its `~` points from the
+  sub-level's origin in each frame, so a path keeps its shape round a flying ship ([sable.md](docs/sable.md)). The
+  extension API is 2.2.0 for the new slot type `ArgType.SUB_LEVEL` ([extending.md](docs/extending.md)).
 
 ## 1.3.1 (2026-11-14)
 

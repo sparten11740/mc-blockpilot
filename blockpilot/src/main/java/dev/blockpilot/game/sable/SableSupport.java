@@ -1,6 +1,7 @@
 package dev.blockpilot.game.sable;
 
 import dev.blockpilot.Blockpilot;
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
@@ -23,6 +24,11 @@ public final class SableSupport {
     }
 
     /** What the rest of Blockpilot asks about sub-levels; it knows none while the integration is off. */
+    /** The sub-level a reference names: here, a UUID or a name, as the sable: commands take it; client thread. */
+    public static SubLevels.Info resolve(String reference) throws CommandException {
+        return SableCommands.resolve(reference);
+    }
+
     public static SubLevels subLevels() {
         return integration.subLevels();
     }
