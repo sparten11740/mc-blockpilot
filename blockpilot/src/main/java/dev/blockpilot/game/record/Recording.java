@@ -63,8 +63,8 @@ final class Recording {
     private final int height;
     private final int fps;
     private final Ffmpeg.Tool ffmpeg;
-    private final boolean hideHud;
-    private final boolean hudBefore;
+    private final HudVisibility.Capture hud;
+    private final HudVisibility.State hudBefore;
     private final Process encoder;
     private final FrameReadback readback;
     private final FrameSlots slots;
@@ -84,7 +84,7 @@ final class Recording {
     private boolean stopping;
     private volatile String failure;
 
-    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, boolean hideHud,
+    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, HudVisibility.Capture hud,
         boolean audio) throws IOException {
         this.name = name;
         this.output = directory.resolve(name + ".mp4");
@@ -95,8 +95,8 @@ final class Recording {
         this.height = height;
         this.fps = fps;
         this.ffmpeg = ffmpeg;
-        this.hideHud = hideHud;
-        hudBefore = HudVisibility.hidden();
+        this.hud = hud;
+        hudBefore = HudVisibility.state();
         slots = new FrameSlots(fps);
         encoder = new ProcessBuilder(FfmpegCommands.encode(ffmpeg.path(), ffmpeg.encoder(), width, height, fps, video))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
@@ -419,14 +419,12 @@ final class Recording {
     }
 
     private void hideHud() {
-        if (hideHud) {
-            HudVisibility.setHidden(true);
-        }
+        hud.apply();
     }
 
     private void restoreHud() {
-        if (hideHud) {
-            HudVisibility.setHidden(hudBefore);
+        if (hud != HudVisibility.Capture.AS_IS) {
+            hudBefore.restore();
         }
     }
 

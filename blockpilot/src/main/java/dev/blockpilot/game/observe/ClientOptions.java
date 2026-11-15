@@ -289,7 +289,7 @@ public final class ClientOptions {
         }
     }
 
-    /** The F1 switch, which isn't an {@link OptionInstance}: {@code on} shows the GUI. */
+    /** The F1 switch, which isn't an {@link OptionInstance}: {@code on} shows the GUI, {@code clean} hides more. */
     private static final class Hud implements Setting {
         @Override
         public String name() {
@@ -298,27 +298,34 @@ public final class ClientOptions {
 
         @Override
         public String value() {
-            return HudVisibility.hidden() ? "off" : "on";
+            return HudVisibility.clean() ? "clean" : HudVisibility.hidden() ? "off" : "on";
         }
 
         @Override
         public String accepts() {
-            return "on|off";
+            return "on|off|clean";
         }
 
         @Override
         public void set(String text) throws CommandException {
             switch (text) {
-                case "on" -> HudVisibility.setHidden(false);
-                case "off" -> HudVisibility.setHidden(true);
-                default -> throw new CommandException("syntax", "hud takes on|off, not " + text);
+                case "on", "off" -> {
+                    HudVisibility.setClean(false);
+                    HudVisibility.setHidden(text.equals("off"));
+                }
+                case "clean" -> HudVisibility.setClean(true);
+                default -> throw new CommandException("syntax", "hud takes on|off|clean, not " + text);
             }
         }
 
         @Override
         public Runnable snapshot() {
             boolean hidden = HudVisibility.hidden();
-            return () -> HudVisibility.setHidden(hidden);
+            boolean clean = HudVisibility.clean();
+            return () -> {
+                HudVisibility.setClean(clean);
+                HudVisibility.setHidden(hidden);
+            };
         }
     }
 
