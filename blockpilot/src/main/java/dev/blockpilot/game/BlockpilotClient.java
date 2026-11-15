@@ -187,8 +187,9 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     /**
-     * {@code <gameDir>/blockpilot/blockpilot} ({@code .cmd} on Windows): runs the command-line client on this game's
-     * Java and jar. Rewritten at every start and kept after exit, so it works while the game is down too.
+     * {@code <gameDir>/blockpilot/blockpilot} ({@code .cmd} on Windows, with an sh script of the plain name beside it
+     * for Git Bash): runs the command-line client on this game's Java and jar. Rewritten at every start and kept after
+     * exit, so it works while the game is down too.
      */
     private void writeLauncher() {
         boolean windows = Launcher.onWindows();
@@ -203,17 +204,26 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
                 return;
             }
             Files.createDirectories(launcher.getParent());
-            Path temporary = launcher.resolveSibling(launcher.getFileName() + ".tmp");
-            Files.writeString(temporary, Launcher.text(windows, Launcher.java(windows), classpath, gameDir,
-                ClientPlatform.modVersion()), StandardCharsets.UTF_8);
-            if (!windows) {
-                Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rwxr-xr-x"));
+            writeScript(launcher, Launcher.text(windows, Launcher.java(windows), classpath, gameDir,
+                ClientPlatform.modVersion()), !windows);
+            if (windows) {
+                writeScript(launcher.resolveSibling(Launcher.fileName(false)), Launcher.gitBashText(Launcher.java(true),
+                    classpath, gameDir, ClientPlatform.modVersion()), false);
             }
-            Files.move(temporary, launcher, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             Blockpilot.LOGGER.info("Blockpilot's command-line client: {}", launcher);
         } catch (IOException | RuntimeException e) {
             Blockpilot.LOGGER.warn("Blockpilot could not write its launcher {}", launcher, e);
         }
+    }
+
+    /** Writes a script whole, so a launcher reading it meanwhile never sees half of it. */
+    private static void writeScript(Path script, String text, boolean executable) throws IOException {
+        Path temporary = script.resolveSibling(script.getFileName() + ".tmp");
+        Files.writeString(temporary, text, StandardCharsets.UTF_8);
+        if (executable) {
+            Files.setPosixFilePermissions(temporary, PosixFilePermissions.fromString("rwxr-xr-x"));
+        }
+        Files.move(temporary, script, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     /** {@code <gameDir>/blockpilot/endpoint.json}: tells agents and the CLI that the endpoint is up and where. */

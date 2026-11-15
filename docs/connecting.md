@@ -28,9 +28,10 @@ Minecraft only, not in an installation with a mod loader. There are no mod confi
 
 ## From a shell
 
-At every start the game writes a launcher, `<game dir>/blockpilot/blockpilot` (`blockpilot.cmd` on Windows), that runs
-Blockpilot's command-line client on the game's own Java with the jar it loaded, so it needs no `java` on the path, no
-Python and no Blockpilot checkout. It stays after the game exits and works across restarts; it appears while the game
+At every start the game writes a launcher, `<game dir>/blockpilot/blockpilot` (`blockpilot.cmd` on Windows, where Git
+Bash runs the plain `blockpilot` beside it, as cmd.exe can't run a `.cmd` from Git Bash in a folder with a space), that
+runs Blockpilot's command-line client on the game's own Java with the jar it loaded, so it needs no `java` on the path,
+no Python and no Blockpilot checkout. It stays after the game exits and works across restarts; it appears while the game
 loads, so only the very first start in a directory has to wait for the file before using it.
 
 ```sh

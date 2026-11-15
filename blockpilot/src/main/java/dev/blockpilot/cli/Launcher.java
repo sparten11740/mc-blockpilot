@@ -32,12 +32,29 @@ public final class Launcher {
     }
 
     public static String text(boolean windows, Path java, List<Path> classpath, Path gameDir, String version) {
+        List<String> command = command(windows, java, classpath, gameDir, version);
+        return windows ? cmd(needed(java, classpath), command) : sh(needed(java, classpath), command);
+    }
+
+    /**
+     * The sh script for Git Bash on Windows, which runs a .cmd through cmd.exe, whose quoting breaks on a path with a
+     * space: Windows' paths and classpath separator, run by sh.
+     */
+    public static String gitBashText(Path java, List<Path> classpath, Path gameDir, String version) {
+        return sh(needed(java, classpath), command(true, java, classpath, gameDir, version));
+    }
+
+    private static List<Path> needed(Path java, List<Path> classpath) {
         List<Path> needed = new ArrayList<>(classpath);
         needed.add(0, java);
+        return needed;
+    }
+
+    private static List<String> command(boolean windows, Path java, List<Path> classpath, Path gameDir,
+        String version) {
         String joined = classpath.stream().map(Path::toString).collect(Collectors.joining(windows ? ";" : ":"));
-        List<String> command = List.of(java.toString(), "-D" + VERSION_PROPERTY + "=" + version, "-cp", joined,
-            MAIN_CLASS, "--game-dir", gameDir.toString());
-        return windows ? cmd(needed, command) : sh(needed, command);
+        return List.of(java.toString(), "-D" + VERSION_PROPERTY + "=" + version, "-cp", joined, MAIN_CLASS,
+            "--game-dir", gameDir.toString());
     }
 
     private static String sh(List<Path> needed, List<String> command) {

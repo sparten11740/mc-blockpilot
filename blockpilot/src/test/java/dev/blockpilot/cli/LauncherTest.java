@@ -71,6 +71,17 @@ class LauncherTest {
     }
 
     @Test
+    void theGitBashScriptRunsWindowsJavaFromSh() {
+        List<Path> classpath = List.of(Path.of("C:\\Bomb Test\\mods\\blockpilot.jar"), Path.of("C:\\dev\\classes"));
+        String text = Launcher.gitBashText(Path.of("C:\\Java 21\\bin\\java.exe"), classpath,
+            Path.of("C:\\Bomb Test"), "1.2");
+        assertTrue(text.startsWith("#!/bin/sh\n"), text);
+        assertTrue(text.contains("exec 'C:\\Java 21\\bin\\java.exe' '-Dblockpilot.version=1.2' '-cp' "
+            + "'C:\\Bomb Test\\mods\\blockpilot.jar;C:\\dev\\classes' 'dev.blockpilot.cli.Main' '--game-dir' "
+            + "'C:\\Bomb Test' \"$@\"\n"), text);
+    }
+
+    @Test
     void namesTheConsoleJavaOfThisRuntime() {
         assertEquals(Path.of(System.getProperty("java.home"), "bin", "java.exe"), Launcher.java(true));
         assertEquals("blockpilot.cmd", Launcher.fileName(true));
