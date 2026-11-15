@@ -967,6 +967,24 @@ def across(first, second):
     return math.dist((first[0], first[2]), (second[0], second[2]))
 
 
+def check_camera_play(game_dir):
+    """camera play answers at once and plays its shots on the camera's clock while the script goes on: the cut at once,
+    held, then a move with its own field of view; camera wait answers where the last shot left the camera, and a
+    shot that isn't one is refused before anything changes. status names the camera's position from its first frame
+    there, so it reads two ticks into the hold."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera play at ~0,3,-6 look ~0,1,0 | hold 10t | move ~6,3,0 look "
+                              "~0,1,0 over 20t fov=40; wait 2t; status; camera wait; status; ?camera play jump "
+                              "~0,0,0; "
+                              "camera reset")
+    statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
+    if not re.search(r"^ok shots=3 over=30t$", output, re.MULTILINE) or len(statuses) != 2 \
+            or " camera 0,-57,-6 " not in statuses[0] + " " \
+            or not re.search(r" camera 6,-57,0 cam_fov=40 ", statuses[1] + " ") \
+            or not re.search(r"^err syntax a shot is at, move, orbit, follow or hold, not jump", output, re.MULTILINE):
+        return f"the shots didn't play as listed: {output.strip()[:700]}"
+    return None
+
+
 def check_sub_level_target(game_dir):
     """A sub:<ref> parses as a camera's subject, centre, look and frame on every target, and answers no_sublevel for
     one that doesn't exist, or unsupported without Sable."""
@@ -1428,6 +1446,7 @@ def main():
         ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
         ("a sub-level as a camera's target", lambda: check_sub_level_target(args.game_dir)),
+        ("camera play plays its shots beside the script", lambda: check_camera_play(args.game_dir)),
         ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
         ("look and find around a camera placed away",
          lambda: check_surroundings_of_an_away_camera(args.game_dir)),
