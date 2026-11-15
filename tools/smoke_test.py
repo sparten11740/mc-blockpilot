@@ -967,6 +967,66 @@ def across(first, second):
     return math.dist((first[0], first[2]), (second[0], second[2]))
 
 
+# A command-block clock that swaps the block at 3,-59,0 between glowstone and black concrete every 2 ticks: 5 Hz.
+FLICKER_CLOCK = [("repeating_command_block", "scoreboard players add #t clk 1"),
+                 ("chain_command_block", "scoreboard players operation #p clk = #t clk"),
+                 ("chain_command_block", "scoreboard players operation #p clk %= #four clk"),
+                 ("chain_command_block",
+                  "execute if score #p clk matches 0..1 run setblock 3 -59 0 minecraft:glowstone"),
+                 ("chain_command_block",
+                  "execute if score #p clk matches 2..3 run setblock 3 -59 0 minecraft:black_concrete")]
+
+
+def check_flicker(game_dir):
+    """flicker finds the 5 Hz rhythm, a period of 4 ticks, of a block a command-block clock swaps every 2 ticks,
+    beside a steady patch of sky that has none."""
+    clock = "; ".join(f"server setblock {10 + index} -63 10 minecraft:{kind}[facing=east]"
+                      f'{{auto:1b,Command:"{command}"}}' for index, (kind, command) in enumerate(FLICKER_CLOCK))
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at 3.5,-58.5,-2.5 look 3.5,-58.5,0.5; ?server "
+                              "scoreboard objectives add clk dummy; server scoreboard players set #four clk 4; "
+                              f"{clock}; wait 20t; flicker 2s lamp=@3,-59,0 r=0.4 sky=0.05,0.05,0.2,0.2; camera reset; "
+                              "server fill 10 -63 10 14 -63 10 minecraft:dirt; server setblock 3 -59 0 minecraft:air")
+    lamp = re.search(r"\blamp luma=\S+ min=\S+ max=\S+ flicker=([\d.]+)hz period=([\d.]+)t", output)
+    if not lamp or abs(float(lamp.group(1)) - 5) > 0.3 or abs(float(lamp.group(2)) - 4) > 0.3 \
+            or not re.search(r"\bsky luma=\S+ min=\S+ max=\S+ flicker=none", output):
+        return f"no 5 Hz lamp beside a steady sky: {output.strip()[-700:]}"
+    return None
+
+
+def check_hud_clean(game_dir):
+    """option hud clean hides the player's blindness, which hud off leaves blackening the sky, and option reset brings
+    it back."""
+    _, output = run(game_dir, f"{LEVEL}; server effect give @p minecraft:blindness 60 0 true; option hud off; "
+                              "wait 20t; pixels dark=0.3,0.05,0.7,0.2; option hud clean; wait 10t; pixels "
+                              "clean=0.3,0.05,0.7,0.2; option reset; option hud off; wait 10t; pixels "
+                              "again=0.3,0.05,0.7,0.2; option reset; server effect clear @p")
+    dark, clean, again = means(output, "dark"), means(output, "clean"), means(output, "again")
+    if not dark or not clean or not again or sum(dark) > 60 or sum(clean) < 300 or sum(again) > 60:
+        return f"blind sky {dark}, clean {clean}, after reset {again}: {output.strip()[-500:]}"
+    return None
+
+
+def check_burst_frames(game_dir):
+    """Each frame of a burst is one drawn since the one before, labelled with when, also when frames come slower than
+    ticks: with 150 ms added to every frame, a burst every tick waits for each new frame and says how late it is."""
+    _, output = run(game_dir, "load client 150; wait 5t; screenshot burst=4 every=1t 64; load off")
+    drawn = [float(value) for value in re.findall(r"\bdrawn=([\d.]+)", output)]
+    if len(drawn) != 4 or any(later <= earlier for earlier, later in zip(drawn, drawn[1:])) \
+            or not re.search(r"\blate=\d+t", output):
+        return f"frames repeated or not marked late: {output.strip()[:600]}"
+    return None
+
+
+def check_particles_match(game_dir):
+    """particles match= keeps the matching types, and total counts only them."""
+    _, output = run(game_dir, "server particle minecraft:flame ~ ~1 ~ 0.2 0.2 0.2 0 20; server particle "
+                              "minecraft:heart ~ ~1 ~ 0.2 0.2 0.2 0 5; wait 3t; particles since=10t match=flame")
+    reply = output[output.rfind("ok tick="):] if "ok tick=" in output else ""
+    if not re.search(r"\bflame x\d+", reply) or "heart" in reply:
+        return f"not only the flames: {output.strip()[-400:]}"
+    return None
+
+
 def check_camera_play(game_dir):
     """camera play answers at once and plays its shots on the camera's clock while the script goes on: the cut at once,
     held, then a move with its own field of view; camera wait answers where the last shot left the camera, and a
@@ -1447,6 +1507,10 @@ def main():
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
         ("a sub-level as a camera's target", lambda: check_sub_level_target(args.game_dir)),
         ("camera play plays its shots beside the script", lambda: check_camera_play(args.game_dir)),
+        ("particles match= keeps the matching types", lambda: check_particles_match(args.game_dir)),
+        ("a burst takes each drawn frame once", lambda: check_burst_frames(args.game_dir)),
+        ("flicker finds a block's rhythm", lambda: check_flicker(args.game_dir)),
+        ("hud clean hides the player's effects", lambda: check_hud_clean(args.game_dir)),
         ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
         ("look and find around a camera placed away",
          lambda: check_surroundings_of_an_away_camera(args.game_dir)),
