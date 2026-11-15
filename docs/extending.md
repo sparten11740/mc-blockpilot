@@ -78,6 +78,9 @@ A slot of type `ArgType.ENTITY` takes `e<id>` and, from Blockpilot 1.1.0, `@<nam
 engine looks the name up before the handler runs, so `args.entity(name)` always reads an id and a command needs no
 change to take names; an unknown name answers `err no_entity @<name>` without running it.
 
+`ArgType.SUB_LEVEL`, new in blockpilot-api 2.2.0 (Blockpilot 1.4.0), takes `sub:<uuid|name|here>`, a Sable sub-level;
+`args.word(name)` reads it as written. It is also an id in the namespace `sub`, so a slot can't take both.
+
 A command can leave work for the end of its script: `context.atEnd(action)` runs the action when the script ends,
 however it ends (its last step, an error, `stop` or real input), on the client thread and before the reply. Its result
 arrives in the reply as an event named after the action's `label()`, which an ending should therefore give, and an

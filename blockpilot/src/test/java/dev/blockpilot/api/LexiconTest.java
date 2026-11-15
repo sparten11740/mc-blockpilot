@@ -55,6 +55,21 @@ class LexiconTest {
     }
 
     @Test
+    void subLevels() {
+        assertTrue(Lexicon.isSubLevel("sub:ship"));
+        assertTrue(Lexicon.isSubLevel("sub:Skyliner-1.b_2"), "a name with capitals, which an id can't hold");
+        assertTrue(Lexicon.isSubLevel("sub:here"));
+        assertTrue(Lexicon.isSubLevel("sub:0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6"));
+        assertFalse(Lexicon.isSubLevel("sub:"));
+        assertFalse(Lexicon.isSubLevel("sub:a=b"));
+        assertFalse(Lexicon.isSubLevel("sub:a:b"));
+        assertFalse(Lexicon.isSubLevel("ship"));
+        assertTrue(ArgType.SUB_LEVEL.matches("sub:ship"));
+        assertTrue(ArgType.ID.matches("sub:ship"), "sub:ship is an id too, which the types declare");
+        assertTrue(ArgType.SUB_LEVEL.overlaps(ArgType.ID));
+    }
+
+    @Test
     void numberedReferences() {
         assertTrue(Lexicon.isEntity("e812"));
         assertTrue(Lexicon.isEntity("e007"));

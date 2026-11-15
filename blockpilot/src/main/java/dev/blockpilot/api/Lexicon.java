@@ -61,6 +61,12 @@ public final class Lexicon {
             || c == '-');
     }
 
+    /** {@code sub-level ::= "sub:" sub-level-ref}, {@code sub-level-ref ::= [a-zA-Z0-9_.-]+}: a UUID, name or here. */
+    public static boolean isSubLevel(String token) {
+        return token.length() > 4 && token.startsWith("sub:") && token.chars().skip(4)
+            .allMatch(c -> isAsciiLetter(c) || c >= '0' && c <= '9' || c == '_' || c == '.' || c == '-');
+    }
+
     private static boolean isAsciiLetter(int c) {
         return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
     }
