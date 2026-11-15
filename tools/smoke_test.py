@@ -967,6 +967,19 @@ def across(first, second):
     return math.dist((first[0], first[2]), (second[0], second[2]))
 
 
+def check_sub_level_target(game_dir):
+    """A sub:<ref> parses as a camera's subject, centre, look and frame on every target, and answers no_sublevel for
+    one that doesn't exist, or unsupported without Sable."""
+    _, output = run(game_dir, "?camera follow sub:nosuchship at ~0,2,-6; ?camera orbit sub:nosuchship over 10t; "
+                              "?camera at ~0,2,0 look sub:nosuchship; ?camera move ~0,2,-6 around sub:nosuchship over "
+                              "10t; camera reset")
+    answers = re.findall(r"^err (\S+) (.*)$", output, re.MULTILINE)
+    wanted = {("no_sublevel", "nosuchship"), ("unsupported", "sub:nosuchship needs Sable")}
+    if len(answers) != 4 or any(answer not in wanted for answer in answers) or len(set(answers)) != 1:
+        return f"not one no_sublevel or unsupported for each: {output.strip()[:600]}"
+    return None
+
+
 def check_camera_orbit(game_dir):
     """An orbit keeps its distance and height round a point and ends by its angle, goes along with a moving entity,
     holds when its entity goes, runs in the background for camera wait, and keeps a camera placed away away."""
@@ -1414,6 +1427,7 @@ def main():
         ("@<name> takes an entity by its tag or name", lambda: check_entity_names(args.game_dir)),
         ("a camera follows an entity", lambda: check_camera_follow(args.game_dir)),
         ("a camera orbits a point or an entity", lambda: check_camera_orbit(args.game_dir)),
+        ("a sub-level as a camera's target", lambda: check_sub_level_target(args.game_dir)),
         ("a placed camera's field of view and roll", lambda: check_camera_lens(args.game_dir)),
         ("look and find around a camera placed away",
          lambda: check_surroundings_of_an_away_camera(args.game_dir)),
