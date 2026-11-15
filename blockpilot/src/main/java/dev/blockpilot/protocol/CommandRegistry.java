@@ -1,6 +1,8 @@
 package dev.blockpilot.protocol;
 
+import dev.blockpilot.api.Args;
 import dev.blockpilot.api.BlockpilotApi;
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +37,23 @@ public final class CommandRegistry {
         }
         if (commands.putIfAbsent(spec.name(), entry) != null) {
             throw new IllegalStateException("Built-in command registered twice: " + spec.name());
+        }
+    }
+
+    /**
+     * Matches one step against the forms of the command it starts with, as a script would, without running it; for a
+     * command that takes others as text. Entity names stay as written.
+     */
+    public Args parse(String step) throws CommandException {
+        String name = step.strip().split("\\s+", 2)[0];
+        Entry entry = commands.get(name);
+        if (entry == null) {
+            throw new CommandException("syntax", "unknown command " + name);
+        }
+        try {
+            return Parser.example(entry, step.strip()).args();
+        } catch (Parser.SyntaxError e) {
+            throw new CommandException("syntax", e.getMessage());
         }
     }
 
