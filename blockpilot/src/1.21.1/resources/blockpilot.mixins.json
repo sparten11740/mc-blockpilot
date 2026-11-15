@@ -10,6 +10,7 @@
     "AwayPlayerListMixin",
     "AwayPlaySoundCommandMixin",
     "AwayServerLevelMixin",
+    "AwaySubLevelTrackingMixin",
     "AwayTrackedEntityMixin",
     "BackupConfirmScreenAccessor",
     "BlockEntityRenderDispatcherMixin",

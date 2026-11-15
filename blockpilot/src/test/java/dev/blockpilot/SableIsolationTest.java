@@ -10,7 +10,10 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
-/** Only the Sable compat package may name Sable's classes, so without Sable none of them is ever loaded. */
+/**
+ * Only the Sable compat package may name Sable's classes, so without Sable none of them is ever loaded. A {@code @Pseudo}
+ * mixin may name the class it targets, which Mixin skips without loading when it is missing.
+ */
 class SableIsolationTest {
     @Test
     void onlyTheCompatPackageNamesSable() throws IOException {
@@ -24,11 +27,15 @@ class SableIsolationTest {
             offenders = files.filter(file -> file.toString().endsWith(".java"))
                 .filter(file -> !file.toString().contains("/dev/blockpilot/compat/sable/"))
                 .filter(file -> !file.toString().contains("/src/test/"))
-                .filter(file -> read(file).contains("dev.ryanhcode"))
+                .filter(file -> withoutPseudoTarget(read(file)).contains("dev.ryanhcode"))
                 .map(file -> sources.relativize(file).toString())
                 .toList();
         }
         assertEquals(List.of(), offenders);
+    }
+
+    private static String withoutPseudoTarget(String source) {
+        return source.contains("@Pseudo") ? source.replaceFirst("@Mixin\\(targets = \"[^\"]*\"", "@Mixin(") : source;
     }
 
     private static String read(Path file) {

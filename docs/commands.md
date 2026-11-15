@@ -62,11 +62,11 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   treats the camera as where the player is for the world it loads, ticks and sends: the chunks around it load and
   arrive, the entities there are sent, and sounds, particles, explosions and `playsound` there are heard. The player
   stands still meanwhile, and actions that move it make no progress; how near a player mobs spawn and despawn still goes
-  by the player, so summon actors with `{PersistenceRequired:1b}`, and Sable still sends its sub-levels by where the
-  player is, so the camera doesn't show them there. It answers once the client has the camera's chunk, after at most 10
-  s. A `camera move`, `follow` or `orbit` keeps the camera away; `camera reset` or `off`, a `camera at` without `away`,
-  leaving the world, a dimension change and agent control off end it. For an effect spanning hundreds of blocks, `option
-  fov 110` and `option renderClouds off` widen and clear the view.
+  by the player, so summon actors with `{PersistenceRequired:1b}`. With Sable, the sub-levels within its tracking range
+  of the camera come too, also one unloaded while nobody was near. It answers once the client has the camera's chunk,
+  after at most 10 s. A `camera move`, `follow` or `orbit` keeps the camera away; `camera reset` or `off`, a `camera at`
+  without `away`, leaving the world, a dimension change and agent control off end it. For an effect spanning hundreds of
+  blocks, `option fov 110` and `option renderClouds off` widen and clear the view.
 - `settle [timeout=]`: waits until the chunks around the player, or a camera placed with `away`, have arrived and those
   in view have compiled, e.g. after `camera at`, a teleport or a render distance change.
 - `sounds [since=] [match=] [limit=]`: the sounds that started, the last 2000. `vol` and `pitch` are what plays, and

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0 (unreleased)
+
+- **Sub-levels round a camera away:** with Sable, a camera placed with `away` shows the sub-levels within Sable's
+  tracking range of the camera, also one the server had unloaded while nobody was near, so a ship can be filmed from
+  anywhere while the player stands elsewhere ([sable.md](docs/sable.md)).
+
 ## 1.3.1 (2026-11-14)
 
 - **Fixes:** the game starts beside Sodium on 1.20.1 and 1.21.1, and beside Embeddium on 1.20.1 Forge, where it stopped
