@@ -23,8 +23,12 @@ public final class Screenshots {
     private static final DateTimeFormatter NAMES = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSS");
     /** Frames begun; each begins with the ticks due, then renders. */
     private static volatile long frames;
+    /** When the last rendered frame was drawn, in client ticks with the partial tick it was drawn at. */
+    private static volatile double drawnAt;
     /** Captures waiting for a frame rendered after they were asked for; client thread only. */
     private static final List<Runnable> waiting = new ArrayList<>();
+    /** Readers of every frame, as each frame begins after the one before it was rendered; client thread only. */
+    private static final List<Runnable> everyFrame = new ArrayList<>();
 
     private Screenshots() {
     }
@@ -33,14 +37,33 @@ public final class Screenshots {
         return frames;
     }
 
+    /** When the last rendered frame was drawn: client ticks, and the fraction of the next it was drawn at. */
+    static double drawnAt() {
+        return drawnAt;
+    }
+
     /** Called as each frame begins, when the frame before it has been rendered. Client thread. */
     public static void onFrame() {
+        // The ticks before the frame just rendered are counted, and its partial tick is still the timer's.
+        drawnAt = CameraControl.ticks() + CameraControl.realPartialTick();
         frames++;
         if (!waiting.isEmpty()) {
             List<Runnable> due = List.copyOf(waiting);
             waiting.clear();
             due.forEach(Runnable::run);
         }
+        if (!everyFrame.isEmpty()) {
+            List.copyOf(everyFrame).forEach(Runnable::run);
+        }
+    }
+
+    /** Runs the reader on every frame rendered from now on, until {@link #stopEveryFrame}. Client thread. */
+    static void everyFrame(Runnable reader) {
+        everyFrame.add(reader);
+    }
+
+    static void stopEveryFrame(Runnable reader) {
+        everyFrame.remove(reader);
     }
 
     /**

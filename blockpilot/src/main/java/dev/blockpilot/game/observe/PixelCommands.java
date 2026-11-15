@@ -1,6 +1,8 @@
 package dev.blockpilot.game.observe;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.blockpilot.api.Action;
+import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
@@ -10,9 +12,13 @@ import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
+import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.protocol.CommandRegistry;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
@@ -21,6 +27,8 @@ import org.joml.Matrix4f;
 /** {@code pixels}: colour and brightness of parts of the last rendered frame, for checks on what was drawn. */
 public final class PixelCommands {
     private static final double DEFAULT_RADIUS = 0.5;
+    /** The longest flicker reading, in ticks: 10 s. */
+    private static final int MAX_FLICKER_TICKS = 200;
     private static volatile Projection camera;
 
     /** Called by the renderer with the matrices of the frame it is about to draw. */
@@ -30,6 +38,16 @@ public final class PixelCommands {
     }
 
     public void register(CommandRegistry registry) {
+        registry.register(CommandSpec.action("flicker", this::flicker).group("observe").needsWorld()
+            .form(form -> form.arg("duration", ArgType.DURATION).optionalText("regions"))
+            .help("reads the mean brightness (luma, 0-255) of parts of every frame drawn over the duration (2t to "
+                + "10s), the parts as pixels takes them, and gives each part's luma, min and max over the frames and "
+                + "its strongest rhythm: flicker=<hz> in cycles per game second (20 ticks, so it holds under a slowed "
+                + "tick rate), period=<ticks>t and amplitude=<luma>, or flicker=none when it changes by less than 1; "
+                + "it resolves up to half the frame rate, fps=, in frames per game second; a row per frame gives "
+                + "when it was drawn, drawn=<client tick>, and each part's luma")
+            .field("frames", "frames read").field("fps", "frames per game second")
+            .example("flicker 2s lamp=@~0,1,3 r=0.4"));
         registry.register(CommandSpec.query("pixels", this::pixels).group("observe")
             .form(form -> form.optionalText("regions"))
             .help("measures parts of the last rendered frame (GUI included unless hidden): [name=]x0,y0,x1,y1 in "
@@ -47,22 +65,7 @@ public final class PixelCommands {
         Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
         Position frameCamera = CameraControl.frameCamera();
         try (NativeImage image = FrameCapture.read()) {
-            PixelStats.Frame frame = new PixelStats.Frame() {
-                @Override
-                public int width() {
-                    return image.getWidth();
-                }
-
-                @Override
-                public int height() {
-                    return image.getHeight();
-                }
-
-                @Override
-                public int abgr(int x, int y) {
-                    return FrameCapture.abgr(image, x, y);
-                }
-            };
+            PixelStats.Frame frame = frameOf(image);
             Fields fields = new Fields();
             for (Map.Entry<String, Object> region : regions.entrySet()) {
                 FrameRect part = region.getValue() instanceof FrameRect rect ? rect
@@ -75,6 +78,146 @@ public final class PixelCommands {
             }
             return Result.ok(CameraControl.withFrameCamera(fields, frameCamera));
         }
+    }
+
+    private Action flicker(CommandContext context, Args args) throws CommandException {
+        int ticks = args.duration("duration").ticks();
+        if (ticks < 2 || ticks > MAX_FLICKER_TICKS) {
+            throw new CommandException("syntax", "flicker reads 2t to 10s, not " + args.word("duration"));
+        }
+        Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
+        List<String> names = List.copyOf(regions.keySet());
+        List<Double> drawn = new ArrayList<>();
+        List<double[]> lumas = new ArrayList<>();
+        CommandException[] failed = {null};
+        Runnable reader = () -> {
+            try (NativeImage image = FrameCapture.read()) {
+                PixelStats.Frame frame = frameOf(image);
+                double[] row = new double[names.size()];
+                for (int index = 0; index < names.size(); index++) {
+                    Object region = regions.get(names.get(index));
+                    FrameRect part = region instanceof FrameRect rect ? rect
+                        : project(names.get(index), (double[]) region);
+                    row[index] = PixelStats.of(frame, part).luma();
+                }
+                drawn.add(Screenshots.drawnAt());
+                lumas.add(row);
+            } catch (CommandException e) {
+                failed[0] = e;
+            }
+        };
+        Screenshots.everyFrame(reader);
+        return new Action() {
+            private int elapsed;
+
+            @Override
+            public Result tick() throws CommandException {
+                if (failed[0] != null) {
+                    cancel();
+                    throw failed[0];
+                }
+                if (++elapsed < ticks) {
+                    return null;
+                }
+                cancel();
+                return flickerResult(names, drawn, lumas);
+            }
+
+            @Override
+            public void cancel() {
+                Screenshots.stopEveryFrame(reader);
+            }
+
+            @Override
+            public String label() {
+                return "flicker";
+            }
+        };
+    }
+
+    /** The frame as {@link PixelStats} reads it. */
+    private static PixelStats.Frame frameOf(NativeImage image) {
+        return new PixelStats.Frame() {
+            @Override
+            public int width() {
+                return image.getWidth();
+            }
+
+            @Override
+            public int height() {
+                return image.getHeight();
+            }
+
+            @Override
+            public int abgr(int x, int y) {
+                return FrameCapture.abgr(image, x, y);
+            }
+        };
+    }
+
+    /** Each part's luma over the frames and its strongest rhythm, and a row per frame. */
+    private static Result flickerResult(List<String> names, List<Double> drawn, List<double[]> lumas)
+        throws CommandException {
+        int count = drawn.size();
+        if (count < 2) {
+            throw new CommandException("no_frames", "the game drew " + count + " frame(s) meanwhile");
+        }
+        double[] times = drawn.stream().mapToDouble(Double::doubleValue).toArray();
+        double span = (times[count - 1] - times[0]) / 20;
+        double fps = span > 0 ? Math.round((count - 1) / span * 10) / 10.0 : 0;
+        Fields fields = new Fields().put("frames", count, "frames=" + count)
+            .put("fps", fps, "fps=" + Numbers.format(fps));
+        for (int index = 0; index < names.size(); index++) {
+            double[] values = new double[count];
+            for (int frame = 0; frame < count; frame++) {
+                values[frame] = lumas.get(frame)[index];
+            }
+            fields.put(names.get(index), rhythmFields(values, times), names.get(index) + " "
+                + rhythmText(values, times));
+        }
+        List<Row> rows = new ArrayList<>();
+        for (int frame = 0; frame < count; frame++) {
+            Fields row = new Fields().put("drawn", round(times[frame]), "drawn=" + Numbers.format(round(times[frame])));
+            for (int index = 0; index < names.size(); index++) {
+                double luma = Math.round(lumas.get(frame)[index] * 10) / 10.0;
+                row.put(names.get(index), luma, names.get(index) + "=" + Numbers.format(luma));
+            }
+            rows.add(Row.of(String.valueOf(frame), row));
+        }
+        return Result.ok(fields).withRows(rows);
+    }
+
+    private static Map<String, Object> rhythmFields(double[] values, double[] times) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("luma", Math.round(mean(values) * 10) / 10.0);
+        fields.put("min", Math.round(Arrays.stream(values).min().orElse(0) * 10) / 10.0);
+        fields.put("max", Math.round(Arrays.stream(values).max().orElse(0) * 10) / 10.0);
+        Flicker.Rhythm rhythm = Flicker.strongest(times, values);
+        if (rhythm == null) {
+            fields.put("flicker", "none");
+        } else {
+            fields.put("flicker", Math.round(rhythm.hertz() * 10) / 10.0);
+            fields.put("period", Math.round(rhythm.periodTicks() * 10) / 10.0);
+            fields.put("amplitude", Math.round(rhythm.amplitude() * 10) / 10.0);
+        }
+        return fields;
+    }
+
+    private static String rhythmText(double[] values, double[] times) {
+        Map<String, Object> fields = rhythmFields(values, times);
+        StringBuilder text = new StringBuilder();
+        fields.forEach((name, value) -> text.append(text.isEmpty() ? "" : " ").append(name).append('=')
+            .append(value instanceof Double number ? Numbers.format(number) : value)
+            .append(name.equals("flicker") && value instanceof Double ? "hz" : name.equals("period") ? "t" : ""));
+        return text.toString();
+    }
+
+    private static double mean(double[] values) {
+        return Arrays.stream(values).average().orElse(0);
+    }
+
+    private static double round(double value) {
+        return Math.round(value * 100) / 100.0;
     }
 
     /** The regions by name: a frame part, or the world point and radius {x, y, z, r} to project. */

@@ -37,8 +37,9 @@ class ContactSheetTest {
     }
 
     @Test
-    void labelsNameTheFrameAndTick() {
-        assertEquals("#3 t1234", ContactSheet.label(3, 1234));
+    void labelsNameTheFrameTheTickAndWhenItWasDrawn() {
+        assertEquals("#3 t1234 c812.4", ContactSheet.label(3, 1234, 812.37));
+        assertEquals("#0 t5 c40", ContactSheet.label(0, 5, 40.02));
     }
 
     @Test

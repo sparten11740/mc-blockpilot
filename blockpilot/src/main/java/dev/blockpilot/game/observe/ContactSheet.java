@@ -1,5 +1,6 @@
 package dev.blockpilot.game.observe;
 
+import dev.blockpilot.api.Numbers;
 import java.util.Map;
 
 /**
@@ -78,8 +79,9 @@ public final class ContactSheet {
     }
 
     /** The label of a frame: its number and tick. */
-    public static String label(int frame, long tick) {
-        return "#" + frame + " t" + tick;
+    /** {@code #3 t1234 c812.4}: the frame, the game tick and the client tick it was drawn at, to a tenth. */
+    public static String label(int frame, long tick, double drawn) {
+        return "#" + frame + " t" + tick + " c" + Numbers.format(Math.round(drawn * 10) / 10.0);
     }
 
     /** Draws the text on a backdrop with its top left corner at the point; characters without a glyph are blank. */

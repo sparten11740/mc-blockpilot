@@ -64,8 +64,9 @@ public final class ObservationCommands {
             .optionalArg("width", ArgType.INT).optionalKeyword("sheet", "sheet")
             .option("burst", "number of frames (max 60)", ArgType.INT)
             .option("every", "ticks between burst frames, e.g. 10t", ArgType.DURATION)
-            .option("hud", "off: hide the GUI, crosshair and hand while capturing",
-                List.of("on", "off"))
+            .option("hud", "off: hide the GUI, crosshair and hand while capturing; clean: also the layers and "
+                + "overlays other mods draw, the player's night vision, blindness, darkness and nausea, and the field "
+                + "of view effects", List.of("on", "off", "clean"))
             .option("crop", "x0,y0,x1,y1: only that part of each frame, in fractions from the top left")
             .help("saves the last rendered frame as PNG (default 512 wide, max 1280 and the frame's or crop's own "
                 + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
@@ -151,13 +152,16 @@ public final class ObservationCommands {
         registry.register(CommandSpec.query("particles", this::particles).group("observe")
             .option("since", "first tick to include, or a duration back from now (default: the last 20 ticks)",
                 ArgType.INT, ArgType.DURATION)
+            .option("match", "particle type or pattern, e.g. flame or mymod:*; total then counts only those",
+                ArgType.PATTERN, ArgType.ID)
             .help("particles spawned per type over a window (the counts of the last 1200 ticks that had any are "
-                + "kept); window=t<first>..t<now> names the ticks the reply covers")
+                + "kept); window=t<first>..t<now> names the ticks the reply covers; match= keeps the matching types, "
+                + "minecraft: when an id names no namespace")
             .field("tick", "current tick").field("total", "all particles in the window")
             .field("window", "the ticks the reply covers: from since= (or the default), or from where the log still "
                 + "begins when it dropped older counts, to now")
             .field("joined", "the tick this world was joined, when since= is a tick from before it")
-            .example("particles since=1200"));
+            .example("particles since=1200 match=*flame*"));
     }
 
     private Action screenshot(CommandContext context, Args args) throws CommandException {
@@ -172,8 +176,8 @@ public final class ObservationCommands {
         FrameRect crop = args.hasOption("crop") ? FrameRect.parse(args.option("crop")) : FrameRect.ALL;
         Duration every = args.durationOption("every");
         int interval = every == null ? 10 : Math.max(1, every.ticks());
-        boolean hideHud = "off".equals(args.option("hud"));
-        boolean hudBefore = HudVisibility.hidden();
+        HudVisibility.Capture hud = HudVisibility.Capture.of(args.option("hud"));
+        HudVisibility.State hudBefore = HudVisibility.state();
         List<Row> rows = new ArrayList<>();
         List<NativeImage> tiles = new ArrayList<>();
         // The first capture is of a frame rendered after this request, so it shows what the commands before it did
@@ -183,19 +187,27 @@ public final class ObservationCommands {
         int[] elapsed = {-1};
         return new Action() {
             private int captured;
+            /** The frame count at the last capture, so no frame is captured twice. */
+            private long lastFrame = -1;
+            /** The tick a capture fell due at, while it waits for a frame drawn since the last; -1 when none is due. */
+            private int dueAt = -1;
 
             @Override
             public Result tick() throws CommandException {
-                if (hideHud) {
-                    HudVisibility.setHidden(true);
-                }
+                hud.apply();
                 if (elapsed[0] < 0 && Screenshots.frames() == requested) {
                     return null;
                 }
                 int tick = ++elapsed[0];
                 try {
-                    if (tick % interval == 0) {
-                        capture();
+                    if (tick % interval == 0 && dueAt < 0) {
+                        dueAt = tick;
+                    }
+                    // Ticks run several to a frame when the game catches up, so a due capture waits for a new frame.
+                    if (dueAt >= 0 && Screenshots.frames() != lastFrame) {
+                        capture(tick - dueAt);
+                        lastFrame = Screenshots.frames();
+                        dueAt = -1;
                     }
                     if (rows.size() < frames) {
                         return null;
@@ -203,7 +215,7 @@ public final class ObservationCommands {
                     Fields fields = new Fields();
                     if (sheet) {
                         List<String> labels = rows.stream().map(row -> ContactSheet.label(Integer.parseInt(row.key()),
-                            (Long) row.fields().get("tick"))).toList();
+                            (Long) row.fields().get("tick"), (Double) row.fields().get("drawn"))).toList();
                         fields.bare("file", Screenshots.save(Screenshots.sheet(tiles, labels), "_sheet").toString());
                     }
                     cancel();
@@ -223,9 +235,10 @@ public final class ObservationCommands {
                 }
             }
 
-            /** One frame: saved as its own file, or kept for the sheet. */
-            private void capture() throws IOException {
+            /** One frame, {@code late} ticks after it fell due: saved as its own file, or kept for the sheet. */
+            private void capture(int late) throws IOException {
                 long tick = Observations.tick();
+                double drawn = Math.round(Screenshots.drawnAt() * 100) / 100.0;
                 Fields fields = new Fields();
                 NativeImage frame = Screenshots.frame(width, crop);
                 captured = frame.getWidth();
@@ -237,15 +250,18 @@ public final class ObservationCommands {
                         fields.bare("file", file.toString());
                     }
                 }
-                fields.put("tick", tick, "t" + tick);
+                fields.put("tick", tick, "t" + tick).put("drawn", drawn, "drawn=" + Numbers.format(drawn));
+                if (late > 0) {
+                    fields.put("late", late, "late=" + late + "t");
+                }
                 rows.add(Row.of(String.valueOf(rows.size()),
                     CameraControl.withFrameCamera(fields, CameraControl.frameCamera())));
             }
 
             @Override
             public void cancel() {
-                if (hideHud) {
-                    HudVisibility.setHidden(hudBefore);
+                if (hud != HudVisibility.Capture.AS_IS) {
+                    hudBefore.restore();
                 }
                 tiles.forEach(NativeImage::close);
                 tiles.clear();
@@ -299,7 +315,7 @@ public final class ObservationCommands {
     }
 
     private Action sound(CommandContext context, Args args) throws CommandException {
-        String id = soundId(args.word("id"));
+        String id = namespaced(args.word("id"));
         String unknown = unknownSound(id);
         if (unknown != null) {
             throw new CommandException("syntax", unknown);
@@ -422,7 +438,7 @@ public final class ObservationCommands {
         if (match.contains("*")) {
             return glob(match);
         }
-        String id = soundId(match);
+        String id = namespaced(match);
         String unknown = unknownSound(id);
         if (unknown != null) {
             throw new CommandException("syntax", unknown + "; or match=*" + id.substring(id.indexOf(':') + 1) + "*");
@@ -430,8 +446,8 @@ public final class ObservationCommands {
         return glob(id);
     }
 
-    /** The sound event a name stands for: minecraft: when it names no namespace. */
-    private static String soundId(String name) {
+    /** The id a name stands for: minecraft: when it names no namespace. */
+    private static String namespaced(String name) {
         return name.contains(":") ? name : "minecraft:" + name;
     }
 
@@ -504,8 +520,11 @@ public final class ObservationCommands {
 
     private Result particles(CommandContext context, Args args) throws CommandException {
         long since = since(args, Observations.tick() - 20);
+        String asked = args.option("match");
+        Pattern match = asked == null ? null : glob(asked.contains("*") ? asked : namespaced(asked));
         Map<String, Integer> counts = Observations.particles(since);
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
+        sorted.removeIf(entry -> !matches(match, entry.getKey()));
         sorted.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
         int total = 0;
         List<Row> rows = new ArrayList<>();
