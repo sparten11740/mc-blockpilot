@@ -1,4 +1,4 @@
-# Blockpilot
+# <img src="docs/logo/blockpilot-logo-400.png" alt="" width="48" height="48" align="absmiddle"> Blockpilot
 
 [![release](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml/badge.svg)](https://github.com/sparten11740/mc-blockpilot/actions/workflows/release.yml)
 [![game tests](https://github.com/sparten11740/mc-blockpilot/actions/workflows/game-tests.yml/badge.svg?branch=main)](https://github.com/sparten11740/mc-blockpilot/actions/workflows/game-tests.yml?query=branch%3Amain)
