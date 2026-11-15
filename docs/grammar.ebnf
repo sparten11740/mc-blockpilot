@@ -251,7 +251,7 @@ gametest-option ::= "timeout=" ( duration | seconds )
 screenshot-command ::= "screenshot" integer? "sheet"?
 screenshot-option ::= "burst=" integer | "every=" duration | "hud=" ( "on" | "off" ) | "crop=" option-value | "timeout=" ( duration | seconds )
 
-camera-command ::= "camera" ( "at" position ( "look" ( position | entity | sub-level ) )? "clear"? "away"? | "move" position ( "via" position )* ( "look" ( "ahead" | position | entity | sub-level ) )? ( "around" sub-level )? "over" duration "background"? | "follow" ( entity | sub-level ) ( "at" position )? "turning"? | "orbit" ( position | entity | sub-level ) ( "by" number )? "over" duration "background"? | ( "reset" | "off" | "wait" ) )
+camera-command ::= "camera" ( "at" position ( "look" ( position | entity | sub-level ) )? "clear"? "away"? | "move" position ( "via" position )* ( "look" ( "ahead" | position | entity | sub-level ) )? ( "around" sub-level )? "over" duration "background"? | "follow" ( entity | sub-level ) ( "at" position )? "turning"? | "orbit" ( position | entity | sub-level ) ( "by" number )? "over" duration "background"? | "play" text | ( "reset" | "off" | "wait" ) )
 camera-option ::= "fov=" number | "roll=" number | "ease=" ( "linear" | "in" | "out" | "inout" ) | "timeout=" ( duration | seconds )
 
 settle-command ::= "settle"

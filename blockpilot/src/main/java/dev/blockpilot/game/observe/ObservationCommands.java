@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,6 +46,18 @@ public final class ObservationCommands {
     private static final int MAX_BURST = 60;
     private static final List<String> SOUND_SOURCES = Arrays.stream(SoundSource.values()).map(SoundSource::getName)
         .toList();
+
+    /** Finds an entity by its tag or custom name, as an {@code @<name>} argument does. */
+    @FunctionalInterface
+    public interface EntityNames {
+        OptionalInt find(String name) throws CommandException;
+    }
+
+    private final EntityNames names;
+
+    public ObservationCommands(EntityNames names) {
+        this.names = names;
+    }
 
     public void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("screenshot", this::screenshot).group("observe")
@@ -64,7 +77,7 @@ public final class ObservationCommands {
             .field("camera", "the placed camera's absolute position, for a frame rendered from it")
             .field("width", "the width the frames have, when narrower than asked (or than 512)")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
-        new CameraCommands().register(registry);
+        new CameraCommands(names).register(registry);
         registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
             .help("waits until the chunks within the view distance of the player have arrived from the server and "
                 + "those in view have compiled, as option does after a change: after camera at, a teleport or "

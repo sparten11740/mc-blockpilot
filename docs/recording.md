@@ -32,6 +32,14 @@ would give as the event `! record …`; a `record stop` in the script ends the t
 "<game dir>/blockpilot/blockpilot" "camera at ~6,3,6 look ~0,1,0; record script door hud=off; use ~0,0,2; wait 2s"
 ```
 
+A shot list made with `camera play` films the same way: the script starts the take and the shots, does its work while
+the camera plays them, and ends with `camera wait`, so the take ends with the last shot.
+
+```sh
+"<game dir>/blockpilot/blockpilot" "record script launch hud=off; camera play at ~0,4,-12 look ~0,2,0 | hold 20t | \
+  move ~12,6,0 look ~0,2,0 over 60t ease=inout | follow sub:rocket at ~0,4,-16 | hold 100t; use ~0,0,2; camera wait"
+```
+
 `record mark <label>` notes the video time the script reached it at, so an edit knows where the script's steps land in
 the take. It answers `ok mark door 2.15s frame=129`: the time from the video's first frame (0 before it, the clock
 `record status` counts), and the first video frame from that time, and it costs the script no tick. A change the client

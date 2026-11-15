@@ -6,7 +6,9 @@ import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
+import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -43,12 +46,22 @@ final class CameraCommands {
     /** The forms that take fov= and roll=: those that place a camera. */
     private static final Set<String> PLACING = Set.of("at", "move", "follow", "orbit");
 
+    /** The forms a shot of camera play may be. */
+    private static final Set<String> SHOTS = Set.of("at", "move", "follow", "orbit");
+
     /** The handler of each form, by its first word. */
     private final Map<String, CommandSpec.ActionHandler> forms = Map.of("at", this::at, "move", this::move,
-        "follow", this::follow, "orbit", this::orbit, "wait", (context, args) -> new WaitForMove(),
+        "follow", this::follow, "orbit", this::orbit, "play", this::play, "wait", (context, args) -> new WaitForMove(),
         "reset", CameraCommands::reset, "off", CameraCommands::reset);
+    private final ObservationCommands.EntityNames names;
+    private CommandRegistry registry;
+
+    CameraCommands(ObservationCommands.EntityNames names) {
+        this.names = names;
+    }
 
     void register(CommandRegistry registry) {
+        this.registry = registry;
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
                 .optional(look -> look.keyword("look", "look")
@@ -68,6 +81,7 @@ final class CameraCommands {
                 .optional(by -> by.keyword("by", "by").arg("degrees", ArgType.NUMBER))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
+            .form(form -> form.keyword("op", "play").text("shots"))
             .form(form -> form.keyword("op", "reset", "off", "wait"))
             .option("fov", "camera at, move, follow and orbit: the placed camera's vertical field of view, 1 to 170 "
                 + "degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
@@ -119,6 +133,14 @@ final class CameraCommands {
                 + "move … around sub:<ref> the move's ~ points, via points and look are offsets in the world's "
                 + "axes from that origin in each frame, so a path keeps its shape round a flying sub-level; status "
                 + "names a placed camera's position as camera <x,y,z>; "
+                + "camera play <shot> [| <shot>]…: plays the shots one after another on the camera's own clock and "
+                + "answers at once, shots=<n> over=<ticks>t, while the script and the scripts after it go on; a shot "
+                + "is a camera at, move, orbit or follow written without camera, with its own ease=, fov= and roll=, "
+                + "or hold <duration>, which keeps the camera as it is; each starts as its command would then, from "
+                + "where the camera is drawn, so an at is a cut and a follow lasts until the next shot; ~ positions "
+                + "count from the player as each shot starts; all shots are checked before the first starts; camera "
+                + "wait answers at the end, or with the error of a shot that couldn't start, and another camera "
+                + "command, stop or real input end it; record script with camera wait at its end films it whole; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
                 + "around the player, so a camera beyond the render distance shows sky, unless placed with away: in "
                 + "singleplayer with commands allowed, camera at … away has the integrated server treat the camera as "
@@ -144,16 +166,73 @@ final class CameraCommands {
 
     private Action camera(CommandContext context, Args args) throws CommandException {
         String op = args.word("op");
+        check(op, args);
+        if (!op.equals("wait")) {
+            CameraTimeline.stop();
+        }
+        return forms.get(op).start(context, args);
+    }
+
+    /** The options a form takes, and their ranges, before anything changes. */
+    private static void check(String op, Args args) throws CommandException {
         if (args.hasOption("ease") && !EASED.contains(op)) {
             throw new CommandException("syntax", "ease= is for camera move and camera orbit");
         }
         if ((args.hasOption("fov") || args.hasOption("roll")) && !PLACING.contains(op)) {
             throw new CommandException("syntax", "fov= and roll= are for camera at, move, follow and orbit");
         }
-        // Range checks before anything changes; each form reads the values again as it places the camera.
+        // Each form reads the values again as it places the camera.
         fov(args);
         roll(args);
-        return forms.get(op).start(context, args);
+    }
+
+    /**
+     * camera play: the shots, separated by |, each a camera at, move, orbit or follow without the word camera, or
+     * hold for a duration; checked as a whole before the first starts.
+     */
+    private Action play(CommandContext context, Args args) throws CommandException {
+        List<CameraTimeline.Shot> shots = new ArrayList<>();
+        int total = 0;
+        for (String text : args.text("shots").strip().split("\\s*\\|\\s*")) {
+            List<String> tokens = new ArrayList<>(List.of(text.strip().split("\\s+")));
+            String op = tokens.get(0);
+            if (op.equals("hold")) {
+                if (tokens.size() != 2 || !Lexicon.isDuration(tokens.get(1))) {
+                    throw new CommandException("syntax", "hold takes a duration, as hold 40t: " + text);
+                }
+                int ticks = Duration.parse(tokens.get(1)).ticks();
+                shots.add(new CameraTimeline.Shot(null, null, ticks));
+                total += ticks;
+                continue;
+            }
+            if (!SHOTS.contains(op)) {
+                throw new CommandException("syntax", "a shot is at, move, orbit, follow or hold, not " + text);
+            }
+            // A timed shot runs in the background, so the next one starts as it ends.
+            int over = tokens.indexOf("over");
+            if (over >= 0 && over + 1 < tokens.size() && !tokens.contains("background")) {
+                tokens.add(over + 2, "background");
+            }
+            Args shot;
+            try {
+                shot = registry.parse("camera " + String.join(" ", tokens));
+            } catch (CommandException e) {
+                // Its column counts in the camera command it was read as, not in the play.
+                throw new CommandException("syntax", "shot " + (shots.size() + 1) + ", " + text + ": "
+                    + e.argument().replaceFirst("^col \\d+: ", ""));
+            }
+            check(op, shot);
+            for (String slot : List.of("target", "subject", "centre")) {
+                if (shot.has(slot) && shot.type(slot) == ArgType.ENTITY) {
+                    entityId(shot, slot);
+                }
+            }
+            shots.add(new CameraTimeline.Shot(forms.get(op), shot, 0));
+            total += shot.has("duration") ? shot.duration("duration").ticks() : 0;
+        }
+        CameraTimeline.play(shots, context);
+        int over = total;
+        return () -> Result.ok(new Fields().put("shots", shots.size()).put("over", over, "over=" + over + "t"));
     }
 
     private static Double fov(Args args) throws CommandException {
@@ -233,8 +312,21 @@ final class CameraCommands {
     }
 
 
+    /** The id of the entity a slot names: e<id>, or a name a shot of camera play keeps as written. */
+    private int entityId(Args args, String name) throws CommandException {
+        String word = args.word(name);
+        if (!word.startsWith("@")) {
+            return args.entity(name).id();
+        }
+        OptionalInt found = names.find(word.substring(1));
+        if (found.isEmpty()) {
+            throw new CommandException("no_entity", word);
+        }
+        return found.getAsInt();
+    }
+
     /** A position, which rides along aboard a sub-level, or the point a look at an entity aims at. */
-    private static CameraControl.Point point(CommandContext context, Args args, String name, Level level)
+    private CameraControl.Point point(CommandContext context, Args args, String name, Level level)
         throws CommandException {
         if (args.type(name) == ArgType.ENTITY) {
             return aimAt(entity(args, name, level));
@@ -267,8 +359,8 @@ final class CameraCommands {
         return CameraControl.drawn(level, new Vec3(point.x(), point.y(), point.z()));
     }
 
-    private static Entity entity(Args args, String name, Level level) throws CommandException {
-        Entity entity = level.getEntity(args.entity(name).id());
+    private Entity entity(Args args, String name, Level level) throws CommandException {
+        Entity entity = level.getEntity(entityId(args, name));
         if (entity == null) {
             throw new CommandException("no_entity", args.word(name));
         }
@@ -407,8 +499,12 @@ final class CameraCommands {
         @Override
         public Result tick() throws CommandException {
             if (answer == null) {
-                if (CameraControl.moving() != null) {
+                if (CameraControl.moving() != null || CameraTimeline.playing()) {
                     return null;
+                }
+                CommandException failure = CameraTimeline.takeFailure();
+                if (failure != null) {
+                    throw failure;
                 }
                 CameraControl.Placement placement = CameraControl.placement();
                 Level level = Minecraft.getInstance().level;

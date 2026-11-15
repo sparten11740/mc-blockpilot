@@ -185,6 +185,7 @@ public final class CameraControl {
         if (motion != null && motion.background() && motion.finished()) {
             place(motion.end());
         }
+        CameraTimeline.tick();
     }
 
     static long ticks() {
@@ -204,6 +205,7 @@ public final class CameraControl {
 
     /** stop and real input: a timed motion under way stays where the last frame drew it, on any thread. */
     public static void stopMove() {
+        CameraTimeline.stop();
         CameraMotion motion = moving;
         if (motion != null) {
             motion.cancel();
@@ -281,6 +283,7 @@ public final class CameraControl {
 
     /** Back to the player's view, restoring the GUI setting. Client thread. */
     public static void reset() {
+        CameraTimeline.stop();
         AwayCamera.end();
         moving = null;
         placement = null;

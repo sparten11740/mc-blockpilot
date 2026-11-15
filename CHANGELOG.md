@@ -10,6 +10,10 @@
   sub:ship` circles it, `look sub:ship` aims at it, and `camera move … around sub:ship` takes its `~` points from the
   sub-level's origin in each frame, so a path keeps its shape round a flying ship ([sable.md](docs/sable.md)). The
   extension API is 2.2.0 for the new slot type `ArgType.SUB_LEVEL` ([extending.md](docs/extending.md)).
+- **A shot list on the camera's clock:** `camera play <shot> | <shot> | …` plays the shots one after another while the
+  script goes on, each a `camera at`, `move`, `orbit` or `follow` without `camera`, with its own `ease=` and `fov=`, or
+  `hold <duration>`; `camera wait` answers at the end, and `record script` with `camera wait` at its end films it whole
+  ([commands.md](docs/commands.md), [recording.md](docs/recording.md)).
 
 ## 1.3.1 (2026-11-14)
 
