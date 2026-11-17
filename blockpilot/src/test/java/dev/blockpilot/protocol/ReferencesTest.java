@@ -13,13 +13,19 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Result;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** {@code @<name>} entities through the engine: handlers see ids, wherever and however often their command runs. */
-class EntityNamesTest {
+/**
+ * Names through the engine: handlers see entity ids and sub-level UUIDs, wherever and however often their command runs.
+ */
+class ReferencesTest {
+    private static final UUID SHIP = UUID.fromString("00000000-0000-0000-0000-00000000000a");
+    private static final UUID RAFT = UUID.fromString("00000000-0000-0000-0000-00000000000b");
+
     private final FakeGame game = new FakeGame();
     private Engine engine;
 
@@ -40,8 +46,11 @@ class EntityNamesTest {
             .repeated(4, group -> group.keyword("with", "with").arg("other", ArgType.ENTITY))));
         registry.register(CommandSpec.query("say", (context, args) -> Result.ok(new Fields().bare("said",
             args.text("message")))).arg("message", ArgType.TEXT));
+        registry.register(CommandSpec.query("board", (context, args) -> Result.ok(new Fields().put("ship",
+            args.word("ship")))).arg("ship", ArgType.SUB_LEVEL));
         engine = new Engine(registry, game);
         game.entities.putAll(Map.of("pip", 7, "star", 12));
+        game.subLevels.putAll(Map.of("ship", SHIP, "here", RAFT, SHIP.toString(), SHIP));
     }
 
     private static Fields id(Args args) {
@@ -137,8 +146,35 @@ class EntityNamesTest {
     }
 
     @Test
+    void aSubLevelByNameOrHereBecomesItsUuid() {
+        assertEquals("ok ship=sub:" + SHIP + "\nok ship=sub:" + RAFT, text(run("board sub:ship; board sub:here")));
+        assertEquals(List.of("sub:ship", "sub:here"), game.lookups);
+    }
+
+    @Test
+    void aSubLevelByUuidIsLookedUpAndKept() {
+        assertEquals("ok ship=sub:" + SHIP, text(run("board sub:" + SHIP)));
+        assertEquals(List.of("sub:" + SHIP), game.lookups);
+    }
+
+    @Test
+    void aSubLevelThatIsntOneFailsTheStep() {
+        game.sharedNames.add("twin");
+        assertEquals("err no_sublevel nosuch\nskip", text(run("board sub:nosuch; board sub:ship")));
+        assertEquals("err ambiguous twin", text(run("board sub:twin")));
+        game.sable = false;
+        assertEquals("err unsupported sub:ship needs Sable", text(run("board sub:ship")));
+    }
+
+    @Test
+    void textKeepsItsSub() {
+        assertEquals("ok look at sub:ship", text(run("say look at sub:ship")));
+        assertTrue(game.lookups.isEmpty());
+    }
+
+    @Test
     void argumentsWithoutNamesAreLeftAsTheyAre() throws CommandException {
         Args args = new Args(Map.of("target", new Args.Value("e3", ArgType.ENTITY)), Map.of());
-        assertSame(args, EntityNames.resolve(args, game));
+        assertSame(args, References.resolve(args, game));
     }
 }

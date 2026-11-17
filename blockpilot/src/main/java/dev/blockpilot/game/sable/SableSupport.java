@@ -6,7 +6,10 @@ import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandFailure;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.lang.reflect.InvocationTargetException;
+import java.util.UUID;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 
 /**
  * Turns the Sable integration on when a compatible Sable is installed. The compat package is loaded by name only after
@@ -23,12 +26,23 @@ public final class SableSupport {
     private SableSupport() {
     }
 
-    /** What the rest of Blockpilot asks about sub-levels; it knows none while the integration is off. */
     /** The sub-level a reference names: here, a UUID or a name, as the sable: commands take it; client thread. */
     public static SubLevels.Info resolve(String reference) throws CommandException {
         return SableCommands.resolve(reference);
     }
 
+    /**
+     * The sub-level a {@code sub:} reference names, as the engine looks it up before a command runs, in the level and
+     * for the player given: the client's, or on its thread the server's.
+     */
+    public static UUID resolveReference(Level level, Entity player, String reference) throws CommandException {
+        if (subLevels() == SubLevels.NONE) {
+            throw new CommandException("unsupported", "sub:" + reference + " needs Sable");
+        }
+        return SableCommands.resolve(level, player, reference).id();
+    }
+
+    /** What the rest of Blockpilot asks about sub-levels; it knows none while the integration is off. */
     public static SubLevels subLevels() {
         return integration.subLevels();
     }

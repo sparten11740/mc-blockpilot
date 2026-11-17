@@ -5,16 +5,19 @@ import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
  * A game for engine tests: client tasks run at once, server tasks wait in {@link #serverTasks} until the test runs
  * them, calls on the server run at once and are counted, positions resolve around 0,64,0, releases are counted,
- * entity names resolve from {@link #entities}.
+ * entity names resolve from {@link #entities} and sub-level references from {@link #subLevels}.
  */
 final class FakeGame implements GameBridge {
     final AtomicInteger releases = new AtomicInteger();
@@ -46,6 +49,11 @@ final class FakeGame implements GameBridge {
     final Map<String, Integer> entities = new HashMap<>();
     /** Each name looked up, in order, marked {@code (server call)} when a call on the server looked it up. */
     final List<String> lookups = new ArrayList<>();
+    /** Sub-levels by each reference that names them; a reference in {@link #sharedNames} names several. */
+    final Map<String, UUID> subLevels = new HashMap<>();
+    final Set<String> sharedNames = new HashSet<>();
+    /** Whether Sable is installed. */
+    boolean sable = true;
 
     @Override
     public void runOnClient(Runnable task) {
@@ -108,6 +116,22 @@ final class FakeGame implements GameBridge {
         lookups.add(inServerCall ? name + " (server call)" : name);
         Integer id = entities.get(name);
         return id == null ? OptionalInt.empty() : OptionalInt.of(id);
+    }
+
+    @Override
+    public UUID resolveSubLevel(String reference) throws CommandException {
+        lookups.add("sub:" + reference);
+        if (!sable) {
+            throw new CommandException("unsupported", "sub:" + reference + " needs Sable");
+        }
+        if (sharedNames.contains(reference)) {
+            throw new CommandException("ambiguous", reference);
+        }
+        UUID id = subLevels.get(reference);
+        if (id == null) {
+            throw new CommandException("no_sublevel", reference);
+        }
+        return id;
     }
 
     @Override

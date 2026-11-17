@@ -32,6 +32,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -526,7 +527,14 @@ final class SableCommands {
     }
 
     private static SubLevels.Info resolve(Level level, String word) throws CommandException {
-        Minecraft minecraft = Minecraft.getInstance();
+        return resolve(level, Minecraft.getInstance().player, word);
+    }
+
+    /**
+     * The sub-level a reference names in that level, the client's or, on its thread, the server's, where {@code here}
+     * asks what that player stands on.
+     */
+    static SubLevels.Info resolve(Level level, Entity player, String word) throws CommandException {
         SubLevels subLevels = SableSupport.subLevels();
         if (Lexicon.isUuid(word)) {
             SubLevels.Info info = subLevels.info(level, UUID.fromString(word));
@@ -536,7 +544,7 @@ final class SableCommands {
             return info;
         }
         if (word.equals("here")) {
-            return here(minecraft, subLevels);
+            return here(level, player, subLevels);
         }
         List<SubLevels.Info> named = subLevels.all(level).stream()
             .filter(info -> info.name().equals(word)).toList();
@@ -550,11 +558,11 @@ final class SableCommands {
         return named.get(0);
     }
 
-    private static SubLevels.Info here(Minecraft minecraft, SubLevels subLevels) throws CommandException {
-        SubLevels.Info info = subLevels.carrying(minecraft.player);
-        if (info == null && minecraft.hitResult instanceof BlockHitResult hit
+    private static SubLevels.Info here(Level level, Entity player, SubLevels subLevels) throws CommandException {
+        SubLevels.Info info = player == null ? null : subLevels.carrying(player);
+        if (info == null && Minecraft.getInstance().hitResult instanceof BlockHitResult hit
             && hit.getType() == HitResult.Type.BLOCK) {
-            info = subLevels.at(minecraft.level, hit.getBlockPos());
+            info = subLevels.at(level, hit.getBlockPos());
         }
         if (info == null) {
             throw new CommandException("no_sublevel", "here: the player is on none and the crosshair is on none");

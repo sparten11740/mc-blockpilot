@@ -601,6 +601,19 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     }
 
     @Override
+    public UUID resolveSubLevel(String reference) throws CommandException {
+        Minecraft minecraft = Minecraft.getInstance();
+        MinecraftServer server = minecraft.getSingleplayerServer();
+        if (server != null && server.isSameThread()) {
+            return SableSupport.resolveReference(ServerCommands.serverLevel(), ServerCommands.serverPlayer(), reference);
+        }
+        if (minecraft.level == null || minecraft.player == null) {
+            throw new CommandException("not_in_world");
+        }
+        return SableSupport.resolveReference(minecraft.level, minecraft.player, reference);
+    }
+
+    @Override
     public void stopBackground() {
         CameraControl.stopMove();
     }

@@ -3,11 +3,10 @@ package dev.blockpilot.protocol;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Position;
-import java.util.OptionalInt;
 import java.util.function.Supplier;
 
 /** What the engine needs from the game, so the engine itself stays free of Minecraft classes. */
-public interface GameBridge {
+public interface GameBridge extends References.Lookup {
     /** Runs the task on the client thread as soon as possible. */
     void runOnClient(Runnable task);
 
@@ -37,12 +36,6 @@ public interface GameBridge {
 
     /** What kept the client busy since its last tick, such as how many chat lines arrived, or null. */
     String stallHint();
-
-    /**
-     * The id of the loaded entity tagged or called {@code name}, the one nearest where the server takes the player to
-     * be when several are, or empty.
-     */
-    OptionalInt resolveEntity(String name) throws CommandException;
 
     /** Client ticks since the game started, rising by one per tick, unlike the game time a client tick reads. */
     long clientTicks();

@@ -349,7 +349,7 @@ final class ScriptJob implements CommandContext {
 
     private void runCall(Statement.Call call) throws CommandException {
         CommandSpec spec = call.entry().spec();
-        Args args = EntityNames.resolve(call.args(), engine.game());
+        Args args = References.resolve(call.args(), engine.game());
         if (spec.kind() == CommandSpec.Kind.QUERY) {
             Result result = spec.queryHandler().run(this, args);
             finish(spec.isDiffable() ? diff(call, result) : result);
@@ -370,7 +370,7 @@ final class ScriptJob implements CommandContext {
     /** A query's result; its own errors are results too, for predicates like {@code ok} to look at. */
     private Result query(Statement.Call query) {
         try {
-            return query.entry().spec().queryHandler().run(this, EntityNames.resolve(query.args(), engine.game()));
+            return query.entry().spec().queryHandler().run(this, References.resolve(query.args(), engine.game()));
         } catch (CommandException e) {
             return e.toResult();
         }

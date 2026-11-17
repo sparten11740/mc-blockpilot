@@ -3,7 +3,7 @@
 ## 1. References in the protocol layer (extension-api, sable-sublevels)
 
 - [x] 1.1 Keep the column and reason of `Parser.SyntaxError` apart and have `CommandRegistry.parse` report the reason alone (design 4); verify new unit tests for `parse` (a good step, an unknown command, a bad slot reported without `col N:`) pass
-- [ ] 1.2 Turn `protocol/EntityNames` into `References` with a `References.Lookup` (`resolveEntity`, `resolveSubLevel`) that `GameBridge` extends, resolving `sub:<name|here>` to `sub:<uuid>` once per run wherever names are resolved now; implement `resolveSubLevel` in `BlockpilotClient` through `SableSupport` (`no_sublevel`, `ambiguous`, `unsupported`); verify unit tests with a fake lookup cover a name, `here`, a UUID passed through, the three errors and a text slot keeping its `sub:`
+- [x] 1.2 Turn `protocol/EntityNames` into `References` with a `References.Lookup` (`resolveEntity`, `resolveSubLevel`) that `GameBridge` extends, resolving `sub:<name|here>` to `sub:<uuid>` once per run wherever names are resolved now; implement `resolveSubLevel` in `BlockpilotClient` through `SableSupport` (`no_sublevel`, `ambiguous`, `unsupported`); verify unit tests with a fake lookup cover a name, `here`, a UUID passed through, the three errors and a text slot keeping its `sub:`
 - [ ] 1.3 Add `Args.subLevel(name)` returning the `UUID` and throwing on an unresolved reference, update `ArgType.SUB_LEVEL`'s Javadoc, give the API fixture a sub-level slot read with `subLevel`, and move docs/extending.md to 2.2.0 with `sub:` slots and `Args.subLevel` documented; verify the unit tests and the fixture's build pass
 
 ## 2. Camera forms and shot lists (client-observation, sable-sublevels)
