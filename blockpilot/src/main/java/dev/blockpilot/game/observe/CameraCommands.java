@@ -21,11 +21,12 @@ import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Engine;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.OptionalInt;
-import java.util.Set;
+import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -41,18 +42,27 @@ final class CameraCommands {
     private static final int MAX_VIA = 32;
     /** How long camera at … away waits for the client to get the camera's chunk before it answers. */
     private static final int AWAY_CHUNK_TICKS = 200;
-    /** The forms that take ease=: the timed motions. */
-    private static final Set<String> EASED = Set.of("move", "orbit");
-    /** The forms that take fov= and roll=: those that place a camera. */
-    private static final Set<String> PLACING = Set.of("at", "move", "follow", "orbit");
+    /** What a camera can look at, circle or follow besides a position. */
+    private static final ArgType[] MOVING_TARGETS = {ArgType.ENTITY, ArgType.SUB_LEVEL};
 
-    /** The forms a shot of camera play may be. */
-    private static final Set<String> SHOTS = Set.of("at", "move", "follow", "orbit");
+    /** Checks a form's arguments as far as they can be before anything changes, and gives what then starts it. */
+    @FunctionalInterface
+    private interface Prepare {
+        CameraTimeline.Starter prepare(CommandContext context, Args args) throws CommandException;
+    }
 
-    /** The handler of each form, by its first word. */
-    private final Map<String, CommandSpec.ActionHandler> forms = Map.of("at", this::at, "move", this::move,
-        "follow", this::follow, "orbit", this::orbit, "play", this::play, "wait", (context, args) -> new WaitForMove(),
-        "reset", CameraCommands::reset, "off", CameraCommands::reset);
+    /**
+     * A camera form by its first word: whether it places a camera, taking fov= and roll= and serving as a shot of
+     * camera play, and whether it is timed, taking ease=.
+     */
+    private record Form(String word, boolean placing, boolean timed, Prepare prepare) {
+    }
+
+    private final Map<String, Form> forms = table(new Form("at", true, false, this::at),
+        new Form("move", true, true, this::move), new Form("follow", true, false, this::follow),
+        new Form("orbit", true, true, this::orbit), new Form("play", false, false, this::play),
+        new Form("wait", false, false, (context, args) -> WaitForMove::new),
+        new Form("reset", false, false, CameraCommands::reset), new Form("off", false, false, CameraCommands::reset));
     private final ObservationCommands.EntityNames names;
     private CommandRegistry registry;
 
@@ -60,35 +70,52 @@ final class CameraCommands {
         this.names = names;
     }
 
+    private static Map<String, Form> table(Form... forms) {
+        Map<String, Form> table = new LinkedHashMap<>();
+        for (Form form : forms) {
+            table.put(form.word(), form);
+        }
+        return table;
+    }
+
+    /** The words of the forms that pass, in order, as a message lists them: {@code at, move, follow and orbit}. */
+    private String words(Predicate<Form> which, String conjunction, String... more) {
+        List<String> words = new ArrayList<>(forms.values().stream().filter(which).map(Form::word).toList());
+        words.addAll(List.of(more));
+        return String.join(", ", words.subList(0, words.size() - 1)) + " " + conjunction + " "
+            + words.get(words.size() - 1);
+    }
+
     void register(CommandRegistry registry) {
         this.registry = registry;
         registry.register(CommandSpec.action("camera", this::camera).group("observe")
             .form(form -> form.keyword("op", "at").arg("pos", ArgType.POSITION)
-                .optional(look -> look.keyword("look", "look")
-                    .arg("target", ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL))
+                .optional(look -> look.keyword("look", "look").arg("target", ArgType.POSITION, MOVING_TARGETS))
                 .optionalKeyword("clear", "clear").optionalKeyword("away", "away"))
             .form(form -> form.keyword("op", "move").arg("pos", ArgType.POSITION)
                 .repeated(MAX_VIA, via -> via.keyword("through", "via").arg("via", ArgType.POSITION))
                 .optional(look -> look.keyword("look", "look")
-                    .arg("target", List.of("ahead"), ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL))
+                    .arg("target", List.of("ahead"), ArgType.POSITION, MOVING_TARGETS))
                 .optional(around -> around.keyword("around", "around").arg("frame", ArgType.SUB_LEVEL))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
             .form(form -> form.keyword("op", "follow").arg("subject", ArgType.ENTITY, ArgType.SUB_LEVEL)
                 .optional(at -> at.keyword("offsetting", "at").arg("offset", ArgType.POSITION))
                 .optionalKeyword("turning", "turning"))
-            .form(form -> form.keyword("op", "orbit").arg("centre", ArgType.POSITION, ArgType.ENTITY, ArgType.SUB_LEVEL)
+            .form(form -> form.keyword("op", "orbit").arg("centre", ArgType.POSITION, MOVING_TARGETS)
                 .optional(by -> by.keyword("by", "by").arg("degrees", ArgType.NUMBER))
                 .keyword("timing", "over").arg("duration", ArgType.DURATION)
                 .optionalKeyword("background", "background"))
             .form(form -> form.keyword("op", "play").text("shots"))
             .form(form -> form.keyword("op", "reset", "off", "wait"))
-            .option("fov", "camera at, move, follow and orbit: the placed camera's vertical field of view, 1 to 170 "
-                + "degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
-            .option("roll", "camera at, move, follow and orbit: tilts the placed camera about the way it looks, -180 "
-                + "to 180 degrees, a positive roll leaning it to its right; kept until camera reset", ArgType.NUMBER)
-            .option("ease", "camera move and orbit: how the speed changes along the way; linear (the default) keeps "
-                + "it, in starts slowly, out ends slowly, inout does both", List.of("linear", "in", "out", "inout"))
+            .option("fov", "camera " + words(Form::placing, "and") + ": the placed camera's vertical field of view, 1 to "
+                + "170 degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
+            .option("roll", "camera " + words(Form::placing, "and") + ": tilts the placed camera about the way it "
+                + "looks, -180 to 180 degrees, a positive roll leaning it to its right; kept until camera reset",
+                ArgType.NUMBER)
+            .option("ease", "camera " + words(Form::timed, "and") + ": how the speed changes along the way; linear "
+                + "(the default) keeps it, in starts slowly, out ends slowly, inout does both",
+                List.of("linear", "in", "out", "inout"))
             .help("camera at <pos> [look <pos|e<id>|sub:<ref>>] [clear]: renders from that point (the player stays "
                 + "visible); "
                 + "an entity look target is read where the entity is drawn each frame; "
@@ -164,33 +191,36 @@ final class CameraCommands {
             .example("camera at ~10,5,10 look ~0,1,0"));
     }
 
+    /** Checks the whole command first, so a refused one leaves the camera, and a play under way, as they were. */
     private Action camera(CommandContext context, Args args) throws CommandException {
-        String op = args.word("op");
-        check(op, args);
-        if (!op.equals("wait")) {
+        Form form = forms.get(args.word("op"));
+        CameraTimeline.Starter start = prepare(form, context, args);
+        // camera wait waits for a play; every other form ends it.
+        if (!form.word().equals("wait")) {
             CameraTimeline.CAMERA.stop();
         }
-        return forms.get(op).start(context, args);
+        return start.start();
     }
 
-    /** The options a form takes, and their ranges, before anything changes. */
-    private static void check(String op, Args args) throws CommandException {
-        if (args.hasOption("ease") && !EASED.contains(op)) {
-            throw new CommandException("syntax", "ease= is for camera move and camera orbit");
+    /** The form's options in range, then its own checks. */
+    private CameraTimeline.Starter prepare(Form form, CommandContext context, Args args) throws CommandException {
+        if (args.hasOption("ease") && !form.timed()) {
+            throw new CommandException("syntax", "ease= is for camera " + words(Form::timed, "and"));
         }
-        if ((args.hasOption("fov") || args.hasOption("roll")) && !PLACING.contains(op)) {
-            throw new CommandException("syntax", "fov= and roll= are for camera at, move, follow and orbit");
+        if ((args.hasOption("fov") || args.hasOption("roll")) && !form.placing()) {
+            throw new CommandException("syntax", "fov= and roll= are for camera " + words(Form::placing, "and"));
         }
         // Each form reads the values again as it places the camera.
         fov(args);
         roll(args);
+        return form.prepare().prepare(context, args);
     }
 
     /**
      * camera play: the shots, separated by |, each a camera at, move, orbit or follow without the word camera, or
      * hold for a duration; checked as a whole before the first starts.
      */
-    private Action play(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter play(CommandContext context, Args args) throws CommandException {
         List<CameraTimeline.Shot> shots = new ArrayList<>();
         int total = 0;
         for (String text : args.text("shots").strip().split("\\s*\\|\\s*")) {
@@ -205,36 +235,35 @@ final class CameraCommands {
                 total += ticks;
                 continue;
             }
-            if (!SHOTS.contains(op)) {
-                throw new CommandException("syntax", "a shot is at, move, orbit, follow or hold, not " + text);
+            Form form = forms.get(op);
+            if (form == null || !form.placing()) {
+                throw new CommandException("syntax", "a shot is " + words(Form::placing, "or", "hold") + ", not "
+                    + text);
             }
             // A timed shot runs in the background, so the next one starts as it ends.
             int over = tokens.indexOf("over");
             if (over >= 0 && over + 1 < tokens.size() && !tokens.contains("background")) {
                 tokens.add(over + 2, "background");
             }
-            Args shot;
             try {
-                shot = registry.parse("camera " + String.join(" ", tokens));
+                Args shot = registry.parse("camera " + String.join(" ", tokens));
+                shots.add(new CameraTimeline.Cue(prepare(form, context, shot)));
+                total += form.timed() ? duration(shot) : 0;
             } catch (CommandException e) {
-                // Its column counts in the camera command it was read as, not in the play.
-                throw new CommandException("syntax", "shot " + (shots.size() + 1) + ", " + text + ": "
-                    + e.argument().replaceFirst("^col \\d+: ", ""));
+                throw inShot(e, shots.size() + 1, text);
             }
-            check(op, shot);
-            for (String slot : List.of("target", "subject", "centre")) {
-                if (shot.has(slot) && shot.type(slot) == ArgType.ENTITY) {
-                    entityId(shot, slot);
-                }
-            }
-            CommandSpec.ActionHandler form = forms.get(op);
-            Args checked = shot;
-            shots.add(new CameraTimeline.Cue(() -> form.start(context, checked)));
-            total += shot.has("duration") ? shot.duration("duration").ticks() : 0;
         }
-        CameraTimeline.CAMERA.play(shots);
         int over = total;
-        return () -> Result.ok(new Fields().put("shots", shots.size()).put("over", over, "over=" + over + "t"));
+        return () -> {
+            CameraTimeline.CAMERA.play(shots);
+            return () -> Result.ok(new Fields().put("shots", shots.size()).put("over", over, "over=" + over + "t"));
+        };
+    }
+
+    /** A shot's syntax error, naming the shot; other errors already name what they are about. */
+    private static CommandException inShot(CommandException e, int shot, String text) {
+        return e.code().equals("syntax")
+            ? new CommandException("syntax", "shot " + shot + ", " + text + ": " + e.argument()) : e;
     }
 
     private static Double fov(Args args) throws CommandException {
@@ -258,14 +287,15 @@ final class CameraCommands {
         return value;
     }
 
-    private static Action reset(CommandContext context, Args args) {
-        CameraControl.reset();
-        return () -> Result.ok();
+    private static CameraTimeline.Starter reset(CommandContext context, Args args) {
+        return () -> {
+            CameraControl.reset();
+            return () -> Result.ok();
+        };
     }
 
-    private Action at(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter at(CommandContext context, Args args) throws CommandException {
         if (args.has("away")) {
-            // The server's gate, checked before anything changes.
             if (Minecraft.getInstance().getSingleplayerServer() == null) {
                 throw new CommandException("no_server", "away moves the integrated server's world to the camera");
             }
@@ -273,6 +303,11 @@ final class CameraCommands {
                 throw new CommandException("no_cheats");
             }
         }
+        present(args, "target");
+        return () -> placeAt(context, args);
+    }
+
+    private Action placeAt(CommandContext context, Args args) throws CommandException {
         Level level = Minecraft.getInstance().level;
         Position at = context.resolve(args.position("pos"));
         Vec3 asked = new Vec3(at.x(), at.y(), at.z());
@@ -313,6 +348,13 @@ final class CameraCommands {
         return () -> Sides.loaded(level, cell) || waited[0]++ >= AWAY_CHUNK_TICKS ? answer.tick() : null;
     }
 
+
+    /** Fails with no_entity unless the entity the slot names, when it names one, is loaded now. */
+    private void present(Args args, String name) throws CommandException {
+        if (args.has(name) && args.type(name) == ArgType.ENTITY) {
+            entity(args, name, Minecraft.getInstance().level);
+        }
+    }
 
     /** The id of the entity a slot names: e<id>, or a name a shot of camera play keeps as written. */
     private int entityId(Args args, String name) throws CommandException {
@@ -423,8 +465,13 @@ final class CameraCommands {
         return motion;
     }
 
-    private Action move(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter move(CommandContext context, Args args) throws CommandException {
         int duration = duration(args);
+        present(args, "target");
+        return () -> glide(context, args, duration);
+    }
+
+    private Action glide(CommandContext context, Args args, int duration) throws CommandException {
         CameraPath.Ease ease = ease(args);
         Level level = Minecraft.getInstance().level;
         var player = Minecraft.getInstance().player;
@@ -452,15 +499,23 @@ final class CameraCommands {
             placed -> endPoint == null ? answer(level, placed) : answer(level, endPoint, placed)), duration);
     }
 
-    private Action follow(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter follow(CommandContext context, Args args) throws CommandException {
+        if (args.type("subject") == ArgType.SUB_LEVEL && args.has("turning")) {
+            throw new CommandException("syntax", "turning is for an entity: a sub-level is followed in the world's "
+                + "axes, and a camera at a plot position turns with it");
+        }
+        if (args.has("offset")) {
+            offset(args);
+        }
+        present(args, "subject");
+        return () -> placeFollow(args);
+    }
+
+    private Action placeFollow(Args args) throws CommandException {
         Level level = Minecraft.getInstance().level;
         boolean turning = args.has("turning");
         CameraControl.Placement placement;
         if (args.type("subject") == ArgType.SUB_LEVEL) {
-            if (turning) {
-                throw new CommandException("syntax", "turning is for an entity: a sub-level is followed in the "
-                    + "world's axes, and a camera at a plot position turns with it");
-            }
             CameraControl.Point origin = subLevel(args, "subject", level);
             Vec3 delta = drawnNow().subtract(origin.at(1));
             Vec offset = args.has("offset") ? offset(args) : new Vec(delta.x, delta.y, delta.z);
@@ -485,8 +540,13 @@ final class CameraCommands {
         return new Vec(at.x(), at.y(), at.z());
     }
 
-    private Action orbit(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter orbit(CommandContext context, Args args) throws CommandException {
         int duration = duration(args);
+        present(args, "centre");
+        return () -> circle(context, args, duration);
+    }
+
+    private Action circle(CommandContext context, Args args, int duration) throws CommandException {
         Level level = Minecraft.getInstance().level;
         CameraControl.Point centre = point(context, args, "centre", level);
         double degrees = args.has("degrees") ? args.number("degrees", 360) : 360;
