@@ -168,7 +168,7 @@ final class CameraCommands {
         String op = args.word("op");
         check(op, args);
         if (!op.equals("wait")) {
-            CameraTimeline.stop();
+            CameraTimeline.CAMERA.stop();
         }
         return forms.get(op).start(context, args);
     }
@@ -201,7 +201,7 @@ final class CameraCommands {
                     throw new CommandException("syntax", "hold takes a duration, as hold 40t: " + text);
                 }
                 int ticks = Duration.parse(tokens.get(1)).ticks();
-                shots.add(new CameraTimeline.Shot(null, null, ticks));
+                shots.add(new CameraTimeline.Hold(ticks));
                 total += ticks;
                 continue;
             }
@@ -227,10 +227,12 @@ final class CameraCommands {
                     entityId(shot, slot);
                 }
             }
-            shots.add(new CameraTimeline.Shot(forms.get(op), shot, 0));
+            CommandSpec.ActionHandler form = forms.get(op);
+            Args checked = shot;
+            shots.add(new CameraTimeline.Cue(() -> form.start(context, checked)));
             total += shot.has("duration") ? shot.duration("duration").ticks() : 0;
         }
-        CameraTimeline.play(shots, context);
+        CameraTimeline.CAMERA.play(shots);
         int over = total;
         return () -> Result.ok(new Fields().put("shots", shots.size()).put("over", over, "over=" + over + "t"));
     }
@@ -499,12 +501,12 @@ final class CameraCommands {
         @Override
         public Result tick() throws CommandException {
             if (answer == null) {
-                if (CameraControl.moving() != null || CameraTimeline.playing()) {
+                if (CameraControl.moving() != null || CameraTimeline.CAMERA.playing()) {
                     return null;
                 }
-                CommandException failure = CameraTimeline.takeFailure();
+                Result failure = CameraTimeline.CAMERA.takeFailure();
                 if (failure != null) {
-                    throw failure;
+                    return failure;
                 }
                 CameraControl.Placement placement = CameraControl.placement();
                 Level level = Minecraft.getInstance().level;
