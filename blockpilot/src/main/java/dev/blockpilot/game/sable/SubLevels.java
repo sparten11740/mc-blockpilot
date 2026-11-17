@@ -61,9 +61,9 @@ public interface SubLevels {
         return Vec3.ZERO;
     }
 
-    /** As {@link #toWorld}, where the client draws the sub-level in the frame being rendered. */
+    /** As {@link #toWorld}, where the client draws the sub-level in the frame being rendered; null in none it draws. */
     default Vec3 toWorldRendered(Level level, Vec3 point, float partialTick) {
-        return point;
+        return null;
     }
 
     /** The point in the sub-level's plot that is at the world point now, or null when there is no such sub-level. */

@@ -126,15 +126,21 @@ public final class CameraControl {
         };
     }
 
-    /** The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame. */
+    /**
+     * The point as it is, or for a point in a sub-level's plot, where the client draws it in each frame, and where it
+     * was last drawn once the sub-level is gone.
+     */
     static Point drawn(Level level, Vec3 point) {
         if (SableSupport.subLevels().at(level, BlockPos.containing(point)) == null) {
             return partialTick -> point;
         }
-        Vec3[] last = {point};
+        Vec3[] last = {SableSupport.subLevels().toWorld(level, point)};
         return partialTick -> {
             try {
-                last[0] = SableSupport.subLevels().toWorldRendered(level, point, partialTick);
+                Vec3 at = SableSupport.subLevels().toWorldRendered(level, point, partialTick);
+                if (at != null) {
+                    last[0] = at;
+                }
             } catch (CommandFailure e) {
                 // Thrown on the render thread, where it must not escape; the camera stays where it was last drawn.
             }

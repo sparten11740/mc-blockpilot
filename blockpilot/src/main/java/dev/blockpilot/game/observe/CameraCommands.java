@@ -111,8 +111,8 @@ final class CameraCommands {
                 .optionalKeyword("background", "background"))
             .form(form -> form.keyword("op", "play").text("shots"))
             .form(form -> form.keyword("op", "reset", "off", "wait"))
-            .option("fov", "camera " + words(Form::placing, "and") + ": the placed camera's vertical field of view, 1 to "
-                + "170 degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
+            .option("fov", "camera " + words(Form::placing, "and") + ": the placed camera's vertical field of view, "
+                + "1 to 170 degrees, in place of the player's; kept until camera reset", ArgType.NUMBER)
             .option("roll", "camera " + words(Form::placing, "and") + ": tilts the placed camera about the way it "
                 + "looks, -180 to 180 degrees, a positive roll leaning it to its right; kept until camera reset",
                 ArgType.NUMBER)
@@ -455,8 +455,9 @@ final class CameraCommands {
             target = ahead ? null : args.type("target") == ArgType.POSITION && frame != null
                 ? pathPoint(context, level, args.position("target"), frame) : point(context, args, "target", level);
         }
-        // Around a sub-level the end moves with it, so the answer reads where the camera then rests.
-        Vec3 endPoint = frame == null ? end.at(1) : null;
+        // As given, a plot position too; around a sub-level the end moves with it, so it reads where the camera rests.
+        Position asked = frame == null ? context.resolve(args.position("pos")) : null;
+        Vec3 endPoint = asked == null ? null : new Vec3(asked.x(), asked.y(), asked.z());
         return start(new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
             duration, ease, background, fov(args), roll(args),
             placed -> endPoint == null ? answer(level, placed) : answer(level, endPoint, placed)), duration);

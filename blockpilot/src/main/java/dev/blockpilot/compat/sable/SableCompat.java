@@ -93,7 +93,7 @@ public final class SableCompat implements SubLevels {
         return guard("toWorldRendered", () -> {
             SubLevelAccess subLevel = companion.getContaining(level, (Position) point);
             return subLevel instanceof ClientSubLevelAccess client
-                ? client.renderPose(partialTick).transformPosition(point) : point;
+                ? client.renderPose(partialTick).transformPosition(point) : null;
         });
     }
 

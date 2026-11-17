@@ -186,11 +186,14 @@ cancelling `render(GuiGraphics, float)` while clean, sits in the shared
 mixin config. It applies only where that class exists (1.20.1 Forge), as
 the Sable mixins do.
 
-### 9. A gone sub-level reads as gone
-`CameraControl.drawn` and `subLevelOrigin` return null for a point whose
-sub-level is no longer on the client, instead of its plot coordinates.
-Placements already keep the last drawn point when a point reads null, as
-for a removed entity.
+### 9. A gone sub-level holds its last drawn point
+`CameraControl.drawn`, which `subLevelOrigin` goes through, keeps the point
+where it was last drawn once its sub-level is no longer on the client,
+instead of falling back to its plot coordinates. It starts from where the
+sub-level lies when the command runs. `SubLevels.toWorldRendered` answers
+null for a point in no sub-level the client draws, so `drawn` can tell.
+Returning null to the placements instead was rejected: a placed camera's
+position is read every frame and must never be null.
 
 A `camera move` answers with its end point as resolved, a plot position
 included, as in 1.3.1. Only a move `around` a sub-level answers where the
