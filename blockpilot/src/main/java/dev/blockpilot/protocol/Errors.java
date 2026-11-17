@@ -46,6 +46,7 @@ public final class Errors {
         CODES.put("not_frozen", "tick step needs the server frozen first (tick freeze)");
         CODES.put("busy", "a performance capture or a recording is already running (perf stop or record stop first)");
         CODES.put("no_capture", "no performance capture or recording is running (perf start or record start first)");
+        CODES.put("no_frames", "flicker: the game drew fewer than two frames over the duration");
         CODES.put("record_failed", "ffmpeg failed while recording, e.g. on a full disk; its last lines are attached, "
             + "and the partial file is removed");
         CODES.put("needs_restart", "config: the value takes effect only after a game restart, or for a server "

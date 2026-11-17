@@ -2,7 +2,8 @@ package dev.blockpilot.game.observe;
 
 /**
  * The dominant rhythm in a brightness series sampled at uneven times, as frames are drawn: a periodogram over the
- * frequencies the samples can resolve, from one cycle in the series to half their average rate. Times are in client
+ * frequencies that repeat at least twice in the series, up to half their average rate, kept only when the series
+ * swings to and fro at least twice, so a light switched on, or on and off, once is no rhythm. Times are in client
  * ticks, so the frequency is in cycles per game second (20 ticks) and holds under a slowed tick rate.
  */
 final class Flicker {
@@ -11,6 +12,8 @@ final class Flicker {
     private static final double TICKS_PER_SECOND = 20;
     /** Candidate frequencies per cycle the series can hold, for a finer peak than its length alone gives. */
     private static final int STEPS_PER_CYCLE = 8;
+    /** Swings from one side of the mean to the other that a rhythm repeating twice makes: high, low, high, low. */
+    private static final int REPEATED_SWINGS = 3;
 
     /** The strongest rhythm: its frequency in hertz and its amplitude in luma, or null for a steady series. */
     record Rhythm(double hertz, double amplitude) {
@@ -34,7 +37,7 @@ final class Flicker {
             mean += value;
         }
         mean /= count;
-        double lowest = 1 / span;
+        double lowest = 2 / span;
         double highest = (count - 1) / (2 * span);
         double step = lowest / STEPS_PER_CYCLE;
         double bestFrequency = 0;
@@ -54,6 +57,22 @@ final class Flicker {
             }
         }
         double amplitude = 2 * Math.sqrt(bestPower) / count;
-        return amplitude < STEADY ? null : new Rhythm(bestFrequency * TICKS_PER_SECOND, amplitude);
+        // A quarter of the amplitude still catches short flashes, whose fundamental is small beside their swing.
+        return amplitude < STEADY || swings(values, mean, amplitude / 4) < REPEATED_SWINGS ? null
+            : new Rhythm(bestFrequency * TICKS_PER_SECOND, amplitude);
+    }
+
+    /** How often the values go from beyond {@code band} on one side of the mean to beyond it on the other. */
+    private static int swings(double[] values, double mean, double band) {
+        int swings = 0;
+        int side = 0;
+        for (double value : values) {
+            int now = value > mean + band ? 1 : value < mean - band ? -1 : 0;
+            if (now != 0 && now != side) {
+                swings += side == 0 ? 0 : 1;
+                side = now;
+            }
+        }
+        return swings;
     }
 }

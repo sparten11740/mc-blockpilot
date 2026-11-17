@@ -200,8 +200,13 @@ included, as in 1.3.1. Only a move `around` a sub-level answers where the
 camera then rests.
 
 ### 10. Flicker: two cycles, computed once
-- `Flicker.strongest` starts its frequencies at two cycles over the span, so
-  a single step finds no rhythm.
+- `Flicker.strongest` starts its frequencies at two cycles over the span,
+  and keeps a rhythm only when the part swings across its mean, past a
+  quarter of the rhythm's amplitude, at least three times (high, low, high,
+  low). The floor alone isn't enough: a single step leaks into the higher
+  frequencies, and read as a 1.4 Hz rhythm in a test. A quarter, not a
+  half, still finds short flashes, whose fundamental is small beside their
+  swing.
 - `PixelCommands` builds each part's rhythm fields once and derives the text
   from them.
 - The per-frame reader catches any exception, reporting `err internal` for

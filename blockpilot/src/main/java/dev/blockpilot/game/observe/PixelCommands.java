@@ -1,6 +1,7 @@
 package dev.blockpilot.game.observe;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.blockpilot.Blockpilot;
 import dev.blockpilot.api.Action;
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.Args;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -43,9 +45,11 @@ public final class PixelCommands {
             .help("reads the mean brightness (luma, 0-255) of parts of every frame drawn over the duration (2t to "
                 + "10s), the parts as pixels takes them, and gives each part's luma, min and max over the frames and "
                 + "its strongest rhythm: flicker=<hz> in cycles per game second (20 ticks, so it holds under a slowed "
-                + "tick rate), period=<ticks>t and amplitude=<luma>, or flicker=none when it changes by less than 1; "
+                + "tick rate), period=<ticks>t and amplitude=<luma>, or flicker=none when no rhythm of at least 1 "
+                + "repeats twice over the frames, so a light switched on once has none (min and max show the change); "
                 + "it resolves up to half the frame rate, fps=, in frames per game second; a row per frame gives "
-                + "when it was drawn, drawn=<client tick>, and each part's luma")
+                + "when it was drawn, drawn=<client tick>, and each part's luma; fewer than two frames drawn fail "
+                + "with err no_frames")
             .field("frames", "frames read").field("fps", "frames per game second")
             .example("flicker 2s lamp=@~0,1,3 r=0.4"));
         registry.register(CommandSpec.query("pixels", this::pixels).group("observe")
@@ -104,6 +108,10 @@ public final class PixelCommands {
                 lumas.add(row);
             } catch (CommandException e) {
                 failed[0] = e;
+            } catch (RuntimeException e) {
+                // This runs in the game's frame loop, where it would crash the game; it fails only the reading.
+                Blockpilot.LOGGER.error("flicker could not read a frame", e);
+                failed[0] = new CommandException("internal", "flicker " + e);
             }
         };
         Screenshots.everyFrame(reader);
@@ -172,8 +180,7 @@ public final class PixelCommands {
             for (int frame = 0; frame < count; frame++) {
                 values[frame] = lumas.get(frame)[index];
             }
-            fields.put(names.get(index), rhythmFields(values, times), names.get(index) + " "
-                + rhythmText(values, times));
+            putRhythm(fields, names.get(index), values, times);
         }
         List<Row> rows = new ArrayList<>();
         for (int frame = 0; frame < count; frame++) {
@@ -187,29 +194,31 @@ public final class PixelCommands {
         return Result.ok(fields).withRows(rows);
     }
 
-    private static Map<String, Object> rhythmFields(double[] values, double[] times) {
-        Map<String, Object> fields = new LinkedHashMap<>();
-        fields.put("luma", Math.round(mean(values) * 10) / 10.0);
-        fields.put("min", Math.round(Arrays.stream(values).min().orElse(0) * 10) / 10.0);
-        fields.put("max", Math.round(Arrays.stream(values).max().orElse(0) * 10) / 10.0);
-        Flicker.Rhythm rhythm = Flicker.strongest(times, values);
-        if (rhythm == null) {
-            fields.put("flicker", "none");
+    /** A part's luma over the frames, its min and max and its strongest rhythm, as values and as words. */
+    private static void putRhythm(Fields fields, String name, double[] values, double[] times) {
+        Map<String, Object> rhythm = new LinkedHashMap<>();
+        StringJoiner text = new StringJoiner(" ", name + " ", "");
+        putRounded(rhythm, text, "luma", mean(values), "");
+        putRounded(rhythm, text, "min", Arrays.stream(values).min().orElse(0), "");
+        putRounded(rhythm, text, "max", Arrays.stream(values).max().orElse(0), "");
+        Flicker.Rhythm strongest = Flicker.strongest(times, values);
+        if (strongest == null) {
+            rhythm.put("flicker", "none");
+            text.add("flicker=none");
         } else {
-            fields.put("flicker", Math.round(rhythm.hertz() * 10) / 10.0);
-            fields.put("period", Math.round(rhythm.periodTicks() * 10) / 10.0);
-            fields.put("amplitude", Math.round(rhythm.amplitude() * 10) / 10.0);
+            putRounded(rhythm, text, "flicker", strongest.hertz(), "hz");
+            putRounded(rhythm, text, "period", strongest.periodTicks(), "t");
+            putRounded(rhythm, text, "amplitude", strongest.amplitude(), "");
         }
-        return fields;
+        fields.put(name, rhythm, text.toString());
     }
 
-    private static String rhythmText(double[] values, double[] times) {
-        Map<String, Object> fields = rhythmFields(values, times);
-        StringBuilder text = new StringBuilder();
-        fields.forEach((name, value) -> text.append(text.isEmpty() ? "" : " ").append(name).append('=')
-            .append(value instanceof Double number ? Numbers.format(number) : value)
-            .append(name.equals("flicker") && value instanceof Double ? "hz" : name.equals("period") ? "t" : ""));
-        return text.toString();
+    /** A value to a tenth, under its name and in the words with its unit. */
+    private static void putRounded(Map<String, Object> values, StringJoiner text, String name, double value,
+        String unit) {
+        double rounded = Math.round(value * 10) / 10.0;
+        values.put(name, rounded);
+        text.add(name + "=" + Numbers.format(rounded) + unit);
     }
 
     private static double mean(double[] values) {

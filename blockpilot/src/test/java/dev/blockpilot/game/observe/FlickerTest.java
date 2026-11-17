@@ -61,6 +61,38 @@ class FlickerTest {
     }
 
     @Test
+    void aLampSwitchedOnOnceIsNoRhythm() {
+        double[] times = frameTimes(40, 5);
+        double[] values = new double[times.length];
+        for (int index = 0; index < times.length; index++) {
+            values[index] = times[index] < 20 ? 10 : 240;
+        }
+        assertNull(Flicker.strongest(times, values));
+    }
+
+    @Test
+    void aLampSwitchedOnAndOffOnceIsNoRhythm() {
+        double[] times = frameTimes(40, 6);
+        double[] values = new double[times.length];
+        for (int index = 0; index < times.length; index++) {
+            values[index] = times[index] >= 10 && times[index] < 30 ? 240 : 10;
+        }
+        assertNull(Flicker.strongest(times, values));
+    }
+
+    @Test
+    void aShortFlashEveryHalfSecondIsFound() {
+        double[] times = frameTimes(60, 7);
+        double[] values = new double[times.length];
+        for (int index = 0; index < times.length; index++) {
+            values[index] = times[index] % 10 < 0.5 ? 240 : 20;
+        }
+        Flicker.Rhythm rhythm = Flicker.strongest(times, values);
+        assertNotNull(rhythm);
+        assertEquals(2, rhythm.hertz(), 0.2);
+    }
+
+    @Test
     void tooFewFramesTellNothing() {
         assertNull(Flicker.strongest(new double[] {0, 1, 2}, new double[] {0, 255, 0}));
     }

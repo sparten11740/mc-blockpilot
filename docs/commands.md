@@ -114,8 +114,10 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
 - `flicker <duration> [[name=]x0,y0,x1,y1|[name=]@<pos>]… [r=]`: the mean luma of the parts, taken as `pixels` takes
   them, in every frame drawn over the duration (2t to 10s), and for each part its mean, `min` and `max` and its
   strongest rhythm, `flicker=<hz>` in cycles per game second with `period=<ticks>t` and `amplitude=<luma>`, or
-  `flicker=none` when it changes by less than 1; `fps=` is the frames per game second, and half of it the fastest rhythm
-  it can tell. A row per frame gives `drawn=<client tick>` and each part's luma. Game seconds count 20 ticks, so under
+  `flicker=none` when no rhythm of at least 1 repeats twice over the frames, so a light switched on once has none (`min`
+  and `max` show the change); `fps=` is the frames per game second, and half of it the fastest rhythm it can tell. A
+  row per frame gives `drawn=<client tick>` and each part's luma; fewer than two frames drawn fail with `err
+  no_frames`. Game seconds count 20 ticks, so under
   `tick rate 5` a flicker reads as fast as it is, with four times the frames per cycle.
 - `record start [name] [width=] [fps=] [hud=off|clean] [audio=off]`, `record stop`, `record status`, `record mark
   <label>`, `record <duration> [name] …`, `record script [name] …`: a video of the game with its sound; `record script`
