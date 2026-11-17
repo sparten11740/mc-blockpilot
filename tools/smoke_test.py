@@ -1003,6 +1003,56 @@ def check_hud_clean(game_dir):
     dark, clean, again = means(output, "dark"), means(output, "clean"), means(output, "again")
     if not dark or not clean or not again or sum(dark) > 60 or sum(clean) < 300 or sum(again) > 60:
         return f"blind sky {dark}, clean {clean}, after reset {again}: {output.strip()[-500:]}"
+    return check_clean_option(game_dir) or check_clean_effects_act(game_dir) or check_clean_captures(game_dir)
+
+
+def option_reads(output, name):
+    """The values the reads of an option answered, in order: a read lists what the option takes, a change doesn't."""
+    return re.findall(rf"^ok {name} (\S+)(?: was \S+)? takes ", output, re.MULTILINE)
+
+
+def check_clean_option(game_dir):
+    """option hud reads clean once set, and clean frames hold the field of view still without changing
+    fovEffectScale; option reset puts both back."""
+    _, output = run(game_dir, "option fovEffectScale; option hud; option fovEffectScale 0.5; option hud clean; "
+                              "option hud; option fovEffectScale; option reset; option fovEffectScale; option hud")
+    fov, hud = option_reads(output, "fovEffectScale"), option_reads(output, "hud")
+    if len(fov) != 3 or len(hud) != 3 or fov[1] != "0.5" or fov[2] != fov[0] or hud[1] != "clean" \
+            or hud[2] != hud[0]:
+        return f"fovEffectScale reads {fov}, hud {hud}: {output.strip()[:600]}"
+    return None
+
+
+def check_clean_effects_act(game_dir):
+    """Clean frames hide blindness from the picture only: a blind player still can't sprint, so a second of sprinting
+    forward covers no more ground than walking would, where without blindness it covers more."""
+    _, output = run(game_dir, f"{CLEAR}; {LEVEL}; server effect give @p minecraft:blindness 60 0 true; "
+                              f"option hud clean; wait 5t; sprint on; move forward 20t; sprint off; option reset; "
+                              f"server effect clear @p; {LEVEL}; sprint on; move forward 20t; sprint off; {LEVEL}")
+    moved = [float(value) for value in re.findall(r"^ok moved ([\d.]+)", output, re.MULTILINE)]
+    if len(moved) != 2 or moved[1] < moved[0] * 1.15:
+        return f"blind and clean moved {moved[:1]}, sprinting without blindness {moved[1:]}: {output.strip()[-500:]}"
+    return None
+
+
+def check_clean_captures(game_dir):
+    """A clean capture leaves option hud reading as before and isn't an agent change: a change made during it holds
+    after it, option reset puts the HUD and the field of view effects back as they were, and screenshot and record
+    leave the HUD as it was."""
+    if not shutil.which("ffmpeg"):
+        raise Skipped("ffmpeg isn't installed")
+    _, output = run(game_dir, "option hud; option fovEffectScale; record start hud=clean width=256 fps=20 audio=off; "
+                              "option hud; option hud off; record stop; option hud; option reset; option hud; "
+                              "option fovEffectScale; screenshot 64 hud=clean; option hud; "
+                              "record 1s hud=clean width=256 fps=20 audio=off; option hud")
+    reason = unsupported_reason(output, False)
+    if reason:
+        run(game_dir, "option reset")
+        raise Skipped(reason)
+    hud, fov = option_reads(output, "hud"), option_reads(output, "fovEffectScale")
+    if len(hud) != 6 or hud != [hud[0], hud[0], "off", hud[0], hud[0], hud[0]] or len(fov) != 2 or fov[1] != fov[0]:
+        run(game_dir, "option reset")
+        return f"hud reads {hud}, fovEffectScale {fov}: {output.strip()[:700]}"
     return None
 
 
