@@ -24,7 +24,32 @@ public final class HudVisibility {
         }
     });
 
+    private static volatile boolean inClientTick;
+
     private HudVisibility() {
+    }
+
+    /** Whether the client tick runs, whose game logic sees the player's effects even while frames are clean. */
+    public static boolean inClientTick() {
+        return inClientTick;
+    }
+
+    /** At the start of each client tick, from a mixin. */
+    public static void clientTickStarted() {
+        inClientTick = true;
+    }
+
+    /** At the end of each client tick, from a mixin. */
+    public static void clientTickEnded() {
+        inClientTick = false;
+        //? if <1.21.11 {
+        var player = Minecraft.getInstance().player;
+        if (clean() && player != null) {
+            // Nausea's warp is drawn from these, which the tick raises; from 1.21.11 it is drawn from the effect.
+            player.spinningEffectIntensity = 0;
+            player.oSpinningEffectIntensity = 0;
+        }
+        //?}
     }
 
     /**

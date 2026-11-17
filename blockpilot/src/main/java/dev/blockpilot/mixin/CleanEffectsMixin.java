@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * With clean frames, the local player has no night vision, blindness, darkness or nausea, the effects that only change
- * how the world is drawn, so they don't tint, fog or warp a capture. Only the client's copy of the player: the
- * server's, and every other entity, keep theirs.
+ * With clean frames, the local player has no night vision, blindness, darkness or nausea while a frame is drawn, so
+ * they don't tint, fog or warp a capture. The client tick still sees them, so a blind player can't sprint, and so do
+ * the server's copy of the player and every other entity.
  */
 @Mixin(LivingEntity.class)
 abstract class CleanEffectsMixin {
@@ -37,7 +37,7 @@ abstract class CleanEffectsMixin {
     }
 
     private boolean hidden(Holder<MobEffect> effect) {
-        return HudVisibility.clean() && (Object) this == Minecraft.getInstance().player
+        return HudVisibility.clean() && !HudVisibility.inClientTick() && (Object) this == Minecraft.getInstance().player
             && (effect == MobEffects.NIGHT_VISION || effect == MobEffects.BLINDNESS || effect == MobEffects.DARKNESS
             //? if >=1.21.11 {
             /*|| effect == MobEffects.NAUSEA);
@@ -61,7 +61,7 @@ abstract class CleanEffectsMixin {
     }
 
     private boolean hidden(MobEffect effect) {
-        return HudVisibility.clean() && (Object) this == Minecraft.getInstance().player
+        return HudVisibility.clean() && !HudVisibility.inClientTick() && (Object) this == Minecraft.getInstance().player
             && (effect == MobEffects.NIGHT_VISION || effect == MobEffects.BLINDNESS || effect == MobEffects.DARKNESS
             || effect == MobEffects.CONFUSION);
     }
