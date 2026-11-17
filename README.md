@@ -127,7 +127,7 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | | `sound` | Play a sound on this client, at a position or as an interface sound |
 | | `messages` | Chat, action bar and title messages |
 | | `particles` | The particles spawned, by type or pattern |
-| | `option` | Change video and sound options for a while |
+| | `option` | Change video and sound options for a while, or keep every frame clean |
 | | `pixels` | Measure the colour of parts of the frame |
 | | `flicker` | The brightness of parts of every frame over a time, and how fast they flicker |
 | | `record` | Record an MP4 with sound ([docs/recording.md](docs/recording.md)) |

@@ -8,19 +8,24 @@
 - **A camera on a sub-level's origin:** with Sable, `sub:<uuid|name|here>` names a sub-level for the camera.
   `camera follow sub:ship at ~0,8,-20` keeps that offset in the world's axes as it flies and turns, `camera orbit
   sub:ship` circles it, `look sub:ship` aims at it, and `camera move … around sub:ship` takes its `~` points from the
-  sub-level's origin in each frame, so a path keeps its shape round a flying ship ([sable.md](docs/sable.md)). The
-  extension API is 2.2.0 for the new slot type `ArgType.SUB_LEVEL` ([extending.md](docs/extending.md)).
+  sub-level's origin in each frame, so a path keeps its shape round a flying ship ([sable.md](docs/sable.md)). A
+  `sub:` reference is looked up as the command arrives, as `@<name>` is, and a camera stays where it was drawn once its
+  sub-level is gone. The extension API is 2.2.0 for the new slot type `ArgType.SUB_LEVEL`, which Blockpilot resolves
+  before the handler runs, and `Args.subLevel()`, which reads its UUID ([extending.md](docs/extending.md)).
 - **A shot list on the camera's clock:** `camera play <shot> | <shot> | …` plays the shots one after another while the
-  script goes on, each a `camera at`, `move`, `orbit` or `follow` without `camera`, with its own `ease=` and `fov=`, or
-  `hold <duration>`; `camera wait` answers at the end, and `record script` with `camera wait` at its end films it whole
-  ([commands.md](docs/commands.md), [recording.md](docs/recording.md)).
+  script goes on, each a `camera at`, `move`, `follow` or `orbit` without `camera`, with its own `ease=`, `fov=` and
+  `roll=`, or `hold <duration>`. Every shot is checked as its command would be before the first starts, so a bad one
+  changes nothing; `camera wait` answers at the end, or with the error of a shot that couldn't start, and `record
+  script` with `camera wait` at its end films it whole ([commands.md](docs/commands.md),
+  [recording.md](docs/recording.md)).
 - **Flicker:** `flicker <duration> <parts>…` reads the brightness of parts of every frame drawn over the duration, as
   `pixels` takes the parts, and gives each part's strongest rhythm, `flicker=<hz>` with its period and amplitude, or
-  `flicker=none`, so a strobing lamp or a pulsing fireball is measured, not judged by eye
+  `flicker=none` when nothing repeats, so a strobing lamp or a pulsing fireball is measured, not judged by eye
   ([commands.md](docs/commands.md)).
 - **Clean frames:** `option hud clean`, and `hud=clean` on `screenshot` and `record`, hide the whole HUD pass, with the
   layers and overlays other mods draw in it, the player's night vision, blindness, darkness and nausea, and the field of
-  view effects, so captures compare from run to run. docs/recording.md has a recipe for testing visual effects.
+  view effects, so captures compare from run to run; only the picture changes, not the game or the options.
+  docs/recording.md has a recipe for testing visual effects.
 - **Particles by type:** `particles match=flame` or `match=mymod:*` keeps the matching types, as `sounds match=` does.
 - **Fixes:** `screenshot burst` captures each frame the game draws once, where after a stall it gave the same frame
   several times; each frame carries `drawn=`, when it was drawn, and `late=` when it came after its time. On Windows,

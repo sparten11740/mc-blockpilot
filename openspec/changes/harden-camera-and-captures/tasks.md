@@ -33,7 +33,7 @@
 ## 5. Cleanup
 
 - [ ] 5.1 Remove the doubled and stale doc comments (`SableSupport.subLevels`, `ContactSheet.label`, `CommandRegistry.Entry`, `CameraFollow`), the copies of `Numbers.round` and `TICKS_PER_SECOND`, the `instanceof` dispatch on region kinds in `pixels` and `flicker`, the help string fragments and the extra `SableCommands.resolve` overloads; verify the unit tests pass and every target compiles
-- [ ] 5.2 Add `roll=` and `Args.subLevel` to the 1.4.0 section of CHANGELOG.md, with no "Fixed" entries for unreleased features, and bring README in line with `option hud clean` and `camera play`; verify by reading both against the specs
+- [x] 5.2 Add `roll=` and `Args.subLevel` to the 1.4.0 section of CHANGELOG.md, with no "Fixed" entries for unreleased features, and bring README in line with `option hud clean` and `camera play`; verify by reading both against the specs
 
 ## 6. Integration checks
 

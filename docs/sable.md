@@ -19,10 +19,12 @@ works with them:
   follow sub:ship at ~0,8,-20` keeps that offset in the world's axes as the ship flies and turns, `camera orbit
   sub:ship` circles it, `look sub:ship` aims at it, and `camera move … around sub:ship` takes its `~` points from the
   ship's origin in each frame, so a spline round a flying ship keeps its own heading instead of turning with it. A
-  camera placed with `away` shows the sub-levels within Sable's tracking range of the camera, as the player would there,
-  also one unloaded while nobody was near, so the player can stand anywhere. `goto` refuses plot positions; `sable:tp`
-  is the way aboard, and after `err obstructed`, `sable:tp` to the same position moves the player to the nearest spot
-  from which it is in sight, if there is one (else it answers `hidden`).
+  `sub:` reference is looked up as the command arrives, as `@<name>` is, so `camera play` checks it before its first
+  shot, and once the sub-level leaves the client the camera stays where it was last drawn. A camera placed with `away`
+  shows the sub-levels within Sable's tracking range of the camera, as the player would there, also one unloaded while
+  nobody was near, so the player can stand anywhere. `goto` refuses plot positions; `sable:tp` is the way aboard, and
+  after `err obstructed`, `sable:tp` to the same position moves the player to the nearest spot from which it is in
+  sight, if there is one (else it answers `hidden`).
 - The `sable:` commands take a sub-level as its UUID, its name, or `here` (the one the player stands on or rides, else
   the one under the crosshair):
   - `sable:list` lists the sub-levels within 128 blocks, nearest first. In singleplayer with cheats on it adds
