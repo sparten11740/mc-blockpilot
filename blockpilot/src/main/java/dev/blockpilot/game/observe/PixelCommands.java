@@ -8,6 +8,7 @@ import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
+import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.function.Function;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -66,15 +68,13 @@ public final class PixelCommands {
     }
 
     private Result pixels(CommandContext context, Args args) throws CommandException {
-        Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
+        Map<String, Region> regions = regions(context, args.has("regions") ? args.text("regions") : "");
         Position frameCamera = CameraControl.frameCamera();
         try (NativeImage image = FrameCapture.read()) {
             PixelStats.Frame frame = frameOf(image);
             Fields fields = new Fields();
-            for (Map.Entry<String, Object> region : regions.entrySet()) {
-                FrameRect part = region.getValue() instanceof FrameRect rect ? rect
-                    : project(region.getKey(), (double[]) region.getValue());
-                Map<String, Object> stats = PixelStats.of(frame, part).asMap();
+            for (Map.Entry<String, Region> region : regions.entrySet()) {
+                Map<String, Object> stats = PixelStats.of(frame, region.getValue().rect()).asMap();
                 fields.put(region.getKey(), stats, region.getKey() + " rgb=" + Numbers.format((double) stats.get("r"))
                     + "," + Numbers.format((double) stats.get("g")) + "," + Numbers.format((double) stats.get("b"))
                     + " luma=" + Numbers.format((double) stats.get("luma")) + " max=" + stats.get("max") + " p90="
@@ -89,7 +89,7 @@ public final class PixelCommands {
         if (ticks < 2 || ticks > MAX_FLICKER_TICKS) {
             throw new CommandException("syntax", "flicker reads 2t to 10s, not " + args.word("duration"));
         }
-        Map<String, Object> regions = regions(context, args.has("regions") ? args.text("regions") : "");
+        Map<String, Region> regions = regions(context, args.has("regions") ? args.text("regions") : "");
         List<String> names = List.copyOf(regions.keySet());
         List<Double> drawn = new ArrayList<>();
         List<double[]> lumas = new ArrayList<>();
@@ -99,10 +99,7 @@ public final class PixelCommands {
                 PixelStats.Frame frame = frameOf(image);
                 double[] row = new double[names.size()];
                 for (int index = 0; index < names.size(); index++) {
-                    Object region = regions.get(names.get(index));
-                    FrameRect part = region instanceof FrameRect rect ? rect
-                        : project(names.get(index), (double[]) region);
-                    row[index] = PixelStats.of(frame, part).luma();
+                    row[index] = PixelStats.of(frame, regions.get(names.get(index)).rect()).luma();
                 }
                 drawn.add(Screenshots.drawnAt());
                 lumas.add(row);
@@ -171,7 +168,7 @@ public final class PixelCommands {
             throw new CommandException("no_frames", "the game drew " + count + " frame(s) meanwhile");
         }
         double[] times = drawn.stream().mapToDouble(Double::doubleValue).toArray();
-        double span = (times[count - 1] - times[0]) / 20;
+        double span = (times[count - 1] - times[0]) / Duration.TICKS_PER_SECOND;
         double fps = span > 0 ? Math.round((count - 1) / span * 10) / 10.0 : 0;
         Fields fields = new Fields().put("frames", count, "frames=" + count)
             .put("fps", fps, "fps=" + Numbers.format(fps));
@@ -184,7 +181,8 @@ public final class PixelCommands {
         }
         List<Row> rows = new ArrayList<>();
         for (int frame = 0; frame < count; frame++) {
-            Fields row = new Fields().put("drawn", round(times[frame]), "drawn=" + Numbers.format(round(times[frame])));
+            double drawnAt = Numbers.round(times[frame]);
+            Fields row = new Fields().put("drawn", drawnAt, "drawn=" + Numbers.format(drawnAt));
             for (int index = 0; index < names.size(); index++) {
                 double luma = Math.round(lumas.get(frame)[index] * 10) / 10.0;
                 row.put(names.get(index), luma, names.get(index) + "=" + Numbers.format(luma));
@@ -225,13 +223,15 @@ public final class PixelCommands {
         return Arrays.stream(values).average().orElse(0);
     }
 
-    private static double round(double value) {
-        return Math.round(value * 100) / 100.0;
+    /** A part of the frame: as given, or around a point in the world as the last frame shows it. */
+    @FunctionalInterface
+    private interface Region {
+        FrameRect rect() throws CommandException;
     }
 
-    /** The regions by name: a frame part, or the world point and radius {x, y, z, r} to project. */
-    private static Map<String, Object> regions(CommandContext context, String text) throws CommandException {
-        Map<String, Object> regions = new LinkedHashMap<>();
+    /** The regions by name, in order; a point's square reaches r= to each side, wherever r= comes. */
+    private static Map<String, Region> regions(CommandContext context, String text) throws CommandException {
+        Map<String, Function<Double, Region>> regions = new LinkedHashMap<>();
         double radius = DEFAULT_RADIUS;
         int unnamed = 0;
         for (String token : text.isBlank() ? new String[0] : text.strip().split("[ \t]+")) {
@@ -265,19 +265,23 @@ public final class PixelCommands {
                     throw new CommandException("not_in_world");
                 }
                 Position at = context.resolve(position);
-                regions.put(name, new double[] {centre(at.x()), centre(at.y()), centre(at.z())});
+                double x = centre(at.x());
+                double y = centre(at.y());
+                double z = centre(at.z());
+                regions.put(name, reach -> () -> project(name, x, y, z, reach));
             } else {
-                regions.put(name, FrameRect.parse(body));
+                FrameRect rect = FrameRect.parse(body);
+                regions.put(name, reach -> () -> rect);
             }
         }
         if (regions.isEmpty()) {
-            regions.put("all", FrameRect.ALL);
-            regions.put("centre", FrameRect.CENTRE);
+            regions.put("all", reach -> () -> FrameRect.ALL);
+            regions.put("centre", reach -> () -> FrameRect.CENTRE);
         }
-        double finalRadius = radius;
-        regions.replaceAll((name, region) -> region instanceof double[] point
-            ? new double[] {point[0], point[1], point[2], finalRadius} : region);
-        return regions;
+        Map<String, Region> sized = new LinkedHashMap<>();
+        double reach = radius;
+        regions.forEach((name, region) -> sized.put(name, region.apply(reach)));
+        return sized;
     }
 
     /** A whole coordinate names a block, whose centre is meant. */
@@ -285,9 +289,9 @@ public final class PixelCommands {
         return coordinate == Math.floor(coordinate) ? coordinate + 0.5 : coordinate;
     }
 
-    private static FrameRect project(String name, double[] point) throws CommandException {
+    private static FrameRect project(String name, double x, double y, double z, double reach) throws CommandException {
         Projection frame = camera;
-        FrameRect part = frame == null ? null : frame.around(point[0], point[1], point[2], point[3]);
+        FrameRect part = frame == null ? null : frame.around(x, y, z, reach);
         if (part == null) {
             throw new CommandException("offscreen", name);
         }

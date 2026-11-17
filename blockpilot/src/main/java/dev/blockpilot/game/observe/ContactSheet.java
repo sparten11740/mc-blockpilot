@@ -78,7 +78,6 @@ public final class ContactSheet {
         return new Layout(columns, (frames + columns - 1) / columns, tileWidth, tileHeight);
     }
 
-    /** The label of a frame: its number and tick. */
     /** {@code #3 t1234 c812.4}: the frame, the game tick and the client tick it was drawn at, to a tenth. */
     public static String label(int frame, long tick, double drawn) {
         return "#" + frame + " t" + tick + " c" + Numbers.format(Math.round(drawn * 10) / 10.0);

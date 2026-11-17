@@ -8,7 +8,10 @@ import net.minecraft.world.entity.LivingEntity;
 *///?}
 import net.minecraft.world.phys.Vec3;
 
-/** {@code camera follow}: the camera kept at an offset from an entity, read where each frame draws it. */
+/**
+ * {@code camera follow}: the camera kept at an offset from an entity, or from a sub-level's origin, read where each
+ * frame draws it.
+ */
 final class CameraFollow {
     /** How far a turning follow's heading lags its entity's, as a time constant in client ticks. */
     private static final double LAG_TICKS = 10;
@@ -35,7 +38,7 @@ final class CameraFollow {
         return new CameraControl.Placement(position, CameraControl.held(target, target.at(1)));
     }
 
-    /** The placement at an offset in the world's axes from a moving point, such as a sub-level's origin, looking at it. */
+    /** The placement at an offset in the world's axes from a moving point, a sub-level's origin, looking at it. */
     static CameraControl.Placement placement(CameraControl.Point origin, Vec offset) {
         Vec3 start = origin.at(1);
         CameraControl.Point position = CameraControl.held(partialTick -> {

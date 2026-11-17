@@ -1,5 +1,7 @@
 package dev.blockpilot.game.observe;
 
+import dev.blockpilot.api.Duration;
+
 /**
  * The dominant rhythm in a brightness series sampled at uneven times, as frames are drawn: a periodogram over the
  * frequencies that repeat at least twice in the series, up to half their average rate, kept only when the series
@@ -9,7 +11,6 @@ package dev.blockpilot.game.observe;
 final class Flicker {
     /** Below this amplitude, in luma (0 to 255), a region counts as steady. */
     static final double STEADY = 1.0;
-    private static final double TICKS_PER_SECOND = 20;
     /** Candidate frequencies per cycle the series can hold, for a finer peak than its length alone gives. */
     private static final int STEPS_PER_CYCLE = 8;
     /** Swings from one side of the mean to the other that a rhythm repeating twice makes: high, low, high, low. */
@@ -18,7 +19,7 @@ final class Flicker {
     /** The strongest rhythm: its frequency in hertz and its amplitude in luma, or null for a steady series. */
     record Rhythm(double hertz, double amplitude) {
         double periodTicks() {
-            return TICKS_PER_SECOND / hertz;
+            return Duration.TICKS_PER_SECOND / hertz;
         }
     }
 
@@ -59,7 +60,7 @@ final class Flicker {
         double amplitude = 2 * Math.sqrt(bestPower) / count;
         // A quarter of the amplitude still catches short flashes, whose fundamental is small beside their swing.
         return amplitude < STEADY || swings(values, mean, amplitude / 4) < REPEATED_SWINGS ? null
-            : new Rhythm(bestFrequency * TICKS_PER_SECOND, amplitude);
+            : new Rhythm(bestFrequency * Duration.TICKS_PER_SECOND, amplitude);
     }
 
     /** How often the values go from beyond {@code band} on one side of the mean to beyond it on the other. */

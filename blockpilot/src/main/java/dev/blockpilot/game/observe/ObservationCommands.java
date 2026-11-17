@@ -67,9 +67,9 @@ public final class ObservationCommands {
                 + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
                 + "frames, one every N ticks, starting now, each frame drawn once, and with sheet one PNG of them in a "
                 + "grid, each labelled #<n> t<tick> c<drawn>, the width being each tile's (cut so the sheet is at most "
-                + "1536 wide). A frame rendered "
-                + "from a placed camera (camera at, until camera reset) carries camera <x,y,z>. Works with the "
-                + "window in the background. MCP also has a screenshot tool").field("file", "absolute path")
+                + "1536 wide). A frame rendered from a placed camera (camera at, until camera reset) carries camera "
+                + "<x,y,z>. Works with the window in the background. MCP also has a screenshot tool")
+            .field("file", "absolute path")
             .field("tick", "the tick the frame was captured on")
             .field("drawn", "burst: the client tick the frame was drawn at, with the fraction of the next, on the "
                 + "count sample rows carry as client_tick")
@@ -237,7 +237,7 @@ public final class ObservationCommands {
             /** One frame, {@code late} ticks after it fell due: saved as its own file, or kept for the sheet. */
             private void capture(int late) throws IOException {
                 long tick = Observations.tick();
-                double drawn = Math.round(Screenshots.drawnAt() * 100) / 100.0;
+                double drawn = Numbers.round(Screenshots.drawnAt());
                 Fields fields = new Fields();
                 NativeImage frame = Screenshots.frame(width, crop);
                 captured = frame.getWidth();

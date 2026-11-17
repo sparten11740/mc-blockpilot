@@ -408,7 +408,8 @@ final class SableCommands {
 
     /** On either thread: the sub-level {@link #knownSubLevel} returned as that level holds it, else looked up there. */
     private static SubLevels.Info resolve(Level level, UUID known, Args args, String name) throws CommandException {
-        SubLevels.Info info = known != null ? SableSupport.subLevels().info(level, known) : resolve(level, args, name);
+        SubLevels.Info info = known != null ? SableSupport.subLevels().info(level, known)
+            : resolve(level, Minecraft.getInstance().player, args.word(name));
         if (info == null) {
             throw new CommandException("no_sublevel", args.word(name));
         }
@@ -513,16 +514,8 @@ final class SableCommands {
 
     /** The sub-level an argument names: {@code here}, a UUID or a name; fails when it names none, or a name several. */
     static SubLevels.Info resolve(Args args, String name) throws CommandException {
-        return resolve(Minecraft.getInstance().level, args, name);
-    }
-
-    /** {@link #resolve(Args, String)} against that level; {@code here} reads the client, so only on its thread. */
-    private static SubLevels.Info resolve(Level level, Args args, String name) throws CommandException {
-        return resolve(level, args.word(name));
-    }
-
-    private static SubLevels.Info resolve(Level level, String word) throws CommandException {
-        return resolve(level, Minecraft.getInstance().player, word);
+        Minecraft minecraft = Minecraft.getInstance();
+        return resolve(minecraft.level, minecraft.player, args.word(name));
     }
 
     /**

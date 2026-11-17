@@ -18,8 +18,10 @@ import org.slf4j.LoggerFactory;
 public final class CommandRegistry {
     private static final Logger LOGGER = LoggerFactory.getLogger("Blockpilot");
 
-    /** A resolved command: the name it is called by and its spec. */
-    /** {@code builtIn}: registered by Blockpilot itself, its compat modules included, rather than through the API. */
+    /**
+     * A resolved command: the name it is called by and its spec; {@code builtIn} when Blockpilot itself registered it,
+     * its compat modules included, rather than the API.
+     */
     public record Entry(String qualifiedName, String namespace, String registrant, CommandSpec spec, boolean builtIn) {
     }
 
