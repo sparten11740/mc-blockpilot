@@ -38,7 +38,7 @@
 ## 6. Integration checks
 
 - [x] 6.1 Compile all 15 targets and run `tools/test_targets.py` on 1.21.1-fabric (shared code), 1.20.1-forge (Forge HUD hook, nausea before 1.21.11, the 1.20 HUD signature), 1.21.11-neoforge (nausea through the blend factor) and 26.2-fabric (the Hud class tree); verify every run passes
-- [ ] 6.2 Check by hand with Sable on 1.21.1: "Here as the command arrives", "The ship goes", a `camera move` to a plot position answering its end as given, and `camera follow sub:ship turning` answering `err syntax`; verify each behaves as specified
+- [x] 6.2 Check by hand with Sable on 1.21.1: "Here as the command arrives", "The ship goes", a `camera move` to a plot position answering its end as given, and `camera follow sub:ship turning` answering `err syntax`; verify each behaves as specified
 
 ## Workflow follow-up
 
