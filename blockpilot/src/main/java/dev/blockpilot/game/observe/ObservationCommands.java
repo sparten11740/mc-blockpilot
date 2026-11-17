@@ -156,7 +156,8 @@ public final class ObservationCommands {
             .help("particles spawned per type over a window (the counts of the last 1200 ticks that had any are "
                 + "kept); window=t<first>..t<now> names the ticks the reply covers; match= keeps the matching types, "
                 + "minecraft: when an id names no namespace")
-            .field("tick", "current tick").field("total", "all particles in the window")
+            .field("tick", "current tick")
+            .field("total", "the particles in the window: with match=, those of the matching types")
             .field("window", "the ticks the reply covers: from since= (or the default), or from where the log still "
                 + "begins when it dropped older counts, to now")
             .field("joined", "the tick this world was joined, when since= is a tick from before it")
@@ -517,7 +518,7 @@ public final class ObservationCommands {
     private Result particles(CommandContext context, Args args) throws CommandException {
         long since = since(args, Observations.tick() - 20);
         String asked = args.option("match");
-        Pattern match = asked == null ? null : glob(asked.contains("*") ? asked : namespaced(asked));
+        Pattern match = asked == null ? null : glob(asked);
         Map<String, Integer> counts = Observations.particles(since);
         List<Map.Entry<String, Integer>> sorted = new ArrayList<>(counts.entrySet());
         sorted.removeIf(entry -> !matches(match, entry.getKey()));

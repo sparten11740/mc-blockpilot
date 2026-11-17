@@ -19,16 +19,16 @@
 
 - [x] 3.1 Extend `check_hud_clean` in tools/smoke_test.py with the spec's "Clean as an option value", "Reading the option during a clean recording", "Restoring after a change during a capture", "The option keeps its value" and "Blind and clean, still unable to sprint", plus `screenshot hud=clean` and `record 1s hud=clean` leaving the HUD as before; verify the new checks fail before the change
 - [x] 3.2 Layer the HUD in `HudVisibility` (design 5) behind a small HUD interface, route `ClientOptions.Hud` and its snapshot through the option layer, give `ObservationCommands` and `Recording` a capture handle that re-applies its mode each tick, and remove `State`, `Capture.apply` and `Recording.hideHud`; verify unit tests (nesting, an option change during a capture, F1 during a clean capture, the end restoring the layer) and 3.1's option checks pass
-- [ ] 3.3 Hold the FOV effects through `Options.fovEffectScale()` with a fixed 0 instance while clean and read the field through an accessor in `ClientOptions` (design 6); verify "The option keeps its value" passes and options.txt keeps the player's value after a clean capture and a menu save
+- [x] 3.3 Hold the FOV effects through `Options.fovEffectScale()` with a fixed 0 instance while clean and read the field through an accessor in `ClientOptions` (design 6); verify "The option keeps its value" passes and options.txt keeps the player's value after a clean capture and a menu save
 - [ ] 3.4 Scope `CleanEffectsMixin` outside `Minecraft.tick()` with a tick flag and zero the nausea intensity after each tick while clean before 1.21.11 (design 7); verify the sprint check passes, and by hand on 1.20.1 and 1.21.11 that nausea vanishes at once in a clean screenshot
 - [ ] 3.5 Add the `@Pseudo` mixin on Forge's `ForgeGui.render` to the shared mixin config (design 8); verify it applies on the 1.20.1 Forge dev client with no mixin warning and that the clean checks pass there
-- [ ] 3.6 Update the `option` help to `hud on|off|clean`, the `screenshot` help's tile label (`#<n> t<tick> c<drawn>`) and its `drawn` and `late` fields, and docs/commands.md for `option hud clean`; verify `help option` and `help screenshot` read so
+- [x] 3.6 Update the `option` help to `hud on|off|clean`, the `screenshot` help's tile label (`#<n> t<tick> c<drawn>`) and its `drawn` and `late` fields, and docs/commands.md for `option hud clean`; verify `help option` and `help screenshot` read so
 
 ## 4. Flicker, particles and the client tick (client-observation)
 
-- [ ] 4.1 Start `Flicker.strongest` at two cycles over the span, build each part's rhythm fields once, catch any exception in the per-frame reader, and add `no_frames` to `Errors.CODES` (design 10); verify unit tests (one step reads none, a 5 Hz square wave is found, under four frames reads none), `help errors` listing `no_frames`, and the flicker smoke check still reading `5hz` and `none`
-- [ ] 4.2 Count `drawn=` on the client tick counter behind `client_tick` (design 11) and say so in the screenshot help; verify a smoke check for "Drawn on the samples' clock" passes
-- [ ] 4.3 Drop the redundant `namespaced()` before `glob` in `particles` and describe `total` as counting the matched types; verify `check_particles_match` also checks that `total` equals the flames' count
+- [x] 4.1 Start `Flicker.strongest` at two cycles over the span, build each part's rhythm fields once, catch any exception in the per-frame reader, and add `no_frames` to `Errors.CODES` (design 10); verify unit tests (one step reads none, a 5 Hz square wave is found, under four frames reads none), `help errors` listing `no_frames`, and the flicker smoke check still reading `5hz` and `none`
+- [x] 4.2 Count `drawn=` on the client tick counter behind `client_tick` (design 11) and say so in the screenshot help; verify a smoke check for "Drawn on the samples' clock" passes
+- [x] 4.3 Drop the redundant `namespaced()` before `glob` in `particles` and describe `total` as counting the matched types; verify `check_particles_match` also checks that `total` equals the flames' count
 
 ## 5. Cleanup
 

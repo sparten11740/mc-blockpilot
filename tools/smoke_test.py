@@ -1082,6 +1082,9 @@ def check_particles_match(game_dir):
     reply = output[output.rfind("ok tick="):] if "ok tick=" in output else ""
     if not re.search(r"\bflame x\d+", reply) or "heart" in reply:
         return f"not only the flames: {output.strip()[-400:]}"
+    total = re.search(r"\btotal=(\d+)", reply)
+    if not total or int(total.group(1)) != sum(int(count) for count in re.findall(r"\bx(\d+)", reply)):
+        return f"total counts more than the flames: {reply.strip()[:400]}"
     return None
 
 
