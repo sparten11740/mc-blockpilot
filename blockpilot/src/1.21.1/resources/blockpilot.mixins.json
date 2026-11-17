@@ -19,6 +19,7 @@
     "ChunkMapAccessor",
     "CleanEffectsMixin",
     "CleanFovMixin",
+    "CleanForgeHudMixin",
     "CleanHudMixin",
     "CleanTickMixin",
     "ClientEntityTickMixin",
