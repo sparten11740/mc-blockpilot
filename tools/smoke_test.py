@@ -1066,6 +1066,12 @@ def check_burst_frames(game_dir):
     if len(drawn) != 4 or any(later <= earlier for earlier, later in zip(drawn, drawn[1:])) \
             or not re.search(r"\blate=\d+t", output):
         return f"frames repeated or not marked late: {output.strip()[:600]}"
+    # drawn= counts client ticks as sample rows' client_tick does.
+    _, output = run(game_dir, "screenshot burst=3 every=1t 64; sample status every 1t x1")
+    drawn = [float(value) for value in re.findall(r"\bdrawn=([\d.]+)", output)]
+    row = re.search(r"^\s+t\d+ c(\d+)\b", output, re.MULTILINE)
+    if len(drawn) != 3 or not row or any(not int(row.group(1)) - 5 <= value < int(row.group(1)) for value in drawn):
+        return f"drawn= isn't on the client ticks of sample rows: {output.strip()[:600]}"
     return None
 
 

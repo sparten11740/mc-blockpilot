@@ -31,11 +31,11 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   PNG and answers its path with `t<tick>`, the tick it was captured on. Width is up to 1280 and the frame's or crop's
   own, with `width=` when narrower than asked; `sheet` saves a burst as one PNG in a labelled grid. A burst takes each
   frame the game draws once: a capture that falls due before a new frame was drawn waits for the next, and each frame
-  carries `drawn=<client tick>`, the client tick and the fraction of the next it was drawn at, and `late=<n>t` when it
-  came that much after its time, as when the game catches up after a stall; a sheet's labels add the drawn time, `#3
-  t1234 c812.4`. `hud=clean` hides, besides the HUD, the layers and overlays other mods draw in it and the player's
-  night vision, blindness, darkness and nausea, and keeps the field of view still, so frames compare across runs. A
-  frame rendered from a placed camera carries `camera <x,y,z>`.
+  carries `drawn=<client tick>`, the client tick, as sample rows count it in `client_tick`, and the fraction of the
+  next it was drawn at, and `late=<n>t` when it came that much after its time, as when the game catches up after a
+  stall; a sheet's labels add the drawn time, `#3 t1234 c812.4`. `hud=clean` hides, besides the HUD, the layers and
+  overlays other mods draw in it and the player's night vision, blindness, darkness and nausea, and keeps the field of
+  view still, so frames compare across runs. A frame rendered from a placed camera carries `camera <x,y,z>`.
 - `camera at <pos> [look <pos|e<id>|sub:<ref>>] [clear] [away]` / `camera move <pos> [via <pos>]… [look
   <pos|e<id>|sub:<ref>|ahead>] [around sub:<ref>] over <duration> [ease=] [background]` / `camera follow
   <entity|sub:<ref>> [at <~dx,dy,dz>] [turning]` / `camera orbit <pos|entity|sub:<ref>> [by <degrees>] over <duration>

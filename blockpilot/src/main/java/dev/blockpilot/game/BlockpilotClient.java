@@ -12,6 +12,7 @@ import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.cli.Launcher;
 import dev.blockpilot.game.common.ClientScreens;
+import dev.blockpilot.game.common.ClientTicks;
 import dev.blockpilot.game.common.GameClock;
 import dev.blockpilot.game.common.Sides;
 import dev.blockpilot.game.input.Focus;
@@ -95,7 +96,6 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
     private boolean trustUnverified;
     private ConfigReload configReload;
     private volatile boolean enabled = true;
-    private long ticks;
     private boolean autoJoined;
     /** The world to join once the game has loaded its resources; null for none. */
     private String pendingJoin;
@@ -283,12 +283,13 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
             engine.broadcast(Event.of(enabled ? "enabled" : "disabled"));
         }
         restoreOnWorldExit();
-        if (ticks % 20 == 0) {
+        if (ClientTicks.now() % 20 == 0) {
             configReload.check();
         }
         trust.tick();
         Perf.clientTick();
-        if (++ticks % 200 == 0) {
+        ClientTicks.advance();
+        if (ClientTicks.now() % 200 == 0) {
             // A loader or mod may reload the logging setup, which drops our appender.
             LogCapture.install();
         }
@@ -620,7 +621,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public long clientTicks() {
-        return ticks;
+        return ClientTicks.now();
     }
 
     @Override

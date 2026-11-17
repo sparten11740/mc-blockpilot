@@ -71,7 +71,8 @@ public final class ObservationCommands {
                 + "from a placed camera (camera at, until camera reset) carries camera <x,y,z>. Works with the "
                 + "window in the background. MCP also has a screenshot tool").field("file", "absolute path")
             .field("tick", "the tick the frame was captured on")
-            .field("drawn", "burst: the client tick the frame was drawn at, with the fraction of the next")
+            .field("drawn", "burst: the client tick the frame was drawn at, with the fraction of the next, on the "
+                + "count sample rows carry as client_tick")
             .field("late", "burst: how many ticks after its time a frame came, when the game drew none in time")
             .field("camera", "the placed camera's absolute position, for a frame rendered from it")
             .field("width", "the width the frames have, when narrower than asked (or than 512)")

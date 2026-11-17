@@ -3,6 +3,7 @@ package dev.blockpilot.game.observe;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Position;
+import dev.blockpilot.game.common.ClientTicks;
 import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
@@ -165,8 +166,6 @@ public final class CameraControl {
     }
 
     private static volatile Placement placement;
-    /** Client ticks counted for camera moves, which advance by them whether or not an action ticks them. */
-    private static volatile long ticks;
     /** The timed motion under way, in the foreground or the background; forgotten when the camera is placed anew. */
     private static volatile CameraMotion moving;
     private static volatile Angles rendered;
@@ -182,11 +181,10 @@ public final class CameraControl {
     }
 
     /**
-     * Each client tick, before the scripts: counts it for camera moves, and places a move in the background at its
-     * end once its time is up, as camera at would.
+     * Each client tick, before the scripts: places a move in the background at its end once its time is up, as camera
+     * at would, and starts the next shot of a play when it is due.
      */
     public static void tick() {
-        ticks++;
         CameraMotion motion = moving;
         if (motion != null && motion.background() && motion.finished()) {
             place(motion.end());
@@ -194,8 +192,9 @@ public final class CameraControl {
         CameraTimeline.CAMERA.tick();
     }
 
+    /** The clock camera moves run on, which advance by it whether or not an action ticks them. */
     static long ticks() {
-        return ticks;
+        return ClientTicks.now();
     }
 
     /** The camera move or other timed motion under way, or null. */

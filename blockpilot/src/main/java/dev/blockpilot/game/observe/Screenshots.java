@@ -1,6 +1,7 @@
 package dev.blockpilot.game.observe;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.blockpilot.game.common.ClientTicks;
 import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.observe.ContactSheet;
 import dev.blockpilot.game.observe.FrameRect;
@@ -45,7 +46,7 @@ public final class Screenshots {
     /** Called as each frame begins, when the frame before it has been rendered. Client thread. */
     public static void onFrame() {
         // The ticks before the frame just rendered are counted, and its partial tick is still the timer's.
-        drawnAt = CameraControl.ticks() + CameraControl.realPartialTick();
+        drawnAt = ClientTicks.now() + CameraControl.realPartialTick();
         frames++;
         if (!waiting.isEmpty()) {
             List<Runnable> due = List.copyOf(waiting);
