@@ -4,7 +4,7 @@
 
 - [x] 1.1 Keep the column and reason of `Parser.SyntaxError` apart and have `CommandRegistry.parse` report the reason alone (design 4); verify new unit tests for `parse` (a good step, an unknown command, a bad slot reported without `col N:`) pass
 - [x] 1.2 Turn `protocol/EntityNames` into `References` with a `References.Lookup` (`resolveEntity`, `resolveSubLevel`) that `GameBridge` extends, resolving `sub:<name|here>` to `sub:<uuid>` once per run wherever names are resolved now; implement `resolveSubLevel` in `BlockpilotClient` through `SableSupport` (`no_sublevel`, `ambiguous`, `unsupported`); verify unit tests with a fake lookup cover a name, `here`, a UUID passed through, the three errors and a text slot keeping its `sub:`
-- [ ] 1.3 Add `Args.subLevel(name)` returning the `UUID` and throwing on an unresolved reference, update `ArgType.SUB_LEVEL`'s Javadoc, give the API fixture a sub-level slot read with `subLevel`, and move docs/extending.md to 2.2.0 with `sub:` slots and `Args.subLevel` documented; verify the unit tests and the fixture's build pass
+- [x] 1.3 Add `Args.subLevel(name)` returning the `UUID` and throwing on an unresolved reference, update `ArgType.SUB_LEVEL`'s Javadoc, and move docs/extending.md to 2.2.0 with `sub:` slots and `Args.subLevel` documented; verify unit tests for `Args.subLevel` and for an extension command reading a resolved sub-level through the engine pass (the API fixture stays compiled against 2.0.0, as it proves old integrations still work)
 
 ## 2. Camera forms and shot lists (client-observation, sable-sublevels)
 
@@ -38,7 +38,7 @@
 ## 6. Integration checks
 
 - [ ] 6.1 Compile all 15 targets and run `tools/test_targets.py` on 1.21.1-fabric (shared code), 1.20.1-forge (Forge HUD hook, nausea before 1.21.11, the 1.20 HUD signature), 1.21.11-neoforge (nausea through the blend factor) and 26.2-fabric (the Hud class tree); verify every run passes
-- [ ] 6.2 Check by hand with Sable on 1.21.1: "Here as the command arrives", "The ship goes", "A slot that takes a sub-level" through the API fixture, a `camera move` to a plot position answering its end as given, and `camera follow sub:ship turning` answering `err syntax`; verify each behaves as specified
+- [ ] 6.2 Check by hand with Sable on 1.21.1: "Here as the command arrives", "The ship goes", a `camera move` to a plot position answering its end as given, and `camera follow sub:ship turning` answering `err syntax`; verify each behaves as specified
 
 ## Workflow follow-up
 

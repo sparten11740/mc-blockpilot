@@ -118,6 +118,20 @@ public final class Args {
         return token == null ? null : UUID.fromString(token);
     }
 
+    /** The sub-level a {@code sub:} slot names, which the engine resolves before a command runs; since API 2.2.0. */
+    public UUID subLevel(String name) {
+        String token = typed(name, ArgType.SUB_LEVEL);
+        if (token == null) {
+            return null;
+        }
+        String reference = token.substring("sub:".length());
+        if (!Lexicon.isUuid(reference)) {
+            throw new IllegalStateException(token + " wasn't resolved; the engine resolves sub-levels before a command "
+                + "runs");
+        }
+        return UUID.fromString(reference);
+    }
+
     /** The index of a widget {@code w<i>} or a menu slot {@code s<i>}. */
     public int index(String name, int fallback) {
         String token = typed(name, ArgType.WIDGET, ArgType.MENU_SLOT);

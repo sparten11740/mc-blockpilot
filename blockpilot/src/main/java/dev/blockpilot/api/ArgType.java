@@ -8,7 +8,7 @@ public enum ArgType {
     /** A point on the open screen in GUI units. */
     POINT("point", "a screen point x,y", Lexicon::isPoint),
     ENTITY("entity", "an entity e<id> or @<name>", token -> Lexicon.isEntity(token) || Lexicon.isEntityName(token)),
-    /** With Sable: a sub-level by its UUID, its name, or {@code here}; since API 2.2.0. */
+    /** With Sable: a sub-level by its UUID, name or {@code here}, resolved to {@code sub:<uuid>}; since API 2.2.0. */
     SUB_LEVEL("sub-level", "a sub-level sub:<uuid, name or here>", Lexicon::isSubLevel),
     WIDGET("widget", "a widget w<index>", Lexicon::isWidget),
     /** A slot of the open container screen. */

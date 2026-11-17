@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.Args;
+import dev.blockpilot.api.BlockpilotApi;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Fields;
@@ -48,6 +49,9 @@ class ReferencesTest {
             args.text("message")))).arg("message", ArgType.TEXT));
         registry.register(CommandSpec.query("board", (context, args) -> Result.ok(new Fields().put("ship",
             args.word("ship")))).arg("ship", ArgType.SUB_LEVEL));
+        registry.addExtensions(List.of(new BlockpilotApi.Registration("mod", "mod", CommandSpec.query("anchor",
+            (context, args) -> Result.ok(new Fields().put("ship", args.subLevel("ship").toString())))
+            .arg("ship", ArgType.SUB_LEVEL))));
         engine = new Engine(registry, game);
         game.entities.putAll(Map.of("pip", 7, "star", 12));
         game.subLevels.putAll(Map.of("ship", SHIP, "here", RAFT, SHIP.toString(), SHIP));
@@ -149,6 +153,12 @@ class ReferencesTest {
     void aSubLevelByNameOrHereBecomesItsUuid() {
         assertEquals("ok ship=sub:" + SHIP + "\nok ship=sub:" + RAFT, text(run("board sub:ship; board sub:here")));
         assertEquals(List.of("sub:ship", "sub:here"), game.lookups);
+    }
+
+    @Test
+    void anExtensionReadsTheSubLevelsUuid() {
+        assertEquals("ok ship=" + SHIP, text(run("mod:anchor sub:ship")));
+        assertEquals("err no_sublevel nosuch", text(run("mod:anchor sub:nosuch")));
     }
 
     @Test

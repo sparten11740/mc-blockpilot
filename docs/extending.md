@@ -7,7 +7,7 @@ allowed, naming the setting; tell those users to add it. Under `all`, the defaul
 your events always reach agents. A change to the file applies within a second.
 
 Other mods can add namespaced commands that behave like built-in ones (scripts, `wait`, `sample`, JSON). Compile against
-the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.1.0")`, from mavenLocal as in
+the API only (`compileOnly("dev.blockpilot:blockpilot-api:2.2.0")`, from mavenLocal as in
 [dev-environment.md](dev-environment.md)) and register them during mod loading, in a class only touched when Blockpilot
 is installed:
 
@@ -78,8 +78,11 @@ A slot of type `ArgType.ENTITY` takes `e<id>` and, from Blockpilot 1.1.0, `@<nam
 engine looks the name up before the handler runs, so `args.entity(name)` always reads an id and a command needs no
 change to take names; an unknown name answers `err no_entity @<name>` without running it.
 
-`ArgType.SUB_LEVEL`, new in blockpilot-api 2.2.0 (Blockpilot 1.4.0), takes `sub:<uuid|name|here>`, a Sable sub-level;
-`args.word(name)` reads it as written. It is also an id in the namespace `sub`, so a slot can't take both.
+`ArgType.SUB_LEVEL`, new in blockpilot-api 2.2.0 (Blockpilot 1.4.0), takes `sub:<uuid|name|here>`, a Sable sub-level.
+As with entity names, the engine looks it up before the handler runs, so `args.subLevel(name)` reads its UUID and
+`args.word(name)` reads `sub:<uuid>`; an unknown reference or a shared name answers `err no_sublevel` or `err
+ambiguous`, and any `sub:` without Sable `err unsupported`, without running the command. It is also an id in the
+namespace `sub`, so a slot can't take both.
 
 A command can leave work for the end of its script: `context.atEnd(action)` runs the action when the script ends,
 however it ends (its last step, an error, `stop` or real input), on the client thread and before the reply. Its result

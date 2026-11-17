@@ -46,6 +46,16 @@ class ArgsTest {
     }
 
     @Test
+    void aSubLevelReadsAsItsUuidOnceResolved() {
+        UUID ship = UUID.fromString("0f3a9c2e-1b2c-4d5e-8f90-a1b2c3d4e5f6");
+        assertEquals(ship, arguments("a", "sub:" + ship, ArgType.SUB_LEVEL).subLevel("a"));
+        IllegalStateException refused = assertThrows(IllegalStateException.class,
+            () -> arguments("a", "sub:here", ArgType.SUB_LEVEL).subLevel("a"));
+        assertTrue(refused.getMessage().contains("sub:here wasn't resolved"), refused.getMessage());
+        assertNull(new Args(Map.of(), Map.of()).subLevel("a"));
+    }
+
+    @Test
     void accessorsConvertTheTypeTheSlotTook() {
         assertEquals(Position.relative(1, 0, -2), arguments("a", "~1,0,-2", ArgType.POSITION).position("a"));
         assertEquals(new Point(120, 40.5), arguments("a", "120,40.5", ArgType.POINT).point("a"));
