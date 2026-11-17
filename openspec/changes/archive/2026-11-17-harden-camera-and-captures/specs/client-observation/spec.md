@@ -61,10 +61,10 @@ still.
 `screenshot burst=<n> every=<Nt> [width] [hud=off]` SHALL capture n frames (at
 most 60), one every N ticks, starting with the next frame, and return the saved
 files in order with the tick of each. `hud=off` hides the GUI for the captured
-frames. No frame SHALL be captured twice: a capture that falls due before a new
-frame was drawn SHALL wait for the next, and each frame SHALL carry when the
-client drew it, `drawn=`, on the client tick count that sample rows carry as
-`client_tick`, and `late=<n>t` when it came after its time.
+frames. No frame SHALL be captured twice: a capture due before a new frame is
+drawn SHALL wait for it, and each frame SHALL carry `drawn=`, when the client
+drew it on the `client_tick` clock of sample rows, and `late=<n>t` when it came
+after its time.
 
 #### Scenario: Gear animation
 - **WHEN** an agent runs `use; screenshot burst=8 every=20t` on the gear lever
