@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0 (unreleased)
+## 1.4.0 (2026-11-17)
 
 - **Sub-levels round a camera away:** with Sable, a camera placed with `away` shows the sub-levels within Sable's
   tracking range of the camera, also one the server had unloaded while nobody was near, so a ship can be filmed from
