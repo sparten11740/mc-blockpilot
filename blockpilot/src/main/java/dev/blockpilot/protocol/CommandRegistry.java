@@ -42,7 +42,8 @@ public final class CommandRegistry {
 
     /**
      * Matches one step against the forms of the command it starts with, as a script would, without running it; for a
-     * command that takes others as text. Entity names stay as written.
+     * command that takes others as text. Names stay as written, and a syntax error leaves out its column, which counts
+     * in this step rather than in the caller's.
      */
     public Args parse(String step) throws CommandException {
         String name = step.strip().split("\\s+", 2)[0];
@@ -53,7 +54,7 @@ public final class CommandRegistry {
         try {
             return Parser.example(entry, step.strip()).args();
         } catch (Parser.SyntaxError e) {
-            throw new CommandException("syntax", e.getMessage());
+            throw new CommandException("syntax", e.reason());
         }
     }
 

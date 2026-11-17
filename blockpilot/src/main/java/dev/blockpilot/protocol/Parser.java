@@ -24,8 +24,16 @@ final class Parser {
     }
 
     static final class SyntaxError extends Exception {
-        SyntaxError(int column, String message) {
-            super("col " + column + ": " + message);
+        private final String reason;
+
+        SyntaxError(int column, String reason) {
+            super("col " + column + ": " + reason);
+            this.reason = reason;
+        }
+
+        /** What is wrong, without the column. */
+        String reason() {
+            return reason;
         }
     }
 

@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.blockpilot.api.ArgType;
 import dev.blockpilot.api.BlockpilotApi;
+import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
 import dev.blockpilot.api.Result;
 import java.util.List;
@@ -42,6 +43,19 @@ class RegistryTest {
         assertNull(CommandRegistry.exampleProblem(new CommandRegistry.Entry("look", "", "blockpilot", look, true)));
         assertEquals("col 1: an example starts with mod:look, not look",
             CommandRegistry.exampleProblem(new CommandRegistry.Entry("mod:look", "mod", "mod", look, false)));
+    }
+
+    @Test
+    void aStepIsParsedWithoutRunning() throws CommandException {
+        CommandRegistry registry = new CommandRegistry();
+        registry.register(CommandSpec.query("look", (context, args) -> Result.ok()).optionalArg("radius", ArgType.INT));
+        assertEquals("12", registry.parse("look 12").word("radius"));
+        CommandException unknown = assertThrows(CommandException.class, () -> registry.parse("peek 12"));
+        assertEquals("syntax", unknown.code());
+        assertEquals("unknown command peek", unknown.argument());
+        CommandException bad = assertThrows(CommandException.class, () -> registry.parse("look twelve"));
+        assertEquals("syntax", bad.code());
+        assertFalse(bad.argument().startsWith("col "), bad.argument());
     }
 
     @Test
