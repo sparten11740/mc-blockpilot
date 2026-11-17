@@ -35,19 +35,19 @@ class CameraTimelineTest {
         return new CameraTimeline.Cue(() -> {
             started.add(name);
             return () -> Result.ok();
-        });
+        }, 0);
     }
 
     private static CameraTimeline.Shot failing(RuntimeException failure) {
         return new CameraTimeline.Cue(() -> {
             throw failure;
-        });
+        }, 0);
     }
 
     private static CameraTimeline.Shot failing(CommandException failure) {
         return new CameraTimeline.Cue(() -> {
             throw failure;
-        });
+        }, 0);
     }
 
     private void tick(int times) {

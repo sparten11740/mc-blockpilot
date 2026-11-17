@@ -30,7 +30,7 @@ final class GameCommands {
         new Snapshots().register(registry);
         new ServerCommands().register(registry);
         new GameTestCommands().register(registry);
-        new ObservationCommands(NamedEntities::find).register(registry);
+        new ObservationCommands(client).register(registry);
         new OptionCommands().register(registry);
         new ConfigCommands().register(registry);
         new PixelCommands().register(registry);

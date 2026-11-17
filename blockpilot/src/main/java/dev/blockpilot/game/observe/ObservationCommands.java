@@ -20,6 +20,7 @@ import dev.blockpilot.game.sable.Rel;
 import dev.blockpilot.mixin.SoundEngineAccessor;
 import dev.blockpilot.mixin.SoundManagerAccessor;
 import dev.blockpilot.protocol.CommandRegistry;
+import dev.blockpilot.protocol.References;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,7 +29,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,16 +47,11 @@ public final class ObservationCommands {
     private static final List<String> SOUND_SOURCES = Arrays.stream(SoundSource.values()).map(SoundSource::getName)
         .toList();
 
-    /** Finds an entity by its tag or custom name, as an {@code @<name>} argument does. */
-    @FunctionalInterface
-    public interface EntityNames {
-        OptionalInt find(String name) throws CommandException;
-    }
+    private final References.Lookup lookup;
 
-    private final EntityNames names;
-
-    public ObservationCommands(EntityNames names) {
-        this.names = names;
+    /** The lookup reads the names in camera play's shots. */
+    public ObservationCommands(References.Lookup lookup) {
+        this.lookup = lookup;
     }
 
     public void register(CommandRegistry registry) {
@@ -78,7 +73,7 @@ public final class ObservationCommands {
             .field("camera", "the placed camera's absolute position, for a frame rendered from it")
             .field("width", "the width the frames have, when narrower than asked (or than 512)")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));
-        new CameraCommands(names).register(registry);
+        new CameraCommands(lookup).register(registry);
         registry.register(CommandSpec.action("settle", this::settle).needsWorld().group("observe")
             .help("waits until the chunks within the view distance of the player have arrived from the server and "
                 + "those in view have compiled, as option does after a change: after camera at, a teleport or "

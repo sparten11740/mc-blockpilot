@@ -36,6 +36,9 @@ final class CameraTimeline {
     interface Shot {
         /** Starts the shot; the clock tick it ends at, or {@link #WHEN_STILL}. */
         long start(Clock clock) throws CommandException;
+
+        /** How many ticks the shot takes as written: 0 for one that places the camera at once. */
+        int ticks();
     }
 
     /** Keeps the camera as it is for that many ticks. */
@@ -47,7 +50,7 @@ final class CameraTimeline {
     }
 
     /** Starts a camera form; its answer is for a script, and the play answered when it started. */
-    record Cue(Starter starter) implements Shot {
+    record Cue(Starter starter, int ticks) implements Shot {
         @Override
         public long start(Clock clock) throws CommandException {
             starter.start();

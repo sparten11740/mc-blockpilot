@@ -26,11 +26,6 @@ public final class SableSupport {
     private SableSupport() {
     }
 
-    /** The sub-level a reference names: here, a UUID or a name, as the sable: commands take it; client thread. */
-    public static SubLevels.Info resolve(String reference) throws CommandException {
-        return SableCommands.resolve(reference);
-    }
-
     /**
      * The sub-level a {@code sub:} reference names, as the engine looks it up before a command runs, in the level and
      * for the player given: the client's, or on its thread the server's.

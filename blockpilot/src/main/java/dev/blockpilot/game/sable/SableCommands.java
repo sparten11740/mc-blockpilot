@@ -521,11 +521,6 @@ final class SableCommands {
         return resolve(level, args.word(name));
     }
 
-    /** The sub-level a reference as written names, as for {@link #resolve(Args, String)}; on the client's thread. */
-    static SubLevels.Info resolve(String reference) throws CommandException {
-        return resolve(Minecraft.getInstance().level, reference);
-    }
-
     private static SubLevels.Info resolve(Level level, String word) throws CommandException {
         return resolve(level, Minecraft.getInstance().player, word);
     }

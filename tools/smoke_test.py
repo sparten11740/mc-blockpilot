@@ -1040,7 +1040,8 @@ def check_camera_play(game_dir):
     if not re.search(r"^ok shots=3 over=30t$", output, re.MULTILINE) or len(statuses) != 2 \
             or " camera 0,-57,-6 " not in statuses[0] + " " \
             or not re.search(r" camera 6,-57,0 cam_fov=40 ", statuses[1] + " ") \
-            or not re.search(r"^err syntax a shot is at, move, follow, orbit or hold, not jump", output, re.MULTILINE):
+            or not re.search(r"^err syntax shot 1, jump ~0,0,0: a shot is at, move, follow, orbit or hold", output,
+                             re.MULTILINE):
         return f"the shots didn't play as listed: {output.strip()[:700]}"
     return check_camera_play_checks(game_dir) or check_camera_play_ends(game_dir)
 

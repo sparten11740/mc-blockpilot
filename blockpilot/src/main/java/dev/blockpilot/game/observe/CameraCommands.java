@@ -6,9 +6,7 @@ import dev.blockpilot.api.Args;
 import dev.blockpilot.api.CommandContext;
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.CommandSpec;
-import dev.blockpilot.api.Duration;
 import dev.blockpilot.api.Fields;
-import dev.blockpilot.api.Lexicon;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
@@ -20,12 +18,12 @@ import dev.blockpilot.game.sable.SableSupport;
 import dev.blockpilot.game.sable.SubLevels;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Engine;
+import dev.blockpilot.protocol.References;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.OptionalInt;
 import java.util.function.Predicate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -45,10 +43,15 @@ final class CameraCommands {
     /** What a camera can look at, circle or follow besides a position. */
     private static final ArgType[] MOVING_TARGETS = {ArgType.ENTITY, ArgType.SUB_LEVEL};
 
+    /** How a form starts: as a command, or as a shot of camera play, where a timed one runs beside the play. */
+    private enum Mode {
+        COMMAND, SHOT
+    }
+
     /** Checks a form's arguments as far as they can be before anything changes, and gives what then starts it. */
     @FunctionalInterface
     private interface Prepare {
-        CameraTimeline.Starter prepare(CommandContext context, Args args) throws CommandException;
+        CameraTimeline.Starter prepare(CommandContext context, Args args, Mode mode) throws CommandException;
     }
 
     /**
@@ -61,13 +64,13 @@ final class CameraCommands {
     private final Map<String, Form> forms = table(new Form("at", true, false, this::at),
         new Form("move", true, true, this::move), new Form("follow", true, false, this::follow),
         new Form("orbit", true, true, this::orbit), new Form("play", false, false, this::play),
-        new Form("wait", false, false, (context, args) -> WaitForMove::new),
+        new Form("wait", false, false, (context, args, mode) -> WaitForMove::new),
         new Form("reset", false, false, CameraCommands::reset), new Form("off", false, false, CameraCommands::reset));
-    private final ObservationCommands.EntityNames names;
+    private final References.Lookup lookup;
     private CommandRegistry registry;
 
-    CameraCommands(ObservationCommands.EntityNames names) {
-        this.names = names;
+    CameraCommands(References.Lookup lookup) {
+        this.lookup = lookup;
     }
 
     private static Map<String, Form> table(Form... forms) {
@@ -194,7 +197,7 @@ final class CameraCommands {
     /** Checks the whole command first, so a refused one leaves the camera, and a play under way, as they were. */
     private Action camera(CommandContext context, Args args) throws CommandException {
         Form form = forms.get(args.word("op"));
-        CameraTimeline.Starter start = prepare(form, context, args);
+        CameraTimeline.Starter start = prepare(form, context, args, Mode.COMMAND);
         // camera wait waits for a play; every other form ends it.
         if (!form.word().equals("wait")) {
             CameraTimeline.CAMERA.stop();
@@ -203,7 +206,8 @@ final class CameraCommands {
     }
 
     /** The form's options in range, then its own checks. */
-    private CameraTimeline.Starter prepare(Form form, CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter prepare(Form form, CommandContext context, Args args, Mode mode)
+        throws CommandException {
         if (args.hasOption("ease") && !form.timed()) {
             throw new CommandException("syntax", "ease= is for camera " + words(Form::timed, "and"));
         }
@@ -213,57 +217,27 @@ final class CameraCommands {
         // Each form reads the values again as it places the camera.
         fov(args);
         roll(args);
-        return form.prepare().prepare(context, args);
+        return form.prepare().prepare(context, args, mode);
     }
 
     /**
-     * camera play: the shots, separated by |, each a camera at, move, orbit or follow without the word camera, or
-     * hold for a duration; checked as a whole before the first starts.
+     * camera play: the shots, each a camera at, move, follow or orbit without the word camera, read as that command
+     * with its names resolved now, or a hold; all checked before the first starts.
      */
-    private CameraTimeline.Starter play(CommandContext context, Args args) throws CommandException {
-        List<CameraTimeline.Shot> shots = new ArrayList<>();
-        int total = 0;
-        for (String text : args.text("shots").strip().split("\\s*\\|\\s*")) {
-            List<String> tokens = new ArrayList<>(List.of(text.strip().split("\\s+")));
-            String op = tokens.get(0);
-            if (op.equals("hold")) {
-                if (tokens.size() != 2 || !Lexicon.isDuration(tokens.get(1))) {
-                    throw new CommandException("syntax", "hold takes a duration, as hold 40t: " + text);
-                }
-                int ticks = Duration.parse(tokens.get(1)).ticks();
-                shots.add(new CameraTimeline.Hold(ticks));
-                total += ticks;
-                continue;
-            }
-            Form form = forms.get(op);
-            if (form == null || !form.placing()) {
-                throw new CommandException("syntax", "a shot is " + words(Form::placing, "or", "hold") + ", not "
-                    + text);
-            }
-            // A timed shot runs in the background, so the next one starts as it ends.
-            int over = tokens.indexOf("over");
-            if (over >= 0 && over + 1 < tokens.size() && !tokens.contains("background")) {
-                tokens.add(over + 2, "background");
-            }
-            try {
-                Args shot = registry.parse("camera " + String.join(" ", tokens));
-                shots.add(new CameraTimeline.Cue(prepare(form, context, shot)));
-                total += form.timed() ? duration(shot) : 0;
-            } catch (CommandException e) {
-                throw inShot(e, shots.size() + 1, text);
-            }
-        }
-        int over = total;
+    private CameraTimeline.Starter play(CommandContext context, Args args, Mode mode) throws CommandException {
+        List<CameraTimeline.Shot> shots = ShotList.parse(args.text("shots"),
+            word -> forms.containsKey(word) && forms.get(word).placing(), words(Form::placing, "or", "hold"),
+            (word, step) -> {
+                Form form = forms.get(word);
+                Args shot = References.resolve(registry.parse("camera " + step), lookup);
+                return new CameraTimeline.Cue(prepare(form, context, shot, Mode.SHOT),
+                    form.timed() ? duration(shot) : 0);
+            });
+        int over = shots.stream().mapToInt(CameraTimeline.Shot::ticks).sum();
         return () -> {
             CameraTimeline.CAMERA.play(shots);
             return () -> Result.ok(new Fields().put("shots", shots.size()).put("over", over, "over=" + over + "t"));
         };
-    }
-
-    /** A shot's syntax error, naming the shot; other errors already name what they are about. */
-    private static CommandException inShot(CommandException e, int shot, String text) {
-        return e.code().equals("syntax")
-            ? new CommandException("syntax", "shot " + shot + ", " + text + ": " + e.argument()) : e;
     }
 
     private static Double fov(Args args) throws CommandException {
@@ -287,14 +261,14 @@ final class CameraCommands {
         return value;
     }
 
-    private static CameraTimeline.Starter reset(CommandContext context, Args args) {
+    private static CameraTimeline.Starter reset(CommandContext context, Args args, Mode mode) {
         return () -> {
             CameraControl.reset();
             return () -> Result.ok();
         };
     }
 
-    private CameraTimeline.Starter at(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter at(CommandContext context, Args args, Mode mode) throws CommandException {
         if (args.has("away")) {
             if (Minecraft.getInstance().getSingleplayerServer() == null) {
                 throw new CommandException("no_server", "away moves the integrated server's world to the camera");
@@ -350,27 +324,14 @@ final class CameraCommands {
 
 
     /** Fails with no_entity unless the entity the slot names, when it names one, is loaded now. */
-    private void present(Args args, String name) throws CommandException {
+    private static void present(Args args, String name) throws CommandException {
         if (args.has(name) && args.type(name) == ArgType.ENTITY) {
             entity(args, name, Minecraft.getInstance().level);
         }
     }
 
-    /** The id of the entity a slot names: e<id>, or a name a shot of camera play keeps as written. */
-    private int entityId(Args args, String name) throws CommandException {
-        String word = args.word(name);
-        if (!word.startsWith("@")) {
-            return args.entity(name).id();
-        }
-        OptionalInt found = names.find(word.substring(1));
-        if (found.isEmpty()) {
-            throw new CommandException("no_entity", word);
-        }
-        return found.getAsInt();
-    }
-
     /** A position, which rides along aboard a sub-level, or the point a look at an entity aims at. */
-    private CameraControl.Point point(CommandContext context, Args args, String name, Level level)
+    private static CameraControl.Point point(CommandContext context, Args args, String name, Level level)
         throws CommandException {
         if (args.type(name) == ArgType.ENTITY) {
             return aimAt(entity(args, name, level));
@@ -382,12 +343,13 @@ final class CameraCommands {
         return CameraControl.drawn(level, new Vec3(look.x(), look.y(), look.z()));
     }
 
-    /** The origin of the sub-level a {@code sub:<ref>} slot names, where each frame draws it. */
+    /** The origin of the sub-level a {@code sub:} slot names, where each frame draws it. */
     private static CameraControl.Point subLevel(Args args, String name, Level level) throws CommandException {
-        if (SableSupport.subLevels() == SubLevels.NONE) {
-            throw new CommandException("unsupported", args.word(name) + " needs Sable");
+        SubLevels.Info info = SableSupport.subLevels().info(level, args.subLevel(name));
+        if (info == null) {
+            throw new CommandException("no_sublevel", args.word(name));
         }
-        return CameraControl.subLevelOrigin(level, SableSupport.resolve(args.word(name).substring("sub:".length())));
+        return CameraControl.subLevelOrigin(level, info);
     }
 
     /**
@@ -403,8 +365,8 @@ final class CameraCommands {
         return CameraControl.drawn(level, new Vec3(point.x(), point.y(), point.z()));
     }
 
-    private Entity entity(Args args, String name, Level level) throws CommandException {
-        Entity entity = level.getEntity(entityId(args, name));
+    private static Entity entity(Args args, String name, Level level) throws CommandException {
+        Entity entity = level.getEntity(args.entity(name).id());
         if (entity == null) {
             throw new CommandException("no_entity", args.word(name));
         }
@@ -465,13 +427,14 @@ final class CameraCommands {
         return motion;
     }
 
-    private CameraTimeline.Starter move(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter move(CommandContext context, Args args, Mode mode) throws CommandException {
         int duration = duration(args);
         present(args, "target");
-        return () -> glide(context, args, duration);
+        return () -> glide(context, args, duration, args.has("background") || mode == Mode.SHOT);
     }
 
-    private Action glide(CommandContext context, Args args, int duration) throws CommandException {
+    private Action glide(CommandContext context, Args args, int duration, boolean background)
+        throws CommandException {
         CameraPath.Ease ease = ease(args);
         Level level = Minecraft.getInstance().level;
         var player = Minecraft.getInstance().player;
@@ -495,11 +458,11 @@ final class CameraCommands {
         // Around a sub-level the end moves with it, so the answer reads where the camera then rests.
         Vec3 endPoint = frame == null ? end.at(1) : null;
         return start(new CameraMove(points, look, target, before, before == null ? player.getViewVector(1) : null,
-            duration, ease, args.has("background"), fov(args), roll(args),
+            duration, ease, background, fov(args), roll(args),
             placed -> endPoint == null ? answer(level, placed) : answer(level, endPoint, placed)), duration);
     }
 
-    private CameraTimeline.Starter follow(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter follow(CommandContext context, Args args, Mode mode) throws CommandException {
         if (args.type("subject") == ArgType.SUB_LEVEL && args.has("turning")) {
             throw new CommandException("syntax", "turning is for an entity: a sub-level is followed in the world's "
                 + "axes, and a camera at a plot position turns with it");
@@ -511,7 +474,7 @@ final class CameraCommands {
         return () -> placeFollow(args);
     }
 
-    private Action placeFollow(Args args) throws CommandException {
+    private static Action placeFollow(Args args) throws CommandException {
         Level level = Minecraft.getInstance().level;
         boolean turning = args.has("turning");
         CameraControl.Placement placement;
@@ -540,18 +503,19 @@ final class CameraCommands {
         return new Vec(at.x(), at.y(), at.z());
     }
 
-    private CameraTimeline.Starter orbit(CommandContext context, Args args) throws CommandException {
+    private CameraTimeline.Starter orbit(CommandContext context, Args args, Mode mode) throws CommandException {
         int duration = duration(args);
         present(args, "centre");
-        return () -> circle(context, args, duration);
+        return () -> circle(context, args, duration, args.has("background") || mode == Mode.SHOT);
     }
 
-    private Action circle(CommandContext context, Args args, int duration) throws CommandException {
+    private static Action circle(CommandContext context, Args args, int duration, boolean background)
+        throws CommandException {
         Level level = Minecraft.getInstance().level;
         CameraControl.Point centre = point(context, args, "centre", level);
         double degrees = args.has("degrees") ? args.number("degrees", 360) : 360;
         return start(new CameraOrbit(centre, drawnNow(), centre.at(1), degrees, duration, ease(args),
-            args.has("background"), fov(args), roll(args), placed -> answer(level, placed)), duration);
+            background, fov(args), roll(args), placed -> answer(level, placed)), duration);
     }
 
     /** camera wait: answers once no camera move is under way, as camera at answers where the camera then rests. */
