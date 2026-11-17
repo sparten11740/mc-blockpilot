@@ -157,7 +157,8 @@ final class CameraCommands {
                 + "move and orbit glide to them along the way, a value left out stays, and camera reset returns to "
                 + "the player's view; status names the field of view as cam_fov and the roll in cam:; "
                 + "with Sable, a plot position, for the point, a via point or the look, rides along with its "
-                + "sub-level each frame, and sub:<uuid|name|here> names a sub-level by its origin, drawn each frame: "
+                + "sub-level each frame, and sub:<uuid|name|here> names a sub-level by its origin, drawn each frame, "
+                + "looked up as the command arrives and held where it was last drawn once the sub-level is gone: "
                 + "as follow's subject (the offset in the world's axes, so the camera keeps its side as the "
                 + "sub-level turns; turning is for entities), as orbit's centre, as a look target, and with "
                 + "move … around sub:<ref> the move's ~ points, via points and look are offsets in the world's "
@@ -165,12 +166,15 @@ final class CameraCommands {
                 + "names a placed camera's position as camera <x,y,z>; "
                 + "camera play <shot> [| <shot>]…: plays the shots one after another on the camera's own clock and "
                 + "answers at once, shots=<n> over=<ticks>t, while the script and the scripts after it go on; a shot "
-                + "is a camera at, move, orbit or follow written without camera, with its own ease=, fov= and roll=, "
+                + "is a camera at, move, follow or orbit written without camera, with its own ease=, fov= and roll=, "
                 + "or hold <duration>, which keeps the camera as it is; each starts as its command would then, from "
                 + "where the camera is drawn, so an at is a cut and a follow lasts until the next shot; ~ positions "
-                + "count from the player as each shot starts; all shots are checked before the first starts; camera "
-                + "wait answers at the end, or with the error of a shot that couldn't start, and another camera "
-                + "command, stop or real input end it; record script with camera wait at its end films it whole; "
+                + "count from the player as each shot starts; every shot is checked as its command would be before "
+                + "the first starts, its names and sub: references looked up as the play arrives, and a refused play "
+                + "changes nothing, a play under way going on; camera wait answers at the end, or once with the error "
+                + "of a shot that couldn't start, such as one whose entity is gone, and another camera command that "
+                + "passes its checks, stop or real input end it; record script with camera wait at its end films it "
+                + "whole; "
                 + "camera reset (or off): back to the player's view. The player keeps acting normally. Chunks load "
                 + "around the player, so a camera beyond the render distance shows sky, unless placed with away: in "
                 + "singleplayer with commands allowed, camera at … away has the integrated server treat the camera as "
@@ -190,7 +194,8 @@ final class CameraCommands {
             .field("uncleared", "clear: set when no clear point was in reach, so the camera stayed at the point")
             .field("looking", "the absolute point it looks at, with a look target")
             .field("moving", "camera move … background: set, the move goes on beside the script")
-            .field("over", "camera move … background: the move's ticks")
+            .field("over", "camera move or orbit … background: the motion's ticks; camera play: the shots' ticks")
+            .field("shots", "camera play: how many shots it plays")
             .example("camera at ~10,5,10 look ~0,1,0"));
     }
 

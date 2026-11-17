@@ -60,18 +60,22 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   names a sub-level by its origin, where each frame draws it ([sable.md](sable.md)): as `follow`'s subject the offset is
   in the world's axes, so the camera keeps its side as the sub-level turns (`turning` is for entities), and it can be
   `orbit`'s centre or a look target; with `move … around sub:<ref>`, the move's `~` point, via points and look are
-  offsets in the world's axes from that origin in each frame, so a path keeps its shape round a flying sub-level.
+  offsets in the world's axes from that origin in each frame, so a path keeps its shape round a flying sub-level. A
+  `sub:` reference is looked up as the command arrives, as `@<name>` is, and once its sub-level leaves the client the
+  camera stays where it was last drawn.
   `camera orbit` circles the camera round a point or an entity, followed as it moves, from where it is drawn now,
   keeping its distance across and its height and looking at the centre: a full turn without `by`, a positive angle to
   the camera's right as it faces the centre. It is timed as `camera move` is, with `ease=`, `background`, `camera wait`
   and `stop`, and leaves the camera where it ended, looking at the centre. `camera play` plays a shot list on the
   camera's own clock and answers at once, `shots=<n> over=<ticks>t`, while the script and the scripts after it go on:
-  each shot, separated by `|`, is a `camera at`, `move`, `orbit` or `follow` written without `camera`, with its own
+  each shot, separated by `|`, is a `camera at`, `move`, `follow` or `orbit` written without `camera`, with its own
   `ease=`, `fov=` and `roll=`, or `hold <duration>`, which keeps the camera as it is; each starts as its command would
   then, from where the camera is drawn, so an `at` is a cut and a `follow` lasts until the next shot, and `~` positions
-  count from the player as each shot starts. All shots are checked before the first starts, a bad one failing the play
-  with `err syntax` that names it; `camera wait` answers at the end, or with the error of a shot that couldn't start,
-  and another camera command, `stop` or real input end it. `fov=<degrees>` (1 to 170) and `roll=<degrees>` (-180 to 180,
+  count from the player as each shot starts. Every shot is checked as its command would be before the first starts,
+  with its names and `sub:` references looked up as the play arrives: a refused play changes nothing, a play under way
+  going on, and a bad shot fails it with `err syntax` that names it. `camera wait` answers at the end, or once with the
+  error of a shot that couldn't start, such as one whose entity is gone; another camera command that passes its checks,
+  `stop` or real input end a play. `fov=<degrees>` (1 to 170) and `roll=<degrees>` (-180 to 180,
   a positive roll leaning the camera to its right) give a placed camera its own vertical field of view, in place of the
   player's and its effects, and tilt: `camera at` and `follow` set them at once, `move` and `orbit` glide to them along
   the way with their `ease=`, a value left out stays, and `camera reset` returns to the player's view; `status` names
