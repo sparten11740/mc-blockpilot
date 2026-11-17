@@ -65,11 +65,14 @@ public final class ObservationCommands {
             .option("crop", "x0,y0,x1,y1: only that part of each frame, in fractions from the top left")
             .help("saves the last rendered frame as PNG (default 512 wide, max 1280 and the frame's or crop's own "
                 + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
-                + "frames, one every N ticks, starting now, and with sheet one PNG of them in a grid, each labelled "
-                + "#<n> t<tick>, the width being each tile's (cut so the sheet is at most 1536 wide). A frame rendered "
+                + "frames, one every N ticks, starting now, each frame drawn once, and with sheet one PNG of them in a "
+                + "grid, each labelled #<n> t<tick> c<drawn>, the width being each tile's (cut so the sheet is at most "
+                + "1536 wide). A frame rendered "
                 + "from a placed camera (camera at, until camera reset) carries camera <x,y,z>. Works with the "
                 + "window in the background. MCP also has a screenshot tool").field("file", "absolute path")
             .field("tick", "the tick the frame was captured on")
+            .field("drawn", "burst: the client tick the frame was drawn at, with the fraction of the next")
+            .field("late", "burst: how many ticks after its time a frame came, when the game drew none in time")
             .field("camera", "the placed camera's absolute position, for a frame rendered from it")
             .field("width", "the width the frames have, when narrower than asked (or than 512)")
             .example("screenshot burst=8 every=10t sheet crop=0.25,0.25,0.75,0.75"));

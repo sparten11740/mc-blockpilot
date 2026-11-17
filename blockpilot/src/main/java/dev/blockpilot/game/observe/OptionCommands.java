@@ -26,7 +26,8 @@ public final class OptionCommands {
                 + "settle does (settled=<s>, or unsettled pending=<n> at timeout=, default 20s); option reset: puts "
                 + "back what agents changed, as leave, quitting, the agent-control key and shutdown do, with the "
                 + "options the game changed along with them. Names as in options.txt (renderDistance, particles, "
-                + "soundCategory_music, …) plus hud on|off. Never written to options.txt")
+                + "soundCategory_music, …) plus hud on|off|clean, clean as screenshot's hud=clean has it. Never "
+                + "written to options.txt")
             .field("was", "the value before the first agent change").field("takes", "the accepted values")
             .field("settled", "seconds until the chunks had arrived and were rebuilt")
             .field("missing", "chunks still to arrive at the timeout, when there are any")

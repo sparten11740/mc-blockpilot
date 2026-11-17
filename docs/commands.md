@@ -136,7 +136,10 @@ the player turns agent control off (F8) and when the game closes; Blockpilot's o
 `options.txt`: from 26.1, where Fast, Fancy and Fabulous became presets, `graphicsPreset`, `cutoutLeaves` and
 `improvedTransparency` take the place of `graphicsMode`. A preset sets a dozen other options; `option reset` puts
 those back too. Each sound category's volume, from 0 to 1, is `soundCategory_<category>` (`soundCategory_master`,
-`soundCategory_music`, `soundCategory_block`, …; `soundCategory_ui` from 26.1).
+`soundCategory_music`, `soundCategory_block`, …; `soundCategory_ui` from 26.1). `hud` takes `on` and `off`, as F1
+switches, and `clean`, which makes frames clean as `screenshot`'s `hud=clean` does until it is set back. While a
+`screenshot` or `record` shows the HUD its own way, `option hud` reads and sets the HUD as that capture will leave it,
+and what a capture does is never taken for an agent's change.
 
 ## movement
 
