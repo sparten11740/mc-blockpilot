@@ -1042,6 +1042,54 @@ def check_camera_play(game_dir):
             or not re.search(r" camera 6,-57,0 cam_fov=40 ", statuses[1] + " ") \
             or not re.search(r"^err syntax a shot is at, move, orbit, follow or hold, not jump", output, re.MULTILINE):
         return f"the shots didn't play as listed: {output.strip()[:700]}"
+    return check_camera_play_checks(game_dir) or check_camera_play_ends(game_dir)
+
+
+def placed_camera(status):
+    """The position a status line names for a placed camera, or None."""
+    found = re.search(r" camera (\S+)", status)
+    return found.group(1) if found else None
+
+
+def check_camera_play_checks(game_dir):
+    """Every shot is checked as its command would be before anything changes: a bad shot after a good one, or first,
+    leaves the camera as it was, an entity that doesn't exist fails the play itself and leaves a play under way going,
+    and so does a sub-level that isn't there (or any without Sable)."""
+    _, output = run(game_dir, f"{LEVEL}; camera reset; ?camera play at ~0,2,0 | move ~1,0,0 over 0t; wait 3t; status; "
+                              "?camera play move ~1,0,0 over 0t | at ~0,5,0; wait 3t; status; "
+                              "?camera play hold 5t | follow sub:nosuchship; wait 3t; status")
+    statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
+    syntax = re.findall(r"^err syntax shot (\d+)", output, re.MULTILINE)
+    if syntax != ["2", "1"] or len(statuses) != 3 or any(placed_camera(status) for status in statuses) \
+            or not re.search(r"^err (unsupported sub:nosuchship needs Sable|no_sublevel nosuchship)$", output,
+                             re.MULTILINE):
+        return f"a bad shot changed the camera or wasn't refused up front: {output.strip()[:700]}"
+    _, output = run(game_dir, f"{LEVEL}; camera play move ~0,3,-6 over 30t | move ~6,3,0 over 30t; wait 2t; "
+                              "?camera play follow e999999; camera wait; status; camera reset")
+    statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
+    if not re.search(r"^err no_entity e999999$", output, re.MULTILINE) or len(statuses) != 1 \
+            or placed_camera(statuses[0]) != "6,-57,0":
+        return f"a refused play stopped the one playing: {output.strip()[:700]}"
+    return None
+
+
+def check_camera_play_ends(game_dir):
+    """A camera command that fails its checks leaves a play going; a shot whose entity went fails the play, told to
+    the next camera wait only, not to one after a later camera command."""
+    _, output = run(game_dir, f"{LEVEL}; camera play move ~0,3,-6 over 30t | move ~6,3,0 over 30t; wait 20t; "
+                              "?camera at ~0,2,-4 fov=500; ?camera move ~0,2,-4 over 0t; camera wait; status; "
+                              "camera reset")
+    statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
+    if len(re.findall(r"^err syntax", output, re.MULTILINE)) != 2 or len(statuses) != 1 \
+            or placed_camera(statuses[0]) != "6,-57,0":
+        return f"a refused camera command stopped the play: {output.strip()[:700]}"
+    actor = 'server as=player summon armor_stand ~2 ~ ~2 {Tags:["extra"],NoGravity:1b}; wait entity @extra until ok'
+    _, output = run(game_dir, f"{LEVEL}; {actor}; camera play hold 10t | follow @extra; server kill @e[tag=extra]; "
+                              f"?camera wait; camera wait; {actor}; camera play hold 10t | follow @extra; "
+                              "server kill @e[tag=extra]; wait 15t; camera at ~0,2,0; camera wait; camera reset")
+    errors = re.findall(r"^err .*$", output, re.MULTILINE)
+    if len(errors) != 1 or not re.match(r"err no_entity e\d+$", errors[0]):
+        return f"a shot whose entity went wasn't told once to camera wait: {output.strip()[:700]}"
     return None
 
 
