@@ -1041,10 +1041,12 @@ def check_clean_captures(game_dir):
     leave the HUD as it was."""
     if not shutil.which("ffmpeg"):
         raise Skipped("ffmpeg isn't installed")
-    _, output = run(game_dir, "option hud; option fovEffectScale; record start hud=clean width=256 fps=20 audio=off; "
-                              "option hud; option hud off; record stop; option hud; option reset; option hud; "
-                              "option fovEffectScale; screenshot 64 hud=clean; option hud; "
-                              "record 1s hud=clean width=256 fps=20 audio=off; option hud")
+    # Named, as two takes started within a second would get the same name.
+    take = f"clean-{int(time.time())}"
+    _, output = run(game_dir, f"option hud; option fovEffectScale; record start {take} hud=clean width=256 fps=20 "
+                              "audio=off; option hud; option hud off; record stop; option hud; option reset; "
+                              f"option hud; option fovEffectScale; screenshot 64 hud=clean; option hud; "
+                              f"record 1s {take}-timed hud=clean width=256 fps=20 audio=off; option hud")
     reason = unsupported_reason(output, False)
     if reason:
         run(game_dir, "option reset")

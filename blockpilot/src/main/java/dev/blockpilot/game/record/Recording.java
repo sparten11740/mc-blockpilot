@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.api.Numbers;
+import dev.blockpilot.game.observe.HudLayers;
 import dev.blockpilot.game.observe.HudVisibility;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -63,8 +64,7 @@ final class Recording {
     private final int height;
     private final int fps;
     private final Ffmpeg.Tool ffmpeg;
-    private final HudVisibility.Capture hud;
-    private final HudVisibility.State hudBefore;
+    private final HudLayers.Capture hud;
     private final Process encoder;
     private final FrameReadback readback;
     private final FrameSlots slots;
@@ -84,7 +84,7 @@ final class Recording {
     private boolean stopping;
     private volatile String failure;
 
-    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, HudVisibility.Capture hud,
+    Recording(String name, Path directory, int width, int height, int fps, Ffmpeg.Tool ffmpeg, HudLayers.Mode hudMode,
         boolean audio) throws IOException {
         this.name = name;
         this.output = directory.resolve(name + ".mp4");
@@ -95,8 +95,6 @@ final class Recording {
         this.height = height;
         this.fps = fps;
         this.ffmpeg = ffmpeg;
-        this.hud = hud;
-        hudBefore = HudVisibility.state();
         slots = new FrameSlots(fps);
         encoder = new ProcessBuilder(FfmpegCommands.encode(ffmpeg.path(), ffmpeg.encoder(), width, height, fps, video))
             .redirectOutput(ProcessBuilder.Redirect.DISCARD).start();
@@ -119,7 +117,7 @@ final class Recording {
         if (track != null) {
             AudioCapture.listen(this::sound);
         }
-        hideHud();
+        hud = HudVisibility.capture(hudMode);
     }
 
     String name() {
@@ -176,7 +174,7 @@ final class Recording {
         if (startNanos < 0) {
             startNanos = now;
         }
-        hideHud();
+        hud.tick();
         try {
             readback.capture(now - startNanos, this::enqueue);
         } catch (RuntimeException e) {
@@ -236,7 +234,7 @@ final class Recording {
         stopping = true;
         marksAtStop = List.copyOf(marks);
         long endNanos = startNanos < 0 ? 0 : System.nanoTime() - startNanos;
-        restoreHud();
+        hud.end();
         try {
             readback.flush(this::enqueue);
         } catch (RuntimeException e) {
@@ -263,7 +261,7 @@ final class Recording {
     /** After a failure: drops what is under way and deletes the files; client thread. */
     void abandon() {
         stopping = true;
-        restoreHud();
+        hud.end();
         readback.close();
         queue.add(new Frame(0, null, true));
         encoder.destroyForcibly();
@@ -416,16 +414,6 @@ final class Recording {
             lines = List.copyOf(errorLines);
         }
         return lines.isEmpty() ? reason : reason + ": " + String.join(" | ", lines);
-    }
-
-    private void hideHud() {
-        hud.apply();
-    }
-
-    private void restoreHud() {
-        if (hud != HudVisibility.Capture.AS_IS) {
-            hudBefore.restore();
-        }
     }
 
     private static void deleteQuietly(Path file) {

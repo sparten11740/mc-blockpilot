@@ -61,7 +61,7 @@ public final class ObservationCommands {
             .option("every", "ticks between burst frames, e.g. 10t", ArgType.DURATION)
             .option("hud", "off: hide the GUI, crosshair and hand while capturing; clean: also the layers and "
                 + "overlays other mods draw, the player's night vision, blindness, darkness and nausea, and the field "
-                + "of view effects", List.of("on", "off", "clean"))
+                + "of view effects", HudLayers.VALUES)
             .option("crop", "x0,y0,x1,y1: only that part of each frame, in fractions from the top left")
             .help("saves the last rendered frame as PNG (default 512 wide, max 1280 and the frame's or crop's own "
                 + "width) and returns its path and the tick it was captured on; with burst=n every=Nt it saves n "
@@ -171,8 +171,7 @@ public final class ObservationCommands {
         FrameRect crop = args.hasOption("crop") ? FrameRect.parse(args.option("crop")) : FrameRect.ALL;
         Duration every = args.durationOption("every");
         int interval = every == null ? 10 : Math.max(1, every.ticks());
-        HudVisibility.Capture hud = HudVisibility.Capture.of(args.option("hud"));
-        HudVisibility.State hudBefore = HudVisibility.state();
+        HudLayers.Capture hud = HudVisibility.capture(HudLayers.Mode.of(args.option("hud")));
         List<Row> rows = new ArrayList<>();
         List<NativeImage> tiles = new ArrayList<>();
         // The first capture is of a frame rendered after this request, so it shows what the commands before it did
@@ -189,7 +188,7 @@ public final class ObservationCommands {
 
             @Override
             public Result tick() throws CommandException {
-                hud.apply();
+                hud.tick();
                 if (elapsed[0] < 0 && Screenshots.frames() == requested) {
                     return null;
                 }
@@ -255,9 +254,7 @@ public final class ObservationCommands {
 
             @Override
             public void cancel() {
-                if (hud != HudVisibility.Capture.AS_IS) {
-                    hudBefore.restore();
-                }
+                hud.end();
                 tiles.forEach(NativeImage::close);
                 tiles.clear();
             }

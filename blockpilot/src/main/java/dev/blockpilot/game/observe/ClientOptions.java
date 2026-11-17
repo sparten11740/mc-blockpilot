@@ -2,6 +2,7 @@ package dev.blockpilot.game.observe;
 
 import dev.blockpilot.api.CommandException;
 import dev.blockpilot.api.Numbers;
+import dev.blockpilot.mixin.OptionsAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -298,34 +299,26 @@ public final class ClientOptions {
 
         @Override
         public String value() {
-            return HudVisibility.clean() ? "clean" : HudVisibility.hidden() ? "off" : "on";
+            return HudVisibility.option();
         }
 
         @Override
         public String accepts() {
-            return "on|off|clean";
+            return String.join("|", HudLayers.VALUES);
         }
 
         @Override
         public void set(String text) throws CommandException {
-            switch (text) {
-                case "on", "off" -> {
-                    HudVisibility.setClean(false);
-                    HudVisibility.setHidden(text.equals("off"));
-                }
-                case "clean" -> HudVisibility.setClean(true);
-                default -> throw new CommandException("syntax", "hud takes on|off|clean, not " + text);
+            if (!HudLayers.VALUES.contains(text)) {
+                throw new CommandException("syntax", "hud takes " + accepts() + ", not " + text);
             }
+            HudVisibility.setOption(text);
         }
 
         @Override
         public Runnable snapshot() {
-            boolean hidden = HudVisibility.hidden();
-            boolean clean = HudVisibility.clean();
-            return () -> {
-                HudVisibility.setClean(clean);
-                HudVisibility.setHidden(hidden);
-            };
+            String value = HudVisibility.option();
+            return () -> HudVisibility.setOption(value);
         }
     }
 
@@ -369,7 +362,8 @@ public final class ClientOptions {
             new Decimal("gamma", Options::gamma),
             new Whole("guiScale", Options::guiScale),
             new Toggle("bobView", Options::bobView),
-            new Decimal("fovEffectScale", Options::fovEffectScale),
+            // The option itself, not the stand-in clean frames hand the game.
+            new Decimal("fovEffectScale", options -> ((OptionsAccessor) options).blockpilot$fovEffectScale()),
             new Decimal("screenEffectScale", Options::screenEffectScale),
             new Decimal("darknessEffectScale", Options::darknessEffectScale),
             new Decimal("damageTiltStrength", Options::damageTiltStrength),

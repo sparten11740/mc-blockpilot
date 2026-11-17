@@ -14,7 +14,7 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.common.TimedStop;
-import dev.blockpilot.game.observe.HudVisibility;
+import dev.blockpilot.game.observe.HudLayers;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import dev.blockpilot.protocol.Engine;
@@ -51,7 +51,7 @@ public final class RecordCommands {
             .option("fps", "frames per second, 1..120 (default 60)", ArgType.INT)
             .option("hud", "off: hide the GUI, crosshair and hand while recording; clean: also the layers and "
                 + "overlays other mods draw, the player's night vision, blindness, darkness and nausea, and the field "
-                + "of view effects", List.of("on", "off", "clean"))
+                + "of view effects", HudLayers.VALUES)
             .option("audio", "off: record without sound", List.of("on", "off"))
             .help("record start [name] … record stop: records the game to blockpilot/recordings/<name>.mp4 (H.264, "
                 + "with AAC sound unless audio=off), from its framebuffer, so the window can be in the background. "
@@ -199,7 +199,7 @@ public final class RecordCommands {
         try {
             Files.createDirectories(directory);
             Recording started = new Recording(name, directory, width, height, fps, tool,
-                HudVisibility.Capture.of(args.option("hud")), audio);
+                HudLayers.Mode.of(args.option("hud")), audio);
             Recorder.started(started);
             return started;
         } catch (IOException | RuntimeException e) {
