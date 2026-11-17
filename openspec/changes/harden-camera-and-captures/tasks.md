@@ -20,8 +20,8 @@
 - [x] 3.1 Extend `check_hud_clean` in tools/smoke_test.py with the spec's "Clean as an option value", "Reading the option during a clean recording", "Restoring after a change during a capture", "The option keeps its value" and "Blind and clean, still unable to sprint", plus `screenshot hud=clean` and `record 1s hud=clean` leaving the HUD as before; verify the new checks fail before the change
 - [x] 3.2 Layer the HUD in `HudVisibility` (design 5) behind a small HUD interface, route `ClientOptions.Hud` and its snapshot through the option layer, give `ObservationCommands` and `Recording` a capture handle that re-applies its mode each tick, and remove `State`, `Capture.apply` and `Recording.hideHud`; verify unit tests (nesting, an option change during a capture, F1 during a clean capture, the end restoring the layer) and 3.1's option checks pass
 - [x] 3.3 Hold the FOV effects through `Options.fovEffectScale()` with a fixed 0 instance while clean and read the field through an accessor in `ClientOptions` (design 6); verify "The option keeps its value" passes and options.txt keeps the player's value after a clean capture and a menu save
-- [ ] 3.4 Scope `CleanEffectsMixin` outside `Minecraft.tick()` with a tick flag and zero the nausea intensity after each tick while clean before 1.21.11 (design 7); verify the sprint check passes, and by hand on 1.20.1 and 1.21.11 that nausea vanishes at once in a clean screenshot
-- [ ] 3.5 Add the `@Pseudo` mixin on Forge's `ForgeGui.render` to the shared mixin config (design 8); verify it applies on the 1.20.1 Forge dev client with no mixin warning and that the clean checks pass there
+- [x] 3.4 Scope `CleanEffectsMixin` outside `Minecraft.tick()` with a tick flag and zero the nausea intensity after each tick while clean before 1.21.11 (design 7); verify the sprint check passes, and by hand on 1.20.1 and 1.21.11 that nausea vanishes at once in a clean screenshot
+- [x] 3.5 Add the `@Pseudo` mixin on Forge's `ForgeGui.render` to the shared mixin config (design 8); verify it applies on the 1.20.1 Forge dev client with no mixin warning and that the clean checks pass there
 - [x] 3.6 Update the `option` help to `hud on|off|clean`, the `screenshot` help's tile label (`#<n> t<tick> c<drawn>`) and its `drawn` and `late` fields, and docs/commands.md for `option hud clean`; verify `help option` and `help screenshot` read so
 
 ## 4. Flicker, particles and the client tick (client-observation)
@@ -32,12 +32,12 @@
 
 ## 5. Cleanup
 
-- [ ] 5.1 Remove the doubled and stale doc comments (`SableSupport.subLevels`, `ContactSheet.label`, `CommandRegistry.Entry`, `CameraFollow`), the copies of `Numbers.round` and `TICKS_PER_SECOND`, the `instanceof` dispatch on region kinds in `pixels` and `flicker`, the help string fragments and the extra `SableCommands.resolve` overloads; verify the unit tests pass and every target compiles
+- [x] 5.1 Remove the doubled and stale doc comments (`SableSupport.subLevels`, `ContactSheet.label`, `CommandRegistry.Entry`, `CameraFollow`), the copies of `Numbers.round` and `TICKS_PER_SECOND`, the `instanceof` dispatch on region kinds in `pixels` and `flicker`, the help string fragments and the extra `SableCommands.resolve` overloads; verify the unit tests pass and every target compiles
 - [x] 5.2 Add `roll=` and `Args.subLevel` to the 1.4.0 section of CHANGELOG.md, with no "Fixed" entries for unreleased features, and bring README in line with `option hud clean` and `camera play`; verify by reading both against the specs
 
 ## 6. Integration checks
 
-- [ ] 6.1 Compile all 15 targets and run `tools/test_targets.py` on 1.21.1-fabric (shared code), 1.20.1-forge (Forge HUD hook, nausea before 1.21.11, the 1.20 HUD signature), 1.21.11-neoforge (nausea through the blend factor) and 26.2-fabric (the Hud class tree); verify every run passes
+- [x] 6.1 Compile all 15 targets and run `tools/test_targets.py` on 1.21.1-fabric (shared code), 1.20.1-forge (Forge HUD hook, nausea before 1.21.11, the 1.20 HUD signature), 1.21.11-neoforge (nausea through the blend factor) and 26.2-fabric (the Hud class tree); verify every run passes
 - [ ] 6.2 Check by hand with Sable on 1.21.1: "Here as the command arrives", "The ship goes", a `camera move` to a plot position answering its end as given, and `camera follow sub:ship turning` answering `err syntax`; verify each behaves as specified
 
 ## Workflow follow-up
