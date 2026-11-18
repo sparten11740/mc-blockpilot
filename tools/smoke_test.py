@@ -1180,9 +1180,11 @@ def check_camera_orbit(game_dir):
     """An orbit keeps its distance and height round a point and ends by its angle, goes along with a moving entity,
     holds when its entity goes, runs in the background for camera wait, and keeps a camera placed away away."""
     centre = at_base(0, 1, 0)
+    # status reads the last frame drawn, which right as the orbit ends is one from before its end; the screenshot
+    # waits for a frame drawn after it.
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera at ~0,3,-6 look ~0,1,0; sample status every 5t while camera "
-                              "orbit ~0,1,0 by 90 over 40t; status; camera at ~0,3,-6 look ~0,1,0; camera orbit "
-                              "~0,1,0 by -90 over 40t background; camera wait")
+                              "orbit ~0,1,0 by 90 over 40t; screenshot 64; status; camera at ~0,3,-6 look ~0,1,0; "
+                              "camera orbit ~0,1,0 by -90 over 40t background; camera wait")
     rows = [row[1] for row in camera_rows(output)]
     problems = []
     off = [round(across(row, centre), 2) for row in rows if abs(across(row, centre) - 6) > 0.2
