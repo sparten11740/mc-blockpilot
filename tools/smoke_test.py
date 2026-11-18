@@ -596,8 +596,9 @@ def check_video_upright(game_dir, world):
 
 
 def check_marks(game_dir, world):
-    """A change right after record mark shows in the video from the frame after the one the mark names, not before
-    it, and the marks file beside the video lists the mark as the reply gave it; a timed take leaves no marks file."""
+    """A change right after record mark never shows in the video before the frame the mark names, and shows from the
+    frame after it, later by at most the frames the take repeated, as a game drawing late repeats frames; the marks
+    file beside the video lists the mark as the reply gave it; a timed take leaves no marks file."""
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise Skipped("ffmpeg isn't installed")
@@ -609,30 +610,37 @@ def check_marks(game_dir, world):
         run(game_dir, "option reset")
         raise Skipped(reason)
     mark = re.search(r"^ok mark hud ([\d.]+)s frame=(\d+)$", output, re.MULTILINE)
-    video = re.search(r"^ok (.+\.mp4) ", output, re.MULTILINE)
+    video = re.search(r"^ok (.+\.mp4) .* (\d+)x(\d+) .*\brepeated=(\d+)\b", output, re.MULTILINE)
     if not mark or not video:
         return f"no mark or no video: {output.strip()[:600]}"
     if not re.search(rf"^  hud {re.escape(mark.group(1))}s frame={mark.group(2)}$", output, re.MULTILINE):
         return f"record stop doesn't list the mark as it answered: {output.strip()[:600]}"
     seconds, frame = float(mark.group(1)), int(mark.group(2))
+    width, height, repeated = (int(value) for value in video.group(2, 3, 4))
     # The reply's path is absolute, or relative to the game's folder on the vanilla client.
     path = os.path.join(game_dir, video.group(1))
+    pixels = subprocess.run([ffmpeg, "-v", "error", "-i", path, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                            capture_output=True, check=True).stdout
+    size, row = width * height * 3, width * 3
+    frames = len(pixels) // size
 
     def hotbar(index):
-        pixels = subprocess.run([ffmpeg, "-v", "error", "-i", path, "-vf", f"select=eq(n\\,{index})",
-                                 "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
-                                capture_output=True, check=True).stdout
-        row = 256 * 3
-        rows = len(pixels) // row
-        band = b"".join(pixels[line * row + int(256 * 0.35) * 3:line * row + int(256 * 0.65) * 3]
-                        for line in range(int(rows * 0.9), rows))
+        band = b"".join(pixels[index * size + line * row + int(width * 0.35) * 3:
+                               index * size + line * row + int(width * 0.65) * 3]
+                        for line in range(int(height * 0.9), height))
         return tuple(sum(band[channel::3]) / (len(band) / 3) for channel in range(3))
 
-    before, after, later = hotbar(frame - 1), hotbar(frame + 1), hotbar(frame + 3)
-    shown = max(abs(hidden - visible) for hidden, visible in zip(before, later))
-    steady = max(abs(first - second) for first, second in zip(after, later))
-    if shown <= 3 or steady > shown / 2:
-        return f"hotbar means at frames {frame - 1}, {frame + 1}, {frame + 3}: {before}, {after}, {later}"
+    def difference(first, second):
+        return max(abs(one - other) for one, other in zip(first, second))
+
+    hidden, shown = hotbar(frame - 1), hotbar(frames - 1)
+    contrast = difference(hidden, shown)
+    if contrast <= 3:
+        return f"hotbar means at frames {frame - 1} and {frames - 1}, the last: {hidden}, {shown}"
+    latest = min(frame + 1 + repeated, frames - 1)
+    if not any(difference(hotbar(index), shown) <= contrast / 2 for index in range(frame, latest + 1)):
+        return (f"no frame from {frame} to {latest} shows the hotbar, with {repeated} repeated: means "
+                f"{[hotbar(index) for index in range(frame - 1, latest + 1)]}, at the last {shown}")
     with open(path[:-len(".mp4")] + ".marks.json", encoding="utf-8") as source:
         marks = json.load(source)
     expected = {"video": os.path.basename(path), "marks": [{"label": "hud", "seconds": seconds, "frame": frame}]}
