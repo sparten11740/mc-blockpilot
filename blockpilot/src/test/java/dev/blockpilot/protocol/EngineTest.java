@@ -26,6 +26,7 @@ class EngineTest {
     private final List<String> log = new ArrayList<>();
     private final AtomicInteger counter = new AtomicInteger();
     private final FakeGame game = new FakeGame();
+    private Runnable duringProbe = () -> { };
     private Engine engine;
 
     @BeforeEach
@@ -47,8 +48,10 @@ class EngineTest {
         registry.register(CommandSpec.query("boom", (context, args) -> {
             throw new IllegalStateException("boom");
         }));
-        registry.register(CommandSpec.query("probe", (context, args) ->
-            Result.ok(new Fields().put("value", counter.get()))).onServer().field("value", "the counter"));
+        registry.register(CommandSpec.query("probe", (context, args) -> {
+            duringProbe.run();
+            return Result.ok(new Fields().put("value", counter.get()));
+        }).onServer().field("value", "the counter"));
         registry.register(CommandSpec.query("served", (context, args) ->
             Result.ok(new Fields().put("in_call", game.inServerCall))).onServer());
         // Reads the server itself with side=server, as block or entity do.
@@ -542,6 +545,30 @@ class EngineTest {
         tick(1);
         engine.tickServer();
         assertEquals("ok samples=2", text(roll).lines().findFirst().orElseThrow());
+    }
+
+    @Test
+    void aClientWaitMakesUpATickItsJobWasHeldOnTheServerFor() {
+        // Once, the client ends a tick on its own thread while the server samples, and finds the job busy.
+        duringProbe = () -> {
+            duringProbe = () -> { };
+            Thread client = new Thread(() -> tick(1));
+            client.start();
+            try {
+                client.join();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        CompletableFuture<Reply> wait = engine.submit(engine.openSession(), null, "sample probe every 1t while wait 3t");
+        tick(1);
+        engine.tickServer();
+        assertEquals(2, game.clientTicks, "the client didn't tick during the server's step");
+        tick(1);
+        assertFalse(wait.isDone());
+        tick(1);
+        // Three client ticks since the wait began, the one the server held among them.
+        assertTrue(wait.isDone(), "the wait didn't end three client ticks after it began");
     }
 
     @Test

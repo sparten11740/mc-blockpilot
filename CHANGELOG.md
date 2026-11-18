@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 (unreleased)
+
+- **Fixes:** `wait <N>t` waits N client ticks also when the integrated server steps the script at the moment the
+  client does, where now and then it waited one more; a sample or other action on the client keeps one tick per client
+  tick then too, as those on the server already did.
+
 ## 1.4.0 (2026-11-17)
 
 - **Sub-levels round a camera away:** with Sable, a camera placed with `away` shows the sub-levels within Sable's

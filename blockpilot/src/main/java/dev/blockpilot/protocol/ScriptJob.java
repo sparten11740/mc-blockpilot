@@ -52,18 +52,21 @@ final class ScriptJob implements CommandContext {
      */
     private final ReentrantLock lock = new ReentrantLock();
     /**
-     * Server steps that found the job held by the client while something ran on the server clock, say while a sample
-     * waited on the server; made up at the next one, so a server-side action keeps one tick per server tick.
+     * Steps that found the job held by the other thread while something ran on their clock, say a server step while a
+     * sample waited on the server, or a client step during a server step; made up at the next one, so an action keeps
+     * one tick per tick of its clock.
      */
     private final AtomicInteger missedServerSteps = new AtomicInteger();
+    private final AtomicInteger missedClientSteps = new AtomicInteger();
     /** How long an ending that doesn't time itself may take before it is cancelled: 60 s. */
     private static final int ENDING_TICKS = 1200;
     /** What runs when the script ends, in order; see {@link CommandContext#atEnd}. */
     private final List<Action> endings = new ArrayList<>();
     private int endingIndex;
     private int endingTicks;
-    /** Whether an action or sample runs on the server clock, as the last step left the job; read without the lock. */
+    /** Whether an action or sample runs on each clock, as the last step left the job; read without the lock. */
     private volatile boolean serverClocked;
+    private volatile boolean clientClocked;
     private int index;
     /** The last statement whose gate passed; statements up to it may run on either thread without a client tick. */
     private int gatedThrough = -1;
@@ -112,14 +115,14 @@ final class ScriptJob implements CommandContext {
             return false;
         }
         if (!lock.tryLock()) {
-            if (affinity == Affinity.SERVER && serverClocked) {
-                missedServerSteps.incrementAndGet();
+            if (affinity == Affinity.SERVER ? serverClocked : clientClocked) {
+                missedSteps(affinity).incrementAndGet();
             }
             return false;
         }
         try {
             boolean done = advance(affinity);
-            int missed = affinity == Affinity.SERVER ? missedServerSteps.getAndSet(0) : 0;
+            int missed = missedSteps(affinity).getAndSet(0);
             for (; missed > 0 && !done; missed--) {
                 done = advance(affinity);
             }
@@ -131,10 +134,18 @@ final class ScriptJob implements CommandContext {
             return done;
         } finally {
             activity = running == null ? null : running.name();
-            serverClocked = running != null && running.affinity() == Affinity.SERVER
-                || sampling != null && samplingAffinity == Affinity.SERVER;
+            serverClocked = onClock(Affinity.SERVER);
+            clientClocked = onClock(Affinity.CLIENT);
             lock.unlock();
         }
+    }
+
+    private AtomicInteger missedSteps(Affinity affinity) {
+        return affinity == Affinity.SERVER ? missedServerSteps : missedClientSteps;
+    }
+
+    private boolean onClock(Affinity affinity) {
+        return running != null && running.affinity() == affinity || sampling != null && samplingAffinity == affinity;
     }
 
     private boolean advance(Affinity affinity) {
