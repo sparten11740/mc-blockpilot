@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.1 (unreleased)
+## 1.4.1 (2026-11-20)
 
 - **Fixes:** `wait <N>t` waits N client ticks also when the integrated server steps the script at the moment the
   client does, where now and then it waited one more; a sample or other action on the client keeps one tick per client
