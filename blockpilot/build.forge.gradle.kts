@@ -82,8 +82,9 @@ tasks.named("createMinecraftArtifacts") {
 }
 
 // Forge runs mods with the game's intermediate (SRG) names, so mixins need a refmap from development names to those.
+val refmap = "$modId.refmap.json"
 mixin {
-    add(sourceSets.main.get(), "$modId.refmap.json")
+    add(sourceSets.main.get(), refmap)
     mixinConfigs.forEach { config(it) }
 }
 
@@ -125,6 +126,17 @@ legacyForge.ideSyncTask(generateModMetadata)
 tasks.processResources {
     exclude("$modId-fabric.mixins.json", "$modId-neoforge.mixins.json", "$modId.accesswidener")
     from(accessTransformer) { into("META-INF") }
+    // Mixin reads a refmap only under the name a config gives it, and the mixin block above writes one without naming
+    // it. Without the name, Forge applies the mixins by development names its game doesn't have.
+    doLast {
+        mixinConfigs.forEach { name ->
+            val file = destinationDir.resolve(name)
+            @Suppress("UNCHECKED_CAST")
+            val config = groovy.json.JsonSlurper().parse(file) as MutableMap<String, Any>
+            config["refmap"] = refmap
+            file.writeText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(config)) + "\n")
+        }
+    }
 }
 
 // The jar a player installs is the one with the game's intermediate names; the development one stays beside the build.

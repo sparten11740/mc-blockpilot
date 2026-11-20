@@ -165,13 +165,18 @@ def check_jar(minecraft, loader, result):
             result.check("loader metadata pins the game version",
                          None if pinned in metadata else f"no {pinned} in {METADATA[loader]}")
         if loader == "forge":
-            # Forge 1.20.1 runs mods with intermediate names: mixins need their refmap, and Forge finds the mixin
-            # configs only in the manifest.
+            # Forge 1.20.1 runs mods with intermediate names: mixins need their refmap, which Mixin finds only by
+            # the name each config gives it, and Forge finds the mixin configs only in the manifest.
             manifest = jar.read("META-INF/MANIFEST.MF").decode()
-            wanted = [name for name in ("blockpilot.refmap.json",) if name not in names]
+            refmap = "blockpilot.refmap.json"
+            wanted = [name for name in (refmap,) if name not in names]
             result.check("forge jar has its refmap and lists its mixins",
                          f"missing {wanted}" if wanted else None if "MixinConfigs: blockpilot.mixins.json" in manifest
                          else "no MixinConfigs in the manifest")
+            listed = re.search(r"^MixinConfigs: (.+)$", manifest, re.MULTILINE)
+            unnamed = [config for config in (listed.group(1).strip().split(",") if listed else [])
+                       if config not in names or json.loads(jar.read(config)).get("refmap") != refmap]
+            result.check("forge mixin configs name the refmap", f"not in {unnamed}" if unnamed else None)
         # 26.3 has no GLFW at all, so a reference would fail when that class loads, not at build time.
         if tuple(int(part) for part in minecraft.split(".")) >= (26, 3):
             glfw = [name for name in names if name.endswith(".class") and b"org/lwjgl/glfw" in jar.read(name)]

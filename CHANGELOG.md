@@ -5,6 +5,9 @@
 - **Fixes:** `wait <N>t` waits N client ticks also when the integrated server steps the script at the moment the
   client does, where now and then it waited one more; a sample or other action on the client keeps one tick per client
   tick then too, as those on the server already did.
+- **Fixes:** the Forge 1.20.1 jar loads in a player's game again. Since 1.2.0 its mixin config didn't name the refmap
+  the jar carries, so Mixin looked the mixins' targets up by development names, which Forge's game doesn't have, and
+  the game crashed as it started.
 
 ## 1.4.0 (2026-11-17)
 
