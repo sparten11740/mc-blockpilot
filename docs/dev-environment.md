@@ -1,7 +1,7 @@
 # Using Blockpilot in your mod's dev environment
 
 `./gradlew publishToMavenLocal` publishes `dev.blockpilot:blockpilot-neoforge`, `blockpilot-forge` and
-`blockpilot-fabric` (version `<mod version>+<minecraft>`, e.g. `1.4.0+1.20.1`, `1.4.0+1.21.1` or `1.4.0+26.1.2`) and
+`blockpilot-fabric` (version `<mod version>+<minecraft>`, e.g. `1.4.1+1.20.1`, `1.4.1+1.21.1` or `1.4.1+26.1.2`) and
 `dev.blockpilot:blockpilot-api`, the same for every target. In the other project, add `mavenLocal()` to the repositories
 and Blockpilot as a runtime-only dependency. `blockpilot.autojoin` joins that world on launch, and
 `blockpilot.autocreate=flat|void|normal` creates it first if it is missing.
@@ -10,7 +10,7 @@ ModDevGradle (`localRuntime` as in the NeoForge MDK; `runtimeOnly` works too):
 
 ```kotlin
 dependencies {
-    localRuntime("dev.blockpilot:blockpilot-neoforge:1.4.0+1.21.1")
+    localRuntime("dev.blockpilot:blockpilot-neoforge:1.4.1+1.21.1")
 }
 neoForge {
     runs {
@@ -28,7 +28,7 @@ folder and name it as a module there.
 
 ```kotlin
 dependencies {
-    modRuntimeOnly("dev.blockpilot:blockpilot-forge:1.4.0+1.20.1")
+    modRuntimeOnly("dev.blockpilot:blockpilot-forge:1.4.1+1.20.1")
 }
 legacyForge {
     runs {
@@ -45,7 +45,7 @@ Fabric Loom (from 26.1, whose Loom doesn't remap mods, `localRuntime` instead of
 
 ```kotlin
 dependencies {
-    modLocalRuntime("dev.blockpilot:blockpilot-fabric:1.4.0+1.21.1")
+    modLocalRuntime("dev.blockpilot:blockpilot-fabric:1.4.1+1.21.1")
 }
 loom {
     runs {
