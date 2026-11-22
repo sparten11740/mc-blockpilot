@@ -555,6 +555,64 @@ def check_tick_waits(game_dir):
     return None
 
 
+def check_cut_short_worlds(game_dir, world):
+    """A creation cut short leaves a marked folder without level.dat: delete world removes it and create world replaces
+    it. A marked world with level.dat is still taken."""
+    cut = f"{world}-cut"
+    folder = os.path.join(game_dir, "saves", cut)
+
+    def leave_behind():
+        os.makedirs(os.path.join(folder, "datapacks"), exist_ok=True)
+        with open(os.path.join(folder, TEST_MARKER), "w", encoding="utf-8") as marker:
+            marker.write("{}")
+    problems = []
+    _, taken = run(game_dir, f"create world {world}")
+    if f"err exists {world}" not in taken:
+        problems.append(f"create world over the loaded test world answered {taken.strip()[-200:]}")
+    leave_behind()
+    _, deleted = run(game_dir, f"delete world {cut}")
+    if f"ok deleted {cut}" not in deleted or os.path.exists(folder):
+        problems.append(f"delete world on a creation cut short answered {deleted.strip()[-200:]}")
+    leave_behind()
+    _, created = run(game_dir, f"create world {cut}; leave; delete world {cut}; join world {world}")
+    if f"ok joined {cut}" not in created or f"ok joined {world}" not in created:
+        problems.append(f"create world over a creation cut short answered {created.strip()[-300:]}")
+    return "; ".join(problems) or None
+
+
+def check_chat_window_lines(game_dir):
+    """messages holds each chat window line once: one from the server, and the debug notes F3+G adds on the client,
+    which no loader chat event reports. Action-bar text is logged only as actionbar."""
+    queries = ["messages kind=chat match=*smoke-chat-once*", "messages kind=chat match=*smoke-bar*",
+               "messages kind=actionbar match=*smoke-bar*", "messages kind=chat match=*chunk*borders*"]
+
+    def counts(output):
+        return [int(count) for count in re.findall(r"^ok tick=\d+ count=(\d+)", output, re.MULTILINE)]
+    before = counts(run(game_dir, "; ".join(queries))[1])
+    _, output = run(game_dir, "server say smoke-chat-once; server title @p actionbar {\"text\":\"smoke-bar\"}; "
+                              "key f3+g; wait 5t; key f3+g; wait 5t; " + "; ".join(queries))
+    after = counts(output)
+    if len(before) != 4 or len(after) != 4:
+        return f"messages didn't answer: {output.strip()[-300:]}"
+    added = [later - earlier for earlier, later in zip(before, after)]
+    return None if added == [1, 0, 1, 2] else \
+        f"server line, action bar as chat, action bar, F3+G notes added {added}, not [1, 0, 1, 2]"
+
+
+def check_capture_names(game_dir):
+    """A capture name may hold a plus, and an error names a bad one."""
+    _, output = run(game_dir, "perf start smoke+plus; wait 2t; perf stop; ?perf start ../smoke")
+    path = os.path.join(game_dir, "blockpilot", "perf", "smoke+plus.json")
+    problems = []
+    if os.path.exists(path):
+        os.remove(path)
+    else:
+        problems.append(f"no {path}: {output.strip()[-200:]}")
+    if not re.search(r"^err syntax capture names .* not \.\./smoke$", output, re.MULTILINE):
+        problems.append(f"a bad name's error doesn't name it: {output.strip()[-200:]}")
+    return "; ".join(problems) or None
+
+
 def check_server_steps(game_dir):
     """Server steps run back to back: settle=1t puts them a server tick apart, settle=0t in one tick."""
     problems = []
@@ -1398,10 +1456,13 @@ def main():
         ("create a test world", f"create world {world} flat peaceful rule:doDaylightCycle=false",
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
-        ("help", "help; help goto; help errors; help server; help wait; help sound; help record",
+        ("help", "help; help goto; help errors; help server; help wait; help sound; help record; help create; "
+                 "help quit",
          [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
           r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart",
-          r"plays a sound event on this client only", r"record mark <label>: notes the video time"]),
+          r"plays a sound event on this client only", r"record mark <label>: notes the video time",
+          r"unless a creation cut short left its folder, which is replaced",
+          r"cancels those other sessions queued before it"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -1602,6 +1663,9 @@ def main():
         ("the logs start anew in each world", lambda: check_logs_per_world(args.game_dir, world)),
         ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
         ("server steps run back to back", lambda: check_server_steps(args.game_dir)),
+        ("a world creation cut short is replaced or deleted", lambda: check_cut_short_worlds(args.game_dir, world)),
+        ("messages holds each chat window line once", lambda: check_chat_window_lines(args.game_dir)),
+        ("a capture name may hold a plus", lambda: check_capture_names(args.game_dir)),
         ("mouse left in a screen presses a button", lambda: check_buttons_in_screen(args.game_dir)),
         ("the cursor stays when a screen opens another", lambda: check_cursor_stays_across_screens(args.game_dir)),
         ("mouse on slots: right and shift clicks", lambda: check_mouse_on_slots(args.game_dir)),

@@ -52,7 +52,8 @@ final class TestWorlds {
             .option("mode", "the game mode (default creative)",
                 List.of("creative", "survival", "adventure", "spectator")).option("seed", "the world seed")
             .option("rule:*", "a game rule, e.g. rule:doDaylightCycle=false")
-            .help("a new world with cheats on, joined when ready (defaults flat, peaceful, creative)")
+            .help("a new world with cheats on, joined when ready (defaults flat, peaceful, creative). A name taken "
+                + "fails with err exists, unless a creation cut short left its folder, which is replaced")
             .example("create world mymod-test flat peaceful rule:doDaylightCycle=false"));
     }
 
@@ -67,6 +68,11 @@ final class TestWorlds {
 
     static boolean isTestWorld(String folder) {
         return Files.exists(savesDir().resolve(folder).resolve(MARKER));
+    }
+
+    /** A test world whose creation was cut short: the game writes {@code level.dat} once its data packs have loaded. */
+    private static boolean unfinished(Path folder) {
+        return Files.exists(folder.resolve(MARKER)) && !Files.exists(folder.resolve("level.dat"));
     }
 
     /** Checks an agent-supplied world name: allowed characters, no {@code ..}, stays inside the saves folder. */
@@ -122,12 +128,23 @@ final class TestWorlds {
     private static Action create(String name, String preset, Difficulty difficulty, GameType mode, Long seed,
         Map<String, String> rules) throws CommandException {
         Path folder = checkedFolder(name);
-        if (Files.exists(folder)) {
+        if (unfinished(folder)) {
+            Snapshots.deleteTree(folder);
+        } else if (Files.exists(folder)) {
             throw new CommandException("exists", name);
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {
             SessionCommands.disconnect();
+        }
+        // Marked before the game makes the world, which holds the client thread for as long as that takes, so a game
+        // killed meanwhile leaves a folder delete world and create world know as a test world's.
+        try {
+            Files.createDirectories(folder);
+            Files.writeString(folder.resolve(MARKER), "{\"created\":\"" + Instant.now() + "\",\"by\":\""
+                + ClientPlatform.modVersion() + "\"}");
+        } catch (IOException e) {
+            throw new CommandException("internal", "could not mark the test world: " + e.getMessage());
         }
         //? if >=26.1 {
         /*LevelSettings settings = new LevelSettings(name, mode,
@@ -159,13 +176,6 @@ final class TestWorlds {
         //?} else {
         /*});
         *///?}
-        try {
-            Files.createDirectories(folder);
-            Files.writeString(folder.resolve(MARKER), "{\"created\":\"" + Instant.now() + "\",\"by\":\""
-                + ClientPlatform.modVersion() + "\"}");
-        } catch (IOException e) {
-            throw new CommandException("internal", "could not mark the test world: " + e.getMessage());
-        }
         return new Action() {
             private boolean rulesSent;
 

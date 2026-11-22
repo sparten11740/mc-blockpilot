@@ -257,10 +257,11 @@ change to the settings applies within a second ([safety.md](safety.md)).
 - `quit`: leaves, answers `ok pid=<pid>` and `saved_at` as `leave` does, and closes the game.
 - `respawn`: respawns from the death screen.
 - `create world <name> [flat|void|normal] …`: a new world with cheats on, joined when ready (by default flat,
-  peaceful and creative).
+  peaceful and creative). A name taken fails with `err exists`, unless a creation cut short (the game closed or killed
+  while it ran) left the folder, without `level.dat`; that folder is replaced.
 - `snapshot save|restore|delete <name>`, `snapshot list`: saves and restores a world's state. Joining a world with
   experimental settings again, `snapshot save` and `restore` meet the game's question as `join world` does.
-- `delete world <folder>`: test worlds only.
+- `delete world <folder>`: test worlds only, including one whose creation was cut short.
 - `config`: the mods with NeoForge config files. `config <mod> [client|common|server|startup] [match=]` lists their
   values by dotted key. `config <mod> [<type>] <key> [<value>]` gives a value's default, what it takes and the mod's
   comment; with a value, sets it in memory, never in the file, and tells the mod as a reload of its file does.

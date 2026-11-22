@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.2 (unreleased)
+
+- **Fixes:** a world creation cut short no longer blocks the name. `create world` marks the folder as a test world
+  before the game starts making the world, so `delete world` removes what a game killed meanwhile left, and `create
+  world` replaces such a folder, one without `level.dat`, rather than failing with `err exists`.
+
 ## 1.4.1 (2026-11-20)
 
 - **Fixes:** `wait <N>t` waits N client ticks also when the integrated server steps the script at the moment the
