@@ -48,8 +48,8 @@ recording running until `record stop`.
 
 ### Requirement: Recording files
 A recording SHALL be saved as `<game dir>/blockpilot/recordings/<name>.mp4`.
-Names use letters, digits, `_`, `.` and `-`, up to 64, and don't start with
-`.`. Without a name it is `recording-<yyyyMMdd-HHmmss>`. A name whose file
+Names use letters, digits, `_`, `.`, `+` and `-`, up to 64, and don't start
+with `.`. Without a name it is `recording-<yyyyMMdd-HHmmss>`. A name whose file
 exists SHALL fail with `err exists`, so a take is never overwritten.
 
 #### Scenario: Name taken

@@ -7,8 +7,7 @@ create a singleplayer world with commands allowed, then join it. A bare
 `normal` names the world type, so normal difficulty is written
 `difficulty=normal`. The result returns once the player can act. Defaults are
 `flat`, `peaceful` and `creative`. A name that already exists fails with `err
-exists`, unless its folder carries the test-world marker and no `level.dat`,
-which only a creation cut short leaves; such a folder SHALL be replaced.
+exists`, unless a creation cut short left it.
 
 #### Scenario: Flat peaceful world
 - **WHEN** an agent runs `create world mymod-test flat peaceful
@@ -20,13 +19,6 @@ which only a creation cut short leaves; such a folder SHALL be replaced.
 - **WHEN** a save folder named `mymod-test` already exists
 - **THEN** `create world mymod-test` fails with `err exists` and the
   existing world is untouched
-
-#### Scenario: A creation cut short
-- **WHEN** the game was killed while `create world mymod-test` loaded its data
-  packs, leaving a marked `mymod-test` folder without `level.dat`, and an
-  agent runs `create world mymod-test` in the next game
-- **THEN** the folder is replaced by a new world, and the result is `ok joined
-  mymod-test`
 
 ### Requirement: Blockpilot-created worlds are marked
 Worlds made by `create world` SHALL carry a marker in their save folder,
@@ -61,3 +53,18 @@ start with `.`; any other name fails with `err syntax` naming it.
 - **WHEN** an agent runs `snapshot restore nope`
 - **THEN** the result is `err no_snapshot nope`, and the world stays loaded and
   unchanged
+
+## ADDED Requirements
+
+### Requirement: A creation cut short is replaced
+`create world <name>` SHALL replace a save folder of that name that carries the
+test-world marker and no `level.dat`, which only a creation cut short leaves,
+rather than fail with `err exists`. A folder with `level.dat`, or without the
+marker, SHALL still fail.
+
+#### Scenario: A creation cut short
+- **WHEN** the game was killed while `create world mymod-test` loaded its data
+  packs, leaving a marked `mymod-test` folder without `level.dat`, and an
+  agent runs `create world mymod-test` in the next game
+- **THEN** the folder is replaced by a new world, and the result is `ok joined
+  mymod-test`
