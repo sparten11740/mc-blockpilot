@@ -12,6 +12,7 @@ import dev.blockpilot.api.Fields;
 import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.FileNames;
 import dev.blockpilot.game.common.FrameCapture;
 import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.game.observe.HudLayers;
@@ -160,10 +161,7 @@ public final class RecordCommands {
         }
         String name = args.has("name") ? args.word("name")
             : "recording-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-        if (!name.matches("[A-Za-z0-9_.-]{1,64}") || name.startsWith(".")) {
-            throw new CommandException("syntax", "recording names use letters, digits, _ . - (max 64), not "
-                + "starting with .");
-        }
+        FileNames.checked("recording", name);
         RenderTarget frame = FrameCapture.mainTarget();
         int asked = args.intOption("width", Math.min(frame.width, DEFAULT_MAX_WIDTH));
         if (asked < MIN_WIDTH) {

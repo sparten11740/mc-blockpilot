@@ -12,6 +12,7 @@ import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
 import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.common.ExperimentalWorlds;
+import dev.blockpilot.game.common.FileNames;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.protocol.CommandRegistry;
 import java.io.IOException;
@@ -23,7 +24,6 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import net.minecraft.client.Minecraft;
 //? if <1.21 {
@@ -37,8 +37,6 @@ import net.minecraft.world.level.storage.LevelResource;
  * world joined again. Copying the whole save also captures other mods' data that lives outside the region files.
  */
 final class Snapshots {
-    private static final Pattern NAME = Pattern.compile("[A-Za-z0-9_.-]{1,64}");
-
     void register(CommandRegistry registry) {
         registry.register(CommandSpec.action("snapshot", this::snapshot).needsServer().group("session")
             .form(form -> form.keyword("op", "save", "restore", "delete").arg("name", ArgType.WORD))
@@ -71,11 +69,7 @@ final class Snapshots {
     }
 
     private static String checkedName(Args args) throws CommandException {
-        String name = args.word("name");
-        if (!NAME.matcher(name).matches() || name.startsWith(".")) {
-            throw new CommandException("syntax", "snapshot names use letters, digits, _ . - (max 64)");
-        }
-        return name;
+        return FileNames.checked("snapshot", args.word("name"));
     }
 
     private Action snapshot(CommandContext context, Args args) throws CommandException {

@@ -10,6 +10,7 @@
   before it still run first.
 - **Fixes:** `messages` and `! chat` events carry every line the chat window shows: replies to client-side commands and
   lines mods add on the client were missing. On Forge and NeoForge, action-bar text is no longer also logged as chat.
+- **Fixes:** capture, recording and snapshot names may hold `+`, and a rejected name is named in the error.
 
 ## 1.4.1 (2026-11-20)
 

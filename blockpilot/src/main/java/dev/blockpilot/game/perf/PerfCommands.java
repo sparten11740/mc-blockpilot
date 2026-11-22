@@ -17,6 +17,7 @@ import dev.blockpilot.api.Numbers;
 import dev.blockpilot.api.Position;
 import dev.blockpilot.api.Result;
 import dev.blockpilot.api.Row;
+import dev.blockpilot.game.common.FileNames;
 import dev.blockpilot.game.common.Ids;
 import dev.blockpilot.game.common.TimedStop;
 import dev.blockpilot.game.sable.SableSupport;
@@ -140,9 +141,7 @@ public final class PerfCommands {
         }
         String name = args.has("name") ? args.word("name")
             : "capture-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-        if (!name.matches("[A-Za-z0-9_.-]{1,64}") || name.startsWith(".")) {
-            throw new CommandException("syntax", "capture names use letters, digits, _ . - (max 64)");
-        }
+        FileNames.checked("capture", name);
         Perf.start(name, args.has("profile") ? Profiling.start() : null);
         return name;
     }

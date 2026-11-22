@@ -273,6 +273,9 @@ change to the settings applies within a second ([safety.md](safety.md)).
   configs need a world, and setting one the integrated server. `config reset` puts back what agents changed, as
   leave, quitting, the agent-control key and shutdown do.
 
+Names of captures, recordings and snapshots use letters, digits, `_`, `.`, `+` and `-`, up to 64, and don't start with
+`.`.
+
 ## integrated
 
 - `server [as=player] [settle=Nt] <command>`: runs a server command and answers with its result value and feedback
