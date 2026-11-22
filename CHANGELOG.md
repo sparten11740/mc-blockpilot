@@ -8,6 +8,8 @@
 - **Fixes:** `quit` answers while another session's action holds the game, such as a `create world` under way: it
   cancels the actions other sessions queued before it, as `stop` does, and goes next. Actions its own session queued
   before it still run first.
+- **Fixes:** `messages` and `! chat` events carry every line the chat window shows: replies to client-side commands and
+  lines mods add on the client were missing. On Forge and NeoForge, action-bar text is no longer also logged as chat.
 
 ## 1.4.1 (2026-11-20)
 

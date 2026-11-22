@@ -104,7 +104,8 @@ Repeating `look`, `inv` or `screen` in a session reports only what changed (`ful
   volume is 0. An unknown id fails as `sounds match=` does. It is an action, so `sample`, `wait` and `assert` can't
   run it.
 - `messages [since=] [kind=] [match=]`: chat, action bar, titles and subtitles; `match=*engaged*` matches the whole
-  text in any case.
+  text in any case. Chat is every line the chat window shows, once: from the server, replies to client-side commands
+  and lines mods add on the client.
 - `particles [since=] [match=]`: particles spawned per type over a window; `match=flame` or `match=mymod:*` keeps the
   matching types, and `total` counts only them.
 - `option [<name> [<value>]]`, `option reset`: client options (see below).

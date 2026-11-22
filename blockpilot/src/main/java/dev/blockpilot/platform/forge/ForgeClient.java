@@ -57,8 +57,6 @@ final class ForgeClient {
                 event.setMessage(ClientPlatform.hooks().judgeChat(event.getMessage(), event.getSender()));
             }
         });
-        listen(bus, EventPriority.NORMAL, ClientChatReceivedEvent.class,
-            event -> ClientPlatform.hooks().onChatReceived(event.getMessage()));
         listen(bus, EventPriority.NORMAL, ScreenEvent.Init.Post.class,
             event -> ClientPlatform.hooks().onScreenInit(event.getScreen()));
         listen(bus, EventPriority.NORMAL, GameShuttingDownEvent.class,

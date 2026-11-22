@@ -37,7 +37,7 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
         HudRenderCallback.EVENT.register((graphics, deltaTracker) -> ClientPlatform.hooks().onHudRender(graphics));
         //?}
         // Fabric can't change a chat line, so an untrusted player's is cancelled and its stand-in shown instead, in the
-        // window and its log line alike.
+        // window and its log line alike, and passed on here, as the chat window passes on no line showLocal adds.
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             Component judged = ClientPlatform.hooks().judgeChat(message,
                 signedMessage != null ? signedMessage.sender() : null);
@@ -47,13 +47,6 @@ public final class FabricClientEntrypoint implements ClientModInitializer {
             ClientPlatform.showLocal(judged);
             ClientPlatform.hooks().onChatReceived(judged);
             return false;
-        });
-        ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, receptionTimestamp) ->
-            ClientPlatform.hooks().onChatReceived(message));
-        ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-            if (!overlay) {
-                ClientPlatform.hooks().onChatReceived(message);
-            }
         });
         ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> ClientPlatform.hooks().onScreenInit(screen));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> ClientPlatform.hooks().onServerStarted(server));

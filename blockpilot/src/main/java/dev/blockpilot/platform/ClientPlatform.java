@@ -139,6 +139,8 @@ public final class ClientPlatform {
     *///?}
     /** {@link #modOf} per class name, "" for none; a class doesn't change mods. */
     private static final Map<String, String> MODS_OF = new ConcurrentHashMap<>();
+    /** Set on the client thread while {@link #showLocal} adds its line. */
+    private static boolean showingLocal;
     private static Hooks hooks = new Hooks() {
     };
 
@@ -194,13 +196,25 @@ public final class ClientPlatform {
 
     /** Adds a line to this game's chat window only: nothing goes to the server, and agents get no event for it. */
     public static void showLocal(Component line) {
-        //? if >=26.2 {
-        /*Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(line);
-        *///?} else if >=26.1 {
-        /*Minecraft.getInstance().gui.getChat().addClientSystemMessage(line);
-        *///?} else {
-        Minecraft.getInstance().gui.getChat().addMessage(line);
-        //?}
+        showingLocal = true;
+        try {
+            //? if >=26.2 {
+            /*Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(line);
+            *///?} else if >=26.1 {
+            /*Minecraft.getInstance().gui.getChat().addClientSystemMessage(line);
+            *///?} else {
+            Minecraft.getInstance().gui.getChat().addMessage(line);
+            //?}
+        } finally {
+            showingLocal = false;
+        }
+    }
+
+    /** A line the chat window is adding, from the server or the client; passed on unless {@link #showLocal} adds it. */
+    public static void onChatWindowLine(Component line) {
+        if (!showingLocal) {
+            hooks.onChatReceived(line);
+        }
     }
 
     public static Path gameDir() {

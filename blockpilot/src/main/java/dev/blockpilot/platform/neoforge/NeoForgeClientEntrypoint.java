@@ -79,8 +79,6 @@ public final class NeoForgeClientEntrypoint {
                 event.setMessage(ClientPlatform.hooks().judgeChat(event.getMessage(), event.getSender()));
             }
         });
-        NeoForge.EVENT_BUS.addListener(ClientChatReceivedEvent.class,
-            event -> ClientPlatform.hooks().onChatReceived(event.getMessage()));
         NeoForge.EVENT_BUS.addListener(ScreenEvent.Init.Post.class,
             event -> ClientPlatform.hooks().onScreenInit(event.getScreen()));
         NeoForge.EVENT_BUS.addListener(GameShuttingDownEvent.class, event -> ClientPlatform.hooks().onClientStopping());

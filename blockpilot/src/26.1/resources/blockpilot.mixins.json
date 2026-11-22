@@ -16,6 +16,7 @@
     "BlockEntityRenderDispatcherMixin",
     "BoundTickingBlockEntityMixin",
     "CameraMixin",
+    "ChatComponentMixin",
     "ChunkMapAccessor",
     "CleanEffectsMixin",
     "CleanFovMixin",
