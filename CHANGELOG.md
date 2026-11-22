@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.2 (unreleased)
+## 1.4.2 (2026-11-22)
 
 - **Fixes:** a world creation cut short no longer blocks the name. `create world` marks the folder as a test world
   before the game starts making the world, so `delete world` removes what a game killed meanwhile left, and `create
