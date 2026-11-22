@@ -147,6 +147,10 @@ public final class Engine {
         ScriptJob job = new ScriptJob(this, session, id, lines);
         if (job.hasAction()) {
             queue.addLast(job);
+            if (job.startsWith("quit")) {
+                // Cancelled on the client thread, which reaches a job holding it, as one creating a world does.
+                game.runOnClient(() -> onClientThread(() -> cancelOtherSessionsAhead(job)));
+            }
         } else {
             free.add(job);
             game.runOnClient(() -> onClientThread(() -> stepFree(ScriptJob.Affinity.CLIENT)));
@@ -261,6 +265,21 @@ public final class Engine {
         game.releaseInputs();
         game.stopBackground();
         return stopped;
+    }
+
+    /** Lets {@code quit} go next: the scripts other sessions queued before it end with {@code err cancelled}. */
+    private void cancelOtherSessionsAhead(ScriptJob quit) {
+        List<ScriptJob> ahead = new ArrayList<>();
+        for (ScriptJob job : queue) {
+            if (job == quit) {
+                break;
+            }
+            if (job.session() != quit.session()) {
+                ahead.add(job);
+            }
+        }
+        cancelWhere(ahead::contains, Result.error("cancelled"), false);
+        ahead.stream().map(job -> job.session().id()).distinct().forEach(game::releaseInputs);
     }
 
     /**

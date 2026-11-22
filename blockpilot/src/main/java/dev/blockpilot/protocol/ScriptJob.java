@@ -564,6 +564,12 @@ final class ScriptJob implements CommandContext {
         }
     }
 
+    /** Whether the script's first statement runs the built-in command {@code name}. */
+    boolean startsWith(String name) {
+        return !lines.isEmpty() && lines.get(0).statement() instanceof Statement.Call call
+            && call.entry().namespace().isEmpty() && call.entry().spec().name().equals(name);
+    }
+
     boolean hasAction() {
         for (Parser.Line line : lines) {
             if (line.statement() != null && isAction(line.statement())) {

@@ -254,7 +254,10 @@ change to the settings applies within a second ([safety.md](safety.md)).
   once with `err join_failed`, the question left on screen for a person; other backup questions, such as for a world
   last played in another version, are left alone.
 - `leave`: after a singleplayer world answers `saved_at=t<tick>`, the game time it was saved at.
-- `quit`: leaves, answers `ok pid=<pid>` and `saved_at` as `leave` does, and closes the game.
+- `quit`: leaves, answers `ok pid=<pid>` and `saved_at` as `leave` does, and closes the game. It runs after the actions
+  its own session queued before it, and cancels those other sessions queued before it, as `stop` does. A world another
+  session is creating can't be left part way: `quit` then answers once the world's loading progress shows, and the game
+  closes once it has loaded.
 - `respawn`: respawns from the death screen.
 - `create world <name> [flat|void|normal] …`: a new world with cheats on, joined when ready (by default flat,
   peaceful and creative). A name taken fails with `err exists`, unless a creation cut short (the game closed or killed

@@ -27,6 +27,7 @@ class EngineTest {
     private final AtomicInteger counter = new AtomicInteger();
     private final FakeGame game = new FakeGame();
     private Runnable duringProbe = () -> { };
+    private Runnable duringCreate = () -> { };
     private Engine engine;
 
     @BeforeEach
@@ -66,6 +67,12 @@ class EngineTest {
         }));
         registry.register(CommandSpec.action("roll", (context, args) -> new Steps(args.integer("ticks", 3),
             args.word("name"))).onServer().arg("name", ArgType.WORD).optionalArg("ticks", ArgType.INT));
+        registry.register(CommandSpec.action("quit", (context, args) -> new Steps(1, "quit")));
+        // Holds the client thread while the game ticks inside it, as creating a world does, then waits to join.
+        registry.register(CommandSpec.action("create", (context, args) -> {
+            duringCreate.run();
+            return new Steps(5, "create");
+        }));
         engine = new Engine(registry, game);
     }
 
@@ -183,6 +190,44 @@ class EngineTest {
         assertEquals("err cancelled\nskip", text(walk));
         assertTrue(log.contains("a cancelled"));
         assertTrue(game.releases.get() > 0);
+    }
+
+    @Test
+    void quitCancelsOtherSessionsActions() {
+        CompletableFuture<Reply> walk = engine.submit(engine.openSession(), null, "walk a 100; counter");
+        tick(2);
+        CompletableFuture<Reply> quit = engine.submit(engine.openSession(), null, "quit");
+        assertEquals("err cancelled\nskip", answered(walk));
+        assertTrue(log.contains("a cancelled"));
+        tick(1);
+        assertEquals("ok", answered(quit));
+    }
+
+    @Test
+    void quitWaitsForItsOwnSessionsActions() {
+        Session session = engine.openSession();
+        CompletableFuture<Reply> walk = engine.submit(session, null, "walk a 3");
+        CompletableFuture<Reply> quit = engine.submit(session, null, "quit");
+        tick(3);
+        assertEquals("ok", answered(walk));
+        assertEquals("ok", answered(quit));
+        assertEquals(List.of("a", "a", "a", "quit"), log);
+    }
+
+    @Test
+    void quitGoesNextWhileAnActionHoldsTheClient() {
+        Session creator = engine.openSession();
+        Session quitter = engine.openSession();
+        List<CompletableFuture<Reply>> quit = new ArrayList<>();
+        duringCreate = () -> {
+            quit.add(engine.submit(quitter, null, "quit"));
+            tick(1);
+        };
+        CompletableFuture<Reply> create = engine.submit(creator, null, "create; counter");
+        tick(1);
+        assertEquals("ok", answered(quit.get(0)));
+        assertEquals("err cancelled\nskip", answered(create));
+        assertTrue(log.contains("create cancelled"));
     }
 
     @Test

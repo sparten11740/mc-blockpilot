@@ -5,6 +5,9 @@
 - **Fixes:** a world creation cut short no longer blocks the name. `create world` marks the folder as a test world
   before the game starts making the world, so `delete world` removes what a game killed meanwhile left, and `create
   world` replaces such a folder, one without `level.dat`, rather than failing with `err exists`.
+- **Fixes:** `quit` answers while another session's action holds the game, such as a `create world` under way: it
+  cancels the actions other sessions queued before it, as `stop` does, and goes next. Actions its own session queued
+  before it still run first.
 
 ## 1.4.1 (2026-11-20)
 

@@ -58,7 +58,9 @@ final class SessionCommands {
             .help("saves and quits singleplayer or disconnects, back to the title screen")
             .field("saved_at", "the game time a singleplayer world was saved at").example("leave"));
         registry.register(CommandSpec.action("quit", (context, args) -> quit()).group("session")
-            .help("leaves the world as leave does, answers with the game's process id, then closes the game")
+            .help("leaves the world as leave does, answers with the game's process id, then closes the game. It runs "
+                + "after its own session's earlier actions and cancels those other sessions queued before it, as stop "
+                + "does, even one creating a world, which it waits to finish loading before closing")
             .field("pid", "the game's process id; it exits shortly after the reply")
             .field("saved_at", "the game time a singleplayer world was saved at").example("quit"));
         registry.register(CommandSpec.action("respawn", (context, args) -> respawn()).needsWorld().group("session")
