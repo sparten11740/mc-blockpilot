@@ -134,6 +134,8 @@ however the settings are:
 
 - Chat a server relays as system messages, as some chat plugins do; Blockpilot can only withhold chat that arrives as a
   player's, with its sender.
+- Lines a mod adds to the chat on the client, such as a chat bridge or a party-chat mod relaying other people's words:
+  they reach agents in `messages` and `! chat` with their text, as every mod message does.
 - Signs, books, item names and entity names in the world.
 - The name in `withheld from=<name>`, which that player chose.
 - With the voice add-on, speech: whatever a trusted player's microphone picks up, other voices around them included.

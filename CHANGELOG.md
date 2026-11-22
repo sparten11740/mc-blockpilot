@@ -9,7 +9,8 @@
   cancels the actions other sessions queued before it, as `stop` does, and goes next. Actions its own session queued
   before it still run first.
 - **Fixes:** `messages` and `! chat` events carry every line the chat window shows: replies to client-side commands and
-  lines mods add on the client were missing. On Forge and NeoForge, action-bar text is no longer also logged as chat.
+  lines mods add on the client were missing. Like other mod messages, those reach agents with their text
+  ([safety.md](docs/safety.md)). On Forge and NeoForge, action-bar text is no longer also logged as chat.
 - **Fixes:** capture, recording and snapshot names may hold `+`, and a rejected name is named in the error.
 
 ## 1.4.1 (2026-11-20)
