@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -84,6 +85,20 @@ final class FabricServices implements ClientPlatform.Services {
             .filter(origin -> origin.getKind() == ModOrigin.Kind.PATH)
             .ifPresent(origin -> paths.addAll(origin.getPaths()));
         return List.copyOf(paths);
+    }
+
+    @Override
+    public List<ClientPlatform.LoadedMod> mods() {
+        List<ClientPlatform.LoadedMod> mods = new ArrayList<>();
+        for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
+            ModOrigin origin = container.getOrigin();
+            boolean nested = origin.getKind() == ModOrigin.Kind.NESTED;
+            mods.add(new ClientPlatform.LoadedMod(container.getMetadata().getId(),
+                container.getMetadata().getVersion().getFriendlyString(),
+                origin.getKind() == ModOrigin.Kind.PATH ? origin.getPaths() : List.of(), nested,
+                nested ? origin.getParentModId() : null));
+        }
+        return mods;
     }
 
     @Override

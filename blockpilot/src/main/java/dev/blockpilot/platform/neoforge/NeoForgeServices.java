@@ -3,6 +3,7 @@ package dev.blockpilot.platform.neoforge;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.platform.ModConfigs;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,6 +17,8 @@ import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.gametest.GameTestHooks;
 import net.neoforged.neoforgespi.language.IModFileInfo;
+import net.neoforged.neoforgespi.language.IModInfo;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 /** What NeoForge answers for the mod. */
 final class NeoForgeServices implements ClientPlatform.Services {
@@ -77,6 +80,23 @@ final class NeoForgeServices implements ClientPlatform.Services {
         // This FML names only the primary path: the jar, or in a dev run the classes folder.
         return List.of(file.getFile().getFilePath());
         //?}
+    }
+
+    @Override
+    public List<ClientPlatform.LoadedMod> mods() {
+        List<ClientPlatform.LoadedMod> mods = new ArrayList<>();
+        for (IModInfo mod : ModList.get().getMods()) {
+            IModFile file = mod.getOwningFile().getFile();
+            IModFile parent = file.getDiscoveryAttributes().parent();
+            boolean nested = parent != null;
+            String parentId = nested && !parent.getModInfos().isEmpty() ? parent.getModInfos().get(0).getModId() : null;
+            // A path in a file system of its own, such as the game's union of jars, names no file on disk.
+            Path path = file.getFilePath();
+            boolean onDisk = !nested && path.getFileSystem() == FileSystems.getDefault();
+            mods.add(new ClientPlatform.LoadedMod(mod.getModId(), mod.getVersion().toString(),
+                onDisk ? List.of(path) : List.of(), nested, parentId));
+        }
+        return mods;
     }
 
     @Override

@@ -6,7 +6,10 @@ import dev.blockpilot.platform.ModConfigs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +111,23 @@ public final class VanillaPlatform implements ClientPlatform.Services {
     @Override
     public List<Path> modPaths() {
         return List.of(jar);
+    }
+
+    @Override
+    public List<ClientPlatform.LoadedMod> mods() {
+        return List.of(
+            new ClientPlatform.LoadedMod("minecraft", ClientPlatform.minecraftVersion(), gameJar(), false, null),
+            new ClientPlatform.LoadedMod(Blockpilot.MOD_ID, version, List.of(jar), false, null));
+    }
+
+    /** Where the game's classes load from: its jar, as the launcher put it on the class path. */
+    private static List<Path> gameJar() {
+        CodeSource source = Minecraft.class.getProtectionDomain().getCodeSource();
+        try {
+            return source == null ? List.of() : List.of(Path.of(source.getLocation().toURI()));
+        } catch (URISyntaxException | IllegalArgumentException | FileSystemNotFoundException e) {
+            return List.of();
+        }
     }
 
     @Override

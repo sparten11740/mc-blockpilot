@@ -50,6 +50,9 @@ public final class ClientPlatform {
         /** The jar, or in a dev run the folders, the loader loaded this mod from. */
         List<Path> modPaths();
 
+        /** Every mod the loader loaded, the game and the loader among them, in the loader's order. */
+        List<LoadedMod> mods();
+
         /** The id of the mod whose files hold the class (by its binary name), or null when none does. */
         String modOf(String className);
 
@@ -70,6 +73,13 @@ public final class ClientPlatform {
         default String gameTestsOff() {
             return null;
         }
+    }
+
+    /**
+     * A mod as the loader loaded it. {@code paths} is its jar, or in a dev run its folders, and empty when it has none on
+     * disk; {@code parent} is the id of the mod whose jar holds a nested one, where the loader says.
+     */
+    public record LoadedMod(String id, String version, List<Path> paths, boolean nested, String parent) {
     }
 
     /** Callbacks the loader's entry point forwards its events to. */
@@ -184,6 +194,10 @@ public final class ClientPlatform {
 
     public static String versionOf(String modId) {
         return services().versionOf(modId);
+    }
+
+    public static List<LoadedMod> mods() {
+        return services().mods();
     }
 
     public static Path configDir() {

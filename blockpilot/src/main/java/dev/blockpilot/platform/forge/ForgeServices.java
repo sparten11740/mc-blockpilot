@@ -3,6 +3,7 @@ package dev.blockpilot.platform.forge;
 import dev.blockpilot.Blockpilot;
 import dev.blockpilot.platform.ClientPlatform;
 import dev.blockpilot.platform.ModConfigs;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.forgespi.language.IModFileInfo;
+import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.gametest.ForgeGameTestHooks;
 
 /** What Forge answers for the mod. */
@@ -72,6 +74,22 @@ final class ForgeServices implements ClientPlatform.Services {
         IModFileInfo file = ModList.get().getModFileById(Blockpilot.MOD_ID);
         // FML names only the primary path: the jar, or in a dev run the classes folder.
         return file == null ? List.of() : List.of(file.getFile().getFilePath());
+    }
+
+    /**
+     * Forge doesn't tell a nested jar apart, so none is marked nested; a path in a file system of its own, a jar
+     * inside another or the game's union of jars, names no file on disk.
+     */
+    @Override
+    public List<ClientPlatform.LoadedMod> mods() {
+        List<ClientPlatform.LoadedMod> mods = new ArrayList<>();
+        for (IModInfo mod : ModList.get().getMods()) {
+            Path path = mod.getOwningFile().getFile().getFilePath();
+            boolean onDisk = path.getFileSystem() == FileSystems.getDefault();
+            mods.add(new ClientPlatform.LoadedMod(mod.getModId(), mod.getVersion().toString(),
+                onDisk ? List.of(path) : List.of(), false, null));
+        }
+        return mods;
     }
 
     @Override
