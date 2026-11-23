@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.0 (unreleased)
+
+- **What the client is:** `client` names the Minecraft, loader, Blockpilot, API, Java and OS versions, the GPU backend
+  (`backend=opengl|vulkan`, with `asked=` from 26.2 for the graphics API the options ask for), the GPU, its vendor and
+  driver, and how many mods are loaded.
+- **Which builds are loaded:** `mods [match=]` lists each loaded mod with its version, its file and the file's SHA-256
+  as the game loaded it, and `changed` when the jar on disk was replaced since, so a harness can tell the client runs
+  the build under test. `endpoint.json` lists the same mods, without hashes.
+
 ## 1.4.2 (2026-11-22)
 
 - **Fixes:** a world creation cut short no longer blocks the name. `create world` marks the folder as a test world

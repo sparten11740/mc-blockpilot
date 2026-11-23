@@ -120,6 +120,8 @@ name as `@<name>`. [docs/commands.md](docs/commands.md) is the reference, and
 | | `snapshot` | Save and restore a world's state |
 | | `delete` | Delete a test world |
 | | `config` | Read and change NeoForge and Forge mod configs in memory |
+| | `client` | The game's versions, GPU backend and GPU |
+| | `mods` | The loaded mods with their files and SHA-256 as loaded |
 | integrated | `server` | Run a server command and get its output |
 | | `nbt` | The data of a block entity or entity |
 | | `tick` | Freeze, step or change the game's tick rate |

@@ -266,6 +266,16 @@ change to the settings applies within a second ([safety.md](safety.md)).
 - `snapshot save|restore|delete <name>`, `snapshot list`: saves and restores a world's state. Joining a world with
   experimental settings again, `snapshot save` and `restore` meet the game's question as `join world` does.
 - `delete world <folder>`: test worlds only, including one whose creation was cut short.
+- `client`: the Minecraft, loader (`loader_version=`), Blockpilot, API, Java and OS versions, the GPU backend as
+  `backend=opengl|vulkan` and, from 26.2, the graphics API the options ask for as `asked=default|opengl|vulkan`, the
+  GPU, its vendor and driver as the game reports them, and `mods=`, how many are loaded.
+- `mods [match=]`: a row per loaded mod by id: its version, `file=` (relative to the game directory when inside it) and
+  the file's `sha256=` as the game loaded it, `changed` when the file on disk differs since, as when a jar was rebuilt
+  under a running client; `nested` with `in=<mod>` for a mod inside another's jar where the loader tells (Fabric and
+  NeoForge), `folder=` for one a development run loads from folders, and only the id and version for a mod with no file
+  on disk. Blockpilot hashes the files in the background as the game finishes loading: `hashing=<n>`
+  counts those left, so `wait mods until hashing==0` waits for every hash. `endpoint.json` lists the same mods, without
+  hashes.
 - `config`: the mods with NeoForge config files. `config <mod> [client|common|server|startup] [match=]` lists their
   values by dotted key. `config <mod> [<type>] <key> [<value>]` gives a value's default, what it takes and the mod's
   comment; with a value, sets it in memory, never in the file, and tells the mod as a reload of its file does.
