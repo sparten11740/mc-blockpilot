@@ -49,11 +49,13 @@ hashing==0` serves as the wait.
 
 ### D3: The loader's own list, with files where it has them
 A new `Services.mods()` gives each mod's id, version, file or folders, and
-the mod that carries it when nested. Fabric's origin says this directly.
-NeoForge and Forge give a file path that, for a nested jar, lies in another
-file system than the default one; such a mod is `nested`, with `in=` where
-the loader names the parent file's mod. The vanilla agent lists Blockpilot's
-own jar and Minecraft.
+the mod that carries it when nested. Fabric's origin says this directly;
+NeoForge names the parent file in the file's discovery attributes. Forge
+doesn't, so no Forge mod is `nested`. A path in a file system other than the
+default one, a nested jar or the game's own union of jars, names no file on
+disk, so such a mod shows only its id and version. Marking those `nested`
+would mislabel the game itself in production. The vanilla agent lists
+Blockpilot's own jar and Minecraft.
 
 ### D4: The GPU per version in one place
 One method returns the backend, GPU, vendor and driver strings with `//? if`

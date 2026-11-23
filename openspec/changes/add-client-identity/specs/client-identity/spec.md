@@ -38,14 +38,20 @@ it, others absolutely.
   the jar's SHA-256, which the harness compares with its own build's
 
 ### Requirement: Mods without a file of their own
-A mod nested in another mod's file SHALL carry `nested`, with `in=<id>` naming
-that mod where the loader tells. A mod a development run loads from folders
-SHALL name the first folder as `folder=`. Neither has a hash.
+Where the loader tells that a mod is nested in another mod's file, as Fabric
+and NeoForge do, its row SHALL carry `nested` with `in=<id>` naming that mod.
+A mod a development run loads from folders SHALL name the first folder as
+`folder=`. A mod whose path names no file on disk SHALL show only its id and
+version. None of these has a hash.
 
 #### Scenario: A mod nested in another's jar
-- **WHEN** a mod's jar carries a library mod inside it
-- **THEN** the library's row carries `nested` and no file or hash, and on a
-  loader that tells, `in=` with the carrying mod's id
+- **WHEN** a mod's jar carries a library mod inside it, on Fabric or NeoForge
+- **THEN** the library's row carries `nested`, `in=` with the carrying mod's
+  id, and no file or hash
+
+#### Scenario: A loader that doesn't tell
+- **WHEN** a Forge mod's jar carries a library mod inside it
+- **THEN** the library's row names its id and version, with no file or hash
 
 #### Scenario: The mod under development
 - **WHEN** an agent runs `mods match=mymod` in a development run of `mymod`
