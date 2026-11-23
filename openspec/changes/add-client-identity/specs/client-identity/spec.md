@@ -55,7 +55,8 @@ version. None of these has a hash.
 
 #### Scenario: The mod under development
 - **WHEN** an agent runs `mods match=mymod` in a development run of `mymod`
-- **THEN** the row names the folder its classes load from, without a hash
+- **THEN** the row names the first folder the loader loads it from, without
+  a hash
 
 ### Requirement: Hashes from load time
 A mod file's SHA-256 SHALL be taken from the file as it was when the game

@@ -19,9 +19,10 @@ harness can refuse the wrong client and assert the render path.
   driver as the game reports them; and the number of mods loaded.
 - A new query, `mods [match=<pattern>]`: a row per loaded mod with its id,
   version and file, and the file's SHA-256 as it was when the game loaded
-  it. A file changed on disk since then is marked `changed`. A mod without
-  its own file names the mod whose file holds it, or the folder a
-  development run loads it from.
+  it. A file changed on disk since then is marked `changed`. A mod nested
+  in another's file names that mod where the loader tells, as Fabric and
+  NeoForge do; a mod a development run loads from folders names the first
+  one.
 - `endpoint.json` lists the loaded mods with their ids, versions and files,
   so a harness can find which client runs which build without connecting.
 
@@ -38,9 +39,9 @@ harness can refuse the wrong client and assert the render path.
 
 - `platform/ClientPlatform.java` and each loader's services (NeoForge,
   Forge, Fabric, the vanilla agent): the loaded mods with their files.
-- A new `game/ClientIdentity.java` (the queries, the hashing at load) and
-  the GPU details per version: GlUtil up to 1.21.1, the GPU device's getters
-  in 1.21.11 and 26.1, its `DeviceInfo` from 26.2.
+- A new `game/identity/` package (the queries, the hashing at load, the
+  rows) and the GPU details per version: GlUtil up to 1.21.1, the GPU
+  device's getters in 1.21.11 and 26.1, its `DeviceInfo` from 26.2.
 - `game/BlockpilotClient.java`: the mods in `endpoint.json`, hashing started
   at load.
 - Unit tests for the row format and the change check, smoke checks for both
