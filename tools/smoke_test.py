@@ -23,6 +23,7 @@ tools/test_targets.py runs this on every target.
 import argparse
 import glob
 import gzip
+import hashlib
 import json
 import math
 import os
@@ -610,6 +611,33 @@ def check_capture_names(game_dir):
         problems.append(f"no {path}: {output.strip()[-200:]}")
     if not re.search(r"^err syntax capture names .* not \.\./smoke$", output, re.MULTILINE):
         problems.append(f"a bad name's error doesn't name it: {output.strip()[-200:]}")
+    return "; ".join(problems) or None
+
+
+def check_client_identity(game_dir):
+    """client names the versions and the renderer; mods lists Blockpilot with its jar's hash as loaded, or the folder a
+    dev run loads it from, once hashing is done; endpoint.json lists the same mods without hashes."""
+    problems = []
+    _, client = run(game_dir, "client")
+    asked = r" asked=(default|opengl|vulkan)" if game_version(game_dir) >= (26, 2) else ""
+    if not re.search(r'^ok minecraft=\S+ loader=\S+ .*blockpilot=\S+ api=\S+ java=\S+ os="[^"]+" '
+                     r'backend=(opengl|vulkan)' + asked + r' gpu="[^"]+" .* mods=\d+$', client, re.MULTILINE):
+        problems.append(f"client answered {client.strip()[-300:]}")
+    _, mods = run(game_dir, "wait mods until hashing==0 timeout=30s; mods match=blockpilot; mods match=minecraft")
+    row = re.search(r"^  blockpilot \S+ (file=(\S+) sha256=([0-9a-f]{64})|folder=\S+)", mods, re.MULTILINE)
+    if not row:
+        problems.append(f"mods has no blockpilot row with a hashed file or a folder: {mods.strip()[-300:]}")
+    elif row.group(2):
+        path = row.group(2) if os.path.isabs(row.group(2)) else os.path.join(game_dir, row.group(2))
+        with open(path, "rb") as jar:
+            if hashlib.sha256(jar.read()).hexdigest() != row.group(3):
+                problems.append(f"blockpilot's hash isn't its jar's: {row.group(0)}")
+    if not re.search(r"^  minecraft \S+", mods, re.MULTILINE):
+        problems.append(f"mods has no minecraft row: {mods.strip()[-300:]}")
+    with open(os.path.join(game_dir, "blockpilot", "endpoint.json"), encoding="utf-8") as source:
+        listed = [mod for mod in json.load(source).get("mods", []) if mod.get("id") == "blockpilot"]
+    if len(listed) != 1 or "sha256" in listed[0] or not ("file" in listed[0] or "folder" in listed[0]):
+        problems.append(f"endpoint.json lists blockpilot as {listed}")
     return "; ".join(problems) or None
 
 
@@ -1456,12 +1484,13 @@ def main():
          [r"ok joined " + world]),
         ("status", "wait 1s; status", [r"ok pos -?\d", r"overworld"]),
         ("help", "help; help goto; help errors; help server; help wait; help sound; help record; help create; "
-                 "help quit",
+                 "help quit; help client; help mods",
          [r"movement:", r"goto <target>", r"no_item", r"function without return, answers ok success=true",
           r"the step after wait <N>t runs N ticks after", r"so settle=1t spaces them one server tick apart",
           r"plays a sound event on this client only", r"record mark <label>: notes the video time",
           r"unless a creation cut short left its folder, which is replaced",
-          r"cancels those other sessions queued before it"]),
+          r"cancels those other sessions queued before it", r"the GPU backend \(opengl\|vulkan\)",
+          r"SHA-256 as the game loaded it, changed when the file on disk differs since"]),
         ("give items", give + "; inv", [r"oak_log x4", r"iron_sword", r"shield"]),
         ("craft in the 2x2 grid", "craft oak_planks x8; craft crafting_table", [r"craft 8 oak_planks",
                                                                                 r"craft 1 crafting_table"]),
@@ -1662,6 +1691,7 @@ def main():
         ("the logs start anew in each world", lambda: check_logs_per_world(args.game_dir, world)),
         ("wait 1t lets one tick pass", lambda: check_tick_waits(args.game_dir)),
         ("server steps run back to back", lambda: check_server_steps(args.game_dir)),
+        ("client and mods say what this client is", lambda: check_client_identity(args.game_dir)),
         ("a world creation cut short is replaced or deleted", lambda: check_cut_short_worlds(args.game_dir, world)),
         ("messages holds each chat window line once", lambda: check_chat_window_lines(args.game_dir)),
         ("a capture name may hold a plus", lambda: check_capture_names(args.game_dir)),
