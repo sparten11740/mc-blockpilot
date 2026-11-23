@@ -1,5 +1,7 @@
 package dev.blockpilot.game.identity;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 //? if >=1.21.11 {
 /*import com.mojang.blaze3d.systems.RenderSystem;
 *///?} else {
@@ -54,6 +56,23 @@ public final class ClientIdentity {
     /** Hashes every mod file in the background; called as the game finishes loading. */
     public static void startHashing() {
         HASHES.start(ClientPlatform.mods().stream().map(ModRows::file).filter(Objects::nonNull).toList());
+    }
+
+    /** The loaded mods for {@code endpoint.json}: id, version and file or folder, without hashes. */
+    public static JsonArray endpointMods() {
+        JsonArray mods = new JsonArray();
+        for (Row row : ModRows.rows(ClientPlatform.mods(), id -> true, ClientPlatform.gameDir(), null)) {
+            JsonObject mod = new JsonObject();
+            for (Fields.Field field : row.fields().list()) {
+                if (field.value() instanceof Boolean flag) {
+                    mod.addProperty(field.name(), flag);
+                } else {
+                    mod.addProperty(field.name(), String.valueOf(field.value()));
+                }
+            }
+            mods.add(mod);
+        }
+        return mods;
     }
 
     private static Result client() {

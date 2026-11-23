@@ -238,6 +238,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
         json.addProperty("minecraft", ClientPlatform.minecraftVersion());
         json.addProperty("loader", ClientPlatform.loaderName());
         json.addProperty("token_file", token.file().toAbsolutePath().toString());
+        json.add("mods", ClientIdentity.endpointMods());
         endpointFile = ClientPlatform.gameDir().resolve(Blockpilot.MOD_ID).resolve("endpoint.json");
         Files.createDirectories(endpointFile.getParent());
         Path temporary = endpointFile.resolveSibling("endpoint.json.tmp");
