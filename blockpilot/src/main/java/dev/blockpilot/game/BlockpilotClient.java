@@ -15,6 +15,7 @@ import dev.blockpilot.game.common.ClientScreens;
 import dev.blockpilot.game.common.ClientTicks;
 import dev.blockpilot.game.common.GameClock;
 import dev.blockpilot.game.common.Sides;
+import dev.blockpilot.game.identity.ClientIdentity;
 import dev.blockpilot.game.input.Focus;
 import dev.blockpilot.game.input.HumanInput;
 import dev.blockpilot.game.input.InputState;
@@ -144,6 +145,7 @@ public final class BlockpilotClient implements ClientPlatform.Hooks, GameBridge 
 
     @Override
     public void onLoadComplete() {
+        ClientIdentity.startHashing();
         Path directory = ClientPlatform.configDir().resolve(Blockpilot.MOD_ID);
         config = Config.load(directory.resolve("config.json"));
         trustUnverified = TrustTracker.trustUnverified();

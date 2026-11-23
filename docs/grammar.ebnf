@@ -275,6 +275,11 @@ option-option ::= "timeout=" ( duration | seconds )
 config-command ::= "config" ( "reset" | word ( "client" | "common" | "server" | "startup" ) word? text? | word word? text? )?
 config-option ::= "match=" pattern | "timeout=" ( duration | seconds )
 
+client-command ::= "client"
+
+mods-command ::= "mods"
+mods-option ::= "match=" ( pattern | id )
+
 flicker-command ::= "flicker" duration text?
 flicker-option ::= "timeout=" ( duration | seconds )
 

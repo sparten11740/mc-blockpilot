@@ -1,6 +1,7 @@
 package dev.blockpilot.game;
 
 import dev.blockpilot.game.gametest.GameTestCommands;
+import dev.blockpilot.game.identity.ClientIdentity;
 import dev.blockpilot.game.load.LoadCommands;
 import dev.blockpilot.game.log.LogCommands;
 import dev.blockpilot.game.observe.ObservationCommands;
@@ -33,6 +34,7 @@ final class GameCommands {
         new ObservationCommands(client).register(registry);
         new OptionCommands().register(registry);
         new ConfigCommands().register(registry);
+        new ClientIdentity().register(registry);
         new PixelCommands().register(registry);
         new PerfCommands().register(registry);
         new RecordCommands(() -> client.config().ffmpeg).register(registry);
