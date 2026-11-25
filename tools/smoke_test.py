@@ -1159,11 +1159,10 @@ def check_camera_play(game_dir):
     """camera play answers at once and plays its shots on the camera's clock while the script goes on: the cut at once,
     held, then a move with its own field of view; camera wait answers where the last shot left the camera, and a
     shot that isn't one is refused before anything changes. status names the camera's position from its first frame
-    there, so it reads two ticks into the hold."""
+    there, so it reads two ticks into the hold, and after camera wait once a screenshot has waited for a frame."""
     _, output = run(game_dir, f"{CLEAR}; {LEVEL}; camera play at ~0,3,-6 look ~0,1,0 | hold 10t | move ~6,3,0 look "
-                              "~0,1,0 over 20t fov=40; wait 2t; status; camera wait; status; ?camera play jump "
-                              "~0,0,0; "
-                              "camera reset")
+                              "~0,1,0 over 20t fov=40; wait 2t; status; camera wait; screenshot 64; status; "
+                              "?camera play jump ~0,0,0; camera reset")
     statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
     if not re.search(r"^ok shots=3 over=30t$", output, re.MULTILINE) or len(statuses) != 2 \
             or " camera 0,-57,-6 " not in statuses[0] + " " \
@@ -1194,7 +1193,7 @@ def check_camera_play_checks(game_dir):
                              re.MULTILINE):
         return f"a bad shot changed the camera or wasn't refused up front: {output.strip()[:700]}"
     _, output = run(game_dir, f"{LEVEL}; camera play move ~0,3,-6 over 30t | move ~6,3,0 over 30t; wait 2t; "
-                              "?camera play follow e999999; camera wait; status; camera reset")
+                              "?camera play follow e999999; camera wait; screenshot 64; status; camera reset")
     statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
     if not re.search(r"^err no_entity e999999$", output, re.MULTILINE) or len(statuses) != 1 \
             or placed_camera(statuses[0]) != "6,-57,0":
@@ -1206,8 +1205,8 @@ def check_camera_play_ends(game_dir):
     """A camera command that fails its checks leaves a play going; a shot whose entity went fails the play, told to
     the next camera wait only, not to one after a later camera command."""
     _, output = run(game_dir, f"{LEVEL}; camera play move ~0,3,-6 over 30t | move ~6,3,0 over 30t; wait 20t; "
-                              "?camera at ~0,2,-4 fov=500; ?camera move ~0,2,-4 over 0t; camera wait; status; "
-                              "camera reset")
+                              "?camera at ~0,2,-4 fov=500; ?camera move ~0,2,-4 over 0t; camera wait; screenshot 64; "
+                              "status; camera reset")
     statuses = re.findall(r"^ok pos .*$", output, re.MULTILINE)
     if len(re.findall(r"^err syntax", output, re.MULTILINE)) != 2 or len(statuses) != 1 \
             or placed_camera(statuses[0]) != "6,-57,0":
